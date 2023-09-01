@@ -8,5 +8,9 @@ using namespace std;
 
 int main() {
     printf("\nStarting main loop.");
+    while (!GE.ShouldClose()) {
+        GE.RenderScene();
+    }
+    printf("\nProgram ran successfully. Exiting.");
     return EXIT_SUCCESS;
 }
