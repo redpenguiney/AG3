@@ -1,3 +1,4 @@
+#pragma once
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLFW/glfw3.h"
 #include "gl_error_handler.cpp"

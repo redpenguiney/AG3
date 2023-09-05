@@ -3,30 +3,99 @@
 #include <string>
 #include <cstdio>
 #include <fstream>
-#include <GL/GL.h>
+#include <unordered_map>
+#include "../../external_headers/GLEW/glew.h"
 //#include <optional>
 
-class Shader {
-    Shader() {
+// TODO: custom procedural textures
 
+// In OpenGL, a shader program contains (at minimum) a vertex shader and a fragment (basically per pixel) shader.
+class ShaderProgram;
+class Shader {
+    friend class ShaderProgram;
+    Shader(const char* path, GLenum shaderType) {
+        
+        // Get string from file contents 
+        std::ifstream stream(path);
+        if (stream.fail()) { // Verify file was successfully found/open
+            printf("\nUnable to find or read the file at path %s. Aborting.", path);
+            abort();
+        }
+        std::string shaderSource = {std::istreambuf_iterator<char>(stream), {}};
+        const char* shaderSourcePtr = shaderSource.c_str();
+        GLint sourceLength = shaderSource.length();
+
+        // Compile the shader
+        GLint compiled;
+        shaderId = glCreateShader(shaderType);
+        glShaderSource(shaderId, 1, &shaderSourcePtr, &sourceLength);
+        glCompileShader(shaderId);
+        glGetShaderiv(shaderId, GL_COMPILE_STATUS, & compiled);
+        if (compiled != GL_TRUE){
+            printf("\nFailed to compile %s. Aborting.", path);
+            PrintInfoLog();
+            abort();
+        };
     }
+
+    ~Shader() {
+        glDeleteShader(shaderId);
+    }
+
+    void PrintInfoLog() {
+        int InfoLogLength = 0;
+        int CharsWritten = 0;
+
+        glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, & InfoLogLength);
+
+        if (InfoLogLength > 0)
+        {
+            GLchar * InfoLog = new GLchar[InfoLogLength];
+            glGetShaderInfoLog(shaderId, InfoLogLength, & CharsWritten, InfoLog);
+            std::printf("\nShader Info Log: %s", InfoLog);
+            delete [] InfoLog;
+        };
+    }
+
+    GLuint shaderId;
 };
 
 class ShaderProgram {
     public:
-    GLuint programId;
-
     bool useCameraMatrix; // if true the uniform mat4s "camera" and "proj" in this program's vertex shader will be automatically set
 
-    ShaderProgram(char* vertexPath, char* fragmentPath) {
+    ShaderProgram(const char* vertexPath, const char* fragmentPath)
+    : vertex(vertexPath, GL_VERTEX_SHADER),
+    fragment(fragmentPath, GL_FRAGMENT_SHADER) {
+        // Create shader program and attach vertex/fragment to it
+        programId = glCreateProgram();
+        glAttachShader(programId, vertex.shaderId);
+        glAttachShader(programId, fragment.shaderId);
 
+        glBindFragDataLocation(programId, 0, "color"); // tell opengl that the variable we're putting the final pixel color in is called "color"
+        glLinkProgram(programId);
+        int success;
+        char infolog[512];
+        glGetProgramiv(programId, GL_LINK_STATUS, &success);
+        if(!success)
+        {
+            glGetProgramInfoLog(programId, 512, NULL, infolog);
+            printf("\nFailed to link shader program!\n%s", infolog);
+            abort();
+        }
     }
 
     ~ShaderProgram() {
+        glDeleteProgram(programId);
+    }
 
+    void Use() {
+        
     }
 
     private:
-    GLuint fragmentId;
-    GLuint vertexId;
+    GLuint programId;
+    Shader vertex;
+    Shader fragment;
+    std::unordered_map<std::string, int> uniform_locations;
 };
