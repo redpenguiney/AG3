@@ -40,7 +40,7 @@ class GraphicsEngine {
     }
 
     void SetCameraUniforms() {
-        worldShader.UniformMat4x4("proj", camera.GetProj(window.width/window.height), false);
+        worldShader.UniformMat4x4("proj", camera.GetProj((float)window.width/(float)window.height), false);
     }
 
     // Draws everything
@@ -50,7 +50,7 @@ class GraphicsEngine {
         SetCameraUniforms();
         worldShader.Use();
         
-        for (auto & [poolId, pool] : meshpools) {
+        for (auto & [_, pool] : meshpools) {
             pool->Draw();
 
         } 

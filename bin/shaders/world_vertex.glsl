@@ -25,7 +25,7 @@ out vec4 lightSpaceCoords;
 void main()
 {
     // todo: an easy optimization would be multiplying proj by camera on the cpu once instead of for every vertex
-    gl_Position = proj * camera * model * vec4(vertexPos, 1.0); // TODO: draw_id issue (check shadow shaders too!)
+    gl_Position = proj * vec4(vertexPos, 1.0); // TODO: draw_id issue (check shadow shaders too!)
     fragmentColor = vertexColor.xyz;
     fragmentNormal = vertexNormal;
     fragmentTexCoords = vec3(textureXY, textureZ);

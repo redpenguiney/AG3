@@ -7,7 +7,7 @@
 
 using namespace std;
 
-std::vector<GLfloat> vertices = {0, 0, 0,   0, 0,   0, 0, 0};
+std::vector<GLfloat> vertices = {0, 0, -0.5,   0, 0,   0, 0, 0};
 std::vector<GLuint> indices = {0};
 
 int main() {

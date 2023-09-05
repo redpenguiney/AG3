@@ -92,18 +92,22 @@ class ShaderProgram {
 
     // sets the uniform variable in this shader program with the given name to the given value
     void UniformMat4x4(std::string uniformName, glm::mat4x4 matrix, bool transposeMatrix = false) {
-        if (!uniform_locations.count(uniformName)) {
+        if (uniform_locations.count(uniformName) == 0) {
             uniform_locations[uniformName] = glGetUniformLocation(programId, uniformName.c_str());
         };
-        std::printf("its %i", uniform_locations[uniformName.c_str()]);
-        glUniformMatrix4fv(uniform_locations[uniformName.c_str()], 1, transposeMatrix, &matrix[0][0]);
+        Use();
+        glUniformMatrix4fv(uniform_locations.at(uniformName), 1, transposeMatrix, &matrix[0][0]);
     }
 
     void Use() {
-        
+        if (LOADED_PROGRAM_ID != programId) {
+            glUseProgram(programId);
+            LOADED_PROGRAM_ID = programId;
+        }
     }
 
     private:
+    static inline GLuint LOADED_PROGRAM_ID = 0;
     GLuint programId;
     Shader vertex;
     Shader fragment;
