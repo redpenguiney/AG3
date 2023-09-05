@@ -8,7 +8,11 @@
 
 class Window {
     public:
-    Window(int width, int height) {
+    int width;
+    int height;
+    Window(int widthh, int heightt) {
+        width = widthh;
+        height = heightt;
         auto initSuccess = glfwInit();
         if (!initSuccess) {
             std::printf("\nFailure to initialize GLFW. Aborting.");

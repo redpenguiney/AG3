@@ -5,6 +5,7 @@
 #include <fstream>
 #include <unordered_map>
 #include "../../external_headers/GLEW/glew.h"
+#include "../../external_headers/GLM/glm.hpp"
 //#include <optional>
 
 // TODO: custom procedural textures
@@ -62,7 +63,7 @@ class Shader {
 
 class ShaderProgram {
     public:
-    bool useCameraMatrix; // if true the uniform mat4s "camera" and "proj" in this program's vertex shader will be automatically set
+    //bool useCameraMatrix; // if true the uniform mat4s "camera" and "proj" in this program's vertex shader will be automatically set
 
     ShaderProgram(const char* vertexPath, const char* fragmentPath)
     : vertex(vertexPath, GL_VERTEX_SHADER),
@@ -89,6 +90,15 @@ class ShaderProgram {
         glDeleteProgram(programId);
     }
 
+    // sets the uniform variable in this shader program with the given name to the given value
+    void UniformMat4x4(std::string uniformName, glm::mat4x4 matrix, bool transposeMatrix = false) {
+        if (!uniform_locations.count(uniformName)) {
+            uniform_locations[uniformName] = glGetUniformLocation(programId, uniformName.c_str());
+        };
+        std::printf("its %i", uniform_locations[uniformName.c_str()]);
+        glUniformMatrix4fv(uniform_locations[uniformName.c_str()], 1, transposeMatrix, &matrix[0][0]);
+    }
+
     void Use() {
         
     }
@@ -97,5 +107,5 @@ class ShaderProgram {
     GLuint programId;
     Shader vertex;
     Shader fragment;
-    std::unordered_map<std::string, int> uniform_locations;
+    std::unordered_map<std::string, int> uniform_locations; // used to set uniform variables
 };
