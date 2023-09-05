@@ -1,11 +1,13 @@
 #pragma once
 #include "../../external_headers/GLEW/glew.h"
-#include<GL/GL.h>
 #include <cassert>
+#include <cstdio>
+#include <fstream>
 #include<vector>
 #include<atomic>
 #include <unordered_map>
 #include <memory>
+#include "../../external_headers/GLM/ext.hpp"
 
 class Mesh {
     public:
@@ -18,7 +20,7 @@ class Mesh {
     const unsigned int instanceCount; // meshpool will make room for this many objects to use this mesh (if you go over it's fine, but performance may be affected)
                                       // the memory cost of this is ~64 * instanceCount bytes
                                       // def make it like a million for cubes and stuff, otherwise default of 1024 should be fine
-                                      // NOTE: if you're constantly adding and removing unique meshes, they better all have same expectedCount or it's gonna waste a lot of memory
+                                      // NOTE: if you're constantly adding and removing unique meshes, they better all have same expectedCount or it's gonna leak memory
 
     // engine calls this to get mesh from an object's meshId
     static std::shared_ptr<Mesh>& Get(int meshId) {
@@ -29,9 +31,38 @@ class Mesh {
     // returns mesh id of the generated mesh
     // verts must be organized into (XYZ, TextureXY, NormalXYZ, RGBA if !instanceColor, TextureZ if !instanceTextureZ)
     // leave expectedCount at 1024 unless it's something like a cube, in which case set it to like 1 million (you can create more objects than this number, it just might lag a little)
-    static int FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor=true, bool instanceTextureZ=true, unsigned int expectedCount=1024) {
-        int meshId = LAST_MESH_ID;
+    static unsigned int FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor=true, bool instanceTextureZ=true, unsigned int expectedCount=1024) {
+        unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
         LOADED_MESHES[meshId] = std::shared_ptr<Mesh>(new Mesh(verts, indies, instanceColor, instanceTextureZ, expectedCount));
+        return meshId;
+    }
+
+    // returns mesh id of the generated mesh.
+    // only accepts OBJ files.
+    static unsigned int FromFile(const std::string& path, unsigned int expectedCount = 1024) {
+        std::ifstream file(path);
+        assert(file.good() && (std::string("Mesh::FromFile() failed to load ") + path).c_str());
+        std::string line;
+
+        std::vector<glm::vec3> vertexPositions;
+        std::vector<glm::vec4> vertexColors;
+        while (std::getline(file, line))
+        {
+            //std::printf("\nRead line %s", line.c_str());
+            if (line.rfind("#", 0) == 0) { // If the line starts with # it's a comment
+                continue;
+            }
+            else if (line.rfind("v", 0) == 0) { // vertex positions and colors both go under v. Its just position if only 3 numbers, pos and color if 6 numbers
+                // remove prefix "v"
+                line.erase(0, 1);
+
+                line.
+            }
+        }
+        
+
+        unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
+        //LOADED_MESHES[meshId] = std::shared_ptr<Mesh>(new Mesh(verts, indies, instanceColor, instanceTextureZ, expectedCount));
         return meshId;
     }
 
@@ -54,8 +85,8 @@ class Mesh {
     instanceCount(expectedCount)
     {}
 
-    inline static std::atomic<int> LAST_MESH_ID = {0};
-    inline static std::unordered_map<int, std::shared_ptr<Mesh>> LOADED_MESHES; 
+    inline static std::atomic<unsigned int> LAST_MESH_ID = {0};
+    inline static std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
 };
 
 // key is mesh id, value is ptr to mesh

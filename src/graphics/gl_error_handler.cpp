@@ -6,9 +6,9 @@
 // See window.cpp for GL_DEBUG_OUTPUT is setup
 void GLAPIENTRY MessageCallback( GLenum source,
                  GLenum type,
-                 GLuint id,
+                 GLuint _id,
                  GLenum severity,
-                 GLsizei length,
+                 GLsizei _length,
                  const GLchar* message,
                  const void* _userParam )
 {
