@@ -41,6 +41,7 @@ class GraphicsEngine {
 
     void SetCameraUniforms() {
         worldShader.UniformMat4x4("proj", camera.GetProj((float)window.width/(float)window.height), false);
+        worldShader.UniformMat4x4("camera", camera.GetCamera(), false);
     }
 
     // Draws everything

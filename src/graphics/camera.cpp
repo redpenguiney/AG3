@@ -13,4 +13,8 @@ class Camera {
     glm::mat4x4 GetProj(float aspect, float near=0.1, float far=1000.0) {
         return glm::perspective(fieldOfView, aspect, near, far);
     }
+
+    glm::mat4x4 GetCamera() {
+        return glm::identity<glm::mat4x4>();
+    }
 };

@@ -1,17 +1,26 @@
 #pragma once
 #include "../../external_headers/GLEW/glew.h"
+#include <array>
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
+#include <sstream>
+#include <string>
+#include <tuple>
 #include<vector>
 #include<atomic>
+#include <set>
 #include <unordered_map>
 #include <memory>
 #include "../../external_headers/GLM/ext.hpp"
+#define TINYOBJLOADER_IMPLEMENTATION // what kind of library makes you have to ask it to actually implement the functions???
+#include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
+#include "let_me_hash_a_tuple.cpp"
 
 class Mesh {
     public:
-
+    
     const int meshId; // meshes have an id so that the engine can easily determine that two objects use the same mesh and instance them
     const std::vector<GLfloat> vertices;
     const std::vector<GLuint> indices; 
@@ -21,6 +30,7 @@ class Mesh {
                                       // the memory cost of this is ~64 * instanceCount bytes
                                       // def make it like a million for cubes and stuff, otherwise default of 1024 should be fine
                                       // NOTE: if you're constantly adding and removing unique meshes, they better all have same expectedCount or it's gonna leak memory
+    const glm::vec3 originalSize; // TODO
 
     // engine calls this to get mesh from an object's meshId
     static std::shared_ptr<Mesh>& Get(int meshId) {
@@ -29,7 +39,7 @@ class Mesh {
     }
 
     // returns mesh id of the generated mesh
-    // verts must be organized into (XYZ, TextureXY, NormalXYZ, RGBA if !instanceColor, TextureZ if !instanceTextureZ)
+    // verts must be organized into (XYZ, RGBA if !instanceColor, TextureXY, TextureZ if !instanceTextureZ, NormalXYZ).
     // leave expectedCount at 1024 unless it's something like a cube, in which case set it to like 1 million (you can create more objects than this number, it just might lag a little)
     static unsigned int FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor=true, bool instanceTextureZ=true, unsigned int expectedCount=1024) {
         unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
@@ -39,30 +49,70 @@ class Mesh {
 
     // returns mesh id of the generated mesh.
     // only accepts OBJ files.
-    static unsigned int FromFile(const std::string& path, unsigned int expectedCount = 1024) {
-        std::ifstream file(path);
-        assert(file.good() && (std::string("Mesh::FromFile() failed to load ") + path).c_str());
-        std::string line;
+    // File should just contain one object. 
+    // TODO: materials
+    // TODO: MTL support should be easy
+    // meshTransparency will be the initial alpha value of every vertex color, because obj files only support RGB (and also they don't REALLY support RGA)
+    static unsigned int FromFile(const std::string& path, bool instanceTextureZ=true, bool instanceColor=true, float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024) {
+        // Load file
+        auto config = tinyobj::ObjReaderConfig();
+        config.triangulate = true;
+        config.vertex_color = !instanceColor;
+        bool success = OBJ_LOADER.ParseFromFile(path, config);
+        if (!success) {
+            std::printf("Mesh::FromFile failed to load %s because %s", path.c_str(), OBJ_LOADER.Error().c_str());
+            abort();
+        }
 
-        std::vector<glm::vec3> vertexPositions;
-        std::vector<glm::vec4> vertexColors;
-        while (std::getline(file, line))
-        {
-            //std::printf("\nRead line %s", line.c_str());
-            if (line.rfind("#", 0) == 0) { // If the line starts with # it's a comment
-                continue;
+        const unsigned int nFloatsPerVertex = 3 + 3 + 2 + (instanceTextureZ ? 1 : 0) + (instanceColor ? 4 : 0);
+
+        auto shape = OBJ_LOADER.GetShapes().at(0);
+        //auto material = OBJ_LOADER.GetMaterials().at(0);
+        auto attrib = OBJ_LOADER.GetAttrib();
+
+        std::vector<GLfloat> & positions = attrib.vertices;
+        std::vector<GLfloat> & texcoordsXY = attrib.texcoords;
+        std::vector<GLfloat> & normals = attrib.normals;
+        std::vector<GLfloat> & colors = attrib.colors;
+
+        // ngl im just doing what https://stackoverflow.com/questions/36447021/obtain-indices-from-obj says here
+        std::unordered_map<std::tuple<GLuint, GLuint, GLuint>, GLuint, hash_tuple::hash<std::tuple<GLuint, GLuint, GLuint>>> objIndicesToGlIndices; // tuple is (posIndex, texXyIndex, normalIndex)
+        std::vector<GLuint> indices;
+        std::vector<GLfloat> vertices;
+        for (auto & index : shape.mesh.indices) {
+            auto indexTuple = std::make_tuple(index.vertex_index, index.texcoord_index, index.normal_index);
+            if (objIndicesToGlIndices.count(indexTuple) == 0) {
+                objIndicesToGlIndices[indexTuple] = vertices.size();
+                indices.push_back(vertices.size());
+
+                vertices.push_back(positions[index.vertex_index]); // IF ITS NOT WORKING CHECK THESE LINES
+                vertices.push_back(positions[index.vertex_index + 1]);
+                vertices.push_back(positions[index.vertex_index + 2]);
+                if (!instanceColor) {
+                    vertices.push_back(colors[index.vertex_index]);
+                    vertices.push_back(colors[index.vertex_index + 1]);
+                    vertices.push_back(colors[index.vertex_index + 2]);
+                    vertices.push_back(transparency);
+                }
+                vertices.push_back(texcoordsXY[index.texcoord_index]); 
+                vertices.push_back(texcoordsXY[index.texcoord_index + 1]);
+                if (!instanceTextureZ) {
+                    vertices.push_back(textureZ);
+                }
+                vertices.push_back(normals[index.normal_index]);
+                vertices.push_back(normals[index.normal_index + 1]);
+                vertices.push_back(normals[index.normal_index + 2]);
             }
-            else if (line.rfind("v", 0) == 0) { // vertex positions and colors both go under v. Its just position if only 3 numbers, pos and color if 6 numbers
-                // remove prefix "v"
-                line.erase(0, 1);
-
-                line.
+            else {
+                indices.push_back(objIndicesToGlIndices[indexTuple]);
             }
         }
+
         
+        //std::vector<GLuint> indices = shapes.at(0).mesh.indices.;
 
         unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
-        //LOADED_MESHES[meshId] = std::shared_ptr<Mesh>(new Mesh(verts, indies, instanceColor, instanceTextureZ, expectedCount));
+        LOADED_MESHES[meshId] = std::shared_ptr<Mesh>(new Mesh(vertices, indices, instanceColor, instanceTextureZ, expectedCount));
         return meshId;
     }
 
@@ -82,11 +132,13 @@ class Mesh {
     indices(indies),
     instancedColor(instanceColor),
     instancedTextureZ(instanceTextureZ),
-    instanceCount(expectedCount)
+    instanceCount(expectedCount),
+    originalSize()
     {}
 
     inline static std::atomic<unsigned int> LAST_MESH_ID = {0};
     inline static std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
+    inline static tinyobj::ObjReader OBJ_LOADER;
 };
 
 // key is mesh id, value is ptr to mesh
