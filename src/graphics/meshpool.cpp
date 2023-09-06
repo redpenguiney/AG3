@@ -162,7 +162,7 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
 }
 
 void Meshpool::Draw() {
-    
+    std::printf("\n Its %i");
     glBindVertexArray(vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirectDrawBuffer);

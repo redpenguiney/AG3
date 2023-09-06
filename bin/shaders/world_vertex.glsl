@@ -12,10 +12,6 @@ layout(location=5) in mat4 model;
 uniform mat4 proj;
 uniform mat4 camera;
 uniform mat4 modelToLightSpace;
-//layout (std430, binding=3) buffer model_array
-//{
-  //  mat4 model[10000];
-//};
 
 out vec3 fragmentColor;
 out vec3 fragmentNormal;
@@ -25,8 +21,8 @@ out vec4 lightSpaceCoords;
 void main()
 {
     // todo: an easy optimization would be multiplying proj by camera on the cpu once instead of for every vertex
-    gl_Position = vec4(vertexPos, 1.0); // TODO: draw_id issue (check shadow shaders too!)
-    fragmentColor = vertexColor.xyz;
+    gl_Position = vec4(0.0, 0.0, 0.0, 1.0); // TODO: draw_id issue (check shadow shaders too!)
+    fragmentColor = vec3(1.0, 1.0, 1.0);
     fragmentNormal = vertexNormal;
     fragmentTexCoords = vec3(textureXY, textureZ);
     //lightSpaceCoords = modelToLightSpace * model * vec4(vertexPos, 1.0);

@@ -100,10 +100,10 @@ class ShaderProgram {
     }
 
     void Use() {
-        if (LOADED_PROGRAM_ID != programId) {
+        //if (LOADED_PROGRAM_ID != programId) {
             glUseProgram(programId);
             LOADED_PROGRAM_ID = programId;
-        }
+        //}
     }
 
     private:
