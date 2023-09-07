@@ -5,7 +5,7 @@ class TransformComponent {
     glm::dvec3 position;
 
     const glm::quat& rotation() const { return rotation_; } // allows public read only access to rotation
-    const glm::dgivec3& scale() const { return scale_; } // allows public read only access to scale
+    const glm::dvec3& scale() const { return scale_; } // allows public read only access to scale
 
     private:
     // rotation and scale part of matrix will not neccesarily change every frame like position will due to floating origin
