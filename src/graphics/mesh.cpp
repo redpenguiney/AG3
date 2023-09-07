@@ -18,6 +18,7 @@
 #include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
 #include "let_me_hash_a_tuple.cpp"
 
+// TODO: MODIFY MESH
 class Mesh {
     public:
     
@@ -39,7 +40,7 @@ class Mesh {
     }
 
     // returns mesh id of the generated mesh
-    // verts must be organized into (XYZ, RGBA if !instanceColor, TextureXY, TextureZ if !instanceTextureZ, NormalXYZ).
+    // verts must be organized into (XYZ, TextureXY, NormalXYZ, RGBA if !instanceColor, TextureZ if !instanceTextureZ).
     // leave expectedCount at 1024 unless it's something like a cube, in which case set it to like 1 million (you can create more objects than this number, it just might lag a little)
     static unsigned int FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor=true, bool instanceTextureZ=true, unsigned int expectedCount=1024) {
         unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
@@ -64,7 +65,7 @@ class Mesh {
             abort();
         }
 
-        const unsigned int nFloatsPerVertex = 3 + 3 + 2 + (instanceTextureZ ? 1 : 0) + (instanceColor ? 4 : 0);
+        const unsigned int nFloatsPerVertex = 3 + 3 + 2 + (instanceTextureZ ? 0 : 1) + (instanceColor ? 0 : 4);
 
         auto shape = OBJ_LOADER.GetShapes().at(0);
         //auto material = OBJ_LOADER.GetMaterials().at(0);
@@ -81,29 +82,36 @@ class Mesh {
         std::vector<GLfloat> vertices;
         for (auto & index : shape.mesh.indices) {
             auto indexTuple = std::make_tuple(index.vertex_index, index.texcoord_index, index.normal_index);
+            //std::printf("\nindex tuple %d %d %d, %d vertices", index.vertex_index, index.texcoord_index, index.normal_index, vertices.size());
             if (objIndicesToGlIndices.count(indexTuple) == 0) {
-                objIndicesToGlIndices[indexTuple] = vertices.size();
-                indices.push_back(vertices.size());
 
-                vertices.push_back(positions[index.vertex_index]); // IF ITS NOT WORKING CHECK THESE LINES
-                vertices.push_back(positions[index.vertex_index + 1]);
-                vertices.push_back(positions[index.vertex_index + 2]);
+                objIndicesToGlIndices[indexTuple] = vertices.size()/nFloatsPerVertex;
+                indices.push_back(vertices.size()/nFloatsPerVertex);
+
+                vertices.push_back(positions[index.vertex_index]/5.0); // IF ITS NOT WORKING CHECK THESE LINES
+                vertices.push_back(positions[index.vertex_index + 1]/5.0);
+                vertices.push_back(positions[index.vertex_index + 2]/5.0);
+                
+                vertices.push_back(texcoordsXY[index.texcoord_index]); 
+                vertices.push_back(texcoordsXY[index.texcoord_index + 1]);
+                
+                vertices.push_back(normals[index.normal_index]);
+                vertices.push_back(normals[index.normal_index + 1]);
+                vertices.push_back(normals[index.normal_index + 2]);
+
                 if (!instanceColor) {
                     vertices.push_back(colors[index.vertex_index]);
                     vertices.push_back(colors[index.vertex_index + 1]);
                     vertices.push_back(colors[index.vertex_index + 2]);
                     vertices.push_back(transparency);
                 }
-                vertices.push_back(texcoordsXY[index.texcoord_index]); 
-                vertices.push_back(texcoordsXY[index.texcoord_index + 1]);
+
                 if (!instanceTextureZ) {
                     vertices.push_back(textureZ);
                 }
-                vertices.push_back(normals[index.normal_index]);
-                vertices.push_back(normals[index.normal_index + 1]);
-                vertices.push_back(normals[index.normal_index + 2]);
             }
             else {
+                //std::printf("\nwe've seen this exact vertex before %d %d %d", index.vertex_index, index.texcoord_index, index.normal_index);
                 indices.push_back(objIndicesToGlIndices[indexTuple]);
             }
         }

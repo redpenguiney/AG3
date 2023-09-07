@@ -15,6 +15,6 @@ class Camera {
     }
 
     glm::mat4x4 GetCamera() {
-        return glm::identity<glm::mat4x4>();
+        return glm::translate(glm::identity<glm::mat4x4>(), glm::vec3(0.0, 0.0, -5.0)); //glm::identity<glm::mat4x4>();
     }
 };

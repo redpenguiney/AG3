@@ -4,6 +4,7 @@
 #include "window.cpp"
 #include "shader_program.cpp"
 #include <algorithm>
+#include <cassert>
 #include <cstdio>
 #include <memory>
 #include <unordered_map>
@@ -16,6 +17,10 @@ struct MeshLocation {
     unsigned int poolId; // uuid of the meshpool 
     unsigned int poolSlot;
     unsigned int poolInstance;
+    bool initialized;
+    MeshLocation() {
+        initialized = false;
+    }
 };
 
 class GraphicsEngine {
@@ -39,6 +44,7 @@ class GraphicsEngine {
         return window.ShouldClose();
     }
 
+    // passes projection and camera matrices to shader
     void SetCameraUniforms() {
         worldShader.UniformMat4x4("proj", camera.GetProj((float)window.width/(float)window.height), false);
         worldShader.UniformMat4x4("camera", camera.GetCamera(), false);
@@ -50,7 +56,9 @@ class GraphicsEngine {
 
         SetCameraUniforms();
         worldShader.Use();
-        
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
+        //glEnable(GL_CULL_FACE); // backface culling
         for (auto & [_, pool] : meshpools) {
             pool->Draw();
 
@@ -67,6 +75,14 @@ class GraphicsEngine {
         meshesToAdd[meshId].push_back(drawId);
         drawIdPoolLocations[meshId] = MeshLocation {};
         return drawId;
+    }
+
+    // duh
+    void SetColor(unsigned int drawId, glm::vec4 rgba) {
+        assert(drawIdPoolLocations.count(drawId));
+        auto location = drawIdPoolLocations[drawId];
+        assert(location.initialized);
+        meshpools[location.poolId]->SetColor(location.poolSlot, location.poolInstance, rgba);
     }
 
     private:
@@ -123,6 +139,7 @@ class GraphicsEngine {
                 drawIdPoolLocations[i].poolId = bestPoolId;
                 drawIdPoolLocations[i].poolSlot = objectPositions[i].first;
                 drawIdPoolLocations[i].poolInstance = objectPositions[i].second;
+                drawIdPoolLocations[i].initialized = true;
             }
         } 
 

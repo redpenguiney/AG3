@@ -4,8 +4,10 @@
 #include "mesh.cpp"
 #include "indirect_draw_command.cpp"
 #include "../debug/debug.cpp"
+#include <cassert>
 #include <cstdio>
 #include <deque>
+#include <tuple>
 #include <vector>
 #include <unordered_map>
 
@@ -17,6 +19,11 @@ class Meshpool {
     Meshpool(const Meshpool&) = delete; // try to copy construct and i will end you
 
     std::vector<std::pair<unsigned int, unsigned int>> AddObject(const unsigned int meshId, unsigned int count);
+    void RemoveObject(const unsigned int slot, const unsigned int instanceId); 
+    void SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4 model);
+    void SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4 rgba);
+    void SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ);
+    //std::tuple<GLfloat*, const unsigned int> ModifyVertices(const unsigned int meshId);
     void Draw();
 
     int ScoreMeshFit(const unsigned int verticesNBytes, const unsigned int indicesNBytes, const bool shouldInstanceColor, const bool shouldInstanceTextureZ);
@@ -46,15 +53,16 @@ class Meshpool {
     // we call glMapBuffer to get a pointer to the contents of each buffer that we can freely write to. 
     // (it's also persistently mapped and coherent so we don't need to ever call glUnmapBuffer or sync anything).
     // (char* instead of void* so we can do pointer arithmetic)
-    char* vertexBufferData; 
-    char* instancedVertexBufferData; 
+
+    char* vertexBufferData; // XYZ, TextureXY, Normal, color if not instanced, textureZ if not instanced
+    char* instancedVertexBufferData; // Model matrix, color if its instanced, textureZ if its instanced
     char* indexBufferData; 
     char* indirectDrawBufferData; 
 
     std::deque<unsigned int> availableMeshSlots;
     //std::deque<unsigned int> availableInstancedSlots;
     std::unordered_map<unsigned int, std::vector<unsigned int>> slotContents; // key is meshId, value is a vector of indices/slots in the vertexBuffer containing this mesh (0 for first mesh, 1 for second, etc.)
-                                                                      // needed for instancing
+                                                                              // needed for instancing
 
     std::unordered_map<unsigned int, unsigned int> slotInstanceCounts; // key is slot, value is number of instances reserved by that slot 
 
@@ -92,6 +100,8 @@ Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh):
     baseMeshCapacity((TARGET_VBO_SIZE/meshVerticesSize) + 1), // +1 just in case the base capacity was somehow 0
     baseInstanceCapacity((TARGET_VBO_SIZE/instanceSize) + 1)
 {
+    
+ 
     vao = 0;
     vertexBuffer = 0;
     indexBuffer = 0;
@@ -161,13 +171,29 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
     return objLocations;
 }
 
+// Makes the given instance the given color.
+// Will abort if mesh uses per-vertex color instead of per-instance color.
+void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4 rgba) {
+    assert(instanceColor == true);
+    glm::vec4* colorLocation = (glm::vec4*)(sizeof(glm::mat4x4) + instancedVertexBufferData + (slotToInstanceLocations[slot] + (instanceId * instanceSize)));
+
+    // make sure we don't segfault 
+    assert((char*)colorLocation + sizeof(glm::vec4) <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
+    assert((char*)colorLocation > instancedVertexBufferData);
+    
+    *colorLocation = rgba;
+}
+
 void Meshpool::Draw() {
-    std::printf("\n Its %i");
     glBindVertexArray(vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirectDrawBuffer);
     //double start1 = Time();
-    glMultiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, 0, drawCount, 0);
+    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, drawCount, 0);
+    // for (auto & command: drawCommands) {
+    //     glDrawElementsInstancedBaseVertexBaseInstance(GL_POINTS, command.count, GL_UNSIGNED_INT, (void*)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance);
+    // }
+    
     //std::printf("\nBRUH IT ELAPSED %fms", Time() - start1);
 }
 
