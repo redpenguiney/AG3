@@ -12,6 +12,7 @@
 #include <vector>
 #include "../debug/debug.cpp"
 #include "camera.cpp"
+#include "../gameobjects/component_pool.cpp"
 
 struct MeshLocation {
     unsigned int poolId; // uuid of the meshpool 
@@ -85,6 +86,36 @@ class GraphicsEngine {
         meshpools[location.poolId]->SetColor(location.poolSlot, location.poolInstance, rgba);
     }
 
+    // Gameobjects that want to be rendered should have a pointer to one of these.
+    // However, they are stored here in a vector because that's better for the cache. (google ECS).
+    // NEVER DELETE THIS POINTER, JUST CALL Destroy(). DO NOT STORE OUTSIDE A GAMEOBJECT. THESE USE AN OBJECT POOL.
+    class RenderComponent {
+        public:
+        RenderComponent* New() {
+            return RENDER_COMPONENTS.GetNew();
+        };
+
+        // this union exists so we can use a "free list", see component_pool.cpp
+        union {
+            // live state
+            struct {
+                
+            };
+
+            //dead state
+            struct {
+                RenderComponent* next; // pointer to next available component in pool
+                unsigned int componentPoolId; // index into pools vector
+            };
+            
+        };
+
+        private:
+        RenderComponent() {
+
+        }
+    };
+
     private:
     Window window; // handles windowing
     ShaderProgram worldShader; // everything is drawn with this shader
@@ -102,7 +133,8 @@ class GraphicsEngine {
     // Used so that instead of adding 1 mesh to a meshpool 1000 times, we just add 1000 instances of a mesh to meshpool once to make creating renderable objects faster.
     // Key is meshId, value is vector of drawIds.
     std::unordered_map<unsigned int, std::vector<unsigned long long>> meshesToAdd;
-    
+
+    static ComponentPool<RenderComponent, 65536> RENDER_COMPONENTS;
 
     void update() {  
         addCachedMeshes();
