@@ -21,7 +21,7 @@ int main() {
     // for (auto & v : Mesh::Get(m)->vertices) {
     //     std::printf("%f ", v);
     // }
-    auto drawId = GE.AddObject(m);
+    //auto drawId = GE.AddObject(m);
     
     glPointSize(10.0);
     printf("\nStarting main loop.");

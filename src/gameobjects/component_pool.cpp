@@ -1,13 +1,23 @@
+#pragma once
+#include <deque>
+#include <vector>
+#include <iterator> 
+#include <cstddef>
+
 // Object pool for components (although i suppose you could use it for something besides components).
 // Automatically resizes.
 // Stores all objects in mostly contiguous memory for cache performance.
 // Guarantees that pointers to pool contents will always remain accurate, by instead of using std::vector, using multiple arrays.
-#include <deque>
-#include <vector>
-template<typename T, unsigned int COMPONENTS_PER_POOL = 16384>
+template<typename T>
 class ComponentPool {
+    friend T;
+
     public:
-        ComponentPool() {
+        const unsigned int COMPONENTS_PER_POOL;
+
+        std::vector<T*> pools; // public because making an iterator was too much work
+
+        ComponentPool(unsigned int componentsPerPool) : COMPONENTS_PER_POOL(componentsPerPool) {
             AddPool();
         }
 
@@ -16,6 +26,7 @@ class ComponentPool {
             // We use something called a "free list" to find a component
             int poolIndex = -1;
             for (T* & ptr: pools) {
+                (void)ptr; // make compiler shut up about unused variable "ptr"
                 poolIndex += 1;
                 if (firstAvailable[poolIndex] == nullptr) {continue;} // if the pool is full go to the next one
 
@@ -38,6 +49,42 @@ class ComponentPool {
             firstAvailable[component->componentPoolId] = component;
         }
 
+        // // We wanna iterate through component pools so this exists
+        // // see https://www.internalpointers.com/post/writing-custom-iterators-modern-cpp
+        // // TODO: this iterator might be really bad idk
+        // struct ComponentPoolIterator {
+        //     public:
+        //     using iterator_category = std::forward_iterator_tag;
+        //     using difference_type   = std::ptrdiff_t;
+
+        //     ComponentPoolIterator(unsigned int objectIndex, unsigned int poolIndex, T* pointer) { 
+        //         index = objectIndex;
+        //         pool = poolIndex;
+        //         ptr = pointer;
+        //     }
+
+        //     private:
+        //     unsigned int index;
+        //     unsigned int pool;
+        //     T* ptr;
+
+        //     T& operator*() const { return *ptr;}
+        //     T* operator->() {return ptr;}
+
+        //     // prefix increment
+        //     ComponentPoolIterator& operator++() {
+        //         if (index == COMPONENTS_PER_POOL - 1) {
+        //             index = 0;
+        //             pool++;
+        //             ptr = pools[pool];
+                    
+        //         }
+                
+        //     }
+        // };
+        
+        
+
     private:
         // adds new pool with room for COMPONENTS_PER_POOL more objects
         void AddPool() {
@@ -53,7 +100,6 @@ class ComponentPool {
         }
 
         std::vector<T*> firstAvailable; // for free list, first unallocated object in each pool                                                       
-        std::vector<T*> pools;
 
         ~ComponentPool() {
             for (auto & ptr: pools) {
