@@ -13,6 +13,7 @@ std::vector<GLuint> indices = {0};
 int main() {
     //auto m = Mesh::FromVertices(vertices, indices, true, true);
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false);
+    auto g = GameObject::New(m);
     // std::printf("\n Indices: \n");
     // for (auto & i : Mesh::Get(m)->indices) {
     //     std::printf("%i ", i);

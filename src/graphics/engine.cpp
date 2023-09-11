@@ -89,6 +89,8 @@ class GraphicsEngine {
             auto ptr = RENDER_COMPONENTS.GetNew();
             ptr->live = true;
             ptr->meshLocation.initialized = false;
+            return ptr;
+
         };
 
         // call instead of deleting the pointer.
@@ -103,6 +105,7 @@ class GraphicsEngine {
             }
 
             live = false;
+            
             RENDER_COMPONENTS.ReturnObject(this);
         }
 
@@ -116,15 +119,15 @@ class GraphicsEngine {
         // this union exists so we can use a "free list" memory optimization, see component_pool.cpp
         union {
             // live state
-            struct {
+            //struct {
                 // DO NOT TOUCH, ONLY FOR ENGINE
                 MeshLocation meshLocation;
-            };
+            //};
 
             //dead state
             struct {
                 RenderComponent* next; // pointer to next available component in pool
-                //unsigned int componentPoolId; // index into pools vector
+                unsigned int componentPoolId; // index into pools vector
             };
             
         };
