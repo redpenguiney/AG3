@@ -7,9 +7,11 @@ class GameObject;
 std::unordered_set<GameObject*> GAMEOBJECTS;
 
 // The gameobject system uses ECS (google it).
-// all gameobjects will reserve a render, transform and physics(?) component even if they don't need them to ensure cache stuff
 class GameObject {
     public:
+
+    // all gameobjects will reserve a render, transform and physics(?) component even if they don't need them to ensure cache stuff
+    // GraphicsEngine replies on this behavior, DO NOT mess with it
     GraphicsEngine::RenderComponent* renderComponent;
     TransformComponent* transformComponent;
 

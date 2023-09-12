@@ -7,13 +7,11 @@
 
 using namespace std;
 
-std::vector<GLfloat> vertices = {0, 0, -0.5,   0, 0,   0, 0, 0};
-std::vector<GLuint> indices = {0};
-
 int main() {
-    //auto m = Mesh::FromVertices(vertices, indices, true, true);
+    GE.camera.position = glm::dvec3(0.0, 0.0, 3.0);
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false);
     auto g = GameObject::New(m);
+    g->transformComponent->position = glm::dvec3(0.0, 1.0, 0.0);
     // std::printf("\n Indices: \n");
     // for (auto & i : Mesh::Get(m)->indices) {
     //     std::printf("%i ", i);
@@ -22,12 +20,13 @@ int main() {
     // for (auto & v : Mesh::Get(m)->vertices) {
     //     std::printf("%f ", v);
     // }
-    //auto drawId = GE.AddObject(m);
-    
-    glPointSize(10.0);
+
+    glPointSize(10.0); // debug thing ignore
+
     printf("\nStarting main loop.");
     
     while (!GE.ShouldClose()) {
+        GE.camera.position -= glm::dvec3(0.0001, 0.0, 0.0);
         GE.RenderScene();
         //GE.SetColor(drawId, glm::vec4(0.0, 1.0, 0.5, 1.0));
         //printf("FRAME SUCCESS");

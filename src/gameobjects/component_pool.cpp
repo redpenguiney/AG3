@@ -8,16 +8,15 @@
 // Automatically resizes.
 // Stores all objects in mostly contiguous memory for cache performance.
 // Guarantees that pointers to pool contents will always remain accurate, by instead of using std::vector, using multiple arrays.
-template<typename T>
+// Just set COMPONENTS_PER_POOL to 65536 if you aren't sure, no default value because if you specify it in some places but not others you get types mixed up
+template<typename T, unsigned int COMPONENTS_PER_POOL>
 class ComponentPool {
     friend T;
 
     public:
-        const unsigned int COMPONENTS_PER_POOL;
-
         std::vector<T*> pools; // public because making an iterator was too much work
 
-        ComponentPool(unsigned int componentsPerPool) : COMPONENTS_PER_POOL(componentsPerPool) {
+        ComponentPool() {
             AddPool();
         }
 
@@ -47,6 +46,12 @@ class ComponentPool {
         void ReturnObject(T* component) {
             component->next = firstAvailable[component->componentPoolId];
             firstAvailable[component->componentPoolId] = component;
+        }
+
+        ~ComponentPool() {
+            for (auto & ptr: pools) {
+                delete ptr;
+            }
         }
 
         // // We wanna iterate through component pools so this exists
@@ -100,10 +105,4 @@ class ComponentPool {
         }
 
         std::vector<T*> firstAvailable; // for free list, first unallocated object in each pool                                                       
-
-        ~ComponentPool() {
-            for (auto & ptr: pools) {
-                delete ptr;
-            }
-        }
 };

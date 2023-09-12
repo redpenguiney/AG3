@@ -184,6 +184,16 @@ void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, 
     *colorLocation = rgba;
 }
 
+// Makes the given instance use the given model matrix.
+void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4 matrix) {
+    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBufferData + (slotToInstanceLocations[slot] + (instanceId * instanceSize)));
+
+    // make sure we don't segfault 
+    assert((char*)modelMatrixLocation <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
+    assert((char*)modelMatrixLocation > instancedVertexBufferData);
+    *modelMatrixLocation = matrix;
+}
+
 void Meshpool::Draw() {
     glBindVertexArray(vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
@@ -329,9 +339,9 @@ void Meshpool::ExpandInstanced(GLuint multiplier) {
     glEnableVertexAttribArray(MODEL_MATRIX_ATTRIBUTE+3);
 
     glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE, 4, GL_FLOAT, false, instanceSize, (void*)0);
-    glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+1, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 2));
-    glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+2, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 3));
-    glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+3, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 4));
+    glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+1, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 1));
+    glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+2, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 2));
+    glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+3, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 3));
 
     glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE, 1); // do instance
     glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE+1, 1);
