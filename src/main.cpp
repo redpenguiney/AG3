@@ -8,10 +8,12 @@
 using namespace std;
 
 int main() {
-    GE.camera.position = glm::dvec3(0.0, 0.0, 3.0);
+    //GE.camera.position.y = 3;
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false);
     auto g = GameObject::New(m);
-    g->transformComponent->position = glm::dvec3(0.0, 1.0, 0.0);
+    GE.debugFreecamEnabled = true;
+    GE.window.SetMouseLocked(true);
+    g->transformComponent->position = glm::dvec3(0.0, 0.0, -5.0);
     // std::printf("\n Indices: \n");
     // for (auto & i : Mesh::Get(m)->indices) {
     //     std::printf("%i ", i);
@@ -26,7 +28,7 @@ int main() {
     printf("\nStarting main loop.");
     
     while (!GE.ShouldClose()) {
-        GE.camera.position -= glm::dvec3(0.0001, 0.0, 0.0);
+        //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         GE.RenderScene();
         //GE.SetColor(drawId, glm::vec4(0.0, 1.0, 0.5, 1.0));
         //printf("FRAME SUCCESS");

@@ -1,18 +1,32 @@
 #pragma once
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLFW/glfw3.h"
+#include "../../external_headers/GLM/ext.hpp"
 #include "gl_error_handler.cpp"
 
 #include <cstdio>
 #include <cstdlib>
+#include <unordered_map>
+
+// User input stuff.
+// index is key enums provided by GLFW
+// TODO: these maps are def not thread safe, probably needs a rwlock
+std::unordered_map<unsigned int, bool> PRESSED_KEYS;
+std::unordered_map<unsigned int, bool> PRESS_BEGAN_KEYS;
+std::unordered_map<unsigned int, bool> PRESS_ENDED_KEYS;
+
+glm::dvec2 MOUSE_POS;
+glm::dvec2 MOUSE_DELTA; // how much mouse has moved since last frame
 
 class Window {
     public:
     int width;
     int height;
+    bool mouseLocked;
     Window(int widthh, int heightt) {
         width = widthh;
         height = heightt;
+        mouseLocked = false;
         auto initSuccess = glfwInit();
         if (!initSuccess) {
             std::printf("\nFailure to initialize GLFW. Aborting.");
@@ -28,6 +42,8 @@ class Window {
         }
 
         glfwMakeContextCurrent(glfwWindow);
+        glfwSetKeyCallback(glfwWindow, KeyCallback);
+        glfwSwapInterval(1); // do vsync
         
         GLenum glewSuccess = glewInit();
         if (glewSuccess != GLEW_OK) {
@@ -35,6 +51,7 @@ class Window {
             std::printf("\nFailure to initalize GLEW (error %s). Aborting.", glewGetErrorString(glewSuccess));
             abort();
         }
+
 
         printf("\nWindow creation successful.");
 
@@ -49,15 +66,46 @@ class Window {
     }
 
     void Update() {
+        PRESS_BEGAN_KEYS.clear(); // TODO: might have problems with this, idk how key callback really works
+        PRESS_ENDED_KEYS.clear();
+
         glfwSwapBuffers(glfwWindow);
 		glfwPollEvents();
+        glm::dvec2 pos;
+        glfwGetCursorPos(glfwWindow, &pos.x, &pos.y);
+        MOUSE_DELTA = pos - MOUSE_POS;
+        MOUSE_POS = pos;
     }
 
-    // returns true if the user is trying to close the application, or if glfwSetWindowShouldClose was explicitly called (like by a quit game button)
+    // returns true if the user is trying to close the application, or if Window::Close() was explicitly called (like by a quit game button)
     bool ShouldClose() {
         return glfwWindowShouldClose(glfwWindow);
     }
 
+    void Close() {
+        glfwSetWindowShouldClose(glfwWindow, true);
+    } 
+
+    // TODO: when disabling mouse lock MOUSE_DELTA has a weird value
+    void SetMouseLocked(bool locked) {
+        mouseLocked = locked;
+        glfwSetInputMode(glfwWindow, GLFW_CURSOR, (locked) ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+
+    }
+
     private:
     GLFWwindow* glfwWindow;
+
+    // GLFW calls this function automatically 
+    static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (action == GLFW_PRESS) {
+        PRESS_BEGAN_KEYS[key] = true;
+        PRESSED_KEYS[key] = true;
+    }
+    else if (action == GLFW_RELEASE) {
+        PRESS_ENDED_KEYS[key] = true;
+        PRESSED_KEYS[key] = false;
+    }
+}
 };
+

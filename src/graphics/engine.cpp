@@ -27,13 +27,29 @@ struct MeshLocation {
     }
 };
 
+// TODO: this is a weird mix of static and not static for a singleton
 class GraphicsEngine {
     public:
-    
-    Camera camera;
+    // freecam is just a thing for debugging
+    bool debugFreecamEnabled;
+    glm::dvec3 debugFreecamPos;
+    float debugFreecamPitch;
+    float debugFreecamYaw;
+    double debugFreecamSpeed;
+    const double debugFreecamAcceleration = 0.01;
 
-    GraphicsEngine()
-    : window(500, 500),
+    Camera camera;
+    Window window; // handles windowing, interfaces with GLFW in general
+
+    GraphicsEngine():
+
+    debugFreecamEnabled(false),
+    debugFreecamPos(0.0, 0.0, 0.0),
+    debugFreecamPitch(0.0),
+    debugFreecamYaw(0.0),
+
+    window(500, 500),
+    
     worldShader("shaders/world_vertex.glsl", "shaders/world_fragment.glsl") {
         
     }
@@ -49,15 +65,9 @@ class GraphicsEngine {
         return window.ShouldClose();
     }
 
-    // passes projection and camera matrices to shader
-    void SetCameraUniforms() {
-        worldShader.UniformMat4x4("proj", camera.GetProj((float)window.width/(float)window.height), false);
-        worldShader.UniformMat4x4("camera", camera.GetCamera(), false);
-    }
-
     // Draws everything
     void RenderScene() {
-        update();
+        Update();
 
         SetCameraUniforms();
         worldShader.Use();
@@ -100,7 +110,7 @@ class GraphicsEngine {
             auto ptr = RENDER_COMPONENTS.GetNew();
             ptr->live = true;
             ptr->meshId = mesh_id;
-            addObject(ptr->meshId, &ptr->meshLocation);
+            AddObject(ptr->meshId, &ptr->meshLocation);
             return ptr;
 
         };
@@ -156,7 +166,6 @@ class GraphicsEngine {
     };
 
     private:
-    Window window; // handles windowing
     ShaderProgram worldShader; // everything is drawn with this shader
 
     // meshpools are highly optimized objects used for very fast drawing of meshes
@@ -176,12 +185,20 @@ class GraphicsEngine {
     // Key is meshId, value is vector of pointers to MeshLocations stored in RenderComponents.
     static inline std::unordered_map<unsigned int, std::vector<MeshLocation*>> meshesToAdd;
 
-    void update() {  
-        addCachedMeshes();
-        updateRenderComponents();        
+    void Update() {  
+        if (PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
+            window.Close();
+        }
+        if (PRESS_BEGAN_KEYS[GLFW_KEY_TAB]) {
+            window.SetMouseLocked(!window.mouseLocked);
+        }
+        AddCachedMeshes();
+        UpdateRenderComponents();        
     }
 
-    void updateRenderComponents() {
+    void UpdateRenderComponents() {
+        auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
+
         for (unsigned int i = 0; i < RENDER_COMPONENTS.pools.size(); i++) {
             auto renderArray = RENDER_COMPONENTS.pools.at(i);
             auto transformArray = TransformComponent::TRANSFORM_COMPONENTS.pools.at(i);
@@ -189,13 +206,52 @@ class GraphicsEngine {
                 auto renderComp = renderArray + j;
                 auto transformComp = transformArray + j;
                 if (renderComp->live) {
-                    SetModelMatrix(renderComp->meshLocation, transformComp->GetModel(camera.position));
+                    SetModelMatrix(renderComp->meshLocation, transformComp->GetModel(cameraPos));
                 }
             }
         }
     }
 
-    void addCachedMeshes() {
+    // updates the freecam based off user input (WASD and mouse) and then returns a camera matrix
+    glm::mat4x4 UpdateDebugFreecam() {
+        assert(debugFreecamEnabled);
+
+        // camera acceleration
+        if (PRESSED_KEYS[GLFW_KEY_W] or PRESSED_KEYS[GLFW_KEY_S] or PRESSED_KEYS[GLFW_KEY_A] or PRESSED_KEYS[GLFW_KEY_D] or PRESSED_KEYS[GLFW_KEY_Q] or PRESSED_KEYS[GLFW_KEY_E]) {
+            debugFreecamSpeed += debugFreecamAcceleration;
+        }
+        else {
+            debugFreecamSpeed = debugFreecamAcceleration;
+        }
+
+        // camera movement
+        double xMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_D] - PRESSED_KEYS[GLFW_KEY_A]);
+        double yMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_E] - PRESSED_KEYS[GLFW_KEY_Q]);
+        double zMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_W] - PRESSED_KEYS[GLFW_KEY_S]);
+        debugFreecamPos += glm::dvec3(xMovement, yMovement, zMovement);
+
+        // camera rotation
+        debugFreecamPitch += 0.5 * MOUSE_DELTA.y;
+        debugFreecamYaw += 0.5 * MOUSE_DELTA.x;
+        if (debugFreecamYaw > 180) {
+            debugFreecamYaw -= 360;
+        } else if (debugFreecamYaw < -180) {
+            debugFreecamYaw += 180;
+        } 
+        debugFreecamPitch = std::max((float)-89.999, std::min(debugFreecamPitch, (float)89.999));
+
+        glm::quat rotation = glm::rotate(glm::rotate(glm::identity<glm::mat4x4>(), glm::radians(debugFreecamPitch), glm::vec3(1, 0, 0)), glm::radians(debugFreecamYaw), glm::vec3(0, 1, 0));
+
+        return glm::mat4x4(rotation); 
+    }
+
+    // passes projection and camera matrices to shader
+    void SetCameraUniforms() {
+        glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
+        worldShader.UniformMat4x4("camera", camera.GetProj((float)window.width/(float)window.height) * cameraMatrix, false);
+    }
+
+    void AddCachedMeshes() {
         for (auto & [meshId, meshLocations] : meshesToAdd) {
             
             std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
@@ -236,7 +292,7 @@ class GraphicsEngine {
     // Returns a drawId used to modify the mesh later on.
     // Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.
     // Contents of MeshLocation pointer are undefined until addCachedMeshes() is called.
-    static void addObject(unsigned int meshId, MeshLocation* meshLocation) {
+    static void AddObject(unsigned int meshId, MeshLocation* meshLocation) {
         meshesToAdd[meshId].push_back(meshLocation);
     }
 };

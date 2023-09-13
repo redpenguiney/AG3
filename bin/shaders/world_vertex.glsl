@@ -9,7 +9,7 @@ layout(location=4) in vec3 vertexNormal;
 layout(location=5) in mat4 model;
 // locations 5-7 are part of model
 
-uniform mat4 proj;
+// camera has projection matrix and camera matrix
 uniform mat4 camera;
 uniform mat4 modelToLightSpace;
 
@@ -20,9 +20,8 @@ out vec4 lightSpaceCoords;
 
 void main()
 {
-    // todo: an easy optimization would be multiplying proj by camera on the cpu once instead of for every vertex
-    gl_Position = vec4(vertexPos, 1.0); // TODO: draw_id issue (check shadow shaders too!)
-    fragmentColor = model[3].xyz; //vertexColor.xyz; //vertexColor.xyz;
+    gl_Position = camera * model * vec4(vertexPos, 1.0);
+    fragmentColor = vertexColor.xyz;
     fragmentNormal = vertexNormal;
     fragmentTexCoords = vec3(textureXY, textureZ);
     //lightSpaceCoords = modelToLightSpace * model * vec4(vertexPos, 1.0);

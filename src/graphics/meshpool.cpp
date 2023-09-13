@@ -134,7 +134,7 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
             const unsigned int space = instanceCapacity - storedCount;
             
             // add positions to objLocations
-            for (unsigned int i = drawCommands[slot].instanceCount; i < drawCommands[slot].instanceCount + std::min(count, space); i++) {
+            for (unsigned int i = drawCommands[slot].instanceCount - 1; i < drawCommands[slot].instanceCount + std::min(count, space); i++) {
                 objLocations.push_back(std::make_pair(slot, i));
             }
 
@@ -160,7 +160,7 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
         drawCount += 1;
 
         // add positions to objLocations
-        for (unsigned int i = drawCommands[slot].instanceCount; i < drawCommands[slot].instanceCount + std::min(count, instanceCapacity); i++) {
+        for (unsigned int i = drawCommands[slot].instanceCount - 1; i < drawCommands[slot].instanceCount + std::min(count, instanceCapacity); i++) {
             objLocations.push_back(std::make_pair(slot, i));
         }
 
@@ -179,18 +179,19 @@ void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, 
 
     // make sure we don't segfault 
     assert((char*)colorLocation + sizeof(glm::vec4) <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
-    assert((char*)colorLocation > instancedVertexBufferData);
+    assert((char*)colorLocation >= instancedVertexBufferData);
     
     *colorLocation = rgba;
 }
 
 // Makes the given instance use the given model matrix.
 void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4 matrix) {
+    //std::printf("\nSlot %i %i", slot, instanceId);
     glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBufferData + (slotToInstanceLocations[slot] + (instanceId * instanceSize)));
 
     // make sure we don't segfault 
     assert((char*)modelMatrixLocation <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
-    assert((char*)modelMatrixLocation > instancedVertexBufferData);
+    assert((char*)modelMatrixLocation >= instancedVertexBufferData);
     *modelMatrixLocation = matrix;
 }
 

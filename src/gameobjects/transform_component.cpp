@@ -28,8 +28,8 @@ class TransformComponent {
         auto mat = rotScaleMatrix;
         mat[3] = glm::vec4((position - cameraPosition), 1.0);
         //mat = glm::translate(mat, glm::vec3(position - cameraPosition));
-        std::printf("\nPos is\n%f,%f,%f,%f,\n%f,%f,%f,%f,\n%f,%f,%f,%f,\n%f,%f,%f,%f,", mat[0][0], mat[0][1], mat[0][2], mat[0][3], mat[1][0], mat[1][1], mat[1][2], mat[1][3], mat[2][0], mat[2][1], mat[2][2], mat[2][3], mat[3][0], mat[3][1], mat[3][2], mat[3][3]);
-        return rotScaleMatrix;
+        // std::printf("\nPos is\n%f,%f,%f,%f,\n%f,%f,%f,%f,\n%f,%f,%f,%f,\n%f,%f,%f,%f,", mat[0][0], mat[0][1], mat[0][2], mat[0][3], mat[1][0], mat[1][1], mat[1][2], mat[1][3], mat[2][0], mat[2][1], mat[2][2], mat[2][3], mat[3][0], mat[3][1], mat[3][2], mat[3][3]);
+        return mat;
     }
 
     // this union exists so we can use a "free list", see component_pool.cpp

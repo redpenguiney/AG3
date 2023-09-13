@@ -116,6 +116,10 @@ class Mesh {
             }
         }
 
+        std::printf("\nIndices: ");
+        for (auto & i : indices) {
+            std::printf("%i, ", i);
+        }
         
         //std::vector<GLuint> indices = shapes.at(0).mesh.indices.;
 
