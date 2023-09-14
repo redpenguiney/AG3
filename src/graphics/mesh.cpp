@@ -88,21 +88,21 @@ class Mesh {
                 objIndicesToGlIndices[indexTuple] = vertices.size()/nFloatsPerVertex;
                 indices.push_back(vertices.size()/nFloatsPerVertex);
 
-                vertices.push_back(positions[index.vertex_index]/5.0); // IF ITS NOT WORKING CHECK THESE LINES
-                vertices.push_back(positions[index.vertex_index + 1]/5.0);
-                vertices.push_back(positions[index.vertex_index + 2]/5.0);
+                vertices.push_back(positions[index.vertex_index * 3]);
+                vertices.push_back(positions[index.vertex_index * 3 + 1]);
+                vertices.push_back(positions[index.vertex_index * 3 + 2]);
                 
-                vertices.push_back(texcoordsXY[index.texcoord_index]); 
-                vertices.push_back(texcoordsXY[index.texcoord_index + 1]);
+                vertices.push_back(texcoordsXY[index.texcoord_index * 2]); 
+                vertices.push_back(texcoordsXY[index.texcoord_index * 2 + 1]);
                 
-                vertices.push_back(normals[index.normal_index]);
-                vertices.push_back(normals[index.normal_index + 1]);
-                vertices.push_back(normals[index.normal_index + 2]);
+                vertices.push_back(normals[index.normal_index * 3]);
+                vertices.push_back(normals[index.normal_index * 3 + 1]);
+                vertices.push_back(normals[index.normal_index * 3 + 2]);
 
                 if (!instanceColor) {
-                    vertices.push_back(colors[index.vertex_index]);
-                    vertices.push_back(colors[index.vertex_index + 1]);
-                    vertices.push_back(colors[index.vertex_index + 2]);
+                    vertices.push_back(colors[index.vertex_index * 3]);
+                    vertices.push_back(colors[index.vertex_index * 3 + 1]);
+                    vertices.push_back(colors[index.vertex_index * 3+ 2]);
                     vertices.push_back(transparency);
                 }
 
@@ -115,8 +115,6 @@ class Mesh {
             }
         }
         
-        //std::vector<GLuint> indices = shapes.at(0).mesh.indices.;
-
         unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
         LOADED_MESHES[meshId] = std::shared_ptr<Mesh>(new Mesh(vertices, indices, instanceColor, instanceTextureZ, expectedCount));
         return meshId;
