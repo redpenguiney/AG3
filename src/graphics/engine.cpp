@@ -14,6 +14,7 @@
 #include "camera.cpp"
 #include "../gameobjects/component_pool.cpp"
 #include "../gameobjects/transform_component.cpp"
+#include "../utility/utility.cpp"
 
 const unsigned int RENDER_COMPONENT_POOL_SIZE = 65536;
 
@@ -224,12 +225,6 @@ class GraphicsEngine {
             debugFreecamSpeed = debugFreecamAcceleration;
         }
 
-        // camera movement
-        double xMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_D] - PRESSED_KEYS[GLFW_KEY_A]);
-        double yMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_E] - PRESSED_KEYS[GLFW_KEY_Q]);
-        double zMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_W] - PRESSED_KEYS[GLFW_KEY_S]);
-        debugFreecamPos += glm::dvec3(xMovement, yMovement, zMovement);
-
         // camera rotation
         debugFreecamPitch += 0.5 * MOUSE_DELTA.y;
         debugFreecamYaw += 0.5 * MOUSE_DELTA.x;
@@ -241,6 +236,16 @@ class GraphicsEngine {
         debugFreecamPitch = std::max((float)-89.999, std::min(debugFreecamPitch, (float)89.999));
 
         glm::quat rotation = glm::rotate(glm::rotate(glm::identity<glm::mat4x4>(), glm::radians(debugFreecamPitch), glm::vec3(1, 0, 0)), glm::radians(debugFreecamYaw), glm::vec3(0, 1, 0));
+
+        // camera movement
+        auto look = LookVector(glm::radians(debugFreecamPitch), glm::radians(debugFreecamYaw));
+        std::printf("\n%f %f %f", look.x, look.y, look.z);
+        double xMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_D] - PRESSED_KEYS[GLFW_KEY_A]);
+        double yMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_E] - PRESSED_KEYS[GLFW_KEY_Q]);
+        double zMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_W] - PRESSED_KEYS[GLFW_KEY_S]);
+        debugFreecamPos += glm::dvec3(xMovement * look.x, yMovement * look.y, zMovement * look.z);
+
+        
 
         return glm::mat4x4(rotation); 
     }

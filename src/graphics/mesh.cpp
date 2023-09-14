@@ -111,14 +111,8 @@ class Mesh {
                 }
             }
             else {
-                //std::printf("\nwe've seen this exact vertex before %d %d %d", index.vertex_index, index.texcoord_index, index.normal_index);
                 indices.push_back(objIndicesToGlIndices[indexTuple]);
             }
-        }
-
-        std::printf("\nIndices: ");
-        for (auto & i : indices) {
-            std::printf("%i, ", i);
         }
         
         //std::vector<GLuint> indices = shapes.at(0).mesh.indices.;
