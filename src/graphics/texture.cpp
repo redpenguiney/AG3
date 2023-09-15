@@ -17,8 +17,8 @@ enum TextureType {
 class Texture {
     public:
     // read image file to texture. 
-    // if type == TEXTURE_2D_ARRAY and layerWidth > 0, the resulting texture array will have W
-    Texture(TextureType type, std::string path, int layerWidth = -1) {
+    // if type == TEXTURE_2D_ARRAY and layerWidth > 0, the file will be treated as an array of images that each have a height of layerHeight. That means if you want to create a texture array from a single file, the images must be in a column, not a row.
+    Texture(TextureType type, std::string path, int layerHeight = -1) {
         assert(type != FONT);
 
         // use stbi_image.h to load file
@@ -26,7 +26,10 @@ class Texture {
 
         // generate OpenGL texture object and put image data in it
         glGenTextures(1, &glTextureId);
-
+        glBindTexture(type, glTextureId);
+        if (type == TEXTURE_2D) {
+            glTexImage2D(GL_TEXTURE_2D)
+        }
     }
 
     // read many image files to texture array, where each image becomes one layer.
