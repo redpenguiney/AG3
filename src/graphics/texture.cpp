@@ -8,6 +8,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../external_headers/stb/stb_image.h" 
 
+// TODO: world_fragment.glsl expects a texture array, we need a uniform to let it also sample from a normal texture 
+
 enum TextureType {
     TEXTURE_2D = GL_TEXTURE_2D,
     TEXTURE_2D_ARRAY = GL_TEXTURE_2D_ARRAY,
@@ -17,8 +19,8 @@ enum TextureType {
 class Texture {
     public:
     // read image file to texture. 
-    // if type == TEXTURE_2D_ARRAY and layerWidth > 0, the file will be treated as an array of images that each have a height of layerHeight. That means if you want to create a texture array from a single file, the images must be in a column, not a row.
-    Texture(TextureType type, std::string path, int layerHeight = -1) {
+    // if type == TEXTURE_2D_ARRAY, the file will be treated as an array of height/layerHeight images that each have a height of layerHeight. That means if you want to create a texture array from a single file, the images must be in a column, not a row. 
+    Texture(TextureType type, std::string path, int layerHeight = 1, int mipmapLevels = 4) {
         assert(type != FONT);
 
         // use stbi_image.h to load file
@@ -28,7 +30,10 @@ class Texture {
         glGenTextures(1, &glTextureId);
         glBindTexture(type, glTextureId);
         if (type == TEXTURE_2D) {
-            glTexImage2D(GL_TEXTURE_2D)
+            glTexImage2D(GL_TEXTURE_2D, mipmapLevels, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+        }
+        else if (type == TEXTURE_2D_ARRAY) {
+            glTexImage3D(GL_TEXTURE_2D, mipmapLevels, GL_RGBA, width, layerHeight, height/layerHeight, 0, GL_RGBA);
         }
     }
 

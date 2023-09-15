@@ -268,6 +268,7 @@ class GraphicsEngine {
             const bool shouldInstanceTextureZ = m->instancedTextureZ;
 
             // pick best pool for mesh
+            // TODO: too slow?
             int bestPoolScore = INT_MAX;
             int bestPoolId = -1;
             for (auto & [poolId, pool] : meshpools) {
