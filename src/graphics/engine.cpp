@@ -239,11 +239,13 @@ class GraphicsEngine {
 
         // camera movement
         auto look = LookVector(glm::radians(debugFreecamPitch), glm::radians(debugFreecamYaw));
+        auto right = glm::cross(look, glm::dvec3(0, 1, 0));
+        auto up = glm::cross(look, right);
         std::printf("\n%f %f %f", look.x, look.y, look.z);
-        double xMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_D] - PRESSED_KEYS[GLFW_KEY_A]);
-        double yMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_E] - PRESSED_KEYS[GLFW_KEY_Q]);
-        double zMovement = debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_W] - PRESSED_KEYS[GLFW_KEY_S]);
-        debugFreecamPos += glm::dvec3(xMovement * look.x, yMovement * look.y, zMovement * look.z);
+        glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_A] - PRESSED_KEYS[GLFW_KEY_D]);
+        glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_Q] - PRESSED_KEYS[GLFW_KEY_E]);
+        glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_S] - PRESSED_KEYS[GLFW_KEY_W]);
+        debugFreecamPos += rightMovement + forwardMovement + upMovement;
 
         
 
