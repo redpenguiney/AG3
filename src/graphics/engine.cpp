@@ -15,6 +15,7 @@
 #include "../gameobjects/component_pool.cpp"
 #include "../gameobjects/transform_component.cpp"
 #include "../utility/utility.cpp"
+#include "texture.cpp"
 
 const unsigned int RENDER_COMPONENT_POOL_SIZE = 65536;
 
@@ -51,7 +52,8 @@ class GraphicsEngine {
 
     window(500, 500),
     
-    worldShader("shaders/world_vertex.glsl", "shaders/world_fragment.glsl") {
+    worldShader("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl"),
+    worldTextureArray(TEXTURE_2D_ARRAY, "../textures/grass.png") {
         
     }
 
@@ -72,9 +74,10 @@ class GraphicsEngine {
 
         SetCameraUniforms();
         worldShader.Use();
+        worldTextureArray.Use();
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
-        //glEnable(GL_CULL_FACE); // backface culling
+        glEnable(GL_CULL_FACE); // backface culling
         for (auto & [_, pool] : meshpools) {
             pool->Draw();
 
@@ -94,6 +97,13 @@ class GraphicsEngine {
     void SetModelMatrix(MeshLocation& location, glm::mat4x4 model) {
         assert(location.initialized);
         meshpools[location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
+    }
+
+    // duh
+    // set to -1.0 for no texture
+    void SetTextureZ(MeshLocation& location, float textureZ) {
+        assert(location.initialized);
+        meshpools[location.poolId]->SetTextureZ(location.poolSlot, location.poolInstance, textureZ);
     }
 
     // Gameobjects that want to be rendered should have a pointer to one of these.
@@ -168,6 +178,7 @@ class GraphicsEngine {
 
     private:
     ShaderProgram worldShader; // everything is drawn with this shader
+    Texture worldTextureArray; // everything is drawn using stuff in this texture array
 
     // meshpools are highly optimized objects used for very fast drawing of meshes
     // to avoid memory fragmentation all meshes within it are padded to be of the same size, so to save memory there is a pool for small meshes, medium ones, etc.
@@ -177,7 +188,6 @@ class GraphicsEngine {
     // tells how to get to the meshpool data of an object from its drawId
     //std::unordered_map<unsigned long long, MeshLocation> drawIdPoolLocations;
     //inline static unsigned long long lastDrawId = 0;
-
 
     static inline ComponentPool<RenderComponent, RENDER_COMPONENT_POOL_SIZE> RENDER_COMPONENTS;
 
@@ -208,6 +218,7 @@ class GraphicsEngine {
                 auto transformComp = transformArray + j;
                 if (renderComp->live) {
                     SetModelMatrix(renderComp->meshLocation, transformComp->GetModel(cameraPos));
+                    SetTextureZ(renderComp->meshLocation, 0.0);
                 }
             }
         }
@@ -231,7 +242,7 @@ class GraphicsEngine {
         if (debugFreecamYaw > 180) {
             debugFreecamYaw -= 360;
         } else if (debugFreecamYaw < -180) {
-            debugFreecamYaw += 180;
+            debugFreecamYaw += 360;
         } 
         debugFreecamPitch = std::max((float)-89.999, std::min(debugFreecamPitch, (float)89.999));
 
@@ -241,7 +252,6 @@ class GraphicsEngine {
         auto look = LookVector(glm::radians(debugFreecamPitch), glm::radians(debugFreecamYaw));
         auto right = glm::cross(look, glm::dvec3(0, 1, 0));
         auto up = glm::cross(look, right);
-        std::printf("\n%f %f %f", look.x, look.y, look.z);
         glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_A] - PRESSED_KEYS[GLFW_KEY_D]);
         glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_Q] - PRESSED_KEYS[GLFW_KEY_E]);
         glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_S] - PRESSED_KEYS[GLFW_KEY_W]);
@@ -268,7 +278,7 @@ class GraphicsEngine {
             const bool shouldInstanceTextureZ = m->instancedTextureZ;
 
             // pick best pool for mesh
-            // TODO: too slow?
+            // TODO: O(n) complexity might be an issue
             int bestPoolScore = INT_MAX;
             int bestPoolId = -1;
             for (auto & [poolId, pool] : meshpools) {

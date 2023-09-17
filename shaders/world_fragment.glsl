@@ -33,7 +33,7 @@ void main()
     if (tx.a < 0.1) {
         discard;
     };
-    vec4 color = vec4(fragmentColor, 1);
+    vec4 color = tx * vec4(fragmentColor, 1);
     float brightness = 1.0; //getShadow(lightSpaceCoords);
     Output = vec4(color.xyz * vec3(brightness, brightness, brightness), 0);
     //Output = texture(shadowmap, fragmentTexCoords.xy);

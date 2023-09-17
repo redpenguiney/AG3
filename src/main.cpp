@@ -9,11 +9,19 @@ using namespace std;
 
 int main() {
     //GE.camera.position.y = 3;
-    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false);
-    auto g = GameObject::New(m);
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false, -1.0, 1.0, 2);
+    for (int x = 0; x < 2; x++) {
+        for (int y = 0; y < 2; y++) {
+            for (int z = 0; z < 1; z++) {
+                auto g = GameObject::New(m);
+                g->transformComponent->position = glm::dvec3(x * 3, y * 3, z * 3);
+            }
+        }
+    }
+    
     GE.debugFreecamEnabled = true;
     GE.window.SetMouseLocked(true);
-    g->transformComponent->position = glm::dvec3(0.0, 0.0, -5.0);
+    
     // std::printf("\n Indices: \n");
     // for (auto & i : Mesh::Get(m)->indices) {
     //     std::printf("%i ", i);

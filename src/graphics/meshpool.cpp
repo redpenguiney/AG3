@@ -92,7 +92,7 @@ class Meshpool {
 // constructor takes mesh reference to set variables, doesn't actually add the given mesh or anything
 Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh): 
     instanceSize(sizeof(glm::mat4x4) + (mesh->instancedColor ? sizeof(glm::vec4) : 0) + (mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // instances will be bigger if the mesh also wants color/texturez to be instanced
-    meshVerticesSize(std::pow(2, std::log2(mesh->vertices.size() - 1)) + 1),
+    meshVerticesSize(std::pow(2, std::log2(sizeof(GLfloat) * mesh->vertices.size() - 1)) + 1),
     meshIndicesSize(meshVerticesSize),
     instanceColor(mesh->instancedColor),
     instanceTextureZ(mesh->instancedTextureZ),
@@ -124,14 +124,14 @@ Meshpool::~Meshpool() {
 // Adds count identical meshes to pool, and returns a vector of pairs of (slot, instanceOffset) used to access the object.
 std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const unsigned int meshId, unsigned int count) {
     std::vector<std::pair<unsigned int, unsigned int>> objLocations;
-    unsigned int instanceCapacity = Mesh::Get(meshId)->instanceCount;
+    unsigned int meshInstanceCapacity = Mesh::Get(meshId)->instanceCount;
     auto& contents = slotContents[meshId];
     
     // if any slots for this mesh have room for more instances, try to fill them up first
     for (unsigned int slot : contents) {
         unsigned int storedCount = drawCommands[slot].count;
-        if (storedCount < instanceCapacity) { // if this slot has room
-            const unsigned int space = instanceCapacity - storedCount;
+        if (storedCount < meshInstanceCapacity) { // if this slot has room
+            const unsigned int space = meshInstanceCapacity - storedCount;
             
             // add positions to objLocations
             for (unsigned int i = drawCommands[slot].instanceCount - 1; i < drawCommands[slot].instanceCount + std::min(count, space); i++) {
@@ -156,16 +156,18 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
         }
         unsigned int slot = availableMeshSlots.front();
         availableMeshSlots.pop_front();
-        FillSlot(meshId, slot, std::min(count, instanceCapacity));
+
+        unsigned int start = drawCommands[slot].instanceCount;
+        FillSlot(meshId, slot, std::min(count, meshInstanceCapacity));
         drawCount += 1;
 
         // add positions to objLocations
-        for (unsigned int i = drawCommands[slot].instanceCount - 1; i < drawCommands[slot].instanceCount + std::min(count, instanceCapacity); i++) {
+        for (unsigned int i = start; i < start + std::min(count, meshInstanceCapacity); i++) {
             objLocations.push_back(std::make_pair(slot, i));
         }
 
-        drawCommands[slot].instanceCount = std::min(count, instanceCapacity);
-        count -= std::min(count, instanceCapacity);
+        //drawCommands[slot].instanceCount = std::min(count, instanceCapacity);
+        count -= std::min(count, meshInstanceCapacity);
     }
     
     return objLocations;
@@ -175,7 +177,7 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
 // Will abort if mesh uses per-vertex color instead of per-instance color.
 void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4 rgba) {
     assert(instanceColor == true);
-    glm::vec4* colorLocation = (glm::vec4*)(sizeof(glm::mat4x4) + instancedVertexBufferData + (slotToInstanceLocations[slot] + (instanceId * instanceSize)));
+    glm::vec4* colorLocation = (glm::vec4*)(sizeof(glm::mat4x4) + instancedVertexBufferData + ((slotToInstanceLocations[slot] * instanceId) * instanceSize));
 
     // make sure we don't segfault 
     assert((char*)colorLocation + sizeof(glm::vec4) <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
@@ -184,10 +186,24 @@ void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, 
     *colorLocation = rgba;
 }
 
+// Makes the given instance the given textureZ.
+// Will abort if mesh uses per-vertex color instead of per-instance color.
+void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ) {
+    assert(instanceTextureZ == true);
+    float* textureZLocation = (float*)(sizeof(glm::mat4x4) + ((instanceColor) ? sizeof(glm::vec4) : 0) + instancedVertexBufferData + ((slotToInstanceLocations[slot] * instanceId) * instanceSize));
+
+    // make sure we don't segfault 
+    assert((char*)textureZLocation + sizeof(float) <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
+    assert((char*)textureZLocation >= instancedVertexBufferData);
+    
+    *textureZLocation = textureZ;
+}
+
 // Makes the given instance use the given model matrix.
 void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4 matrix) {
     //std::printf("\nSlot %i %i", slot, instanceId);
-    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBufferData + (slotToInstanceLocations[slot] + (instanceId * instanceSize)));
+    //std::printf("\nInstance slot is %i", (slotToInstanceLocations[slot] + instanceId));
+    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBufferData + ((slotToInstanceLocations[slot] * instanceId) * instanceSize));
 
     // make sure we don't segfault 
     assert((char*)modelMatrixLocation <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
@@ -200,10 +216,10 @@ void Meshpool::Draw() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
     glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirectDrawBuffer);
     //double start1 = Time();
-    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, drawCount, 0);
-    // for (auto & command: drawCommands) {
-    //     glDrawElementsInstancedBaseVertexBaseInstance(GL_POINTS, command.count, GL_UNSIGNED_INT, (void*)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance);
-    // }
+    // glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, drawCount, 0);
+    for (auto & command: drawCommands) {
+        glDrawElementsInstancedBaseVertexBaseInstance(GL_POINTS, command.count, GL_UNSIGNED_INT, (void*)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance);
+    }
     
     //std::printf("\nBRUH IT ELAPSED %fms", Time() - start1);
 }
@@ -391,6 +407,12 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceCounts[slot - 1];
     drawCommands[slot].instanceCount = instanceCount;
 
+    std::printf("\nFilling slot %i with %i %i %i %i %i", slot, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
+
+    // idk what to call this
+    slotToInstanceLocations[slot] = drawCommands[slot].baseInstance;
+    slotInstanceCounts[slot] = instanceCount;
+
     // make sure instanced data buffer has room
     if (drawCommands[slot].baseInstance + drawCommands[slot].instanceCount > instanceCapacity) { 
         auto missingSlots = (drawCommands[slot].baseInstance + drawCommands[slot].instanceCount) - instanceCapacity;
@@ -401,7 +423,7 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
 }
 
 void Meshpool::UpdateIndirectDrawBuffer(const unsigned int slot) {
-    memcpy(indirectDrawBufferData + (slot * sizeof(IndirectDrawCommand)), (char*)drawCommands.data() + (slot * sizeof(IndirectDrawCommand)), sizeof(IndirectDrawCommand));
+    memcpy(indirectDrawBufferData + (slot * sizeof(IndirectDrawCommand)), &drawCommands.at(slot), sizeof(IndirectDrawCommand));
 }
 
 // We want meshes to fit snugly in the slots of their meshpool.
