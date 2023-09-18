@@ -1,7 +1,7 @@
 #pragma once
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLM/ext.hpp"
-#include "../../freetype/ft2build.h"
+#include "../../external_headers/freetype/ft2build.h"
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>

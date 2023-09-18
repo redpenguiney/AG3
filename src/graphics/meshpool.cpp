@@ -127,8 +127,6 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
     unsigned int meshInstanceCapacity = Mesh::Get(meshId)->instanceCount;
     auto& contents = slotContents[meshId];
     
-    std::printf("CAP %u", meshCapacity);
-
     // if any slots for this mesh have room for more instances, try to fill them up first
     for (unsigned int slot : contents) {
         unsigned int storedCount = drawCommands[slot].instanceCount;

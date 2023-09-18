@@ -36,8 +36,8 @@ class ComponentPool {
 
             // if we got this far there is no available pool
             AddPool();
-            T* foundObject = firstAvailable[poolIndex];
-            firstAvailable[poolIndex] = foundObject->next;
+            T* foundObject = firstAvailable.back();
+            firstAvailable.back() = foundObject->next;
             return foundObject;
         }
 

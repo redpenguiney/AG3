@@ -17,8 +17,16 @@ int main() {
     // 2/6/20
     // 1/10/40
     // 1/5/20
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false, -1.0, 1.0, 16384);
+    for (int x = -50; x < 10; x++) {
+        for (int y = -50; y < 10; y++) {
+            for (int z = 5; z < 10; z++) {
+                auto g = GameObject::New(m);
+                g->transformComponent->position = glm::dvec3( x * 3, y * 3, z * 3);
+            }
+        }
+    }
 
-    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false, -1.0, 1.0, 8);
     
     GE.debugFreecamEnabled = true;
     GE.window.SetMouseLocked(true);
@@ -36,13 +44,7 @@ int main() {
 
     printf("\nStarting main loop.");
     
-    int z = -100;
     while (!GE.ShouldClose()) {
-        z++;
-        for (int x = -50; x < 50; x++) {
-            auto g = GameObject::New(m);
-            g->transformComponent->position = glm::dvec3( x * 3, -1, z * 3);
-        }
 
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         GE.RenderScene();
