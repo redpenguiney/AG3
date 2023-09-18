@@ -20,8 +20,8 @@ glm::dvec2 MOUSE_DELTA; // how much mouse has moved since last frame
 
 class Window {
     public:
-    int width;
-    int height;
+    static inline int width = 0;
+    static inline int height = 0;
     bool mouseLocked;
     Window(int widthh, int heightt) {
         width = widthh;
@@ -43,6 +43,7 @@ class Window {
 
         glfwMakeContextCurrent(glfwWindow);
         glfwSetKeyCallback(glfwWindow, KeyCallback);
+        glfwSetFramebufferSizeCallback(glfwWindow, ResizeCallback);
         glfwSwapInterval(1); // do vsync
         
         GLenum glewSuccess = glewInit();
@@ -96,16 +97,23 @@ class Window {
     private:
     GLFWwindow* glfwWindow;
 
-    // GLFW calls this function automatically 
+    // GLFW calls these functions automatically 
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (action == GLFW_PRESS) {
-        PRESS_BEGAN_KEYS[key] = true;
-        PRESSED_KEYS[key] = true;
+        if (action == GLFW_PRESS) {
+            PRESS_BEGAN_KEYS[key] = true;
+            PRESSED_KEYS[key] = true;
+        }
+        else if (action == GLFW_RELEASE) {
+            PRESS_ENDED_KEYS[key] = true;
+            PRESSED_KEYS[key] = false;
+        }
+    } 
+
+    static void ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindowHeight) { // called on window resize
+        // Tell OpenGL to draw to the whole screen
+        glViewport(0, 0, newWindowWidth, newWindowHeight);
+        width = newWindowWidth;
+        height = newWindowHeight;
     }
-    else if (action == GLFW_RELEASE) {
-        PRESS_ENDED_KEYS[key] = true;
-        PRESSED_KEYS[key] = false;
-    }
-}
 };
 
