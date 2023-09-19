@@ -10,7 +10,8 @@
 enum TextureType {
     TEXTURE_2D = GL_TEXTURE_2D,
     TEXTURE_2D_ARRAY = GL_TEXTURE_2D_ARRAY,
-    FONT = 0
+    TEXTURE_CUBEMAP = GL_TEXTURE_CUBE_MAP, 
+    TEXTURE_FONT = 0
 };
 
 class Texture {

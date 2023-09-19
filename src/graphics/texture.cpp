@@ -17,9 +17,10 @@
 
 // read image file to texture. 
 // if type == TEXTURE_2D_ARRAY, the file will be treated as an array of height/layerHeight images that each have a height of layerHeight. That means if you want to create a texture array from a single file, the images must be in a column, not a row. 
-// if layerHeight == -1, layerHeight will be set to height. 
+// if type == TEXTURE_2D_ARRAY, the image may be appended to 
+// if layerHeight == -1, layerHeight will be set to height, meaning the whole image will be loaded into a single layer. 
 // if type == FONT, not much will happen because i haven't added that yet.
-// Returns id of generated texture.
+// Returns a pair of (id of generated texture, z-coord of first image created).
 unsigned int Texture::Texture::New(TextureType textureType, std::string path, int layerHeight, int mipmapLevels) {
     auto ptr = std::shared_ptr<Texture>(new Texture(textureType, path, layerHeight, mipmapLevels));
     LOADED_TEXTURES.emplace(ptr->textureId, ptr);
@@ -28,7 +29,8 @@ unsigned int Texture::Texture::New(TextureType textureType, std::string path, in
 
 // read many image files to texture array, where each image becomes one layer.
 // Every image file must have the same size due to OpenGL requirements.
-// texture type must be TEXTURE_2D_ARRAY, or a 3d texture if i ever have support for that.
+// texture type must be TEXTURE_2D_ARRAY, TEXTURE_CUBEMAP, or a 3d texture if i ever have support for that.
+// if texture type == TEXTURE_CUBEMAP, paths must be in the order {right, left, top, bottom, back, front}
 // Returns id of generated texture.
 unsigned int Texture::New(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels) {
     auto ptr = std::shared_ptr<Texture>(new Texture(textureType, paths, mipmapLevels));
@@ -76,7 +78,7 @@ void Texture::ConfigTexture() {
 Texture::Texture(TextureType textureType, std::string path, int layerHeight, int mipmapLevels) {
     // use stbi_image.h to load file
     type = textureType;
-    bindingLocation = (textureType == FONT) ? GL_TEXTURE_2D : textureType;
+    bindingLocation = (textureType == TEXTURE_FONT) ? GL_TEXTURE_2D : textureType;
     unsigned char* imageData = stbi_load(path.c_str(), &width, &height, &nChannels, 4);
     if (stbi_failure_reason()) { // error check
         std::printf("STBI failed to load %s because %s", path.c_str(), stbi_failure_reason());
@@ -105,7 +107,7 @@ Texture::Texture(TextureType textureType, std::string path, int layerHeight, int
 Texture::Texture(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels) {
     type = textureType;
     bindingLocation = textureType;
-    assert(type == TEXTURE_2D_ARRAY);
+    assert(type == TEXTURE_2D_ARRAY || type == TEXTURE_CUBEMAP);
 
     // load the requested files
     std::vector<unsigned char*> imageDatas;
@@ -133,14 +135,30 @@ Texture::Texture(TextureType textureType, std::vector<std::string>& paths, int m
     }
     width = x;
     height = y;
+    if (type == TEXTURE_CUBEMAP) {
+        depth = 1;
+    }
+    else {
+        depth = imageDatas.size();
+    }
+    
 
     // generate OpenGL texture object and put image data in it
     glGenTextures(1, &textureId);
     Use();
-    glTexImage3D(bindingLocation, mipmapLevels, GL_RGBA, width, height, imageDatas.size(), 0, GL_RGBA, GL_UNSIGNED_INT, nullptr);
+
+    if (type != TEXTURE_2D_ARRAY) {
+        glTexImage3D(bindingLocation, mipmapLevels, GL_RGBA, width, height, imageDatas.size(), 0, GL_RGBA, GL_UNSIGNED_INT, nullptr);
+    }
+
     unsigned int i = 0;
     for (auto data: imageDatas) {
-        glTexSubImage3D(bindingLocation, 0, 0, 0, i, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        if (type == TEXTURE_2D_ARRAY) {
+            glTexSubImage3D(bindingLocation, 0, 0, 0, i, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        }
+        else if (type == TEXTURE_CUBEMAP) {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        }
         stbi_image_free(data);
         i++;
     }

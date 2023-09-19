@@ -20,6 +20,9 @@ int main() {
     // 2/6/20
     // 1/10/40
     // 1/5/20
+
+    auto skyboxId = Texture::New(TEXTURE_CUBEMAP, {})
+
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false, -1.0, 1.0, 16384);
     auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
     for (int x = -50; x < 10; x++) {
