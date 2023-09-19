@@ -204,7 +204,7 @@ void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instan
     glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBufferData + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
     // make sure we don't segfault 
-    //std::printf("\nBRO WHY %u %u", slot, instanceId);
+    
     assert((char*)modelMatrixLocation <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
     assert((char*)modelMatrixLocation >= instancedVertexBufferData);
     *modelMatrixLocation = matrix;

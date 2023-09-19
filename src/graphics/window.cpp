@@ -23,6 +23,9 @@ class Window {
     static inline int width = 0;
     static inline int height = 0;
     bool mouseLocked;
+
+    Window() = delete; 
+
     Window(int widthh, int heightt) {
         width = widthh;
         height = heightt;

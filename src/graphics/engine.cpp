@@ -1,215 +1,101 @@
 #pragma once
-#include "mesh.cpp"
-#include "meshpool.cpp"
-#include "window.cpp"
-#include "shader_program.cpp"
-#include <algorithm>
-#include <cassert>
+#include "engine.hpp"
 #include <cstdio>
-#include <memory>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#include "../debug/debug.cpp"
-#include "camera.cpp"
-#include "../gameobjects/component_pool.cpp"
-#include "../gameobjects/transform_component.cpp"
-#include "../utility/utility.cpp"
-#include "texture.cpp"
 
-const unsigned int RENDER_COMPONENT_POOL_SIZE = 65536;
+void GraphicsEngine::Init() {
+    debugFreecamEnabled = false;
+    debugFreecamPos = {0.0, 0.0, 0.0};
+    debugFreecamPitch = 0.0;
+    debugFreecamYaw = 0.0;
 
-struct MeshLocation {
-    unsigned int poolId; // uuid of the meshpool 
-    unsigned int poolSlot;
-    unsigned int poolInstance;
-    bool initialized;
-    MeshLocation() {
-        initialized = false;
-    }
-};
+    defaultShaderProgramId = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl");
+    std::printf("\n Def id is %u", defaultShaderProgramId);
+}
 
-// TODO: this is a weird mix of static and not static for a singleton
-class GraphicsEngine {
-    public:
-    // freecam is just a thing for debugging
-    bool debugFreecamEnabled;
-    glm::dvec3 debugFreecamPos;
-    float debugFreecamPitch;
-    float debugFreecamYaw;
-    double debugFreecamSpeed;
-    const double debugFreecamAcceleration = 0.01;
-
-    Camera camera;
-    Window window; // handles windowing, interfaces with GLFW in general
-
-    GraphicsEngine():
-
-    debugFreecamEnabled(false),
-    debugFreecamPos(0.0, 0.0, 0.0),
-    debugFreecamPitch(0.0),
-    debugFreecamYaw(0.0),
-
-    window(500, 500),
-    
-    worldShader("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl"),
-    worldTextureArray(TEXTURE_2D_ARRAY, "../textures/grass.png") {
-        
-    }
-
-    ~GraphicsEngine() {
-        for (auto & [id, pool] : meshpools) {
-            delete pool;
-        }
-    }
-
-    // returns true if the user is trying to close the application, or if glfwSetWindowShouldClose was explicitly called (like by a quit game button)
-    bool ShouldClose() {
-        return window.ShouldClose();
-    }
-
-    // Draws everything
-    void RenderScene() {
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
-        glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
-        glEnable(GL_CULL_FACE); // backface culling
-
-        Update();
-
-        SetCameraUniforms();
-        worldShader.Use();
-        worldTextureArray.Use();
-        
-        for (auto & [_, pool] : meshpools) {
-            pool->Draw();
-
+void GraphicsEngine::Terminate() {
+    for (auto & [shaderId, map1] : meshpools) {
+        for (auto & [textureId, map2] : map1) {
+            for (auto & [poolId, pool] : map2) {
+                delete pool;
+            } 
         } 
-
-
-        window.Update(); // this includes flipping the buffer so it goes at the end
     }
+}
 
-    // duh
-    void SetColor(MeshLocation& location, glm::vec4 rgba) {
-        assert(location.initialized);
-        meshpools[location.poolId]->SetColor(location.poolSlot, location.poolInstance, rgba);
-    }
-
-    // duh
-    void SetModelMatrix(MeshLocation& location, glm::mat4x4 model) {
-        assert(location.initialized);
-        meshpools[location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
-    }
-
-    // duh
-    // set to -1.0 for no texture
-    void SetTextureZ(MeshLocation& location, float textureZ) {
-        assert(location.initialized);
-        meshpools[location.poolId]->SetTextureZ(location.poolSlot, location.poolInstance, textureZ);
-    }
-
-    // Gameobjects that want to be rendered should have a pointer to one of these.
-    // However, they are stored here in a vector because that's better for the cache. (google ECS).
-    // NEVER DELETE THIS POINTER, JUST CALL Destroy(). DO NOT STORE OUTSIDE A GAMEOBJECT. THESE USE AN OBJECT POOL.
-    class RenderComponent {
-        public:
-        // because object pool, instances of this struct might just be uninitialized memory
-        // also, gameobjects have to reserve a render component even if they don't use one (see gameobject.cpp), so they can set this to false if they don't actually want one
-        bool live;
-        unsigned int meshId;
-
-        static RenderComponent* New(unsigned int mesh_id) {
-            
-            auto ptr = RENDER_COMPONENTS.GetNew();
-            ptr->live = true;
-            ptr->meshId = mesh_id;
-            AddObject(ptr->meshId, &ptr->meshLocation);
-            return ptr;
-
-        };
-
-        // call instead of deleting the pointer.
-        // obviously don't touch component after this.
-        void Destroy() {
-            assert(live == true);
-
-            // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from GraphicsEngine::meshesToAdd
-            if (!meshLocation.initialized) { 
-                auto & vec = meshesToAdd.at(meshId);
-                int index = -1;
-                for (auto & ptr : vec) {
-                    if (ptr == &meshLocation) {
-                        break;
-                    }
-                    index++;
-                }
-                vec.erase(vec.begin() + index);
-            }
-            else { // otherwise just remove object from graphics engine
-                // TODO
-            }
-
-            live = false;
-            
-            RENDER_COMPONENTS.ReturnObject(this);
+// Used by Texture to throw an error if someone tries to unload a texture being used
+bool GraphicsEngine::IsTextureInUse(unsigned int textureId) { 
+    for (auto & [shaderId, map] : meshpools) {
+        if (map.count(textureId)) {
+            return true;
         }
+    }
+    return false;
+}
 
-        // this union exists so we can use a "free list" memory optimization, see component_pool.cpp
-        union {
-            // live state
-            //struct {
-                // DO NOT TOUCH, ONLY FOR ENGINE
-                MeshLocation meshLocation;
-            //};
+// Used by ShaderProgram to throw an error if someone tries to unload a shader being used.
+bool GraphicsEngine::IsShaderProgramInUse(unsigned int shaderId) {
+    return meshpools.count(shaderId);
+}
 
-            //dead state
-            struct {
-                RenderComponent* next; // pointer to next available component in pool
-                unsigned int componentPoolId; // index into pools vector
-            };
-            
-        };
+// returns true if the user is trying to close the application, or if glfwSetWindowShouldClose was explicitly called (like by a quit game button)
+bool GraphicsEngine::ShouldClose() {
+    return window.ShouldClose();
+}
 
-        private:
-        //private constructor to enforce usage of object pool
-        friend class ComponentPool<RenderComponent, RENDER_COMPONENT_POOL_SIZE>;
-        RenderComponent() {
-            live = false;
-        }
-    };
+// Draws everything
+void GraphicsEngine::RenderScene() {
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
+    glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
+    glEnable(GL_CULL_FACE); // backface culling
 
-    private:
-    ShaderProgram worldShader; // everything is drawn with this shader
-    Texture worldTextureArray; // everything is drawn using stuff in this texture array
+    Update();
 
-    // meshpools are highly optimized objects used for very fast drawing of meshes
-    // to avoid memory fragmentation all meshes within it are padded to be of the same size, so to save memory there is a pool for small meshes, medium ones, etc.
-    static inline std::unordered_map<unsigned int, Meshpool*> meshpools; // didn't want to use raw pointers but it's the only way it seems
-    static inline unsigned long long lastPoolId = 0; 
+    glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
+    glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
+    ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix);
 
-    // tells how to get to the meshpool data of an object from its drawId
-    //std::unordered_map<unsigned long long, MeshLocation> drawIdPoolLocations;
-    //inline static unsigned long long lastDrawId = 0;
-
-    static inline ComponentPool<RenderComponent, RENDER_COMPONENT_POOL_SIZE> RENDER_COMPONENTS;
-
-    // Cache of meshes to add when addCachedMeshes is called. 
-    // Used so that instead of adding 1 mesh to a meshpool 1000 times, we just add 1000 instances of a mesh to meshpool once to make creating renderable objects faster.
-    // Key is meshId, value is vector of pointers to MeshLocations stored in RenderComponents.
-    static inline std::unordered_map<unsigned int, std::vector<MeshLocation*>> meshesToAdd;
-
-    void Update() {  
-        if (PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
-            window.Close();
-        }
-        if (PRESS_BEGAN_KEYS[GLFW_KEY_TAB]) {
-            window.SetMouseLocked(!window.mouseLocked);
-        }
-        AddCachedMeshes();
-        UpdateRenderComponents();        
+    for (auto & [shaderId, map1] : meshpools) {
+        ShaderProgram::Get(shaderId)->Use();
+        for (auto & [textureId, map2] : map1) {
+            Texture::Get(textureId)->Use();
+            for (auto & [poolId, pool] : map2) {
+                pool->Draw();
+            } 
+        } 
     }
 
-    void UpdateRenderComponents() {
+
+    window.Update(); // this flips the buffer so it goes at the end; TODO maybe poll events at start of frame instead
+}
+
+void GraphicsEngine::SetColor(MeshLocation& location, glm::vec4 rgba) {
+    assert(location.initialized);
+    meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetColor(location.poolSlot, location.poolInstance, rgba);
+}
+
+void GraphicsEngine::SetModelMatrix(MeshLocation& location, glm::mat4x4 model) {
+    assert(location.initialized);
+    meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
+}
+
+// set to -1.0 for no texture
+void GraphicsEngine::SetTextureZ(MeshLocation& location, float textureZ) {
+    assert(location.initialized);
+    meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetTextureZ(location.poolSlot, location.poolInstance, textureZ);
+}
+
+void GraphicsEngine::Update() {  
+    if (PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
+        window.Close();
+    }
+    if (PRESS_BEGAN_KEYS[GLFW_KEY_TAB]) {
+        window.SetMouseLocked(!window.mouseLocked);
+    }
+    AddCachedMeshes();
+    UpdateRenderComponents();        
+}
+
+void GraphicsEngine::UpdateRenderComponents() {
         auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
         for (unsigned int i = 0; i < RENDER_COMPONENTS.pools.size(); i++) {
@@ -226,95 +112,136 @@ class GraphicsEngine {
         }
     }
 
-    // updates the freecam based off user input (WASD and mouse) and then returns a camera matrix
-    glm::mat4x4 UpdateDebugFreecam() {
-        assert(debugFreecamEnabled);
+// updates the freecam based off user input (WASD and mouse) and then returns a camera matrix
+glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
+    assert(debugFreecamEnabled);
 
-        // camera acceleration
-        if (PRESSED_KEYS[GLFW_KEY_W] or PRESSED_KEYS[GLFW_KEY_S] or PRESSED_KEYS[GLFW_KEY_A] or PRESSED_KEYS[GLFW_KEY_D] or PRESSED_KEYS[GLFW_KEY_Q] or PRESSED_KEYS[GLFW_KEY_E]) {
-            debugFreecamSpeed += debugFreecamAcceleration;
-        }
-        else {
-            debugFreecamSpeed = debugFreecamAcceleration;
-        }
-
-        // camera rotation
-        debugFreecamPitch += 0.5 * MOUSE_DELTA.y;
-        debugFreecamYaw += 0.5 * MOUSE_DELTA.x;
-        if (debugFreecamYaw > 180) {
-            debugFreecamYaw -= 360;
-        } else if (debugFreecamYaw < -180) {
-            debugFreecamYaw += 360;
-        } 
-        debugFreecamPitch = std::max((float)-89.999, std::min(debugFreecamPitch, (float)89.999));
-
-        glm::quat rotation = glm::rotate(glm::rotate(glm::identity<glm::mat4x4>(), glm::radians(debugFreecamPitch), glm::vec3(1, 0, 0)), glm::radians(debugFreecamYaw), glm::vec3(0, 1, 0));
-
-        // camera movement
-        auto look = LookVector(glm::radians(debugFreecamPitch), glm::radians(debugFreecamYaw));
-        auto right = glm::cross(look, glm::dvec3(0, 1, 0));
-        auto up = glm::cross(look, right);
-        glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_A] - PRESSED_KEYS[GLFW_KEY_D]);
-        glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_Q] - PRESSED_KEYS[GLFW_KEY_E]);
-        glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_S] - PRESSED_KEYS[GLFW_KEY_W]);
-        debugFreecamPos += rightMovement + forwardMovement + upMovement;
-
-        
-
-        return glm::mat4x4(rotation); 
+    // camera acceleration
+    if (PRESSED_KEYS[GLFW_KEY_W] or PRESSED_KEYS[GLFW_KEY_S] or PRESSED_KEYS[GLFW_KEY_A] or PRESSED_KEYS[GLFW_KEY_D] or PRESSED_KEYS[GLFW_KEY_Q] or PRESSED_KEYS[GLFW_KEY_E]) {
+        debugFreecamSpeed += debugFreecamAcceleration;
+    }
+    else {
+        debugFreecamSpeed = debugFreecamAcceleration;
     }
 
-    // passes projection and camera matrices to shader
-    void SetCameraUniforms() {
-        glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
-        worldShader.UniformMat4x4("camera", camera.GetProj((float)window.width/(float)window.height) * cameraMatrix, false);
-    }
+    // camera rotation
+    debugFreecamPitch += 0.5 * MOUSE_DELTA.y;
+    debugFreecamYaw += 0.5 * MOUSE_DELTA.x;
+    if (debugFreecamYaw > 180) {
+        debugFreecamYaw -= 360;
+    } else if (debugFreecamYaw < -180) {
+        debugFreecamYaw += 360;
+    } 
+    debugFreecamPitch = std::max((float)-89.999, std::min(debugFreecamPitch, (float)89.999));
 
-    void AddCachedMeshes() {
-        for (auto & [meshId, meshLocations] : meshesToAdd) {
-            
-            std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
-            const unsigned int verticesNBytes = m->vertices.size() * sizeof(GLfloat);
-            const unsigned int indicesNBytes = m->indices.size() * sizeof(GLuint);
-            const bool shouldInstanceColor = m->instancedColor;
-            const bool shouldInstanceTextureZ = m->instancedTextureZ;
+    glm::quat rotation = glm::rotate(glm::rotate(glm::identity<glm::mat4x4>(), glm::radians(debugFreecamPitch), glm::vec3(1, 0, 0)), glm::radians(debugFreecamYaw), glm::vec3(0, 1, 0));
 
-            // pick best pool for mesh
-            // TODO: O(n) complexity might be an issue
-            int bestPoolScore = INT_MAX;
-            int bestPoolId = -1;
-            for (auto & [poolId, pool] : meshpools) {
-                int score = pool->ScoreMeshFit(verticesNBytes, indicesNBytes, shouldInstanceColor, shouldInstanceTextureZ);
-                if (score == -1) {continue;} // this continues the inner loop which is what we want
-                if (score < bestPoolScore) {
-                    bestPoolScore = score;
-                    bestPoolId = poolId;
+    // camera movement
+    auto look = LookVector(glm::radians(debugFreecamPitch), glm::radians(debugFreecamYaw));
+    auto right = glm::cross(look, glm::dvec3(0, 1, 0));
+    auto up = glm::cross(look, right);
+    glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_A] - PRESSED_KEYS[GLFW_KEY_D]);
+    glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_Q] - PRESSED_KEYS[GLFW_KEY_E]);
+    glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_S] - PRESSED_KEYS[GLFW_KEY_W]);
+    debugFreecamPos += rightMovement + forwardMovement + upMovement;
+
+    
+
+    return glm::mat4x4(rotation); 
+}
+
+void GraphicsEngine::AddCachedMeshes() {
+    for (auto & [shaderId, map1] : meshesToAdd) {
+        for (auto & [textureId, map2] : map1) {
+            for (auto & [meshId, meshLocations] : map2) {
+                
+                std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
+                const unsigned int verticesNBytes = m->vertices.size() * sizeof(GLfloat);
+                const unsigned int indicesNBytes = m->indices.size() * sizeof(GLuint);
+                const bool shouldInstanceColor = m->instancedColor;
+                const bool shouldInstanceTextureZ = m->instancedTextureZ;
+
+                // pick best pool for mesh
+                // TODO: O(n) complexity might be an issue
+                int bestPoolScore = INT_MAX;
+                int bestPoolId = -1;
+                for (auto & [poolId, pool] : meshpools[shaderId][textureId]) {
+                    int score = pool->ScoreMeshFit(verticesNBytes, indicesNBytes, shouldInstanceColor, shouldInstanceTextureZ);
+                    if (score == -1) {continue;} // this continues the inner loop which is what we want
+                    if (score < bestPoolScore) {
+                        bestPoolScore = score;
+                        bestPoolId = poolId;
+                    }
                 }
-            }
 
-            if (bestPoolId == -1) { // if we didn't find a suitable pool just make one
-                bestPoolId = lastPoolId++;
-                meshpools[bestPoolId] = new Meshpool(m);
-            }
+                if (bestPoolId == -1) { // if we didn't find a suitable pool just make one
+                    bestPoolId = lastPoolId++;
+                    meshpools[shaderId][textureId][bestPoolId] = new Meshpool(m);
+                }
 
-            auto objectPositions = meshpools[bestPoolId]->AddObject(meshId, meshLocations.size());
-            for (unsigned int i = 0; i < meshLocations.size(); i++) {
-                meshLocations[i]->poolId = bestPoolId;
-                meshLocations[i]->poolSlot = objectPositions[i].first;
-                meshLocations[i]->poolInstance = objectPositions[i].second;
-                meshLocations[i]->initialized = true;
-            }
-        } 
-
-        meshesToAdd.clear();
+                auto objectPositions = meshpools[shaderId][textureId][bestPoolId]->AddObject(meshId, meshLocations.size());
+                for (unsigned int i = 0; i < meshLocations.size(); i++) {
+                    meshLocations[i]->poolId = bestPoolId;
+                    meshLocations[i]->poolSlot = objectPositions[i].first;
+                    meshLocations[i]->poolInstance = objectPositions[i].second;
+                    meshLocations[i]->initialized = true;
+                }
+            } 
+        }
     }
+    // TODO: instead of clearing the entire me
+    meshesToAdd.clear();
+}
 
-    // Returns a drawId used to modify the mesh later on.
-    // Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.
-    // Contents of MeshLocation pointer are undefined until addCachedMeshes() is called.
-    static void AddObject(unsigned int meshId, MeshLocation* meshLocation) {
-        meshesToAdd[meshId].push_back(meshLocation);
-    }
+// Returns a drawId used to modify the mesh later on.
+// Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.
+// Contents of MeshLocation pointer are undefined until addCachedMeshes() is called.
+void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int textureId, unsigned int meshId, MeshLocation* meshLocation) {
+    meshesToAdd[shaderId][textureId][meshId].push_back(meshLocation);
+}
+
+GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id) {
+    auto ptr = RENDER_COMPONENTS.GetNew();
+    ptr->live = true;
+    ptr->shaderId = shader_id;
+    ptr->textureId = texture_id;
+    ptr->meshId = mesh_id;
+
+    ptr->meshLocation.textureId = texture_id;
+    ptr->meshLocation.shaderProgramId = shader_id;
+
+    AddObject(ptr->shaderId, ptr->textureId, ptr->meshId, &ptr->meshLocation);
+    return ptr;
+
 };
 
-GraphicsEngine GE;
+// call instead of deleting the pointer.
+// obviously don't touch component after this.
+void GraphicsEngine::RenderComponent::Destroy() {
+    assert(live == true);
+
+    // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from GraphicsEngine::meshesToAdd
+    if (!meshLocation.initialized) { 
+        auto & vec = meshesToAdd.at(shaderId).at(textureId).at(meshId);
+        int index = -1;
+        for (auto & ptr : vec) {
+            if (ptr == &meshLocation) {
+                break;
+            }
+            index++;
+        }
+        vec.erase(vec.begin() + index);
+    }
+    else { // otherwise just remove object from graphics engine
+        // TODO
+    }
+
+    live = false;
+    
+    RENDER_COMPONENTS.ReturnObject(this);
+}
+
+GraphicsEngine::RenderComponent::RenderComponent() {
+    live = false;
+}
+

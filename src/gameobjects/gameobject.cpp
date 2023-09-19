@@ -15,16 +15,16 @@ class GameObject {
     GraphicsEngine::RenderComponent* renderComponent;
     TransformComponent* transformComponent;
 
-    static GameObject* New(unsigned int meshId) {
-        return new GameObject(meshId);
+    static GameObject* New(unsigned int meshId, unsigned int textureId) {
+        return new GameObject(meshId, textureId);
     }    
 
     private:
         // no copy constructing gameobjects.
         GameObject(const GameObject&) = delete; 
 
-        GameObject(unsigned int meshId) {
-            renderComponent = GraphicsEngine::RenderComponent::New(meshId);
+        GameObject(unsigned int meshId, unsigned int textureId) {
+            renderComponent = GraphicsEngine::RenderComponent::New(meshId, textureId);
             transformComponent = TransformComponent::New();
             GAMEOBJECTS.insert(this);
         };

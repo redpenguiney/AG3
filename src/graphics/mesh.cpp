@@ -34,7 +34,7 @@ class Mesh {
     const glm::vec3 originalSize; // TODO
 
     // engine calls this to get mesh from an object's meshId
-    static std::shared_ptr<Mesh>& Get(int meshId) {
+    static std::shared_ptr<Mesh>& Get(unsigned int meshId) {
         assert(LOADED_MESHES.count(meshId) != 0 && "Mesh::Get() was given an invalid meshId.");
         return LOADED_MESHES[meshId];
     }
