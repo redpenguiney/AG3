@@ -22,10 +22,10 @@ void ShaderProgram::SetCameraUniforms(glm::mat4x4 cameraProjMatrix) {
 }
 
 // Returns id of generated program
-unsigned int ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const bool useCameraUniform) {
+std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const bool useCameraUniform) {
     auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexPath, fragmentPath, useCameraUniform));
     LOADED_PROGRAMS.emplace(ptr->programId, ptr);
-    return ptr->programId;
+    return ptr;
 }
 
 // Get a pointer to a shader program by its id.

@@ -39,22 +39,21 @@ class Mesh {
         return LOADED_MESHES[meshId];
     }
 
-    // returns mesh id of the generated mesh
     // verts must be organized into (XYZ, TextureXY, NormalXYZ, RGBA if !instanceColor, TextureZ if !instanceTextureZ).
     // leave expectedCount at 1024 unless it's something like a cube, in which case set it to like 1 million (you can create more objects than this number, it just might lag a little)
-    static unsigned int FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor=true, bool instanceTextureZ=true, unsigned int expectedCount=1024) {
+    static std::shared_ptr<Mesh> FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor=true, bool instanceTextureZ=true, unsigned int expectedCount=1024) {
         unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
-        LOADED_MESHES[meshId] = std::shared_ptr<Mesh>(new Mesh(verts, indies, instanceColor, instanceTextureZ, expectedCount));
-        return meshId;
+        auto ptr = std::shared_ptr<Mesh>(new Mesh(verts, indies, instanceColor, instanceTextureZ, expectedCount));
+        LOADED_MESHES[meshId] = ptr;
+        return ptr;
     }
 
-    // returns mesh id of the generated mesh.
     // only accepts OBJ files.
     // File should just contain one object. 
     // TODO: materials
     // TODO: MTL support should be easy
     // meshTransparency will be the initial alpha value of every vertex color, because obj files only support RGB (and also they don't REALLY support RGA)
-    static unsigned int FromFile(const std::string& path, bool instanceTextureZ=true, bool instanceColor=true, float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024) {
+    static std::shared_ptr<Mesh> FromFile(const std::string& path, bool instanceTextureZ=true, bool instanceColor=true, float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024) {
         // Load file
         auto config = tinyobj::ObjReaderConfig();
         config.triangulate = true;
@@ -102,7 +101,7 @@ class Mesh {
                 if (!instanceColor) {
                     vertices.push_back(colors[index.vertex_index * 3]);
                     vertices.push_back(colors[index.vertex_index * 3 + 1]);
-                    vertices.push_back(colors[index.vertex_index * 3+ 2]);
+                    vertices.push_back(colors[index.vertex_index * 3 + 2]);
                     vertices.push_back(transparency);
                 }
 
@@ -116,8 +115,9 @@ class Mesh {
         }
         
         unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
-        LOADED_MESHES[meshId] = std::shared_ptr<Mesh>(new Mesh(vertices, indices, instanceColor, instanceTextureZ, expectedCount));
-        return meshId;
+        auto ptr = std::shared_ptr<Mesh>(new Mesh(vertices, indices, instanceColor, instanceTextureZ, expectedCount));
+        LOADED_MESHES[meshId] = ptr;
+        return ptr;
     }
 
     // unloads the mesh with the given meshId, freeing its memory.

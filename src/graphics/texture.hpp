@@ -16,9 +16,12 @@ enum TextureType {
 
 class Texture {
     public:
+    // lets textureId be read only without a getter
+    const unsigned int& textureId = glTextureId;
 
-    static unsigned int New(TextureType textureType, std::string path, int layerHeight = -1, int mipmapLevels = 4);
-    static unsigned int New(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels = 4);
+    static std::shared_ptr<Texture> New(TextureType textureType, std::string path, int layerHeight = -1, int mipmapLevels = 4);
+
+    static std::shared_ptr<Texture> New(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels = 4);
 
     static std::shared_ptr<Texture>& Get(unsigned int textureId);
 
@@ -33,7 +36,7 @@ class Texture {
     private:
     inline static std::unordered_map<unsigned int, std::shared_ptr<Texture>> LOADED_TEXTURES; 
 
-    GLuint textureId; // id is used both by opengl and us as a uuid
+    GLuint glTextureId; // id is used both by opengl and us as a uuid
     GLenum bindingLocation;
     int width, height, depth, nChannels; // if the texture is not an array texture or a 3d texture, depth = 1
     TextureType type;

@@ -2,14 +2,19 @@
 #include "engine.hpp"
 #include <cstdio>
 
+// sorry we have an init and terminate, TODO get rid of all the static stuff so we can use constructor/destructor again
 void GraphicsEngine::Init() {
     debugFreecamEnabled = false;
     debugFreecamPos = {0.0, 0.0, 0.0};
     debugFreecamPitch = 0.0;
     debugFreecamYaw = 0.0;
 
-    defaultShaderProgramId = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl");
-    std::printf("\n Def id is %u", defaultShaderProgramId);
+    defaultShaderProgramId = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl")->shaderProgramId;
+    skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
+
+    skybox = new RenderableMesh(Mesh::FromFile("../models/skybox.obj"));
+
+    glDepthFunc(GL_LEQUAL); // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
 }
 
 void GraphicsEngine::Terminate() {
@@ -20,6 +25,8 @@ void GraphicsEngine::Terminate() {
             } 
         } 
     }
+
+    delete skybox;
 }
 
 // Used by Texture to throw an error if someone tries to unload a texture being used
@@ -48,12 +55,15 @@ void GraphicsEngine::RenderScene() {
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
 
+    // Do various things
     Update();
 
+    // Update shaders with the camera's new rotation/projection
     glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix);
 
+    // Draw world stuff.
     for (auto & [shaderId, map1] : meshpools) {
         ShaderProgram::Get(shaderId)->Use();
         for (auto & [textureId, map2] : map1) {
@@ -64,9 +74,22 @@ void GraphicsEngine::RenderScene() {
         } 
     }
 
+    // Draw skybox afterwards to encourage early z-test
+    DrawSkybox();
 
     window.Update(); // this flips the buffer so it goes at the end; TODO maybe poll events at start of frame instead
 }
+
+void GraphicsEngine::DrawSkybox() {
+    glDisable(GL_CULL_FACE);
+    skyboxShaderProgram->Use();
+    skyboxTexture->Use();
+    skybox->Draw();
+    
+    glClear(GL_DEPTH_BUFFER_BIT); // make sure skybox isn't drawn over everything else
+}
+
+RenderableMesh* GraphicsEngine::skybox = nullptr;
 
 void GraphicsEngine::SetColor(MeshLocation& location, glm::vec4 rgba) {
     assert(location.initialized);

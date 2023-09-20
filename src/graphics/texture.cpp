@@ -20,22 +20,20 @@
 // if type == TEXTURE_2D_ARRAY, the image may be appended to 
 // if layerHeight == -1, layerHeight will be set to height, meaning the whole image will be loaded into a single layer. 
 // if type == FONT, not much will happen because i haven't added that yet.
-// Returns a pair of (id of generated texture, z-coord of first image created).
-unsigned int Texture::Texture::New(TextureType textureType, std::string path, int layerHeight, int mipmapLevels) {
+std::shared_ptr<Texture> Texture::Texture::New(TextureType textureType, std::string path, int layerHeight, int mipmapLevels) {
     auto ptr = std::shared_ptr<Texture>(new Texture(textureType, path, layerHeight, mipmapLevels));
-    LOADED_TEXTURES.emplace(ptr->textureId, ptr);
-    return ptr->textureId;
+    LOADED_TEXTURES.emplace(ptr->glTextureId, ptr);
+    return ptr;
 }
 
 // read many image files to texture array, where each image becomes one layer.
 // Every image file must have the same size due to OpenGL requirements.
 // texture type must be TEXTURE_2D_ARRAY, TEXTURE_CUBEMAP, or a 3d texture if i ever have support for that.
 // if texture type == TEXTURE_CUBEMAP, paths must be in the order {right, left, top, bottom, back, front}
-// Returns id of generated texture.
-unsigned int Texture::New(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels) {
+std::shared_ptr<Texture> Texture::New(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels) {
     auto ptr = std::shared_ptr<Texture>(new Texture(textureType, paths, mipmapLevels));
-    LOADED_TEXTURES.emplace(ptr->textureId, ptr);
-    return ptr->textureId;
+    LOADED_TEXTURES.emplace(ptr->glTextureId, ptr);
+    return ptr;
 }
 
 // Get a pointer to a texture by its id.
@@ -54,7 +52,7 @@ void Texture::Unload(unsigned int textureId) {
 }
 
 Texture::~Texture() {
-    glDeleteTextures(1, &textureId);
+    glDeleteTextures(1, &glTextureId);
 }
 
 glm::uvec3 Texture::GetSize() {
@@ -63,7 +61,7 @@ glm::uvec3 Texture::GetSize() {
 
 // Makes OpenGL draw everything with this texture, until Use() is called on a different texture.
 void Texture::Use() {
-    glBindTexture(bindingLocation, textureId);
+    glBindTexture(bindingLocation, glTextureId);
 }
 
 // Sets all of the OpenGL texture parameters.
@@ -85,7 +83,7 @@ Texture::Texture(TextureType textureType, std::string path, int layerHeight, int
     }
 
     // generate OpenGL texture object and put image data in it
-    glGenTextures(1, &textureId);
+    glGenTextures(1, &glTextureId);
     Use();
     if (type == TEXTURE_2D) {
         depth = 1;
@@ -144,10 +142,10 @@ Texture::Texture(TextureType textureType, std::vector<std::string>& paths, int m
     
 
     // generate OpenGL texture object and put image data in it
-    glGenTextures(1, &textureId);
+    glGenTextures(1, &glTextureId);
     Use();
 
-    if (type != TEXTURE_2D_ARRAY) {
+    if (type != TEXTURE_CUBEMAP) {
         glTexImage3D(bindingLocation, mipmapLevels, GL_RGBA, width, height, imageDatas.size(), 0, GL_RGBA, GL_UNSIGNED_INT, nullptr);
     }
 

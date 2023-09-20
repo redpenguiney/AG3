@@ -17,6 +17,7 @@
 #include "../gameobjects/transform_component.cpp"
 #include "../utility/utility.cpp"
 #include "texture.hpp"
+#include "renderable_mesh.cpp"
 
 const unsigned int RENDER_COMPONENT_POOL_SIZE = 65536;
 
@@ -36,6 +37,11 @@ struct MeshLocation {
 // Handles graphics, obviously.
 class GraphicsEngine {
     public:
+    // the shader used to render the skybox. Can freely change this with no issues.
+    static inline std::shared_ptr<ShaderProgram> skyboxShaderProgram;
+    // skybox texture. Must be a cubemap texture.
+    static inline std::shared_ptr<Texture> skyboxTexture;
+
     // freecam is just a thing for debugging
     static inline bool debugFreecamEnabled = false;
     static inline glm::dvec3 debugFreecamPos = {0, 0, 0};
@@ -98,6 +104,7 @@ class GraphicsEngine {
     };
 
     private:
+    static RenderableMesh* skybox; 
 
     static inline unsigned int defaultShaderProgramId;
 
@@ -119,6 +126,7 @@ class GraphicsEngine {
     // Keys go like meshesToAdd[shaderId][textureId][meshId] = vector of pointers to MeshLocations stored in RenderComponents.
     static inline std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::vector<MeshLocation*>>>> meshesToAdd;
 
+    static void DrawSkybox();
     static void Update();
     static void UpdateRenderComponents();
     static glm::mat4x4 UpdateDebugFreecam();
@@ -126,3 +134,4 @@ class GraphicsEngine {
 
     static void AddObject(unsigned int shaderId, unsigned int textureId, unsigned int meshId, MeshLocation* meshLocation);
 };
+

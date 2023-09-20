@@ -61,11 +61,14 @@ class Shader {
 
 class ShaderProgram {
     public:
+    // lets programId be read only without a getter
+    const unsigned int& shaderProgramId = programId;
+
     const bool useCameraMatrix; // if true, the uniform mat4 "camera" in this program's vertex shader will be automatically set to a projection + view matrix.
 
     static void SetCameraUniforms(glm::mat4x4 cameraProjMatrix);
 
-    static unsigned int New(const char* vertexPath, const char* fragmentPath, const bool useCameraUniform = true);
+    static std::shared_ptr<ShaderProgram> New(const char* vertexPath, const char* fragmentPath, const bool useCameraUniform = true);
 
     static std::shared_ptr<ShaderProgram>& Get(unsigned int shaderProgramId);
 
