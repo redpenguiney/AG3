@@ -131,6 +131,7 @@ class GraphicsEngine {
     static void UpdateRenderComponents();
     static glm::mat4x4 UpdateDebugFreecam();
     static void AddCachedMeshes();
+    static void UpdateMeshpools();
 
     static void AddObject(unsigned int shaderId, unsigned int textureId, unsigned int meshId, MeshLocation* meshLocation);
 };

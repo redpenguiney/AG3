@@ -10,12 +10,12 @@
 #include <tuple>
 #include <vector>
 #include <unordered_map>
+#include "buffered_buffer.cpp"
 
 // Contains an arbitrary number of arbitary meshes and is used to render them very quickly.
 class Meshpool {
     public:
     Meshpool(std::shared_ptr<Mesh>& mesh);
-    ~Meshpool();
     Meshpool(const Meshpool&) = delete; // try to copy construct and i will end you
 
     std::vector<std::pair<unsigned int, unsigned int>> AddObject(const unsigned int meshId, unsigned int count);
@@ -25,6 +25,7 @@ class Meshpool {
     void SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ);
     //std::tuple<GLfloat*, const unsigned int> ModifyVertices(const unsigned int meshId);
     void Draw();
+    void Update();
 
     int ScoreMeshFit(const unsigned int verticesNBytes, const unsigned int indicesNBytes, const bool shouldInstanceColor, const bool shouldInstanceTextureZ);
 
@@ -45,19 +46,10 @@ class Meshpool {
 
     GLuint vao; // tells opengl how vertices are formatted
 
-    GLuint vertexBuffer; // holds per-vertex data (like normals)
-    GLuint instancedVertexBuffer; // holds per-instance/per-object data (like model matrix)
-    GLuint indexBuffer; // holds mesh indices
-    GLuint indirectDrawBuffer; // stores rendering commands, used for an optimization called indirect drawing
-
-    // we call glMapBuffer to get a pointer to the contents of each buffer that we can freely write to. 
-    // (it's also persistently mapped and coherent so we don't need to ever call glUnmapBuffer or sync anything).
-    // (char* instead of void* so we can do pointer arithmetic)
-
-    char* vertexBufferData; // XYZ, TextureXY, Normal, color if not instanced, textureZ if not instanced
-    char* instancedVertexBufferData; // Model matrix, color if its instanced, textureZ if its instanced
-    char* indexBufferData; 
-    char* indirectDrawBufferData; 
+    BufferedBuffer vertexBuffer; // holds per-vertex data (like normals)
+    BufferedBuffer instancedVertexBuffer; // holds per-instance/per-object data (like model matrix)
+    BufferedBuffer indexBuffer; // holds mesh indices
+    BufferedBuffer indirectDrawBuffer; // stores rendering commands, used for an optimization called indirect drawing
 
     std::deque<unsigned int> availableMeshSlots;
     //std::deque<unsigned int> availableInstancedSlots;
@@ -79,9 +71,6 @@ class Meshpool {
     inline static const GLuint NORMAL_ATTRIBUTE = 4;
     inline static const GLuint MODEL_MATRIX_ATTRIBUTE = 5;
 
-    void DeleteNonInstancedBuffers(); 
-    void DeleteInstancedBuffer();
-
     void ExpandNonInstanced();
     void ExpandInstanced(GLuint multiplier);
 
@@ -98,15 +87,16 @@ Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh):
     instanceTextureZ(mesh->instancedTextureZ),
     vertexSize(sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + (!mesh->instancedColor ? sizeof(glm::vec4) : 0) + (!mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // sizeof(vertexPos) + sizeof(vertexNormals) + sizeof(textureXY) + sizeof(color if not instanced) + sizeof(textureZ if not instanced) 
     baseMeshCapacity((TARGET_VBO_SIZE/meshVerticesSize) + 1), // +1 just in case the base capacity was somehow 0
-    baseInstanceCapacity((TARGET_VBO_SIZE/instanceSize) + 1)
+    baseInstanceCapacity((TARGET_VBO_SIZE/instanceSize) + 1),
+
+    vertexBuffer(GL_ARRAY_BUFFER, 1, 0),
+    instancedVertexBuffer(GL_ARRAY_BUFFER, 3, 0),
+    indexBuffer(GL_ELEMENT_ARRAY_BUFFER, 1, 0),
+    indirectDrawBuffer(GL_DRAW_INDIRECT_BUFFER, 1, 0)
 {
     
  
     vao = 0;
-    vertexBuffer = 0;
-    indexBuffer = 0;
-    indirectDrawBuffer = 0;
-    instancedVertexBuffer = 0;
 
     meshCapacity = 0;
     instanceCapacity = 0;
@@ -114,11 +104,6 @@ Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh):
 
     ExpandNonInstanced();
     ExpandInstanced(1);
-}
-
-Meshpool::~Meshpool() {
-    DeleteNonInstancedBuffers();
-    DeleteInstancedBuffer();
 }
 
 // Adds count identical meshes to pool, and returns a vector of pairs of (slot, instanceOffset) used to access the object.
@@ -177,11 +162,11 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
 // Will abort if mesh uses per-vertex color instead of per-instance color.
 void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4 rgba) {
     assert(instanceColor == true);
-    glm::vec4* colorLocation = (glm::vec4*)(sizeof(glm::mat4x4) + instancedVertexBufferData + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
+    glm::vec4* colorLocation = (glm::vec4*)(sizeof(glm::mat4x4) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
     // make sure we don't segfault 
-    assert((char*)colorLocation + sizeof(glm::vec4) <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
-    assert((char*)colorLocation >= instancedVertexBufferData);
+    assert((char*)colorLocation + sizeof(glm::vec4) <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
+    assert((char*)colorLocation >= instancedVertexBuffer.Data());
     
     *colorLocation = rgba;
 }
@@ -190,50 +175,45 @@ void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, 
 // Will abort if mesh uses per-vertex color instead of per-instance color.
 void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ) {
     assert(instanceTextureZ == true);
-    float* textureZLocation = (float*)(sizeof(glm::mat4x4) + ((instanceColor) ? sizeof(glm::vec4) : 0) + instancedVertexBufferData + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
+    float* textureZLocation = (float*)(sizeof(glm::mat4x4) + ((instanceColor) ? sizeof(glm::vec4) : 0) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
     // make sure we don't segfault 
-    assert((char*)textureZLocation + sizeof(float) <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
-    assert((char*)textureZLocation >= instancedVertexBufferData);
+    assert((char*)textureZLocation + sizeof(float) <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
+    assert((char*)textureZLocation >= instancedVertexBuffer.Data());
     
     *textureZLocation = textureZ;
 }
 
 // Makes the given instance use the given model matrix.
 void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4 matrix) {
-    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBufferData + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
+    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
     // make sure we don't segfault 
     
-    assert((char*)modelMatrixLocation <= instancedVertexBufferData + (instanceSize * instanceCapacity)); 
-    assert((char*)modelMatrixLocation >= instancedVertexBufferData);
+    assert((char*)modelMatrixLocation <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
+    assert((char*)modelMatrixLocation >= instancedVertexBuffer.Data());
     *modelMatrixLocation = matrix;
 }
 
 void Meshpool::Draw() {
     glBindVertexArray(vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
-    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirectDrawBuffer);
+    indexBuffer.Bind();
+    indirectDrawBuffer.Bind();
     //double start1 = Time();
    // glMultiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, 0, drawCount, 0); TODO: GET INDIRECT DRAWING TO WORK
     for (auto & command: drawCommands) {
-        glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance);
+        glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance + (instancedVertexBuffer.GetOffset()/instanceSize));
     }
     
     //std::printf("\nBRUH IT ELAPSED %fms", Time() - start1);
 }
 
-// assumes buffers actually exist or will crash.
-// Also deletes the vao.
-void Meshpool::DeleteNonInstancedBuffers() {
-    GLuint buffers[] = {vertexBuffer, indexBuffer, indirectDrawBuffer};
-    glDeleteBuffers(3, buffers);
-    glDeleteVertexArrays(1, &vao);
-}
-
-// assumes buffer actually exists or will crash
-void Meshpool::DeleteInstancedBuffer() {
-    glDeleteBuffers(1, &instancedVertexBuffer);
+// needed for BufferedBuffer's double/triple buffering, call every frame.
+void Meshpool::Update() {
+    vertexBuffer.Update();
+    instancedVertexBuffer.Update();
+    indexBuffer.Update();
+    indirectDrawBuffer.Update();
 }
 
 // expands non-instanced buffers to accomodate baseMeshCapacity more unique meshes.
@@ -247,25 +227,10 @@ void Meshpool::ExpandNonInstanced() {
     }
     drawCommands.resize(meshCapacity);
 
-
-    // We have to recreate the buffer to resize it because it's persistently mapped
-    // Generate new buffers and allocate storage for them
-    GLuint newBuffers[3];
-    glGenBuffers(3, &newBuffers[0]); 
-    GLuint newVertexBuffer = newBuffers[0];
-    GLuint newIndexBuffer = newBuffers[1];
-    GLuint newIndirectDrawBuffer = newBuffers[2];
-    glBindBuffer(GL_ARRAY_BUFFER, newVertexBuffer); 
-    glBufferStorage(GL_ARRAY_BUFFER, meshVerticesSize * meshCapacity, nullptr, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, newIndexBuffer);
-    glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, meshIndicesSize * meshCapacity, nullptr, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
-    glBindBuffer(GL_DRAW_INDIRECT_BUFFER, newIndirectDrawBuffer);
-    glBufferStorage(GL_DRAW_INDIRECT_BUFFER, sizeof(IndirectDrawCommand) * meshCapacity, nullptr, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT); 
-
-    // Get pointer to buffer contents
-    void* newVertexBufferData = glMapBufferRange(GL_ARRAY_BUFFER, 0, meshVerticesSize * meshCapacity, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
-    void* newIndexBufferData = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, meshIndicesSize * meshCapacity, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
-    void* newIndirectDrawBufferData = glMapBufferRange(GL_DRAW_INDIRECT_BUFFER, 0, sizeof(IndirectDrawCommand) * meshCapacity, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
+    // Resize buffers.
+    vertexBuffer.Reallocate(meshCapacity * meshVerticesSize);
+    indexBuffer.Reallocate(meshCapacity * meshIndicesSize);
+    indirectDrawBuffer.Reallocate(meshCapacity * sizeof(IndirectDrawCommand));
 
     // Create vao
     GLuint newVao;
@@ -303,21 +268,12 @@ void Meshpool::ExpandNonInstanced() {
         glVertexAttribDivisor(TEXTURE_Z_ATTRIBUTE, 0); // don't instance
     }
 
-    // If we had a previous instancedVertexBuffer, we need to memcpy the contents of the old buffer into the new one, then delete the old ones
+    // Delete the old vao if there is one.
     if (oldMeshCapacity != 0) {
-        memcpy(newVertexBufferData, vertexBufferData, oldMeshCapacity * meshVerticesSize);
-        memcpy(newIndexBufferData, indexBufferData, oldMeshCapacity * meshIndicesSize);
-        memcpy(newIndirectDrawBufferData, indirectDrawBufferData, oldMeshCapacity * sizeof(IndirectDrawCommand));
-        DeleteNonInstancedBuffers();
+        glDeleteVertexArrays(1, &vao);
     }
 
-    // lastly, save the new buffers and vao we created
-    vertexBuffer = newVertexBuffer;
-    vertexBufferData = (char*)newVertexBufferData;
-    indexBuffer = newIndexBuffer;
-    indexBufferData = (char*)newIndexBufferData;
-    indirectDrawBuffer = newIndirectDrawBuffer;
-    indirectDrawBufferData = (char*)newIndirectDrawBufferData;
+    // lastly, save the new vao we created
     vao = newVao;
     
 }
@@ -327,21 +283,14 @@ void Meshpool::ExpandNonInstanced() {
 // this one needs a multiplier argument because if we add like 20000 instances and the baseInstanceCapacity is 5000, there wouldn't be enough room and it would segfault
 void Meshpool::ExpandInstanced(GLuint multiplier) {
     // Increase cap
-    unsigned int oldInstanceCapacity = instanceCapacity;
+    //unsigned int oldInstanceCapacity = instanceCapacity;
     instanceCapacity += baseInstanceCapacity * multiplier;
     // for (unsigned int i = 0; i < baseInstanceCapacity; i++) {
     //     availableInstancedSlots.push_back(oldInstanceCapacity + i);
     // }
 
-    // We have to recreate the buffer to resize it because it's persistently mapped
-    // Generate new buffer and allocate storage for it
-    GLuint newInstancedVertexBuffer;
-    glGenBuffers(1, &newInstancedVertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, newInstancedVertexBuffer);
-    glBufferStorage(GL_ARRAY_BUFFER, instanceSize * instanceCapacity, nullptr, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
-
-    // Get pointer to buffer contents
-    void* newInstancedVertexBufferData = glMapBufferRange(GL_ARRAY_BUFFER, 0, instanceSize * instanceCapacity, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
+    // Update buffer.
+    instancedVertexBuffer.Reallocate(instanceCapacity * instanceSize);
 
     // Associate data with the vao and describe format of instanced data
     glBindVertexArray(vao);
@@ -377,16 +326,6 @@ void Meshpool::ExpandInstanced(GLuint multiplier) {
         glVertexAttribPointer(TEXTURE_Z_ATTRIBUTE, 2, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4) + ((instanceColor) ? sizeof(glm::vec4) : 0)));
         glVertexAttribDivisor(TEXTURE_Z_ATTRIBUTE, 1); // don't instance
     }
-
-    // If we had a previous instancedVertexBuffer, we need to memcpy the contents of the old buffer into the new one, then delete the old ones
-    if (oldInstanceCapacity != 0) {
-        memcpy(newInstancedVertexBufferData, instancedVertexBufferData, oldInstanceCapacity * instanceSize);
-        DeleteInstancedBuffer();
-    }
-
-    // lastly, save the new buffers we created
-    instancedVertexBuffer = newInstancedVertexBuffer;
-    instancedVertexBufferData = (char*)newInstancedVertexBufferData;
 }
 
 // Fills the given slot with the given mesh's vertices and indices.
@@ -396,8 +335,9 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     auto indices = &mesh->indices;
 
     // literally just memcpy into the buffers
-    memcpy(vertexBufferData + (slot * meshVerticesSize), vertices->data(), vertices->size() * vertexSize);
-    memcpy(indexBufferData + (slot * meshIndicesSize), indices->data(), indices->size() * sizeof(GLuint));
+    std::cout << "\nAvailable buffers are " << (void*)vertexBuffer.Data() << ", " << (void*)indexBuffer.Data();
+    memcpy(vertexBuffer.Data() + (slot * meshVerticesSize), vertices->data(), vertices->size() * vertexSize);
+    memcpy(indexBuffer.Data() + (slot * meshIndicesSize), indices->data(), indices->size() * sizeof(GLuint));
 
     // also update drawCommands before doing the indirect draw buffer
     drawCommands[slot].count = indices->size();
@@ -425,7 +365,7 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
 
 void Meshpool::UpdateIndirectDrawBuffer(const unsigned int slot) {
     // std::cout << "\nLocation is " << slot << " filling with pointer " << (void*)indirectDrawBufferData + (slot * sizeof(IndirectDrawCommand)) << " and original was fyi " << (void*)indirectDrawBufferData;
-    memcpy(indirectDrawBufferData + (slot * sizeof(IndirectDrawCommand)), &drawCommands[slot], sizeof(IndirectDrawCommand));
+    memcpy(indirectDrawBuffer.Data() + (slot * sizeof(IndirectDrawCommand)), &drawCommands[slot], sizeof(IndirectDrawCommand));
 }
 
 // We want meshes to fit snugly in the slots of their meshpool.
