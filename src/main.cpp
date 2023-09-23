@@ -34,9 +34,9 @@ int main() {
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false, -1.0, 1.0, 16384);
     auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
-    for (int x = -50; x < 10; x++) {
-        for (int y = -50; y < 10; y++) {
-            for (int z = 5; z < 10; z++) {
+    for (int x = -50; x < 50; x++) {
+        for (int y = -5; y < 5; y++) {
+            for (int z = 5; z < 50; z++) {
                 auto g = GameObject::New(m->meshId, t->textureId);
                 g->transformComponent->position = glm::dvec3( x * 3, y * 3, z * 3);
             }

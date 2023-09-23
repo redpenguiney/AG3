@@ -77,6 +77,7 @@ void GraphicsEngine::RenderScene() {
     // Draw skybox afterwards to encourage early z-test
     DrawSkybox();
 
+    UpdateMeshpools();
     window.Update(); // this flips the buffer so it goes at the end; TODO maybe poll events at start of frame instead
 }
 
@@ -116,6 +117,16 @@ void GraphicsEngine::Update() {
     }
     AddCachedMeshes();
     UpdateRenderComponents();        
+}
+
+void GraphicsEngine::UpdateMeshpools() {
+    for (auto & [shaderId, map1] : meshpools) {
+        for (auto & [textureId, map2] : map1) {
+            for (auto & [poolId, pool] : map2) {
+                pool->Update();
+            } 
+        } 
+    }
 }
 
 void GraphicsEngine::UpdateRenderComponents() {
