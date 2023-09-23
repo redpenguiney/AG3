@@ -70,7 +70,7 @@ class GraphicsEngine {
     // Gameobjects that want to be rendered should have a pointer to one of these.
     // However, they are stored here in a vector because that's better for the cache. (google ECS).
     // NEVER DELETE THIS POINTER, JUST CALL Destroy(). DO NOT STORE OUTSIDE A GAMEOBJECT. THESE USE AN OBJECT POOL.
-    class RenderComponent {
+    class RenderComponent: BaseComponent {
         public:
         // because object pool, instances of this struct might just be uninitialized memory
         // also, gameobjects have to reserve a render component even if they don't use one (see gameobject.cpp), so they can set this to false if they don't actually want one
@@ -84,20 +84,10 @@ class GraphicsEngine {
         static RenderComponent* New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id = defaultShaderProgramId);
         void Destroy();
 
-        // this union exists so we can use a "free list" memory optimization, see component_pool.cpp
-        union {
-            // live state
-            MeshLocation meshLocation;
-
-            //dead state
-            struct {
-                RenderComponent* next; // pointer to next available component in pool
-                unsigned int componentPoolId; // index into pools vector
-            };
-            
-        };
-
         private:
+        MeshLocation meshLocation;
+        friend class GraphicsEngine;
+        
         //private constructor to enforce usage of object pool
         friend class ComponentPool<RenderComponent, RENDER_COMPONENT_POOL_SIZE>;
         RenderComponent();

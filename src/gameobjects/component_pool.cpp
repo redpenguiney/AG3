@@ -1,8 +1,10 @@
 #pragma once
 #include <deque>
+#include <type_traits>
 #include <vector>
 #include <iterator> 
 #include <cstddef>
+#include "base_component.cpp"
 
 // Object pool for components (although i suppose you could use it for something besides components).
 // Automatically resizes.
@@ -11,6 +13,7 @@
 // Just set COMPONENTS_PER_POOL to 65536 if you aren't sure, no default value because if you specify it in some places but not others you get types mixed up
 template<typename T, unsigned int COMPONENTS_PER_POOL>
 class ComponentPool {
+    static_assert(std::is_base_of<BaseComponent, T>(), "ComponentPool only accepts classes derived from BaseComponent.");
     friend T;
 
     public:
@@ -30,14 +33,14 @@ class ComponentPool {
                 if (firstAvailable[poolIndex] == nullptr) {continue;} // if the pool is full go to the next one
 
                 T* foundObject = firstAvailable[poolIndex];
-                firstAvailable[poolIndex] = foundObject->next;
+                firstAvailable[poolIndex] = (T*)foundObject->next;
                 return foundObject;
             }
 
             // if we got this far there is no available pool
             AddPool();
             T* foundObject = firstAvailable.back();
-            firstAvailable.back() = foundObject->next;
+            firstAvailable.back() = (T*)foundObject->next;
             return foundObject;
         }
 

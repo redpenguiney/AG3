@@ -1,10 +1,11 @@
 #pragma once
 #include "component_pool.cpp"
+#include "base_component.cpp"
 #include "../../external_headers/GLM/ext.hpp"
 #include <cstdio>
 
 // TODO: use doubles in matrices for physics???
-class TransformComponent {
+class TransformComponent: public BaseComponent {
     public:
     glm::dvec3 position;
 
@@ -32,22 +33,6 @@ class TransformComponent {
         return mat;
     }
 
-    // this union exists so we can use a "free list", see component_pool.cpp
-    bool live;
-    union {
-        // live state
-        struct {
-            
-        };
-
-        //dead state
-        struct {
-            TransformComponent* next; // pointer to next available component in pool
-            unsigned int componentPoolId; // index into pools vector
-        };
-        
-    };
-
     private:
 
     // private constructor to enforce usage of object pool
@@ -60,7 +45,7 @@ class TransformComponent {
     // friend class PhysicsEngine;
 
     // object pool
-    static inline ComponentPool<TransformComponent, 65536> TRANSFORM_COMPONENTS;
+    static ComponentPool<TransformComponent, 65536> TRANSFORM_COMPONENTS;
 
     // rotation and scale part of matrix will not neccesarily change every frame like position will due to floating origin
     // therefore we store it here to avoid matrix multiplcation/math
