@@ -1,6 +1,8 @@
 #pragma once
 #include "engine.hpp"
+#include <cassert>
 #include <cstdio>
+#include <iostream>
 
 // sorry we have an init and terminate, TODO get rid of all the static stuff so we can use constructor/destructor again
 void GraphicsEngine::Init() {
@@ -56,6 +58,7 @@ void GraphicsEngine::RenderScene() {
     glEnable(GL_CULL_FACE); // backface culling
 
     // Do various things
+    std::cout << "\nThere are " << meshesToAdd[3][2][1].size();
     Update();
 
     // Update shaders with the camera's new rotation/projection
@@ -188,7 +191,10 @@ void GraphicsEngine::AddCachedMeshes() {
     for (auto & [shaderId, map1] : meshesToAdd) {
         for (auto & [textureId, map2] : map1) {
             for (auto & [meshId, meshLocations] : map2) {
-                
+
+                std::cout << "\nAdding with shader " << shaderId << " texture " << textureId << " mesh " << meshId;
+                //std::cout << "\nCount " << meshesToAdd[shaderId][textureId].size();
+
                 std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
                 const unsigned int verticesNBytes = m->vertices.size() * sizeof(GLfloat);
                 const unsigned int indicesNBytes = m->indices.size() * sizeof(GLuint);
@@ -223,7 +229,7 @@ void GraphicsEngine::AddCachedMeshes() {
             } 
         }
     }
-    // TODO: instead of clearing the entire me
+    // TODO: instead of clearing the entire thing do something else
     meshesToAdd.clear();
 }
 
@@ -231,7 +237,9 @@ void GraphicsEngine::AddCachedMeshes() {
 // Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.
 // Contents of MeshLocation pointer are undefined until addCachedMeshes() is called.
 void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int textureId, unsigned int meshId, MeshLocation* meshLocation) {
+    std::cout << "\n Before add its " << meshesToAdd[shaderId][textureId][meshId].size();
     meshesToAdd[shaderId][textureId][meshId].push_back(meshLocation);
+    std::cout << "\n After add its " << meshesToAdd[shaderId][textureId][meshId].size();
 }
 
 GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id) {
@@ -244,7 +252,8 @@ GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned i
     ptr->meshLocation.textureId = texture_id;
     ptr->meshLocation.shaderProgramId = shader_id;
 
-    AddObject(ptr->shaderId, ptr->textureId, ptr->meshId, &ptr->meshLocation);
+    AddObject(ptr->shaderId, ptr->textureId, ptr->meshId, &ptr->meshLocation); 
+    std::cout << "\n After add 2 its " << meshesToAdd[shader_id][texture_id][mesh_id].size(); 
     return ptr;
 
 };
@@ -257,7 +266,7 @@ void GraphicsEngine::RenderComponent::Destroy() {
     // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from GraphicsEngine::meshesToAdd
     if (!meshLocation.initialized) { 
         auto & vec = meshesToAdd.at(shaderId).at(textureId).at(meshId);
-        int index = -1;
+        int index = 0;
         for (auto & ptr : vec) {
             if (ptr == &meshLocation) {
                 break;
@@ -268,6 +277,7 @@ void GraphicsEngine::RenderComponent::Destroy() {
     }
     else { // otherwise just remove object from graphics engine
         // TODO
+        assert(false);
     }
 
     live = false;

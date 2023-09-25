@@ -45,7 +45,7 @@ class TransformComponent: public BaseComponent {
     // friend class PhysicsEngine;
 
     // object pool
-    static ComponentPool<TransformComponent, 65536> TRANSFORM_COMPONENTS;
+    static inline ComponentPool<TransformComponent, 65536> TRANSFORM_COMPONENTS;
 
     // rotation and scale part of matrix will not neccesarily change every frame like position will due to floating origin
     // therefore we store it here to avoid matrix multiplcation/math

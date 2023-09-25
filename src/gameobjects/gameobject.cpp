@@ -1,11 +1,12 @@
 #pragma once
+#include <cstdio>
 #include <memory>
 #include<unordered_set>
 #include "../graphics/engine.cpp"
 #include "transform_component.cpp"
 
 class GameObject;
-std::unordered_set<GameObject*> GAMEOBJECTS;
+std::unordered_map<GameObject*, std::shared_ptr<GameObject>> GAMEOBJECTS;
 
 // The gameobject system uses ECS (google it).
 class GameObject {
@@ -18,8 +19,17 @@ class GameObject {
     TransformComponent* const transformComponent;
 
     static std::shared_ptr<GameObject> New(unsigned int meshId, unsigned int textureId, bool collides = true) {
-        return std::shared_ptr<GameObject>(new GameObject(meshId, textureId));
+        auto rawPtr = new GameObject(meshId, textureId);
+        auto ptr = std::shared_ptr<GameObject>(rawPtr);
+        GAMEOBJECTS.emplace(rawPtr, ptr);
+        return ptr;
     }    
+
+    ~GameObject() {
+        renderComponent->Destroy();
+        transformComponent->Destroy();
+        GAMEOBJECTS.erase(this); 
+    };
 
     private:
         // no copy constructing gameobjects.
@@ -27,14 +37,9 @@ class GameObject {
 
         GameObject(unsigned int meshId, unsigned int textureId):
         renderComponent(GraphicsEngine::RenderComponent::New(meshId, textureId)),
-        transformComponent(TransformComponent::New()) {
-            GAMEOBJECTS.insert(this);
+        transformComponent(TransformComponent::New()) 
+        {
+            
         };
-
-        friend class std::shared_ptr<GameObject>;
-        ~GameObject() {
-            renderComponent->Destroy();
-            transformComponent->Destroy();
-            GAMEOBJECTS.erase(this); 
-        };
+        
 };

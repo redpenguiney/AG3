@@ -1,5 +1,6 @@
 #pragma once
 #include <deque>
+#include <iostream>
 #include <type_traits>
 #include <vector>
 #include <iterator> 
@@ -13,15 +14,17 @@
 // Just set COMPONENTS_PER_POOL to 65536 if you aren't sure, no default value because if you specify it in some places but not others you get types mixed up
 template<typename T, unsigned int COMPONENTS_PER_POOL>
 class ComponentPool {
-    static_assert(std::is_base_of<BaseComponent, T>(), "ComponentPool only accepts classes derived from BaseComponent.");
     friend T;
 
     public:
+        // vectors of arrays of length COMPONENTS_PER_POOL
         std::vector<T*> pools; // public because making an iterator was too much work
 
         ComponentPool() {
             AddPool();
         }
+
+        ComponentPool(const ComponentPool<T, COMPONENTS_PER_POOL>&) = delete;
 
         // Returns a pointer to an uninitialized component. The fields of this component are undefined until you set them to something.
         T* GetNew() {
@@ -34,6 +37,8 @@ class ComponentPool {
 
                 T* foundObject = firstAvailable[poolIndex];
                 firstAvailable[poolIndex] = (T*)foundObject->next;
+
+                std::cout << "\nReturning pointer " << foundObject;
                 return foundObject;
             }
 
@@ -41,6 +46,8 @@ class ComponentPool {
             AddPool();
             T* foundObject = firstAvailable.back();
             firstAvailable.back() = (T*)foundObject->next;
+
+            std::cout << "\nReturning pointer " << foundObject << " after expanding";
             return foundObject;
         }
 

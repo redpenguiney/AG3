@@ -34,15 +34,15 @@ int main() {
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false, -1.0, 1.0, 16384);
     auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
-    for (int x = -50; x < 50; x++) {
-        for (int y = -5; y < 5; y++) {
-            for (int z = 5; z < 50; z++) {
+    
+    for (int x = 4; x < 5; x++) {
+        for (int y = 4; y < 5; y++) {
+            for (int z = 5; z < 6; z++) {
                 auto g = GameObject::New(m->meshId, t->textureId);
                 g->transformComponent->position = glm::dvec3( x * 3, y * 3, z * 3);
             }
         }
     }
-
     
     GraphicsEngine::debugFreecamEnabled = true;
     GraphicsEngine::window.SetMouseLocked(true);
@@ -61,7 +61,6 @@ int main() {
     printf("\nStarting main loop.");
     
     while (!GraphicsEngine::ShouldClose()) {
-
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         GraphicsEngine::RenderScene();
         //GE.SetColor(drawId, glm::vec4(0.0, 1.0, 0.5, 1.0));
