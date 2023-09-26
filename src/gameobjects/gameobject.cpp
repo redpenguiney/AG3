@@ -25,6 +25,13 @@ class GameObject {
         return ptr;
     }    
 
+    // NOTE: only removes shared_ptr from GAMEOBJECTS, destructor will not be called until all other shared_ptrs to this gameobject are deleted.
+        // Those shared_ptrs remain completely valid and can be read/written freely (although why would you if you're destroying it???).
+    // TODO: when Destroy() is called, should still make it stop being drawn and stop physics.
+    void Destroy() {
+        GAMEOBJECTS.erase(this);
+    }
+
     ~GameObject() {
         renderComponent->Destroy();
         transformComponent->Destroy();

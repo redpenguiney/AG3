@@ -53,7 +53,7 @@ class BufferedBuffer {
 
         // Wait for the GPU to be finished with the new section of the buffer (triple buffering means this shouldn't happen much).
         if (sync[currentBuffer] != 0) {
-            std::printf("\nSync status was %x", glClientWaitSync(sync[currentBuffer], GL_SYNC_FLUSH_COMMANDS_BIT, SYNC_TIMEOUT));
+            //std::printf("\nSync status was %x", glClientWaitSync(sync[currentBuffer], GL_SYNC_FLUSH_COMMANDS_BIT, SYNC_TIMEOUT));
         }
     }
 

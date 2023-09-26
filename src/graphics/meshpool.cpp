@@ -4,13 +4,19 @@
 #include "mesh.cpp"
 #include "indirect_draw_command.cpp"
 #include "../debug/debug.cpp"
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <deque>
 #include <tuple>
+#include <utility>
 #include <vector>
 #include <unordered_map>
 #include "buffered_buffer.cpp"
+
+// TODO: INDBO shouldn't be persistent, and arguably neither should the vertices/indices.
+// TODO: INDBO should just be written to directly instead of writing to drawCommands and then doing memcpy.
 
 // Contains an arbitrary number of arbitary meshes and is used to render them very quickly.
 class Meshpool {
@@ -56,7 +62,10 @@ class Meshpool {
     std::unordered_map<unsigned int, std::vector<unsigned int>> slotContents; // key is meshId, value is a vector of indices/slots in the vertexBuffer containing this mesh (0 for first mesh, 1 for second, etc.)
                                                                               // needed for instancing
 
-    std::unordered_map<unsigned int, unsigned int> slotInstanceCounts; // key is slot, value is number of instances reserved by that slot 
+    std::unordered_map<unsigned int, unsigned int> slotInstanceReservedCounts; // key is slot, value is number of instances reserved by that slot 
+
+    std::unordered_map<unsigned int, std::vector<unsigned int>> slotInstanceSpaces; // key is slot, values are instances that aren't actually being drawn as their model matrix is set to all 0s 
+    // neccesary for Meshpool::RemoveObject()
 
     std::unordered_map<unsigned int, unsigned int> slotToInstanceLocations; // corresponds slots in vertexBuffer with the instance slot of the first object using that meshId
     std::vector<IndirectDrawCommand> drawCommands; // for indirect drawing
@@ -114,6 +123,29 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
     
     // if any slots for this mesh have room for more instances, try to fill them up first
     for (unsigned int slot : contents) {
+
+        // Check if RemoveObject() created any spaces to put new instances in
+        if (slotInstanceSpaces.count(slot)) {
+            unsigned int len = slotInstanceSpaces[slot].size();
+            for (unsigned int i = 0; i < std::min(len, count); i++) {
+                objLocations.push_back(std::make_pair(slot, slotInstanceSpaces[slot].back()));
+                slotInstanceSpaces[slot].pop_back();
+            }
+
+            // totally remove the map entry if we used all the spaces
+            if (len == count) {
+                slotInstanceSpaces.erase(slot);
+            }
+
+            count -= std::min(len, count);
+
+            // if we added all of the requested objects then we're done here
+            if (count == 0) {
+                return objLocations;
+            }
+        }
+
+        // Otherwise append instances to the end of the slot
         unsigned int storedCount = drawCommands[slot].instanceCount;
         if (storedCount < meshInstanceCapacity) { // if this slot has room
             const unsigned int space = meshInstanceCapacity - storedCount;
@@ -158,9 +190,43 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
     return objLocations;
 }
 
+// Frees the given object from the meshpool, so something else can use that space.
+void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instanceId) {
+    // make sure instanceId is valid
+    // TODO: check slot is valid
+    printf("\nSlot %u contains %u but id was %u", slot, slotInstanceReservedCounts[slot], instanceId);
+    assert(drawCommands[slot].instanceCount > instanceId);
+
+    // figure out how many instances are stored in this slot.
+    const unsigned int actualInstancesInSlot = drawCommands[slot].instanceCount - ((slotInstanceSpaces.count(slot)) ? slotInstanceSpaces[slot].size() : 0);
+    // if this is the only instance in the slot we just mark the slot as empty.
+    if (actualInstancesInSlot == 1) {
+        assert(false); // TODO
+    }
+
+    // if the instance is at the end of that slot we can just do this the easy way
+    if (slotInstanceReservedCounts[slot] == instanceId + 1) {
+        drawCommands.at(slot).instanceCount -= 1;
+    }
+
+    // otherwise we have to just mark the instance as empty
+    SetModelMatrix(slot, instanceId, glm::mat4x4(0)); // make it so it can't be drawn
+    slotInstanceSpaces[slot].push_back(instanceId); // tell AddObject that this instance can be overwritten
+}
+
 // Makes the given instance the given color.
 // Will abort if mesh uses per-vertex color instead of per-instance color.
 void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4 rgba) {
+    // make sure this instance slot hasn't been deleted
+    if (slotInstanceSpaces.count(slot)) {
+        for (auto & instanceSlot : slotInstanceSpaces[slot]) {
+            if (instanceSlot == instanceId) {
+                std::printf("\nWhat the, you're trying to set the color of slot %u instance %u, but that instance has been deleted!", slot, instanceId);
+                abort();
+            }
+        }
+    }
+
     assert(instanceColor == true);
     glm::vec4* colorLocation = (glm::vec4*)(sizeof(glm::mat4x4) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
@@ -174,6 +240,16 @@ void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, 
 // Makes the given instance the given textureZ.
 // Will abort if mesh uses per-vertex color instead of per-instance color.
 void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ) {
+    // make sure this instance slot hasn't been deleted
+    if (slotInstanceSpaces.count(slot)) {
+        for (auto & instanceSlot : slotInstanceSpaces[slot]) {
+            if (instanceSlot == instanceId) {
+                std::printf("\nWhat the, you're trying to set the texture-Z of slot %u instance %u, but that instance has been deleted!", slot, instanceId);
+                abort();
+            }
+        }
+    }
+
     assert(instanceTextureZ == true);
     float* textureZLocation = (float*)(sizeof(glm::mat4x4) + ((instanceColor) ? sizeof(glm::vec4) : 0) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
@@ -186,10 +262,20 @@ void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceI
 
 // Makes the given instance use the given model matrix.
 void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4 matrix) {
+    // make sure this instance slot hasn't been deleted
+    if (slotInstanceSpaces.count(slot)) {
+        for (auto & instanceSlot : slotInstanceSpaces[slot]) {
+            if (instanceSlot == instanceId) {
+                std::printf("\nWhat the, you're trying to set the model matrix of slot %u instance %u, but that instance has been deleted!", slot, instanceId);
+                abort();
+            }
+        }
+    }
+    
+
     glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
     // make sure we don't segfault 
-    
     assert((char*)modelMatrixLocation <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
     assert((char*)modelMatrixLocation >= instancedVertexBuffer.Data());
     *modelMatrixLocation = matrix;
@@ -335,7 +421,6 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     auto indices = &mesh->indices;
 
     // literally just memcpy into the buffers
-    std::cout << "\nAvailable buffers are " << (void*)vertexBuffer.Data() << ", " << (void*)indexBuffer.Data();
     memcpy(vertexBuffer.Data() + (slot * meshVerticesSize), vertices->data(), vertices->size() * vertexSize);
     memcpy(indexBuffer.Data() + (slot * meshIndicesSize), indices->data(), indices->size() * sizeof(GLuint));
 
@@ -343,7 +428,7 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     drawCommands[slot].count = indices->size();
     drawCommands[slot].firstIndex = (slot * meshIndicesSize);
     drawCommands[slot].baseVertex = slot * (meshVerticesSize/vertexSize);
-    drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceCounts[slot - 1];
+    drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceReservedCounts[slot - 1];
     drawCommands[slot].instanceCount = instanceCount;
 
     // std::printf("\nSizes are %i %i and %i", meshIndicesSize, meshVerticesSize, vertexSize);
@@ -351,8 +436,10 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
 
     // idk what to call this
     slotToInstanceLocations[slot] = drawCommands[slot].baseInstance;
-    slotInstanceCounts[slot] = mesh->instanceCount;
+    slotInstanceReservedCounts[slot] = mesh->instanceCount;
     slotContents[meshId].push_back(slot);
+
+    std::printf("\nIts %u & %u", mesh->instanceCount, slotInstanceReservedCounts[slot]);
 
     // make sure instanced data buffer has room
     if (drawCommands[slot].baseInstance + drawCommands[slot].instanceCount > instanceCapacity) { 

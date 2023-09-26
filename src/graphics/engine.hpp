@@ -76,10 +76,8 @@ class GraphicsEngine {
         // also, gameobjects have to reserve a render component even if they don't use one (see gameobject.cpp), so they can set this to false if they don't actually want one
         bool live;
 
-        // not const becasue object pool
-        unsigned int meshId; // NO CHANGING THIS
-        unsigned int textureId; // NO CHANGING THIS
-        unsigned int shaderId; // NO CHANGING THIS
+        // not const because object pool, don't actually change this
+        unsigned int meshId;
 
         static RenderComponent* New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id = defaultShaderProgramId);
         void Destroy();
