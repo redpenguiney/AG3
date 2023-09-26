@@ -68,6 +68,7 @@ int main() {
     }
     printf("\nBeginning exit process.");
 
+    GameObject::Cleanup(); printf("\nCleaned up all gameobjects.");
     GraphicsEngine::Terminate();
 
     printf("\nProgram ran successfully. Exiting.");

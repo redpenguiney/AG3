@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <memory>
 #include<unordered_set>
+#include <vector>
 #include "../graphics/engine.cpp"
 #include "transform_component.cpp"
 
@@ -30,6 +31,19 @@ class GameObject {
     // TODO: when Destroy() is called, should still make it stop being drawn and stop physics.
     void Destroy() {
         GAMEOBJECTS.erase(this);
+    }
+
+    // Call at end of program before cleaning up singletons (like GraphicsEngine).
+    // Simply calls Destroy() on all gameobjects that have not been destroyed yet.
+    static void Cleanup() {
+        std::vector<std::shared_ptr<GameObject>> addresses; // can't remove them inside the map iteration because that would mess up the map iterator
+        for (auto & [key, gameobject] : GAMEOBJECTS) {
+            (void)key;
+            addresses.push_back(gameobject);
+        }
+        for (auto & gameobject: addresses) {
+            gameobject->Destroy();
+        }
     }
 
     ~GameObject() {

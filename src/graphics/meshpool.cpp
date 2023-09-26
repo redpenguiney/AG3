@@ -194,7 +194,7 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
 void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instanceId) {
     // make sure instanceId is valid
     // TODO: check slot is valid
-    printf("\nSlot %u contains %u but id was %u", slot, slotInstanceReservedCounts[slot], instanceId);
+    printf("\nSlot %u contains %u but id was %u", slot, drawCommands[slot].instanceCount, instanceId);
     assert(drawCommands[slot].instanceCount > instanceId);
 
     // figure out how many instances are stored in this slot.
