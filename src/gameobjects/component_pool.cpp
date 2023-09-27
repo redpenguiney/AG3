@@ -38,7 +38,6 @@ class ComponentPool {
                 T* foundObject = firstAvailable[poolIndex];
                 firstAvailable[poolIndex] = (T*)foundObject->next;
 
-                std::cout << "\nReturning pointer " << foundObject;
                 return foundObject;
             }
 
@@ -47,7 +46,6 @@ class ComponentPool {
             T* foundObject = firstAvailable.back();
             firstAvailable.back() = (T*)foundObject->next;
 
-            std::cout << "\nReturning pointer " << foundObject << " after expanding";
             return foundObject;
         }
 

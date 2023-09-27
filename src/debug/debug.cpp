@@ -1,5 +1,6 @@
 #pragma once
 #define LOG_LINE_REACHED
+#define DEBUG_ASSERT_ENABLED
 #include <iostream>
 #include <chrono>
 void DebugLogLineReached(const char *file, int line){
@@ -8,6 +9,16 @@ void DebugLogLineReached(const char *file, int line){
     #endif
 }
 #define DebugLogLineReached() DebugLogLineReached(__FILE__, __LINE__)
+
+// void _assert(const char *file, int line, bool condition, std::string failureMessage) {
+//     #ifdef DEBUG_ASSERT_ENABLED
+//     if (!condition) {
+//         std::cout << "\nAssertion at line " << line << " in " << file << " failed: " << failureMessage; 
+//     }
+    
+//     #endif
+// }
+// #define assert() _assert(__FILE__, __LINE__, )
 
 // returns time in milliseconds
 double Time() {

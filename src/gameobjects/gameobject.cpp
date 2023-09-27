@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 #include <cstdio>
 #include <memory>
 #include<unordered_set>
@@ -30,6 +31,8 @@ class GameObject {
         // Those shared_ptrs remain completely valid and can be read/written freely (although why would you if you're destroying it???).
     // TODO: when Destroy() is called, should still make it stop being drawn and stop physics.
     void Destroy() {
+        assert(!deleted);
+        deleted = true;
         GAMEOBJECTS.erase(this);
     }
 
@@ -53,6 +56,8 @@ class GameObject {
     };
 
     private:
+        bool deleted;
+
         // no copy constructing gameobjects.
         GameObject(const GameObject&) = delete; 
 
@@ -60,7 +65,7 @@ class GameObject {
         renderComponent(GraphicsEngine::RenderComponent::New(meshId, textureId)),
         transformComponent(TransformComponent::New()) 
         {
-            
+            deleted = false;
         };
         
 };

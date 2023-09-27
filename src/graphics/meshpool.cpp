@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include "buffered_buffer.cpp"
 
 // TODO: INDBO shouldn't be persistent, and arguably neither should the vertices/indices.
@@ -57,15 +58,15 @@ class Meshpool {
     BufferedBuffer indexBuffer; // holds mesh indices
     BufferedBuffer indirectDrawBuffer; // stores rendering commands, used for an optimization called indirect drawing
 
-    std::deque<unsigned int> availableMeshSlots;
+    std::unordered_map<unsigned int, std::deque<unsigned int>> availableMeshSlots; // key is mesh instanceCapacity (or 0 if slot does not yet have instanceCapacity forced into it), value is deque of available slots
     //std::deque<unsigned int> availableInstancedSlots;
     std::unordered_map<unsigned int, std::vector<unsigned int>> slotContents; // key is meshId, value is a vector of indices/slots in the vertexBuffer containing this mesh (0 for first mesh, 1 for second, etc.)
                                                                               // needed for instancing
 
     std::unordered_map<unsigned int, unsigned int> slotInstanceReservedCounts; // key is slot, value is number of instances reserved by that slot 
 
-    std::unordered_map<unsigned int, std::vector<unsigned int>> slotInstanceSpaces; // key is slot, values are instances that aren't actually being drawn as their model matrix is set to all 0s 
-    // neccesary for Meshpool::RemoveObject()
+    std::unordered_map<unsigned int, std::unordered_set<unsigned int>> slotInstanceSpaces; // key is slot, value is set of instances that aren't actually being drawn as their model matrix is set to all 0s 
+    // neccesary for Meshpool::RemoveObject(); unordered_set instead of vector because RemoveObject needs to quickly determine if certain instances are in here
 
     std::unordered_map<unsigned int, unsigned int> slotToInstanceLocations; // corresponds slots in vertexBuffer with the instance slot of the first object using that meshId
     std::vector<IndirectDrawCommand> drawCommands; // for indirect drawing
@@ -128,8 +129,9 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
         if (slotInstanceSpaces.count(slot)) {
             unsigned int len = slotInstanceSpaces[slot].size();
             for (unsigned int i = 0; i < std::min(len, count); i++) {
-                objLocations.push_back(std::make_pair(slot, slotInstanceSpaces[slot].back()));
-                slotInstanceSpaces[slot].pop_back();
+                auto instance = *(slotInstanceSpaces[slot].begin());
+                objLocations.push_back(std::make_pair(slot, instance));
+                slotInstanceSpaces[slot].erase(instance);
             }
 
             // totally remove the map entry if we used all the spaces
@@ -171,8 +173,17 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
         if (availableMeshSlots.size() == 0) { // expand the meshpool if there isn't room for the new mesh
             ExpandNonInstanced();
         }
-        unsigned int slot = availableMeshSlots.front();
-        availableMeshSlots.pop_front();
+
+        // first try to get slot with matching instance capacity, failing that do a whole new slot
+        unsigned int slot;
+        if (availableMeshSlots.count(meshInstanceCapacity)) {
+            slot = availableMeshSlots[meshInstanceCapacity].front();
+            availableMeshSlots[meshInstanceCapacity].pop_front();
+        }
+        else {
+            slot = availableMeshSlots[0].front();
+            availableMeshSlots[0].pop_front();
+        }
 
         unsigned int start = drawCommands[slot].instanceCount;
         FillSlot(meshId, slot, std::min(count, meshInstanceCapacity));
@@ -191,27 +202,33 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
 }
 
 // Frees the given object from the meshpool, so something else can use that space.
-void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instanceId) {
+void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instanceId) {    
     // make sure instanceId is valid
     // TODO: check slot is valid
-    printf("\nSlot %u contains %u but id was %u", slot, drawCommands[slot].instanceCount, instanceId);
     assert(drawCommands[slot].instanceCount > instanceId);
-
-    // figure out how many instances are stored in this slot.
-    const unsigned int actualInstancesInSlot = drawCommands[slot].instanceCount - ((slotInstanceSpaces.count(slot)) ? slotInstanceSpaces[slot].size() : 0);
-    // if this is the only instance in the slot we just mark the slot as empty.
-    if (actualInstancesInSlot == 1) {
-        assert(false); // TODO
-    }
-
-    // if the instance is at the end of that slot we can just do this the easy way
+   
+   // if the instance is at the end of that slot we can just do this the easy way
     if (slotInstanceReservedCounts[slot] == instanceId + 1) {
         drawCommands.at(slot).instanceCount -= 1;
+
+        // if the slot right before this one (and ones before it, given we don't remove ALL instances) are marked as empty, we should free them from being pointlessly drawn
+        for (unsigned int instanceToRemove = instanceId - 1; instanceToRemove > 0 && slotInstanceSpaces.count(instanceToRemove); instanceToRemove--) {
+            slotInstanceSpaces.erase(instanceToRemove);
+            drawCommands[slot].instanceCount -= 1;
+        }
+    }
+   
+    // if we removed all instances from the slot, mark the slot as empty and available for another mesh to use
+    const unsigned int actualInstancesInSlot = drawCommands[slot].instanceCount - ((slotInstanceSpaces.count(slot)) ? slotInstanceSpaces[slot].size() : 0);
+    if (actualInstancesInSlot == 0) {
+        availableMeshSlots[slotInstanceReservedCounts[slot]].push_back(slot);
+        drawCommands.at(slot).instanceCount = 0;
+        drawCommands.at(slot).count = 0;
     }
 
     // otherwise we have to just mark the instance as empty
     SetModelMatrix(slot, instanceId, glm::mat4x4(0)); // make it so it can't be drawn
-    slotInstanceSpaces[slot].push_back(instanceId); // tell AddObject that this instance can be overwritten
+    slotInstanceSpaces[slot].insert(instanceId); // tell AddObject that this instance can be overwritten
 }
 
 // Makes the given instance the given color.
@@ -309,7 +326,7 @@ void Meshpool::ExpandNonInstanced() {
     unsigned int oldMeshCapacity = meshCapacity;
     meshCapacity += baseMeshCapacity;
     for (unsigned int i = 0; i < baseInstanceCapacity; i++) {
-        availableMeshSlots.push_back(oldMeshCapacity + i);
+        availableMeshSlots[0].push_back(oldMeshCapacity + i);
     }
     drawCommands.resize(meshCapacity);
 
@@ -431,15 +448,10 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceReservedCounts[slot - 1];
     drawCommands[slot].instanceCount = instanceCount;
 
-    // std::printf("\nSizes are %i %i and %i", meshIndicesSize, meshVerticesSize, vertexSize);
-    std::printf("\nFilling slot %i with %i %i %i %i %i", slot, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
-
     // idk what to call this
     slotToInstanceLocations[slot] = drawCommands[slot].baseInstance;
     slotInstanceReservedCounts[slot] = mesh->instanceCount;
     slotContents[meshId].push_back(slot);
-
-    std::printf("\nIts %u & %u", mesh->instanceCount, slotInstanceReservedCounts[slot]);
 
     // make sure instanced data buffer has room
     if (drawCommands[slot].baseInstance + drawCommands[slot].instanceCount > instanceCapacity) { 
@@ -451,7 +463,6 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
 }
 
 void Meshpool::UpdateIndirectDrawBuffer(const unsigned int slot) {
-    // std::cout << "\nLocation is " << slot << " filling with pointer " << (void*)indirectDrawBufferData + (slot * sizeof(IndirectDrawCommand)) << " and original was fyi " << (void*)indirectDrawBufferData;
     memcpy(indirectDrawBuffer.Data() + (slot * sizeof(IndirectDrawCommand)), &drawCommands[slot], sizeof(IndirectDrawCommand));
 }
 

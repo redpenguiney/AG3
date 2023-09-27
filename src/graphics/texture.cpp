@@ -71,6 +71,7 @@ void Texture::ConfigTexture() {
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(bindingLocation, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glGenerateMipmap(bindingLocation);
 }
 
 Texture::Texture(TextureType textureType, std::string path, int layerHeight, int mipmapLevels) {
