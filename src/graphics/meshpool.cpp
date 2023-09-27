@@ -90,12 +90,12 @@ class Meshpool {
 
 // constructor takes mesh reference to set variables, doesn't actually add the given mesh or anything
 Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh): 
-    instanceSize(sizeof(glm::mat4x4) + (mesh->instancedColor ? sizeof(glm::vec4) : 0) + (mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // instances will be bigger if the mesh also wants color/texturez to be instanced
+    instanceSize(sizeof(glm::mat4x4) + ((mesh->instancedColor) ? sizeof(glm::vec4) : 0) + (mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // instances will be bigger if the mesh also wants color/texturez to be instanced
     meshVerticesSize(std::pow(2, std::log2(sizeof(GLfloat) * mesh->vertices.size())) + 1),
     meshIndicesSize(meshVerticesSize),
     instanceColor(mesh->instancedColor),
     instanceTextureZ(mesh->instancedTextureZ),
-    vertexSize(sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + (!mesh->instancedColor ? sizeof(glm::vec4) : 0) + (!mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // sizeof(vertexPos) + sizeof(vertexNormals) + sizeof(textureXY) + sizeof(color if not instanced) + sizeof(textureZ if not instanced) 
+    vertexSize(sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!mesh->instancedColor) ? sizeof(glm::vec4) : 0) + ((!mesh->instancedTextureZ) ? sizeof(GLfloat) : 0)), // sizeof(vertexPos) + sizeof(vertexNormals) + sizeof(textureXY) + sizeof(color if not instanced) + sizeof(textureZ if not instanced) 
     baseMeshCapacity((TARGET_VBO_SIZE/meshVerticesSize) + 1), // +1 just in case the base capacity was somehow 0
     baseInstanceCapacity((TARGET_VBO_SIZE/instanceSize) + 1),
 
@@ -335,6 +335,8 @@ void Meshpool::ExpandNonInstanced() {
     indexBuffer.Reallocate(meshCapacity * meshIndicesSize);
     indirectDrawBuffer.Reallocate(meshCapacity * sizeof(IndirectDrawCommand));
 
+    std::printf("\nVertex size is %llu Instance size is %u", vertexSize, instanceSize);
+
     // Create vao
     GLuint newVao;
     glGenVertexArrays(1, &newVao);
@@ -367,7 +369,7 @@ void Meshpool::ExpandNonInstanced() {
     // textureZ
     if (!instanceTextureZ) {
         glEnableVertexAttribArray(TEXTURE_Z_ATTRIBUTE);
-        glVertexAttribPointer(TEXTURE_Z_ATTRIBUTE, 1, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3) + (!instanceColor ? sizeof(glm::vec4) : 0)));
+        glVertexAttribPointer(TEXTURE_Z_ATTRIBUTE, 1, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3) + ((!instanceColor) ? sizeof(glm::vec4) : 0)));
         glVertexAttribDivisor(TEXTURE_Z_ATTRIBUTE, 0); // don't instance
     }
 
