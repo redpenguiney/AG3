@@ -91,7 +91,7 @@ class Meshpool {
 // constructor takes mesh reference to set variables, doesn't actually add the given mesh or anything
 Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh): 
     instanceSize(sizeof(glm::mat4x4) + (mesh->instancedColor ? sizeof(glm::vec4) : 0) + (mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // instances will be bigger if the mesh also wants color/texturez to be instanced
-    meshVerticesSize(std::pow(2, std::log2(sizeof(GLfloat) * mesh->vertices.size())) + 1),
+    meshVerticesSize(sizeof(GLfloat) * std::pow(2, std::log2(mesh->vertices.size()))),
     meshIndicesSize(meshVerticesSize),
     instanceColor(mesh->instancedColor),
     instanceTextureZ(mesh->instancedTextureZ),
@@ -205,6 +205,7 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
 void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instanceId) {    
     // make sure instanceId is valid
     // TODO: check slot is valid
+    //auto t = Time();
     assert(drawCommands[slot].instanceCount > instanceId);
    
    // if the instance is at the end of that slot we can just do this the easy way
@@ -217,6 +218,14 @@ void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instance
             drawCommands[slot].instanceCount -= 1;
         }
     }
+    else {
+        // otherwise we have to just mark the instance as empty
+        SetModelMatrix(slot, instanceId, glm::mat4x4(0)); // make it so it can't be drawn
+        //auto t = Time();
+        slotInstanceSpaces[slot].insert(instanceId); // tell AddObject that this instance can be overwritten
+        //LogElapsed(t);
+    }
+    
    
     // if we removed all instances from the slot, mark the slot as empty and available for another mesh to use
     const unsigned int actualInstancesInSlot = drawCommands[slot].instanceCount - ((slotInstanceSpaces.count(slot)) ? slotInstanceSpaces[slot].size() : 0);
@@ -226,9 +235,7 @@ void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instance
         drawCommands.at(slot).count = 0;
     }
 
-    // otherwise we have to just mark the instance as empty
-    SetModelMatrix(slot, instanceId, glm::mat4x4(0)); // make it so it can't be drawn
-    slotInstanceSpaces[slot].insert(instanceId); // tell AddObject that this instance can be overwritten
+    //LogElapsed(t);
 }
 
 // Makes the given instance the given color.
@@ -236,12 +243,7 @@ void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instance
 void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4 rgba) {
     // make sure this instance slot hasn't been deleted
     if (slotInstanceSpaces.count(slot)) {
-        for (auto & instanceSlot : slotInstanceSpaces[slot]) {
-            if (instanceSlot == instanceId) {
-                std::printf("\nWhat the, you're trying to set the color of slot %u instance %u, but that instance has been deleted!", slot, instanceId);
-                abort();
-            }
-        }
+        assert(!slotInstanceSpaces[slot].count(instanceId));
     }
 
     assert(instanceColor == true);
@@ -259,12 +261,7 @@ void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, 
 void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ) {
     // make sure this instance slot hasn't been deleted
     if (slotInstanceSpaces.count(slot)) {
-        for (auto & instanceSlot : slotInstanceSpaces[slot]) {
-            if (instanceSlot == instanceId) {
-                std::printf("\nWhat the, you're trying to set the texture-Z of slot %u instance %u, but that instance has been deleted!", slot, instanceId);
-                abort();
-            }
-        }
+        assert(!slotInstanceSpaces[slot].count(instanceId));
     }
 
     assert(instanceTextureZ == true);
@@ -281,12 +278,7 @@ void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceI
 void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4 matrix) {
     // make sure this instance slot hasn't been deleted
     if (slotInstanceSpaces.count(slot)) {
-        for (auto & instanceSlot : slotInstanceSpaces[slot]) {
-            if (instanceSlot == instanceId) {
-                std::printf("\nWhat the, you're trying to set the model matrix of slot %u instance %u, but that instance has been deleted!", slot, instanceId);
-                abort();
-            }
-        }
+        assert(!slotInstanceSpaces[slot].count(instanceId));
     }
     
 
@@ -305,6 +297,7 @@ void Meshpool::Draw() {
     //double start1 = Time();
    // glMultiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, 0, drawCount, 0); TODO: GET INDIRECT DRAWING TO WORK
     for (auto & command: drawCommands) {
+        if (command.count == 0) {continue;}
         glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance + (instancedVertexBuffer.GetOffset()/instanceSize));
     }
     

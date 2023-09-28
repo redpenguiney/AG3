@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdio>
 #define LOG_LINE_REACHED
 #define DEBUG_ASSERT_ENABLED
 #include <iostream>
@@ -25,4 +26,9 @@ double Time() {
     using namespace std::chrono;
     duration<double, std::milli> time = high_resolution_clock::now().time_since_epoch();
     return time.count();
+}
+
+// prints time between start and now
+void LogElapsed(double start, std::string message = "\nElapsed ") {
+    std::cout << message << (Time() - start) << "ms.";
 }
