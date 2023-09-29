@@ -56,7 +56,7 @@ int main() {
     //     std::printf("%f ", v);
     // }
 
-    glPointSize(10.0); // debug thing ignore
+    glPointSize(4.0); // debug thing, ignore
 
     printf("\nStarting main loop.");
     
