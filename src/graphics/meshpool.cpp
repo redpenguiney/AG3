@@ -38,12 +38,12 @@ class Meshpool {
 
     private:
     const unsigned int instanceSize; // Each gameobject has one instance containing its data (at minimum a model matrix)
+    const unsigned int vertexSize; // the size of a single vertex. (not to be confused with meshVertexSize, the maximum combined size of a mesh's vertices allowed by the pool)
     const unsigned int meshVerticesSize; // The vertex data of meshes inside the pool can be smaller but no bigger than this (if they're way smaller they should still go in a new mesh pool)
     const unsigned int meshIndicesSize; // same as meshVertexSize but for the indices of a mesh
     const bool instanceColor;
     const bool instanceTextureZ;
 
-    const size_t vertexSize; // the size of a single vertex. (not to be confused with meshVertexSize, the maximum combined size of a mesh's vertices allowed by the pool)
     const unsigned int baseMeshCapacity; // everytime the mesh pool expands its non-instanced vertex buffer, it will add room for this many meshes (or a multiple of this number if more than baseMeshCapacity meshes were added at once)
     const unsigned int baseInstanceCapacity; // same as baseMeshCapacity but for the instanced vertex buffer
     unsigned int meshCapacity; // how many different meshes the pool can store
@@ -91,11 +91,11 @@ class Meshpool {
 // constructor takes mesh reference to set variables, doesn't actually add the given mesh or anything
 Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh): 
     instanceSize(sizeof(glm::mat4x4) + ((mesh->instancedColor) ? sizeof(glm::vec4) : 0) + (mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // instances will be bigger if the mesh also wants color/texturez to be instanced
-    meshVerticesSize(sizeof(GLfloat) * std::pow(2, 1 + (int)std::log2(mesh->vertices.size()))),
+    vertexSize(sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!mesh->instancedColor) ? sizeof(glm::vec4) : 0) + ((!mesh->instancedTextureZ) ? sizeof(GLfloat) : 0)), // this is just sizeof(vertexPos) + sizeof(vertexNormals) + sizeof(textureXY) + sizeof(color if not instanced) + sizeof(textureZ if not instanced) 
+    meshVerticesSize(((((int)std::pow(2, 1 + (int)std::log2(mesh->vertices.size() * sizeof(GLfloat)))) + vertexSize - 1)/vertexSize) * vertexSize), // makes meshVerticesSize a power of two rounded to the nearest multiple of vertexSize (must be multiple of vertexSize for OpenGL base vertex argument to work)
     meshIndicesSize(meshVerticesSize),
     instanceColor(mesh->instancedColor),
     instanceTextureZ(mesh->instancedTextureZ),
-    vertexSize(sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!mesh->instancedColor) ? sizeof(glm::vec4) : 0) + ((!mesh->instancedTextureZ) ? sizeof(GLfloat) : 0)), // sizeof(vertexPos) + sizeof(vertexNormals) + sizeof(textureXY) + sizeof(color if not instanced) + sizeof(textureZ if not instanced) 
     baseMeshCapacity((TARGET_VBO_SIZE/meshVerticesSize) + 1), // +1 just in case the base capacity was somehow 0
     baseInstanceCapacity((TARGET_VBO_SIZE/instanceSize) + 1),
 
@@ -103,9 +103,7 @@ Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh):
     instancedVertexBuffer(GL_ARRAY_BUFFER, 3, 0),
     indexBuffer(GL_ELEMENT_ARRAY_BUFFER, 1, 0),
     indirectDrawBuffer(GL_DRAW_INDIRECT_BUFFER, 1, 0)
-{
-    
- 
+{ 
     vao = 0;
 
     meshCapacity = 0;
@@ -221,9 +219,7 @@ void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instance
     else {
         // otherwise we have to just mark the instance as empty
         SetModelMatrix(slot, instanceId, glm::mat4x4(0)); // make it so it can't be drawn
-        //auto t = Time();
         slotInstanceSpaces[slot].insert(instanceId); // tell AddObject that this instance can be overwritten
-        //LogElapsed(t);
     }
     
    
@@ -428,7 +424,6 @@ void Meshpool::ExpandInstanced(GLuint multiplier) {
 
 // Fills the given slot with the given mesh's vertices and indices.
 void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, const unsigned int instanceCount) {
-    std::printf("\nFillling slot %u with %u %u %u", slot, instanceCount, vertexSize, meshVerticesSize);
 
     auto mesh = Mesh::Get(meshId);
     auto vertices = &mesh->vertices;
