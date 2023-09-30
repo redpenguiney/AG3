@@ -91,7 +91,7 @@ class Meshpool {
 // constructor takes mesh reference to set variables, doesn't actually add the given mesh or anything
 Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh): 
     instanceSize(sizeof(glm::mat4x4) + ((mesh->instancedColor) ? sizeof(glm::vec4) : 0) + (mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // instances will be bigger if the mesh also wants color/texturez to be instanced
-    meshVerticesSize(sizeof(GLfloat) * std::pow(2, std::log2(mesh->vertices.size()))),
+    meshVerticesSize(sizeof(GLfloat) * std::pow(2, 1 + (int)std::log2(mesh->vertices.size()))),
     meshIndicesSize(meshVerticesSize),
     instanceColor(mesh->instancedColor),
     instanceTextureZ(mesh->instancedTextureZ),
@@ -428,6 +428,8 @@ void Meshpool::ExpandInstanced(GLuint multiplier) {
 
 // Fills the given slot with the given mesh's vertices and indices.
 void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, const unsigned int instanceCount) {
+    std::printf("\nFillling slot %u with %u %u %u", slot, instanceCount, vertexSize, meshVerticesSize);
+
     auto mesh = Mesh::Get(meshId);
     auto vertices = &mesh->vertices;
     auto indices = &mesh->indices;
