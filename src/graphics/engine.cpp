@@ -4,8 +4,12 @@
 #include <cstdio>
 #include <iostream>
 
-// sorry we have an init and terminate, TODO get rid of all the static stuff so we can use constructor/destructor again
-void GraphicsEngine::Init() {
+GraphicsEngine& GraphicsEngine::Get() {
+    static GraphicsEngine engine;
+    return engine;
+}
+
+GraphicsEngine::GraphicsEngine() {
     debugFreecamEnabled = false;
     debugFreecamPos = {0.0, 0.0, 0.0};
     debugFreecamPitch = 0.0;
@@ -19,7 +23,7 @@ void GraphicsEngine::Init() {
     glDepthFunc(GL_LEQUAL); // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
 }
 
-void GraphicsEngine::Terminate() {
+GraphicsEngine::~GraphicsEngine() {
     for (auto & [shaderId, map1] : meshpools) {
         for (auto & [textureId, map2] : map1) {
             for (auto & [poolId, pool] : map2) {
@@ -91,8 +95,6 @@ void GraphicsEngine::DrawSkybox() {
     
     glClear(GL_DEPTH_BUFFER_BIT); // make sure skybox isn't drawn over everything else
 }
-
-RenderableMesh* GraphicsEngine::skybox = nullptr;
 
 void GraphicsEngine::SetColor(MeshLocation& location, glm::vec4 rgba) {
     assert(location.initialized);
@@ -240,7 +242,7 @@ void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int textureId, un
 }
 
 GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id) {
-    auto ptr = RENDER_COMPONENTS.GetNew();
+    auto ptr = Get().RENDER_COMPONENTS.GetNew();
     ptr->live = true;
     //ptr->shaderId = shader_id;
     //ptr->textureId = texture_id;
@@ -249,7 +251,7 @@ GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned i
     ptr->meshLocation.textureId = texture_id;
     ptr->meshLocation.shaderProgramId = shader_id;
 
-    AddObject(shader_id, texture_id, mesh_id, &ptr->meshLocation); 
+    Get().AddObject(shader_id, texture_id, mesh_id, &ptr->meshLocation); 
     return ptr;
 
 };
@@ -263,7 +265,7 @@ void GraphicsEngine::RenderComponent::Destroy() {
     // meshLocation will still have its shaderProgramId and textureId set tho immediately by AddObject
     unsigned int shaderId = meshLocation.shaderProgramId, textureId = meshLocation.textureId;
     if (!meshLocation.initialized) { 
-        auto & vec = meshesToAdd.at(shaderId).at(textureId).at(meshId);
+        auto & vec = Get().meshesToAdd.at(shaderId).at(textureId).at(meshId);
         int index = 0;
         for (auto & ptr : vec) {
             if (ptr == &meshLocation) {
@@ -274,12 +276,12 @@ void GraphicsEngine::RenderComponent::Destroy() {
         vec.erase(vec.begin() + index);
     }
     else { // otherwise just remove object from graphics engine
-        meshpools[shaderId][textureId][meshLocation.poolId]->RemoveObject(meshLocation.poolSlot, meshLocation.poolInstance);
+        Get().meshpools[shaderId][textureId][meshLocation.poolId]->RemoveObject(meshLocation.poolSlot, meshLocation.poolInstance);
     }
 
     live = false;
     
-    RENDER_COMPONENTS.ReturnObject(this);
+    Get().RENDER_COMPONENTS.ReturnObject(this);
 }
 
 GraphicsEngine::RenderComponent::RenderComponent() {

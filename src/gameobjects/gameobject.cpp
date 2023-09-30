@@ -36,7 +36,8 @@ class GameObject {
         GAMEOBJECTS.erase(this);
     }
 
-    // Call at end of program before cleaning up singletons (like GraphicsEngine).
+    // Call at end of program.
+    // TODO: unclear why this exists or needs to be called
     // Simply calls Destroy() on all gameobjects that have not been destroyed yet.
     static void Cleanup() {
         std::vector<std::shared_ptr<GameObject>> addresses; // can't remove them inside the map iteration because that would mess up the map iterator

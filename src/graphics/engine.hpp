@@ -3,7 +3,6 @@
 #include "meshpool.cpp"
 #include "window.cpp"
 #include "shader_program.hpp"
-#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <memory>
@@ -38,34 +37,33 @@ struct MeshLocation {
 class GraphicsEngine {
     public:
     // the shader used to render the skybox. Can freely change this with no issues.
-    static inline std::shared_ptr<ShaderProgram> skyboxShaderProgram;
+    std::shared_ptr<ShaderProgram> skyboxShaderProgram;
     // skybox texture. Must be a cubemap texture.
-    static inline std::shared_ptr<Texture> skyboxTexture;
+    std::shared_ptr<Texture> skyboxTexture;
 
     // freecam is just a thing for debugging
-    static inline bool debugFreecamEnabled = false;
-    static inline glm::dvec3 debugFreecamPos = {0, 0, 0};
-    static inline float debugFreecamPitch = 0;
-    static inline float debugFreecamYaw = 0;
-    static inline double debugFreecamSpeed = 0;
+    bool debugFreecamEnabled = false;
+    glm::dvec3 debugFreecamPos = {0, 0, 0};
+    float debugFreecamPitch = 0;
+    float debugFreecamYaw = 0;
+    double debugFreecamSpeed = 0;
     static const inline double debugFreecamAcceleration = 0.01;
 
-    static inline Camera camera;
-    static inline Window window = Window(500, 500); // handles windowing, interfaces with GLFW in general
+    Camera camera;
+    Window window = Window(500, 500); // handles windowing, interfaces with GLFW in general
 
-    static void Init();
-    static void Terminate();
+    static GraphicsEngine& Get();
 
-    static bool IsTextureInUse(unsigned int textureId);
-    static bool IsShaderProgramInUse(unsigned int shaderId);
+    bool IsTextureInUse(unsigned int textureId);
+    bool IsShaderProgramInUse(unsigned int shaderId);
 
-    static bool ShouldClose();
+    bool ShouldClose();
 
-    static void RenderScene();
+    void RenderScene();
 
-    static void SetColor(MeshLocation& location, glm::vec4 rgba);
-    static void SetModelMatrix(MeshLocation& location, glm::mat4x4 model);
-    static void SetTextureZ(MeshLocation& location, float textureZ);
+    void SetColor(MeshLocation& location, glm::vec4 rgba);
+    void SetModelMatrix(MeshLocation& location, glm::mat4x4 model);
+    void SetTextureZ(MeshLocation& location, float textureZ);
 
     // Gameobjects that want to be rendered should have a pointer to one of these.
     // However, they are stored here in a vector because that's better for the cache. (google ECS).
@@ -79,7 +77,7 @@ class GraphicsEngine {
         // not const because object pool, don't actually change this
         unsigned int meshId;
 
-        static RenderComponent* New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id = defaultShaderProgramId);
+        static RenderComponent* New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id = Get().defaultShaderProgramId);
         void Destroy();
 
         private:
@@ -92,35 +90,38 @@ class GraphicsEngine {
     };
 
     private:
-    static RenderableMesh* skybox; 
+    RenderableMesh* skybox; 
 
-    static inline unsigned int defaultShaderProgramId;
+    unsigned int defaultShaderProgramId;
 
     // meshpools are highly optimized objects used for very fast drawing of meshes
     // to avoid memory fragmentation all meshes within it are padded to be of the same size, so to save memory there is a pool for small meshes, medium ones, etc.
     // pools also have to be divided by which shader program and texture/texture array they use
     // this is a map<shaderId, map<textureId, map<poolId, Meshpool*>>>
-    static inline std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, Meshpool*>>> meshpools;
-    static inline unsigned long long lastPoolId = 0; 
+    std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, Meshpool*>>> meshpools;
+    unsigned long long lastPoolId = 0; 
 
     // tells how to get to the meshpool data of an object from its drawId
     //std::unordered_map<unsigned long long, MeshLocation> drawIdPoolLocations;
-    //inline static unsigned long long lastDrawId = 0;
+    //unsigned long long lastDrawId = 0;
 
-    static inline ComponentPool<RenderComponent, RENDER_COMPONENT_POOL_SIZE> RENDER_COMPONENTS;
+    ComponentPool<RenderComponent, RENDER_COMPONENT_POOL_SIZE> RENDER_COMPONENTS;
 
     // Cache of meshes to add when addCachedMeshes is called. 
     // Used so that instead of adding 1 mesh to a meshpool 1000 times, we just add 1000 instances of a mesh to meshpool once to make creating renderable objects faster.
     // Keys go like meshesToAdd[shaderId][textureId][meshId] = vector of pointers to MeshLocations stored in RenderComponents.
-    static inline std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::vector<MeshLocation*>>>> meshesToAdd;
+    std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::vector<MeshLocation*>>>> meshesToAdd;
 
-    static void DrawSkybox();
-    static void Update();
-    static void UpdateRenderComponents();
-    static glm::mat4x4 UpdateDebugFreecam();
-    static void AddCachedMeshes();
-    static void UpdateMeshpools();
+    GraphicsEngine();
+    ~GraphicsEngine();
 
-    static void AddObject(unsigned int shaderId, unsigned int textureId, unsigned int meshId, MeshLocation* meshLocation);
+    void DrawSkybox();
+    void Update();
+    void UpdateRenderComponents();
+    glm::mat4x4 UpdateDebugFreecam();
+    void AddCachedMeshes();
+    void UpdateMeshpools();
+
+    void AddObject(unsigned int shaderId, unsigned int textureId, unsigned int meshId, MeshLocation* meshLocation);
 };
 

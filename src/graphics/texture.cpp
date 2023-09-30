@@ -46,7 +46,7 @@ std::shared_ptr<Texture>& Texture::Get(unsigned int textureId) {
 // Calling this function while objects still use the texture will error.
 // You only need to call this if there are more textures than can fit in VRAM.
 void Texture::Unload(unsigned int textureId) {
-    assert(GraphicsEngine::IsTextureInUse(textureId));
+    assert(GraphicsEngine::Get().IsTextureInUse(textureId));
     assert(LOADED_TEXTURES.count(textureId) != 0 && "Texture::Unload() was given an invalid textureId.");
     LOADED_TEXTURES.erase(textureId);
 }

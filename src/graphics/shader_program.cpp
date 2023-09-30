@@ -38,7 +38,7 @@ std::shared_ptr<ShaderProgram>& ShaderProgram::Get(unsigned int shaderProgramId)
 // Calling this function while objects still use the shader will error.
 // You only need to call this if for whatever reason you are repeatedly swapping out shader programs (like bc ur joining different servers with different resources)
 void ShaderProgram::Unload(unsigned int shaderProgramId) {
-    assert(GraphicsEngine::IsShaderProgramInUse(shaderProgramId));
+    assert(GraphicsEngine::Get().IsShaderProgramInUse(shaderProgramId));
     assert(LOADED_PROGRAMS.count(shaderProgramId) != 0 && "ShaderProgram::Unload() was given an invalid shaderProgramId.");
     LOADED_PROGRAMS.erase(shaderProgramId);
 }

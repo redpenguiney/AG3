@@ -10,7 +10,7 @@
 using namespace std;
 
 int main() {
-    GraphicsEngine::Init();
+    auto & GE = GraphicsEngine::Get();
     //GE.camera.position.y = 3;
 
     // mesh.instanceCount/amount correctly drawn/amount i asked for
@@ -30,7 +30,7 @@ int main() {
         "../textures/sky/back.png",
         "../textures/sky/front.png"
     });
-    GraphicsEngine::skyboxTexture = Texture::New(TEXTURE_CUBEMAP, skyboxFaces);
+    GE.skyboxTexture = Texture::New(TEXTURE_CUBEMAP, skyboxFaces);
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 1000);
     auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
@@ -44,8 +44,8 @@ int main() {
         }
     }
     
-    GraphicsEngine::debugFreecamEnabled = true;
-    GraphicsEngine::window.SetMouseLocked(true);
+    GE.debugFreecamEnabled = true;
+    GE.window.SetMouseLocked(true);
     
     // std::printf("\n Indices: \n");
     // for (auto & i : Mesh::Get(m)->indices) {
@@ -60,10 +60,10 @@ int main() {
 
     printf("\nStarting main loop.");
     
-    while (!GraphicsEngine::ShouldClose()) {
+    while (!GE.ShouldClose()) {
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         //auto start = Time();
-        GraphicsEngine::RenderScene();
+        GE.RenderScene();
         //LogElapsed(start, "\nDrawing elapsed ");
         //GE.SetColor(drawId, glm::vec4(0.0, 1.0, 0.5, 1.0));
         //printf("FRAME SUCCESS");
@@ -73,7 +73,6 @@ int main() {
     auto start = Time();
 
     GameObject::Cleanup(); printf("\nCleaned up all gameobjects.");
-    GraphicsEngine::Terminate();
 
     LogElapsed(start, "\nExit process elapsed ");
     printf("\nProgram ran successfully. Exiting.");
