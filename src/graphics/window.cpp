@@ -56,6 +56,7 @@ class Window {
             abort();
         }
 
+        glfwSetWindowPos(glfwWindow, 0, 0);
 
         printf("\nWindow creation successful.");
 

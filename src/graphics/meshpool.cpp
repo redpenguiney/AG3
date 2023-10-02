@@ -201,23 +201,31 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
 
 // Frees the given object from the meshpool, so something else can use that space.
 void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instanceId) {    
+    // don't remove all these debug print statements, i have a feeling we'll need them again soon
+
     // make sure instanceId is valid
     // TODO: check slot is valid
     //auto t = Time();
+    //std::printf("\nMy guy %u %u %u", drawCommands[slot].instanceCount, instanceId, slot);
     assert(drawCommands[slot].instanceCount > instanceId);
    
    // if the instance is at the end of that slot we can just do this the easy way
-    if (slotInstanceReservedCounts[slot] == instanceId + 1) {
+    if (drawCommands[slot].instanceCount == instanceId + 1) {
         drawCommands.at(slot).instanceCount -= 1;
+        //std::printf("\n\tRemoved %u because it was on the end, count now %u", instanceId, drawCommands[slot].instanceCount);
+        //std::printf("\n\tinstanceSpaces[slot %u] contains %u", slot, slotInstanceSpaces[slot].size());
 
         // if the slot right before this one (and ones before it, given we don't remove ALL instances) are marked as empty, we should free them from being pointlessly drawn
-        for (unsigned int instanceToRemove = instanceId - 1; instanceToRemove > 0 && slotInstanceSpaces.count(instanceToRemove); instanceToRemove--) {
-            slotInstanceSpaces.erase(instanceToRemove);
+        for (unsigned int instanceToRemove = instanceId - 1; (instanceToRemove > 0) && slotInstanceSpaces[slot].count(instanceToRemove); instanceToRemove--) {
+            
+            slotInstanceSpaces[slot].erase(instanceToRemove);
             drawCommands[slot].instanceCount -= 1;
+            //std::printf("\n\tAlso able to remove %u, count now %u", instanceToRemove, drawCommands[slot].instanceCount);
         }
     }
     else {
         // otherwise we have to just mark the instance as empty
+        //std::printf("\n\tPushing %u to slotInstanceSpaces[slot %u]", instanceId, slot);
         SetModelMatrix(slot, instanceId, glm::mat4x4(0)); // make it so it can't be drawn
         slotInstanceSpaces[slot].insert(instanceId); // tell AddObject that this instance can be overwritten
     }
@@ -229,6 +237,7 @@ void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instance
         availableMeshSlots[slotInstanceReservedCounts[slot]].push_back(slot);
         drawCommands.at(slot).instanceCount = 0;
         drawCommands.at(slot).count = 0;
+        //std::printf("\nWE DONE WITH SLOT %u", slot);
     }
 
     //LogElapsed(t);
@@ -324,7 +333,7 @@ void Meshpool::ExpandNonInstanced() {
     indexBuffer.Reallocate(meshCapacity * meshIndicesSize);
     indirectDrawBuffer.Reallocate(meshCapacity * sizeof(IndirectDrawCommand));
 
-    std::printf("\nVertex size is %llu Instance size is %u", vertexSize, instanceSize);
+    std::printf("\nVertex size is %u Instance size is %u", vertexSize, instanceSize);
 
     // Create vao
     GLuint newVao;

@@ -12,8 +12,10 @@ class TransformComponent: public BaseComponent {
     const glm::quat& rotation() const { return rotation_; } // allows public read only access to rotation
     const glm::dvec3& scale() const { return scale_; } // allows public read only access to scale
 
+    // DO NOT delete this pointer.
     static TransformComponent* New() {
         auto ptr = TRANSFORM_COMPONENTS.GetNew();
+        ptr->rotation_ = glm::identity<glm::quat>();
         ptr->rotScaleMatrix = glm::identity<glm::mat4x4>();
         return ptr;
     }
@@ -22,6 +24,17 @@ class TransformComponent: public BaseComponent {
     // obviously don't touch component after this.
     void Destroy() {
         TRANSFORM_COMPONENTS.ReturnObject(this);
+    }
+
+    // todo maybe we can replace these two with something like the getter
+    void SetRot(glm::quat rot) {
+        rotation_ = rot;
+        UpdateRotScaleMatrix();
+    }
+
+    void SetScl(glm::vec3 scl) {
+        scale_ = scl;
+        UpdateRotScaleMatrix();
     }
 
     // cameraPosition used for floating origin
@@ -34,6 +47,11 @@ class TransformComponent: public BaseComponent {
     }
 
     private:
+    // after changing scale or rotation, we need to update the rot/scale matrix
+    // we don't need to mess with position tho because its the only thing that touches the last column of the matrix and its set every frame anyways for floating origin
+    void UpdateRotScaleMatrix() {
+        rotScaleMatrix = glm::mat4x4(rotation_) * glm::scale(glm::identity<glm::mat4x4>(), (glm::vec3)scale_);
+    }
 
     // private constructor to enforce usage of object pool
     friend class ComponentPool<TransformComponent, 65536>;

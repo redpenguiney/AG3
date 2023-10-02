@@ -1,5 +1,6 @@
 #pragma once
 #include "engine.hpp"
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <iostream>
@@ -133,22 +134,28 @@ void GraphicsEngine::UpdateMeshpools() {
     }
 }
 
+// Multithreaded.
 void GraphicsEngine::UpdateRenderComponents() {
-        auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
+    auto start = Time();
+    auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
-        for (unsigned int i = 0; i < RENDER_COMPONENTS.pools.size(); i++) {
-            auto renderArray = RENDER_COMPONENTS.pools.at(i);
-            auto transformArray = TransformComponent::TRANSFORM_COMPONENTS.pools.at(i);
-            for (unsigned int j = 0; j < RENDER_COMPONENT_POOL_SIZE; j++) {
-                auto renderComp = renderArray + j;
-                auto transformComp = transformArray + j;
-                if (renderComp->live) {
-                    SetModelMatrix(renderComp->meshLocation, transformComp->GetModel(cameraPos));
-                    SetTextureZ(renderComp->meshLocation, 0.0);
-                }
+    for (unsigned int i = 0; i < RENDER_COMPONENTS.pools.size(); i++) {
+        auto renderArray = RENDER_COMPONENTS.pools.at(i);
+        auto transformArray = TransformComponent::TRANSFORM_COMPONENTS.pools.at(i);
+        for (unsigned int j = 0; j < RENDER_COMPONENT_POOL_SIZE; j++) {
+            auto renderComp = renderArray + j;
+            auto transformComp = transformArray + j;
+            if (renderComp->live) {
+                SetModelMatrix(renderComp->meshLocation, transformComp->GetModel(cameraPos));
+                
+                if (renderComp->textureZChanged) {renderComp->textureZChanged = false; SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
+                if (renderComp->colorChanged) {renderComp->colorChanged = false; SetColor(renderComp->meshLocation, renderComp->color);}
             }
         }
     }
+
+    LogElapsed(start, "\nRendercomp update elapsed ");
+}
 
 // updates the freecam based off user input (WASD and mouse) and then returns a camera matrix
 glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
@@ -241,11 +248,14 @@ void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int textureId, un
     meshesToAdd[shaderId][textureId][meshId].push_back(meshLocation);
 }
 
+// DO NOT delete this pointer.
 GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id) {
     auto ptr = Get().RENDER_COMPONENTS.GetNew();
     ptr->live = true;
-    //ptr->shaderId = shader_id;
-    //ptr->textureId = texture_id;
+    ptr->colorChanged = true;
+    ptr->textureZChanged = true;
+    ptr->color = glm::vec4(1, 1, 1, 1);
+    ptr->textureZ = -1.0;
     ptr->meshId = mesh_id;
 
     ptr->meshLocation.textureId = texture_id;
@@ -286,5 +296,16 @@ void GraphicsEngine::RenderComponent::Destroy() {
 
 GraphicsEngine::RenderComponent::RenderComponent() {
     live = false;
+}
+
+void GraphicsEngine::RenderComponent::SetColor(glm::vec4 rgba) {
+    colorChanged = true;
+    color = rgba;
+}
+
+// set to -1.0 for no texture
+void GraphicsEngine::RenderComponent::SetTextureZ(float z) {
+    textureZChanged = true;
+    textureZ = z;
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "../gameobjects/component_pool.cpp"
-#include "../gameobjects/collider_component.cpp"
+#include "spatial_acceleration_structure.cpp"
 #include <memory>
 
 // it's a physics engine, obviously.
@@ -15,8 +15,12 @@ class PhysicsEngine {
         return engine;
     }
 
+    // Moves the physics simulation forward by timestep.
+    void Step(const float timestep) {
+
+    }
+
     private:
-    
 
     PhysicsEngine() {
 

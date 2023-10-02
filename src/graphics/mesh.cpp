@@ -30,8 +30,8 @@ class Mesh {
     const unsigned int instanceCount; // meshpool will make room for this many objects to use this mesh (if you go over it's fine, but performance may be affected)
                                       // the memory cost of this is ~64 * instanceCount bytes
                                       // def make it like a million for cubes and stuff, otherwise default of 1024 should be fine
-                                      // NOTE: if you're constantly adding and removing unique meshes, they better all have same expectedCount or it's gonna leak memory
-    const glm::vec3 originalSize; // TODO
+                                      // NOTE: if you're constantly adding and removing unique meshes, they better all have same expectedCount or it's gonna cost you in memory
+    const glm::vec3 originalSize; // When loading a mesh from file, it is automatically scaled so all vertex positions are in the range -0.5 to 0.5. (this lets you and the physics engine easily know what the actual size of the object is) Set gameobject scale to this value to restore it to original size.
 
     // engine calls this to get mesh from an object's meshId
     static std::shared_ptr<Mesh>& Get(unsigned int meshId) {
@@ -74,6 +74,42 @@ class Mesh {
         std::vector<GLfloat> & texcoordsXY = attrib.texcoords;
         std::vector<GLfloat> & normals = attrib.normals;
         std::vector<GLfloat> & colors = attrib.colors;
+
+        // scale vertex positions into range -0.5 to 0.5
+
+        // find mesh extents
+        float minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0;
+        unsigned int i = 0; 
+        for (float v: positions) {
+            if (i % 3 == 0) {
+                minX = std::min(minX, v);
+                maxX = std::max(maxX, v);
+            }
+            else if (i % 3 == 1) {
+                minY = std::min(minY, v);
+                maxY = std::max(maxY, v);
+            }
+            else if (i % 3 == 2) {
+                minZ = std::min(minZ, v);
+                maxZ = std::max(maxZ, v);
+            }
+            i++;
+        }
+
+        // scale mesh by extents
+        i = 0;
+        for (float& v: positions) {
+            if (i % 3 == 0) {
+                v = 1.0*(v-minX)/(maxX-minX) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
+            }
+            else if (i % 3 == 1) {
+                v = 1.0*(v-minY)/(maxY-minY) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
+            }
+            else if (i % 3 == 2) {
+                v = 1.0*(v-minZ)/(maxZ-minZ) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
+            }
+            i++;
+        }
 
         // ngl im just doing what https://stackoverflow.com/questions/36447021/obtain-indices-from-obj says here
         std::unordered_map<std::tuple<GLuint, GLuint, GLuint>, GLuint, hash_tuple::hash<std::tuple<GLuint, GLuint, GLuint>>> objIndicesToGlIndices; // tuple is (posIndex, texXyIndex, normalIndex)

@@ -80,7 +80,18 @@ class GraphicsEngine {
         static RenderComponent* New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id = Get().defaultShaderProgramId);
         void Destroy();
 
+        // We have both GraphicsEngine::SetColor() and RenderComponent::SetColor() because people may want to set color immediately, but GraphicsEngine::SetColor()
+        //      needs the meshLocation to be initialized and because we cache mesh creation that doesn't happen until RenderScene() is called.
+        void SetColor(glm::vec4 rgba);
+        void SetTextureZ(float textureZ);
+
         private:
+        // TODO: getters for color and textureZ
+        glm::vec4 color;
+        float textureZ;
+        bool colorChanged;
+        bool textureZChanged;
+
         MeshLocation meshLocation;
         friend class GraphicsEngine;
         

@@ -32,14 +32,19 @@ int main() {
     });
     GE.skyboxTexture = Texture::New(TEXTURE_CUBEMAP, skyboxFaces);
 
-    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 1000);
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 100);
     auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
     
-    for (int x = 3; x < 130; x++) {
+    int i = 0;
+    for (int x = 3; x < 103; x++) {
         for (int y = 0; y < 10; y++) {
             for (int z = 0; z < 10; z++) {
                 auto g = GameObject::New(m->meshId, t->textureId);
                 g->transformComponent->position = glm::dvec3( x * 3, y * 3, z * 3);
+                //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
+                //g->transformComponent->SetScl(glm::dvec3(1, 2, 1));
+                g->renderComponent->SetColor(glm::vec4(i % 2, (i + 2) % 2, (i + 1) % 2, 1.0));
+                i++;
             }
         }
     }
