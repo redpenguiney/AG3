@@ -8,6 +8,11 @@
 struct AABB {
     glm::dvec3 min;
     glm::dvec3 max;
+
+    AABB(glm::dvec3 minPoint = {}, glm::dvec3 maxPoint = {}) {
+        min = minPoint;
+        max = maxPoint;
+    }
 };
 
 
@@ -35,13 +40,14 @@ class SpatialAccelerationStructure { // (SAS)
 
     class ColliderComponent: public BaseComponent {
         public:
-        const BroadPhaseAABBType aabbType;
+        BroadPhaseAABBType aabbType;
 
         // DO NOT delete this pointer.
         static ColliderComponent* New(TransformComponent* transformComponent) {
             
             auto ptr = COLLIDER_COMPONENTS.GetNew();
             ptr->transform = transformComponent;
+            ptr->aabbType = AABBBoundingCube;
             SpatialAccelerationStructure::Get().AddCollider(*ptr);
             return ptr;
         }
@@ -61,6 +67,7 @@ class SpatialAccelerationStructure { // (SAS)
                 max *= transform->scale() * AABB_FAT_FACTOR;
                 min += transform->position;
                 max += transform->position;
+                return AABB(min, max);
             }
             else {
                 assert(false);
@@ -68,6 +75,8 @@ class SpatialAccelerationStructure { // (SAS)
         }
 
         private:
+        AABB aabb;
+
         // AABBs inserted into the SAS will be scaled by this much so that if the object moves a little bit we don't need to update its position in the SAS.
         static const inline double AABB_FAT_FACTOR = 1.2;
         
@@ -78,7 +87,7 @@ class SpatialAccelerationStructure { // (SAS)
 
         // private constructor to enforce usage of object pool
         friend class ComponentPool<ColliderComponent, 65536>;
-        ColliderComponent(): aabbType(AABBBoundingCube) {}
+        ColliderComponent() {}
         ~ColliderComponent() {}
         
         // object pool
@@ -91,7 +100,8 @@ class SpatialAccelerationStructure { // (SAS)
 
     // Adds a collider to the SAS
     void AddCollider(ColliderComponent& collider) {
-        // 
+        
+
     }
 
     // Duh.
@@ -125,7 +135,8 @@ class SpatialAccelerationStructure { // (SAS)
         SasNode* parent;
         AABB aabb; // aabb that contains all objects/children of the node
 
-        SasNode() {
+        SasNode(): aabb({}, {}) {
+            
             split = false;
             parent = nullptr;
             children = nullptr;
