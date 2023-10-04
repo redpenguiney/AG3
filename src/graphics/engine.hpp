@@ -1,7 +1,7 @@
 #pragma once
-#include "mesh.cpp"
-#include "meshpool.cpp"
-#include "window.cpp"
+#include "mesh.hpp"
+#include "meshpool.hpp"
+#include "window.hpp"
 #include "shader_program.hpp"
 #include <cassert>
 #include <cstdio>
@@ -11,12 +11,12 @@
 #include <utility>
 #include <vector>
 #include "../debug/debug.cpp"
-#include "camera.cpp"
+#include "camera.hpp"
 #include "../gameobjects/component_pool.cpp"
 #include "../gameobjects/transform_component.cpp"
 #include "../utility/utility.cpp"
 #include "texture.hpp"
-#include "renderable_mesh.cpp"
+#include "renderable_mesh.hpp"
 
 const unsigned int RENDER_COMPONENT_POOL_SIZE = 65536;
 

@@ -1,22 +1,15 @@
-#include "../../external_headers/GLM/ext.hpp"
+#include "camera.hpp"
 
-class Camera {
-    public: 
-    float fieldOfView;
-    glm::dvec3 position;
-    glm::quat rotation;
+Camera::Camera() {
+    fieldOfView = 70;
+}
 
-    Camera() {
-        fieldOfView = 70;
-    }
+// returns the camera's projection matrix.
+// aspect is width/height
+glm::mat4x4 Camera::GetProj(float aspect, float near, float far) {
+    return glm::perspective(fieldOfView, aspect, near, far);
+}
 
-    // returns the camera's projection matrix.
-    // aspect is width/height
-    glm::mat4x4 GetProj(float aspect, float near=0.1, float far=1000.0) {
-        return glm::perspective(fieldOfView, aspect, near, far);
-    }
-
-    glm::mat4x4 GetCamera() {
-        return glm::identity<glm::mat4x4>();
-    }
-};
+glm::mat4x4 Camera::GetCamera() {
+    return glm::identity<glm::mat4x4>();
+}
