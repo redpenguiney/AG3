@@ -1,3 +1,4 @@
+#pragma once
 #include "../../external_headers/GLEW/glew.h"
 #include <cstdio>
 #include <cstdlib>

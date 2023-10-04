@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <cstddef>
 #include <vector>
 #include <array>
 #include "../../external_headers/GLM/ext.hpp"
@@ -12,6 +13,16 @@ struct AABB {
     AABB(glm::dvec3 minPoint = {}, glm::dvec3 maxPoint = {}) {
         min = minPoint;
         max = maxPoint;
+    }
+
+    // makes this aabb expand to contain other
+    void Grow(AABB& other) {
+        min.x = std::min(min.x, other.min.x);
+        min.y = std::min(min.y, other.min.y);
+        min.z = std::min(min.z, other.min.z);
+        max.x = std::max(max.x, other.max.x);
+        max.y = std::max(max.y, other.max.y);
+        max.z = std::max(max.z, other.max.z);
     }
 };
 
@@ -74,17 +85,11 @@ class SpatialAccelerationStructure { // (SAS)
             }
         }
 
-        private:
         AABB aabb;
-
-        // AABBs inserted into the SAS will be scaled by this much so that if the object moves a little bit we don't need to update its position in the SAS.
-        static const inline double AABB_FAT_FACTOR = 1.2;
-        
-        // Once there are more objects in a node than this threshold, the node splits
-        static const inline unsigned int NODE_SPLIT_THRESHOLD = 60;
-
         TransformComponent* transform;
 
+        private:
+        
         // private constructor to enforce usage of object pool
         friend class ComponentPool<ColliderComponent, 65536>;
         ColliderComponent() {}
@@ -94,11 +99,12 @@ class SpatialAccelerationStructure { // (SAS)
         static inline ComponentPool<ColliderComponent, 65536> COLLIDER_COMPONENTS;
     };
 
-    // void Query() {
+    // Returns a vector of AABBs in the SAS that intersect the given AABB
+    std::vector<AABB> Query(AABB collider) {
 
-    // }
+    }
 
-    // Adds a collider to the SAS
+    // Adds a collider to the SAS.
     void AddCollider(ColliderComponent& collider) {
         
 
@@ -115,6 +121,12 @@ class SpatialAccelerationStructure { // (SAS)
     }
 
     private:
+
+    // AABBs inserted into the SAS will be scaled by this much so that if the object moves a little bit we don't need to update its position in the SAS.
+    static const inline double AABB_FAT_FACTOR = 1.2;
+    
+    // Once there are more objects in a node than this threshold, the node splits
+    static const inline unsigned int NODE_SPLIT_THRESHOLD = 60;
     
     SpatialAccelerationStructure() {
         root = SasNode();
@@ -126,20 +138,67 @@ class SpatialAccelerationStructure { // (SAS)
 
     // Node in the SAS's dynamic AABB tree
     struct SasNode {
+        glm::dvec3 splitPoint; // point that splits the aabb to determine aabbs of children
+
         bool split; // when this node is queried and it has more objects than NODE_SPLIT_THRESHOLD and this bool is false, the node will be split.
             // however, if the node can't be split (because all objects are in same position or something) then we'll just set this bool to true and then set it to false when a new collider is added that might make the node splittable
         std::array<SasNode*, 27>* children;
-        // children are stored in an icoseptree. index with [x * 9 + y * 3 + z], assuming 0 = left 1 = middle 2 = right
+        // children are stored in an icoseptree. index with [x * 9 + y * 3 + z], assuming 0 = lower coord 1 = middle 2 = higher coord
 
         std::vector<ColliderComponent*> objects;
         SasNode* parent;
         AABB aabb; // aabb that contains all objects/children of the node
 
-        SasNode(): aabb({}, {}) {
+        SasNode() {
             
             split = false;
             parent = nullptr;
             children = nullptr;
+        }
+
+        void calculateAABB() {
+            // first find a single object or child node that has an aabb, and use that as a starting point
+            if (objects.size() > 0) {
+                aabb = objects[0]->aabb;
+            }
+            else if (children != nullptr) {
+                bool found = false;
+                for (auto & child: *children) {
+                    if (child != nullptr) {
+                        aabb = child->aabb;
+                        found = true;
+                        break;
+                    }
+                }
+                assert(found);
+            }
+
+            // now aabb is within the real aabb, we get to real aabb by growing aabb to contain every child node and object
+            for (auto & obj: objects) {
+                aabb.Grow(obj->aabb);
+            }
+            if (children != nullptr) {
+                for (auto & child: *children) {
+                    if (child != nullptr) {
+                        aabb.Grow(child->aabb);
+                    }
+                }
+            }
+
+        }
+
+        // sets splitPoint, calculated by mean position of objects inside, creates children nodes, and moves objects into children nodes
+        void UpdateSplitPoint() {
+            assert(objects.size() >= NODE_SPLIT_THRESHOLD);
+            assert(!split);
+            glm::dvec3 meanPosition = {0, 0, 0};
+            for (auto & obj : objects) {
+                meanPosition += obj->transform->position/(double)objects.size();
+            }
+            splitPoint = meanPosition;
+
+            children = new std::array<SasNode*, 27> {nullptr};
+
         }
     };
 

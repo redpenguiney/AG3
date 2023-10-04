@@ -1,13 +1,11 @@
 #pragma once
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLM/glm.hpp"
-#include "mesh.cpp"
-#include "indirect_draw_command.cpp"
 #include "../debug/debug.cpp"
-#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+<<<<<<< HEAD
 #include <deque>
 #include <tuple>
 #include <utility>
@@ -90,6 +88,9 @@ class Meshpool {
     void FillSlot(const unsigned int meshId, const unsigned int slot, const unsigned int instanceCount);
     void UpdateIndirectDrawBuffer(const unsigned int slot);
 };
+=======
+#include "meshpool.hpp"
+>>>>>>> 33c9097e5cfb07e6ab2d16c82fc50ee000bc693a
 
 // constructor takes mesh reference to set variables, doesn't actually add the given mesh or anything
 Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh): 
