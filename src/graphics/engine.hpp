@@ -89,8 +89,10 @@ class GraphicsEngine {
         // TODO: getters for color and textureZ
         glm::vec4 color;
         float textureZ;
-        bool colorChanged;
-        bool textureZChanged;
+
+        // We want to avoid sending color/textureZ to the gpu every frame if we only change it once, but due to multiple buffering we got to set it for every buffer sub section, doing one each frame. Value is the amount of frames we need to set color/textureZ for still.
+        unsigned int colorChanged;
+        unsigned int textureZChanged;
 
         MeshLocation meshLocation;
         friend class GraphicsEngine;

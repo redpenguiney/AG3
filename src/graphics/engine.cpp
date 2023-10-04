@@ -148,13 +148,13 @@ void GraphicsEngine::UpdateRenderComponents() {
             if (renderComp->live) {
                 SetModelMatrix(renderComp->meshLocation, transformComp->GetModel(cameraPos));
                 
-                if (renderComp->textureZChanged) {renderComp->textureZChanged = false; SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
-                if (renderComp->colorChanged) {renderComp->colorChanged = false; SetColor(renderComp->meshLocation, renderComp->color);}
+                if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1; SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
+                if (renderComp->colorChanged > 0) {renderComp->colorChanged -= 1; SetColor(renderComp->meshLocation, renderComp->color);}
             }
         }
     }
 
-    LogElapsed(start, "\nRendercomp update elapsed ");
+    //LogElapsed(start, "\nRendercomp update elapsed ");
 }
 
 // updates the freecam based off user input (WASD and mouse) and then returns a camera matrix
@@ -299,13 +299,13 @@ GraphicsEngine::RenderComponent::RenderComponent() {
 }
 
 void GraphicsEngine::RenderComponent::SetColor(glm::vec4 rgba) {
-    colorChanged = true;
+    colorChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
     color = rgba;
 }
 
 // set to -1.0 for no texture
 void GraphicsEngine::RenderComponent::SetTextureZ(float z) {
-    textureZChanged = true;
+    textureZChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
     textureZ = z;
 }
 

@@ -16,8 +16,11 @@
 #include <unordered_set>
 #include "buffered_buffer.cpp"
 
+const unsigned int INSTANCED_VERTEX_BUFFERING_FACTOR = 3;
+
 // TODO: INDBO shouldn't be persistent, and arguably neither should the vertices/indices.
 // TODO: INDBO should just be written to directly instead of writing to drawCommands and then doing memcpy.
+// TODO: actually use iNDBO
 
 // Contains an arbitrary number of arbitary meshes and is used to render them very quickly.
 class Meshpool {
@@ -100,7 +103,7 @@ Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh):
     baseInstanceCapacity((TARGET_VBO_SIZE/instanceSize) + 1),
 
     vertexBuffer(GL_ARRAY_BUFFER, 1, 0),
-    instancedVertexBuffer(GL_ARRAY_BUFFER, 3, 0),
+    instancedVertexBuffer(GL_ARRAY_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0),
     indexBuffer(GL_ELEMENT_ARRAY_BUFFER, 1, 0),
     indirectDrawBuffer(GL_DRAW_INDIRECT_BUFFER, 1, 0)
 { 
