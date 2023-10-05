@@ -148,8 +148,8 @@ void GraphicsEngine::UpdateRenderComponents() {
             if (renderComp->live) {
                 SetModelMatrix(renderComp->meshLocation, transformComp->GetModel(cameraPos));
                 
-                if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1; SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
-                if (renderComp->colorChanged > 0) {renderComp->colorChanged -= 1; SetColor(renderComp->meshLocation, renderComp->color);}
+                if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1;  SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
+                if (renderComp->colorChanged > 0) {renderComp->colorChanged -= 1;std::printf("\nColor status %u", renderComp->colorChanged); SetColor(renderComp->meshLocation, renderComp->color);}
             }
         }
     }

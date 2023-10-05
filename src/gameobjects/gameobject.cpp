@@ -5,7 +5,7 @@
 #include <memory>
 #include<unordered_set>
 #include <vector>
-#include "../graphics/engine.cpp"
+#include "../graphics/engine.hpp"
 #include "transform_component.cpp"
 #include "../physics/spatial_acceleration_structure.cpp"
 

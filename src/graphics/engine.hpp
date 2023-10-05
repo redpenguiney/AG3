@@ -10,11 +10,11 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include "../debug/debug.cpp"
+#include "../debug/debug.hpp"
 #include "camera.hpp"
 #include "../gameobjects/component_pool.cpp"
 #include "../gameobjects/transform_component.cpp"
-#include "../utility/utility.cpp"
+#include "../utility/utility.hpp"
 #include "texture.hpp"
 #include "renderable_mesh.hpp"
 

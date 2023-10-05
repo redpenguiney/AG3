@@ -5,5 +5,5 @@ gl_dep = declare_dependency(link_args: ['-lopengl32'])
 
 subdir('src')
 
-e = executable('AG3', 'src/main.cpp', link_with: srclib)
+e = executable('AG3', 'src/main.cpp', link_with: srclib, dependencies: [glew_dep, glfw_dep, gl_dep])
 test('er', e)

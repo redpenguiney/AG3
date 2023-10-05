@@ -7,12 +7,12 @@
 // User input stuff.
 // index is key enums provided by GLFW
 // TODO: these maps are def not thread safe, probably needs a rwlock
-std::unordered_map<unsigned int, bool> PRESSED_KEYS;
-std::unordered_map<unsigned int, bool> PRESS_BEGAN_KEYS;
-std::unordered_map<unsigned int, bool> PRESS_ENDED_KEYS;
+inline std::unordered_map<unsigned int, bool> PRESSED_KEYS;
+inline std::unordered_map<unsigned int, bool> PRESS_BEGAN_KEYS;
+inline std::unordered_map<unsigned int, bool> PRESS_ENDED_KEYS;
 
-glm::dvec2 MOUSE_POS;
-glm::dvec2 MOUSE_DELTA; // how much mouse has moved since last frame
+inline glm::dvec2 MOUSE_POS;
+inline glm::dvec2 MOUSE_DELTA; // how much mouse has moved since last frame
 
 class Window {
     public:

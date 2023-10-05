@@ -1,3 +1,3 @@
 cd bin
-AG3.exe
+start /B /wait AG3.exe
 cd ../

@@ -12,7 +12,7 @@
 #include <vector>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../external_headers/stb/stb_image.h" 
-#include "../debug/debug.cpp"
+#include "../debug/debug.hpp"
 #include "texture.hpp"
 
 // read image file to texture. 
