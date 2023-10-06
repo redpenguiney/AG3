@@ -1,5 +1,5 @@
 #pragma once
-#include "component_pool.cpp"
+#include "component_pool.hpp"
 #include "base_component.cpp"
 #include "../../external_headers/GLM/ext.hpp"
 #include <cstdio>
@@ -46,6 +46,8 @@ class TransformComponent: public BaseComponent {
         return mat;
     }
 
+    const static inline  unsigned int TRANSFORM_COMPONENT_POOL_SIZE = 65536;
+
     private:
     // after changing scale or rotation, we need to update the rot/scale matrix
     // we don't need to mess with position tho because its the only thing that touches the last column of the matrix and its set every frame anyways for floating origin
@@ -63,7 +65,7 @@ class TransformComponent: public BaseComponent {
     // friend class PhysicsEngine;
 
     // object pool
-    static inline ComponentPool<TransformComponent, 65536> TRANSFORM_COMPONENTS;
+    static inline ComponentPool<TransformComponent, TRANSFORM_COMPONENT_POOL_SIZE> TRANSFORM_COMPONENTS;
 
     // rotation and scale part of matrix will not neccesarily change every frame like position will due to floating origin
     // therefore we store it here to avoid matrix multiplcation/math

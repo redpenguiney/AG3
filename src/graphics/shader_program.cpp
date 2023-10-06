@@ -1,4 +1,3 @@
-#pragma once
 #include "engine.hpp"
 #include "shader_program.hpp"
 #include <cassert>

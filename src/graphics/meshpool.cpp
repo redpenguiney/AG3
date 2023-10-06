@@ -230,7 +230,6 @@ void Meshpool::Draw() {
 
 // needed for BufferedBuffer's double/triple buffering, call every frame.
 void Meshpool::Update() {
-    std::printf("\nUpdate");
     vertexBuffer.Update();
     instancedVertexBuffer.Update();
     indexBuffer.Update();

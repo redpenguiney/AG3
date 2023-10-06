@@ -1,4 +1,3 @@
-#pragma once
 #include "engine.hpp"
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLM/ext.hpp"

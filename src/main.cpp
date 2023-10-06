@@ -19,7 +19,7 @@ int main() {
     // 4/8/20
     // 2/10/40
     // 2/6/20
-    // 1/10/40
+    // 1/10/40 
     // 1/5/20
 
     auto skyboxFaces = vector<std::string>(
@@ -37,15 +37,15 @@ int main() {
     auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
     
     int i = 0;
-    for (int x = 3; x < 13; x++) {
+    for (int x = 3; x < 130; x++) {
         for (int y = 0; y < 100; y++) {
-            for (int z = 0; z < 1; z++) {
-                std::cout << "\nADding object.";
+            for (int z = 0; z < 10; z++) {
                 auto g = GameObject::New(m->meshId, t->textureId);
                 g->transformComponent->position = glm::dvec3( x * 3, y * 3, z * 3);
                 //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
                 //g->transformComponent->SetScl(glm::dvec3(1, 2, 1));
                 g->renderComponent->SetColor(glm::vec4(i % 2, (i + 2) % 2, (i + 1) % 2, 1.0));
+                g->renderComponent->SetTextureZ(-1.0);
                 i++;
             } 
         }

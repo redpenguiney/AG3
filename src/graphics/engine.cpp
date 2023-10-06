@@ -1,4 +1,3 @@
-#pragma once
 #include "engine.hpp"
 #include <algorithm>
 #include <cassert>
@@ -36,7 +35,6 @@ GraphicsEngine::~GraphicsEngine() {
     delete skybox;
 }
 
-// Used by Texture to throw an error if someone tries to unload a texture being used
 bool GraphicsEngine::IsTextureInUse(unsigned int textureId) { 
     for (auto & [shaderId, map] : meshpools) {
         if (map.count(textureId)) {
@@ -46,17 +44,14 @@ bool GraphicsEngine::IsTextureInUse(unsigned int textureId) {
     return false;
 }
 
-// Used by ShaderProgram to throw an error if someone tries to unload a shader being used.
 bool GraphicsEngine::IsShaderProgramInUse(unsigned int shaderId) {
     return meshpools.count(shaderId);
 }
 
-// returns true if the user is trying to close the application, or if glfwSetWindowShouldClose was explicitly called (like by a quit game button)
 bool GraphicsEngine::ShouldClose() {
     return window.ShouldClose();
 }
 
-// Draws everything
 void GraphicsEngine::RenderScene() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
@@ -84,7 +79,6 @@ void GraphicsEngine::RenderScene() {
     // Draw skybox afterwards to encourage early z-test
     DrawSkybox();
 
-    std::printf("\nasd");
     UpdateMeshpools();
     window.Update(); // this flips the buffer so it goes at the end; TODO maybe poll events at start of frame instead
 }
@@ -108,7 +102,6 @@ void GraphicsEngine::SetModelMatrix(MeshLocation& location, glm::mat4x4 model) {
     meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
 }
 
-// set to -1.0 for no texture
 void GraphicsEngine::SetTextureZ(MeshLocation& location, float textureZ) {
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetTextureZ(location.poolSlot, location.poolInstance, textureZ);
@@ -126,7 +119,6 @@ void GraphicsEngine::Update() {
 }
 
 void GraphicsEngine::UpdateMeshpools() {
-    std::printf("\nDISJFJE");
     for (auto & [shaderId, map1] : meshpools) {
         for (auto & [textureId, map2] : map1) {
             for (auto & [poolId, pool] : map2) {
@@ -136,22 +128,23 @@ void GraphicsEngine::UpdateMeshpools() {
     }
 }
 
-// Multithreaded.
 void GraphicsEngine::UpdateRenderComponents() {
-    auto start = Time();
+    //auto start = Time();
     auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
+    //assert(RENDER_COMPONENTS.pools.size() == TransformComponent::TRANSFORM_COMPONENTS.pools.size());
+    //static_assert(RENDER_COMPONENT_POOL_SIZE == TransformComponent::TRANSFORM_COMPONENT_POOL_SIZE, "render comp and transform comp need to have to same pool size");
     for (unsigned int i = 0; i < RENDER_COMPONENTS.pools.size(); i++) {
         auto renderArray = RENDER_COMPONENTS.pools.at(i);
         auto transformArray = TransformComponent::TRANSFORM_COMPONENTS.pools.at(i);
-        for (unsigned int j = 0; j < RENDER_COMPONENT_POOL_SIZE; j++) {
+        for (unsigned int j = 0; j < 10000; j++) {
             auto renderComp = renderArray + j;
             auto transformComp = transformArray + j;
             if (renderComp->live) {
                 SetModelMatrix(renderComp->meshLocation, transformComp->GetModel(cameraPos));
                 
-                if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1; std::printf("\texture status %u", renderComp->textureZChanged); SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
-                if (renderComp->colorChanged > 0) {renderComp->colorChanged -= 1;std::printf("\nColor status %u", renderComp->colorChanged); SetColor(renderComp->meshLocation, renderComp->color);}
+                if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1; SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
+                if (renderComp->colorChanged > 0) {renderComp->colorChanged -= 1; SetColor(renderComp->meshLocation, renderComp->color);}
             }
         }
     }
@@ -159,7 +152,6 @@ void GraphicsEngine::UpdateRenderComponents() {
     //LogElapsed(start, "\nRendercomp update elapsed ");
 }
 
-// updates the freecam based off user input (WASD and mouse) and then returns a camera matrix
 glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
     assert(debugFreecamEnabled);
 
@@ -240,22 +232,17 @@ void GraphicsEngine::AddCachedMeshes() {
     meshesToAdd.clear();
 }
 
-// Returns a drawId used to modify the mesh later on.
-// Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.
-// Contents of MeshLocation are undefined until addCachedMeshes() is called, except for textureId, shaderProgramId, and initialized.
-// Before addChachedMeshes is called, meshLocation->initialized == false and after == true
 void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int textureId, unsigned int meshId, MeshLocation* meshLocation) {
     meshLocation->shaderProgramId = shaderId;
     meshLocation->textureId = textureId;
     meshesToAdd[shaderId][textureId][meshId].push_back(meshLocation);
 }
 
-// DO NOT delete this pointer.
 GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id) {
     auto ptr = Get().RENDER_COMPONENTS.GetNew();
     ptr->live = true;
-    ptr->colorChanged = true;
-    ptr->textureZChanged = true;
+    ptr->colorChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
+    ptr->textureZChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
     ptr->color = glm::vec4(1, 1, 1, 1);
     ptr->textureZ = -1.0;
     ptr->meshId = mesh_id;
@@ -268,8 +255,6 @@ GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned i
 
 };
 
-// call instead of deleting the pointer.
-// obviously don't touch component after this.
 void GraphicsEngine::RenderComponent::Destroy() {
     assert(live == true);
 

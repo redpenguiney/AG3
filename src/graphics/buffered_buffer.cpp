@@ -28,7 +28,6 @@ BufferedBuffer::~BufferedBuffer() {
 // Must call every frame, or this entire class is literally useless.
 // Call AFTER drawing please.
 void BufferedBuffer::Update() {
-    std::printf("\nGOIGN TO NEXT BUFFER");
     // Make the buffer section we just modified have a sync object so we won't write to it again until the GPU has finished using it.
     sync[currentBuffer] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 

@@ -12,7 +12,7 @@
 #include <vector>
 #include "../debug/debug.hpp"
 #include "camera.hpp"
-#include "../gameobjects/component_pool.cpp"
+#include "../gameobjects/component_pool.hpp"
 #include "../gameobjects/transform_component.cpp"
 #include "../utility/utility.hpp"
 #include "texture.hpp"
@@ -54,16 +54,17 @@ class GraphicsEngine {
 
     static GraphicsEngine& Get();
 
+    // Used by Texture to throw an error if someone tries to unload a texture being used
     bool IsTextureInUse(unsigned int textureId);
+
+    // Used by ShaderProgram to throw an error if someone tries to unload a shader being used.
     bool IsShaderProgramInUse(unsigned int shaderId);
 
+    // returns true if the user is trying to close the application, or if glfwSetWindowShouldClose was explicitly called (like by a quit game button)
     bool ShouldClose();
 
+    // Draws everything
     void RenderScene();
-
-    void SetColor(MeshLocation& location, glm::vec4 rgba);
-    void SetModelMatrix(MeshLocation& location, glm::mat4x4 model);
-    void SetTextureZ(MeshLocation& location, float textureZ);
 
     // Gameobjects that want to be rendered should have a pointer to one of these.
     // However, they are stored here in a vector because that's better for the cache. (google ECS).
@@ -77,7 +78,11 @@ class GraphicsEngine {
         // not const because object pool, don't actually change this
         unsigned int meshId;
 
+        // DO NOT delete this pointer.
         static RenderComponent* New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id = Get().defaultShaderProgramId);
+
+        // call instead of deleting the pointer.
+        // obviously don't touch component after this.
         void Destroy();
 
         // We have both GraphicsEngine::SetColor() and RenderComponent::SetColor() because people may want to set color immediately, but GraphicsEngine::SetColor()
@@ -98,7 +103,7 @@ class GraphicsEngine {
         friend class GraphicsEngine;
         
         //private constructor to enforce usage of object pool
-        friend class ComponentPool<RenderComponent, RENDER_COMPONENT_POOL_SIZE>;
+        friend class ComponentPool<RenderComponent, 10000>;
         RenderComponent();
     };
 
@@ -118,7 +123,7 @@ class GraphicsEngine {
     //std::unordered_map<unsigned long long, MeshLocation> drawIdPoolLocations;
     //unsigned long long lastDrawId = 0;
 
-    ComponentPool<RenderComponent, RENDER_COMPONENT_POOL_SIZE> RENDER_COMPONENTS;
+    ComponentPool<RenderComponent, 10000> RENDER_COMPONENTS;
 
     // Cache of meshes to add when addCachedMeshes is called. 
     // Used so that instead of adding 1 mesh to a meshpool 1000 times, we just add 1000 instances of a mesh to meshpool once to make creating renderable objects faster.
@@ -131,10 +136,22 @@ class GraphicsEngine {
     void DrawSkybox();
     void Update();
     void UpdateRenderComponents();
+
+    // updates the freecam based off user input (WASD and mouse) and then returns a camera matrix
     glm::mat4x4 UpdateDebugFreecam();
     void AddCachedMeshes();
     void UpdateMeshpools();
 
+    void SetColor(MeshLocation& location, glm::vec4 rgba);
+    void SetModelMatrix(MeshLocation& location, glm::mat4x4 model);
+
+    // set to -1.0 for no texture
+    void SetTextureZ(MeshLocation& location, float textureZ);
+
+    // Returns a drawId used to modify the mesh later on.
+    // Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.
+    // Contents of MeshLocation are undefined until addCachedMeshes() is called, except for textureId, shaderProgramId, and initialized.
+    // Before addChachedMeshes is called, meshLocation->initialized == false and after == true
     void AddObject(unsigned int shaderId, unsigned int textureId, unsigned int meshId, MeshLocation* meshLocation);
 };
 

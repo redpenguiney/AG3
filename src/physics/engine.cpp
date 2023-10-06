@@ -1,5 +1,5 @@
 #pragma once
-#include "../gameobjects/component_pool.cpp"
+#include "../gameobjects/component_pool.hpp"
 #include "spatial_acceleration_structure.cpp"
 #include <memory>
 
