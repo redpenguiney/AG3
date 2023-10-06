@@ -84,6 +84,7 @@ void GraphicsEngine::RenderScene() {
     // Draw skybox afterwards to encourage early z-test
     DrawSkybox();
 
+    std::printf("\nasd");
     UpdateMeshpools();
     window.Update(); // this flips the buffer so it goes at the end; TODO maybe poll events at start of frame instead
 }
@@ -125,6 +126,7 @@ void GraphicsEngine::Update() {
 }
 
 void GraphicsEngine::UpdateMeshpools() {
+    std::printf("\nDISJFJE");
     for (auto & [shaderId, map1] : meshpools) {
         for (auto & [textureId, map2] : map1) {
             for (auto & [poolId, pool] : map2) {
@@ -148,7 +150,7 @@ void GraphicsEngine::UpdateRenderComponents() {
             if (renderComp->live) {
                 SetModelMatrix(renderComp->meshLocation, transformComp->GetModel(cameraPos));
                 
-                if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1;  SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
+                if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1; std::printf("\texture status %u", renderComp->textureZChanged); SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
                 if (renderComp->colorChanged > 0) {renderComp->colorChanged -= 1;std::printf("\nColor status %u", renderComp->colorChanged); SetColor(renderComp->meshLocation, renderComp->color);}
             }
         }

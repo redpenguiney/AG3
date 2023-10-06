@@ -10,7 +10,7 @@
 using namespace std;
 
 int main() {
-    std::printf("\nMain loop reched.");
+    std::printf("\nMain loop rehched.");
     auto & GE = GraphicsEngine::Get();
     //GE.camera.position.y = 3;
 
@@ -38,7 +38,7 @@ int main() {
     
     int i = 0;
     for (int x = 3; x < 13; x++) {
-        for (int y = 0; y < 1; y++) {
+        for (int y = 0; y < 100; y++) {
             for (int z = 0; z < 1; z++) {
                 std::cout << "\nADding object.";
                 auto g = GameObject::New(m->meshId, t->textureId);
