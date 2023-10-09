@@ -80,7 +80,7 @@ fragment(fragmentPath, GL_FRAGMENT_SHADER)
     if(!success)
     {
         glGetProgramInfoLog(programId, 512, NULL, infolog);
-        printf("\nFailed to link shader program!\n%s", infolog);
+        printf("\nFailed to link shader program!\n%s\n", infolog);
         abort();
     }
     }

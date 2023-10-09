@@ -31,5 +31,5 @@ inline double Time() {
 
 // prints time between start and now
 inline void LogElapsed(double start, std::string message = "\nElapsed ") {
-    std::cout << message << (Time() - start) << "ms.";
+    std::cout << message << (Time() - start) << "ms.\n";
 }

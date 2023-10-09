@@ -103,7 +103,7 @@ class GraphicsEngine {
         friend class GraphicsEngine;
         
         //private constructor to enforce usage of object pool
-        friend class ComponentPool<RenderComponent, 10000>;
+        friend class ComponentPool<RenderComponent>;
         RenderComponent();
     };
 
@@ -123,7 +123,7 @@ class GraphicsEngine {
     //std::unordered_map<unsigned long long, MeshLocation> drawIdPoolLocations;
     //unsigned long long lastDrawId = 0;
 
-    ComponentPool<RenderComponent, 10000> RENDER_COMPONENTS;
+    ComponentPool<RenderComponent> RENDER_COMPONENTS;
 
     // Cache of meshes to add when addCachedMeshes is called. 
     // Used so that instead of adding 1 mesh to a meshpool 1000 times, we just add 1000 instances of a mesh to meshpool once to make creating renderable objects faster.

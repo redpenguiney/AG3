@@ -10,7 +10,7 @@
 using namespace std;
 
 int main() {
-    std::printf("\nMain loop rehched.");
+    std::printf("Main loop rehched.\n");
     auto & GE = GraphicsEngine::Get();
     //GE.camera.position.y = 3;
 
@@ -65,7 +65,7 @@ int main() {
 
     glPointSize(4.0); // debug thing, ignore
 
-    printf("\nStarting main loop.");
+    printf("Starting main loop.\n");
     
     while (!GE.ShouldClose()) {
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
@@ -75,13 +75,13 @@ int main() {
         //GE.SetColor(drawId, glm::vec4(0.0, 1.0, 0.5, 1.0));
         //printf("FRAME SUCCESS");
     }
-    printf("\nBeginning exit process.");
+    printf("Beginning exit process.\n");
 
     auto start = Time();
 
-    GameObject::Cleanup(); printf("\nCleaned up all gameobjects.");
+    GameObject::Cleanup(); printf("Cleaned up all gameobjects.\n");
 
-    LogElapsed(start, "\nExit process elapsed ");
-    printf("\nProgram ran successfully. Exiting.");
+    LogElapsed(start, "Exit process elapsed ");
+    printf("Program ran successfully. Exiting.\n");
     return EXIT_SUCCESS;
 }
