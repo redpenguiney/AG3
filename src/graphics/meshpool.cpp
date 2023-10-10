@@ -252,8 +252,6 @@ void Meshpool::ExpandNonInstanced() {
     indexBuffer.Reallocate(meshCapacity * meshIndicesSize);
     indirectDrawBuffer.Reallocate(meshCapacity * sizeof(IndirectDrawCommand));
 
-    std::printf("\nVertex size is %u Instance size is %u", vertexSize, instanceSize);
-
     // Create vao
     GLuint newVao;
     glGenVertexArrays(1, &newVao);

@@ -11,7 +11,7 @@ Window::Window(int widthh, int heightt) {
     mouseLocked = false;
     auto initSuccess = glfwInit();
     if (!initSuccess) {
-        std::printf("\nFailure to initialize GLFW. Aborting.");
+        std::printf("Failure to initialize GLFW. Aborting.\n");
         abort();
     }
 
@@ -19,7 +19,7 @@ Window::Window(int widthh, int heightt) {
     glfwWindow = glfwCreateWindow(width, height, "AG3", nullptr, nullptr);
     if (!glfwWindow) {
         glfwTerminate();
-        std::printf("\nFailure to create GLFW window. Aborting.");
+        std::printf("Failure to create GLFW window. Aborting.\n");
         abort();
     }
 
@@ -31,13 +31,13 @@ Window::Window(int widthh, int heightt) {
     GLenum glewSuccess = glewInit();
     if (glewSuccess != GLEW_OK) {
         glfwTerminate();
-        std::printf("\nFailure to initalize GLEW (error %s). Aborting.", glewGetErrorString(glewSuccess));
+        std::printf("Failure to initalize GLEW (error %s). Aborting.\n", glewGetErrorString(glewSuccess));
         abort();
     }
 
     glfwSetWindowPos(glfwWindow, 0, 0);
 
-    printf("\nWindow creation successful.");
+    printf("Window creation successful.\n");
 
     // See gl_error_handler, just prints opengl errors to console automatically
     // todo: disable on release builds for performance

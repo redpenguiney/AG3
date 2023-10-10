@@ -16,7 +16,7 @@ struct AABB {
     }
 
     // makes this aabb expand to contain other
-    void Grow(AABB& other) {
+    void Grow(const AABB& other) {
         min.x = std::min(min.x, other.min.x);
         min.y = std::min(min.y, other.min.y);
         min.z = std::min(min.z, other.min.z);
@@ -26,7 +26,7 @@ struct AABB {
     }
 
     // Checks if this AABB fully envelopes the other AABB 
-    bool TestEnvelopes(AABB& other) {
+    bool TestEnvelopes(const AABB& other) {
         return (min.x <= other.min.x && min.y <= other.min.y && min.z <= other.min.z && max.x >= other.max.x && max.y >= other.max.y && max.z >= other.max.z);
     }
 
@@ -71,12 +71,12 @@ class SpatialAccelerationStructure { // (SAS)
         void Destroy();
 
         // Return AABB of collider component
-        AABB GetAABB();
+        const AABB& GetAABB();
 
-        AABB aabb;
         TransformComponent* transform;
 
         private:
+        AABB aabb;
         
         // private constructor to enforce usage of object pool
         friend class ComponentPool<ColliderComponent>;
@@ -94,7 +94,7 @@ class SpatialAccelerationStructure { // (SAS)
     std::vector<ColliderComponent*> Query(AABB collider);
 
     // Adds a collider to the SAS.
-    void AddCollider(ColliderComponent& collider);
+    void AddCollider(ColliderComponent* collider);
 
     // Duh.
     void RemoveCollider();
@@ -134,6 +134,9 @@ class SpatialAccelerationStructure { // (SAS)
         void UpdateSplitPoint();
 
     };
+
+    // Returns index of best child node to insert object into, given the parent node and object's AABB
+    static int SasInsertHeuristic(const SasNode& node, const AABB& aabb);
 
     SasNode root;
 };

@@ -75,7 +75,10 @@ class GameObject {
         colliderComponent(SpatialAccelerationStructure::ColliderComponent::New(transformComponent))
         {
             deleted = false;
-            colliderComponent->live = false;
+            colliderComponent->live = haveCollider;
+            if (haveCollider) {
+                SpatialAccelerationStructure::Get().AddCollider(colliderComponent);
+            }
         };
         
 };

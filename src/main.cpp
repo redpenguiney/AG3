@@ -41,7 +41,7 @@ int main() {
         for (int y = 0; y < 100; y++) {
             for (int z = 0; z < 10; z++) {
                 auto g = GameObject::New(m->meshId, t->textureId);
-                g->transformComponent->position = glm::dvec3( x * 3, y * 3, z * 3);
+                g->transformComponent->SetPos({x * 3, y * 3, z * 3});
                 //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
                 //g->transformComponent->SetScl(glm::dvec3(1, 2, 1));
                 g->renderComponent->SetColor(glm::vec4(i % 2, (i + 2) % 2, (i + 1) % 2, 1.0));

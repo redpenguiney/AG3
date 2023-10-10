@@ -1,5 +1,8 @@
 #pragma once
 #include "spatial_acceleration_structure.hpp"
+#include <array>
+#include <cstdio>
+#include <cstdlib>
 
 void SpatialAccelerationStructure::SasNode::UpdateSplitPoint() {
     assert(objects.size() >= NODE_SPLIT_THRESHOLD);
@@ -17,7 +20,7 @@ void SpatialAccelerationStructure::SasNode::UpdateSplitPoint() {
 void SpatialAccelerationStructure::SasNode::CalculateAABB() {
     // first find a single object or child node that has an aabb, and use that as a starting point
     if (objects.size() > 0) {
-        aabb = objects[0]->aabb;
+        aabb = objects[0]->GetAABB();
     }
     else if (children != nullptr) {
         bool found = false;
@@ -33,7 +36,7 @@ void SpatialAccelerationStructure::SasNode::CalculateAABB() {
 
     // now aabb is within the real aabb, we get to real aabb by growing aabb to contain every child node and object
     for (auto & obj: objects) {
-        aabb.Grow(obj->aabb);
+        aabb.Grow(obj->GetAABB());
     }
     if (children != nullptr) {
         for (auto & child: *children) {
@@ -51,9 +54,27 @@ SpatialAccelerationStructure::SasNode::SasNode() {
     children = nullptr;
 }
 
-void SpatialAccelerationStructure::AddCollider(ColliderComponent& collider) {
-    
+// Returns index of best child node to insert object into, given the parent node and object's AABB.
+// Returns -1 if no child node.
+int SpatialAccelerationStructure::SasInsertHeuristic(const SpatialAccelerationStructure::SasNode& node, const AABB& aabb) {
+    return -1;
+}  
 
+void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider) {
+    const AABB& aabb = collider->GetAABB();
+
+    // Recursively pick best child node starting from root until we reach leaf node
+    SasNode* currentNode = &root;
+    while (true) {
+        int childIndex = SasInsertHeuristic(*currentNode, aabb);
+        if (childIndex == -1) {
+            break;
+        }
+        else {
+            currentNode = currentNode->children->at(childIndex);
+        }
+    }
+    currentNode->objects.push_back(collider);
 }
 
 void SpatialAccelerationStructure::RemoveCollider() {
@@ -74,9 +95,10 @@ SpatialAccelerationStructure::~SpatialAccelerationStructure() {
 
 SpatialAccelerationStructure::ColliderComponent* SpatialAccelerationStructure::ColliderComponent::New(TransformComponent* transformComponent) {
     auto ptr = COLLIDER_COMPONENTS.GetNew();
+    ptr->live = true;
     ptr->transform = transformComponent;
     ptr->aabbType = AABBBoundingCube;
-    SpatialAccelerationStructure::Get().AddCollider(*ptr);
+    //SpatialAccelerationStructure::Get().AddCollider(ptr); not calling this because gameobject has to decide whether or not it actually wants collisions
     return ptr; 
 }
 
@@ -84,7 +106,7 @@ void SpatialAccelerationStructure::ColliderComponent::Destroy() {
     COLLIDER_COMPONENTS.ReturnObject(this);
 }
 
-AABB SpatialAccelerationStructure::ColliderComponent::GetAABB() {
+const AABB& SpatialAccelerationStructure::ColliderComponent::GetAABB() {
     if (aabbType == AABBBoundingCube) {
         glm::dvec3 min = {-std::sqrt(0.75), -std::sqrt(0.75), -std::sqrt(0.75)};
         glm::dvec3 max = {std::sqrt(0.75), std::sqrt(0.75), std::sqrt(0.75)};
@@ -92,9 +114,11 @@ AABB SpatialAccelerationStructure::ColliderComponent::GetAABB() {
         max *= transform->scale() * AABB_FAT_FACTOR;
         min += transform->position();
         max += transform->position();
-        return AABB(min, max);
+        aabb = AABB(min, max);
+        return aabb;
     }
     else {
-        assert(false);
+        std::printf("PROBLEM\n");
+        abort();
     }
 }
