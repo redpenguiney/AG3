@@ -1,6 +1,7 @@
 #pragma once
 #include "spatial_acceleration_structure.hpp"
 #include <array>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 
@@ -75,6 +76,17 @@ void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider) {
         }
     }
     currentNode->objects.push_back(collider);
+
+    // Expand node and its ancestors to make sure they contain collider
+    while (true) {
+        currentNode->aabb.Grow(aabb);
+        if (currentNode->parent == nullptr) {
+            return;
+        }
+        else {
+            currentNode = currentNode->parent;
+        }
+    }
 }
 
 void SpatialAccelerationStructure::RemoveCollider() {
