@@ -18,8 +18,6 @@
 #include "texture.hpp"
 #include "renderable_mesh.hpp"
 
-const unsigned int RENDER_COMPONENT_POOL_SIZE = 65536;
-
 struct MeshLocation {
     unsigned int poolId; // uuid of the meshpool 
     unsigned int poolSlot;

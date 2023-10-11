@@ -1,4 +1,3 @@
-#pragma once
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLM/glm.hpp"
 #include "../debug/debug.hpp"
@@ -222,7 +221,7 @@ void Meshpool::Draw() {
    // glMultiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, 0, drawCount, 0); TODO: GET INDIRECT DRAWING TO WORK
     for (auto & command: drawCommands) {
         if (command.count == 0) {continue;}
-        glDrawElementsInstancedBaseVertexBaseInstance(GL_POINTS, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance + (instancedVertexBuffer.GetOffset()/instanceSize));
+        glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance + (instancedVertexBuffer.GetOffset()/instanceSize));
     }
     
     //std::printf("\nBRUH IT ELAPSED %fms", Time() - start1);
@@ -366,7 +365,7 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceReservedCounts[slot - 1];
     drawCommands[slot].instanceCount = instanceCount;
 
-    std::printf("Once again we're printing this stuff; %u %u   %u %u %u %u %u\n", meshVerticesSize, instanceSize, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
+    std::printf("Once again we're printing this stuff; %u %u   %u %u %u %u %u\n", meshVerticesSize, vertexSize, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
 
     // idk what to call this
     slotToInstanceLocations[slot] = drawCommands[slot].baseInstance;

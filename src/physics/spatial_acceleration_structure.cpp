@@ -7,7 +7,7 @@
 
 void SpatialAccelerationStructure::Update() {
     for (auto & pool: ColliderComponent::COLLIDER_COMPONENTS.pools) {
-        for (int i = 0; i < ComponentPool<ColliderComponent>::COMPONENTS_PER_POOL; i++) {
+        for (unsigned int i = 0; i < ComponentPool<ColliderComponent>::COMPONENTS_PER_POOL; i++) {
             ColliderComponent& collider = pool[i];
             if (collider.live) {
                 if (collider.transform->moved) {
