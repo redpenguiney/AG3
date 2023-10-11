@@ -5,6 +5,21 @@
 #include <cstdio>
 #include <cstdlib>
 
+void SpatialAccelerationStructure::Update() {
+    for (auto & pool: ColliderComponent::COLLIDER_COMPONENTS.pools) {
+        for (int i = 0; i < ComponentPool<ColliderComponent>::COMPONENTS_PER_POOL; i++) {
+            ColliderComponent& collider = pool[i];
+            if (collider.live) {
+                if (collider.transform->moved) {
+                    collider.transform->moved = false;
+                    UpdateCollider(collider);
+
+                }
+            }
+        }
+    }
+}
+
 void SpatialAccelerationStructure::SasNode::UpdateSplitPoint() {
     assert(objects.size() >= NODE_SPLIT_THRESHOLD);
     assert(!split);
@@ -75,7 +90,10 @@ void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider) {
             currentNode = currentNode->children->at(childIndex);
         }
     }
+
+    // put collider in that leaf node
     currentNode->objects.push_back(collider);
+    collider->node = currentNode;
 
     // Expand node and its ancestors to make sure they contain collider
     while (true) {
@@ -93,8 +111,42 @@ void SpatialAccelerationStructure::RemoveCollider() {
 
 }
 
-void SpatialAccelerationStructure::UpdateCollider() {
+void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::ColliderComponent& collider) {
+    const AABB& newAabb = collider.GetAABB();
 
+    // Go up the tree from the collider's current node to find the first node that fully envelopes the collider.
+    // (if collider's current node still envelops the collider, this will do nothing)
+    
+    SasNode* smallestNodeThatEnvelopes = collider.node;
+    while (true) {
+        if (!smallestNodeThatEnvelopes->aabb.TestEnvelopes(newAabb)) {
+            // If we reach the root and it doesn't fit, it will grow the root node's aabb to contain the collider.
+            if (smallestNodeThatEnvelopes->parent != nullptr) {
+                smallestNodeThatEnvelopes->aabb.Grow(newAabb);
+                break; //obvi not gonna be any more parent nodes after this
+            }
+            else {
+                smallestNodeThatEnvelopes = smallestNodeThatEnvelopes->parent;
+            }
+        }
+        else {
+            // we found a node that contains the collider
+            break;
+        }
+    }
+
+    // Then, we use the insert heuristic to go down child nodes until we find the best leaf node for the collider
+    SasNode* newNodeForCollider = smallestNodeThatEnvelopes;
+    while (true) {
+        int childIndex = SasInsertHeuristic(*newNodeForCollider, newAabb);
+        if (childIndex == -1) { // then we're at a leaf node, add the collider to it
+            collider.node = newNodeForCollider;
+            newNodeForCollider->objects.push_back(&collider);
+        }
+        else {
+            newNodeForCollider = newNodeForCollider->children->at(childIndex);
+        }
+    }
 }
 
 SpatialAccelerationStructure::SpatialAccelerationStructure() {

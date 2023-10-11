@@ -32,13 +32,15 @@ class ComponentPool {
 
         ~ComponentPool();
 
+        const static unsigned int COMPONENTS_PER_POOL = 65536;   
+
     private:
         // adds new pool with room for COMPONENTS_PER_POOL more objects
         void AddPool();
 
         std::vector<T*> firstAvailable; // for free list, first unallocated object in each pool  
 
-        const static unsigned int COMPONENTS_PER_POOL = 65536;                                        
+                                             
 };
 
 // no .cpp because templates are dumb

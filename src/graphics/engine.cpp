@@ -241,8 +241,8 @@ void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int textureId, un
 GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id) {
     auto ptr = Get().RENDER_COMPONENTS.GetNew();
     ptr->live = true;
-    ptr->colorChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
-    ptr->textureZChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
+    ptr->colorChanged = (Mesh::Get(mesh_id)->instancedColor)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+    ptr->textureZChanged = (Mesh::Get(mesh_id)->instancedTextureZ)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
     ptr->color = glm::vec4(1, 1, 1, 1);
     ptr->textureZ = -1.0;
     ptr->meshId = mesh_id;
@@ -286,12 +286,14 @@ GraphicsEngine::RenderComponent::RenderComponent() {
 }
 
 void GraphicsEngine::RenderComponent::SetColor(glm::vec4 rgba) {
+    assert(colorChanged != -1); // color must be instanced
     colorChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
     color = rgba;
 }
 
 // set to -1.0 for no texture
 void GraphicsEngine::RenderComponent::SetTextureZ(float z) {
+    assert(textureZChanged != -1); // textureZ must be instanced
     textureZChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
     textureZ = z;
 }

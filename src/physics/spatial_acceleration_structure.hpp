@@ -59,6 +59,10 @@ class SpatialAccelerationStructure { // (SAS)
         //BoundingBox = TODO
     };
 
+    private:
+    struct SasNode;
+    public:
+
     class ColliderComponent: public BaseComponent {
         public:
         BroadPhaseAABBType aabbType;
@@ -77,9 +81,13 @@ class SpatialAccelerationStructure { // (SAS)
 
         private:
         AABB aabb;
+
+        // pointer to node the component is stored in
+        SasNode* node;
         
         // private constructor to enforce usage of object pool
         friend class ComponentPool<ColliderComponent>;
+        friend class SpatialAccelerationStructure;
         ColliderComponent() {}
         ~ColliderComponent() {}
         
@@ -99,10 +107,10 @@ class SpatialAccelerationStructure { // (SAS)
     // Duh.
     void RemoveCollider();
 
-    // call whenever collider moves or changes size
-    void UpdateCollider();
-
     private:
+
+    // call whenever collider moves or changes size
+    void UpdateCollider(ColliderComponent& collider);
 
     // AABBs inserted into the SAS will be scaled by this much so that if the object moves a little bit we don't need to update its position in the SAS.
     static const inline double AABB_FAT_FACTOR = 1.2;

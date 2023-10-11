@@ -76,6 +76,8 @@ class TransformComponent: public BaseComponent {
     // therefore we store it here to avoid matrix multiplcation/math
     glm::mat4x4 rotScaleMatrix;
 
+    // SAS needs to access moved variable
+    friend class SpatialAccelerationStructure; 
     bool moved;
     glm::dvec3 position_;
     glm::quat rotation_;
