@@ -31,7 +31,7 @@ struct AABB {
     }
 
     // returns true if they touching
-    bool TestIntersection(AABB& other) {
+    bool TestIntersection(const AABB& other) {
         return (min.x <= other.max.x && max.x >= other.min.x) && (min.y <= other.max.y && max.y >= other.min.y) && (min.z <= other.max.z && max.z >= other.min.z);
     }
 };
@@ -98,8 +98,8 @@ class SpatialAccelerationStructure { // (SAS)
     // Call every frame. Updates the SAS to use the most up-to-date object transforms.
     void Update();
 
-    // Returns a vector of colliders in the SAS that intersect the given AABB
-    std::vector<ColliderComponent*> Query(AABB collider);
+    // Returns a vector of colliders in the SAS that probably intersect the given AABB.
+    std::vector<ColliderComponent*> Query(const AABB& collider);
 
     // Adds a collider to the SAS.
     void AddCollider(ColliderComponent* collider);
@@ -109,11 +109,14 @@ class SpatialAccelerationStructure { // (SAS)
 
     private:
 
+    // recursive helper function for Query(), ignore (member func because SasNode is private)
+    void AddIntersectingNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider);
+
     // call whenever collider moves or changes size
     void UpdateCollider(ColliderComponent& collider);
 
     // AABBs inserted into the SAS will be scaled by this much so that if the object moves a little bit we don't need to update its position in the SAS.
-    static const inline double AABB_FAT_FACTOR = 1.2;
+    static const inline double AABB_FAT_FACTOR = 1;
     
     // Once there are more objects in a node than this threshold, the node splits
     static const inline unsigned int NODE_SPLIT_THRESHOLD = 60;

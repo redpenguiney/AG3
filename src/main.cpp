@@ -5,7 +5,7 @@
 #include "graphics/engine.hpp"
 #include "graphics/shader_program.hpp"
 #include "graphics/texture.hpp"
-#include "gameobjects/gameobject.cpp"
+#include "gameobjects/gameobject.hpp"
 
 using namespace std;
 

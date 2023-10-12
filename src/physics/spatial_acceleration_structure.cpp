@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <vector>
 
 void SpatialAccelerationStructure::Update() {
     for (auto & pool: ColliderComponent::COLLIDER_COMPONENTS.pools) {
@@ -18,6 +19,38 @@ void SpatialAccelerationStructure::Update() {
             }
         }
     }
+}
+
+void SpatialAccelerationStructure::AddIntersectingNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const AABB& collider) {
+    if (node->aabb.TestIntersection(collider)) { // if this node touched the given collider, then its children may as well.
+        if (node->children != nullptr) {
+            for (auto& child : *node->children) {
+                AddIntersectingNodes(child, collidingNodes, collider);
+            } 
+        }
+        
+        if (!node->objects.empty()) {
+            collidingNodes.push_back(node);
+        }
+    }
+}
+
+std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& collider) {
+    // recursively find intersecting nodes (but only add them to this vector if they have objects)
+    std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
+    AddIntersectingNodes(&root, collidingNodes, collider);
+    
+    // test the aabbs of the objects inside each node and if so add them to the vector
+    std::vector<SpatialAccelerationStructure::ColliderComponent*> collidingComponents;
+    for (auto & node: collidingNodes) {
+        for (auto & obj: node->objects) {
+            if (obj->aabb.TestIntersection(collider)) {
+                collidingComponents.push_back(obj);
+            }
+        }
+    }
+
+    return collidingComponents;
 }
 
 void SpatialAccelerationStructure::SasNode::UpdateSplitPoint() {
@@ -170,6 +203,8 @@ void SpatialAccelerationStructure::ColliderComponent::Destroy() {
     COLLIDER_COMPONENTS.ReturnObject(this);
 }
 
+// TODO: collider AABBs should be augmented to contain their motion over the next time increment
+    // If we ever use a second SAS for accelerating visibility queries too, then don't do it for that
 const AABB& SpatialAccelerationStructure::ColliderComponent::GetAABB() {
     if (aabbType == AABBBoundingCube) {
         glm::dvec3 min = {-std::sqrt(0.75), -std::sqrt(0.75), -std::sqrt(0.75)};
