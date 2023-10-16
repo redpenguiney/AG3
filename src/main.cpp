@@ -37,9 +37,9 @@ int main() {
     auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
     
     int i = 0;
-    for (int x = 0; x < 32; x++) {
-        for (int y = 0; y < 32; y++) {
-            for (int z = 0; z < 16; z++) {
+    for (int x = 0; x < 3; x++) {
+        for (int y = 0; y < 1; y++) {
+            for (int z = 0; z < 1; z++) {
                 auto g = GameObject::New(m->meshId, t->textureId);
                 g->transformComponent->SetPos({x * 3, y * 3, z * 3});
                 //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
@@ -70,6 +70,8 @@ int main() {
     while (!GE.ShouldClose()) {
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         //auto start = Time();
+        SpatialAccelerationStructure::Get().Update();
+
         GE.RenderScene();
         //LogElapsed(start, "\nDrawing elapsed ");
         //GE.SetColor(drawId, glm::vec4(0.0, 1.0, 0.5, 1.0));

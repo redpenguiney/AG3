@@ -34,6 +34,11 @@ struct AABB {
     bool TestIntersection(const AABB& other) {
         return (min.x <= other.max.x && max.x >= other.min.x) && (min.y <= other.max.y && max.y >= other.min.y) && (min.z <= other.max.z && max.z >= other.min.z);
     }
+
+    // returns average of min an max
+    glm::dvec3 Center() {
+        return (min + max) * 0.5;
+    }
 };
 
 
@@ -74,10 +79,10 @@ class SpatialAccelerationStructure { // (SAS)
         // obviously don't touch component after this.
         void Destroy();
 
-        // Return AABB of collider component
-        const AABB& GetAABB();
+        // recalculate AABB of collider component from its transform
+        void RecalculateAABB(const TransformComponent& colliderTransform);
 
-        TransformComponent* transform;
+        //TransformComponent* transform;
 
         private:
         AABB aabb;
@@ -102,7 +107,7 @@ class SpatialAccelerationStructure { // (SAS)
     std::vector<ColliderComponent*> Query(const AABB& collider);
 
     // Adds a collider to the SAS.
-    void AddCollider(ColliderComponent* collider);
+    void AddCollider(ColliderComponent* collider, const TransformComponent& transform);
 
     // Duh.
     void RemoveCollider();
@@ -110,10 +115,10 @@ class SpatialAccelerationStructure { // (SAS)
     private:
 
     // recursive helper function for Query(), ignore (member func because SasNode is private)
-    void AddIntersectingNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider);
+    void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider);
 
     // call whenever collider moves or changes size
-    void UpdateCollider(ColliderComponent& collider);
+    void UpdateCollider(ColliderComponent& collider, const TransformComponent& transform);
 
     // AABBs inserted into the SAS will be scaled by this much so that if the object moves a little bit we don't need to update its position in the SAS.
     static const inline double AABB_FAT_FACTOR = 1;

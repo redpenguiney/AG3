@@ -1,31 +1,44 @@
 #pragma once
 #include "spatial_acceleration_structure.hpp"
 #include <array>
+#include <cassert>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
 
 void SpatialAccelerationStructure::Update() {
+    for (unsigned int i = 0; i < ColliderComponent::COLLIDER_COMPONENTS.pools.size(); i++) {
+        for (unsigned int j = 0; j < ComponentPool<ColliderComponent>::COMPONENTS_PER_POOL; j++) {
+            ColliderComponent& collider = ColliderComponent::COLLIDER_COMPONENTS.pools[i][j];
+            TransformComponent& transform = TransformComponent::TRANSFORM_COMPONENTS.pools[i][j];
+            if (collider.live) {
+                if (transform.moved) {
+                    transform.moved = false;
+                    UpdateCollider(collider, transform);
+                    
+                }                
+            }
+        }
+    }
+
     for (auto & pool: ColliderComponent::COLLIDER_COMPONENTS.pools) {
         for (unsigned int i = 0; i < ComponentPool<ColliderComponent>::COMPONENTS_PER_POOL; i++) {
             ColliderComponent& collider = pool[i];
             if (collider.live) {
-                if (collider.transform->moved) {
-                    collider.transform->moved = false;
-                    UpdateCollider(collider);
-
-                }
+                auto queryResult = Query(collider.aabb); // remember query result will include itself
+                glm::vec3 color = (queryResult.size() > 1) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+                std::cout << "COLOR is" << color.x << " " << color.y << " " << color.z << "\n";
             }
         }
     }
 }
 
-void SpatialAccelerationStructure::AddIntersectingNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const AABB& collider) {
+void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const AABB& collider) {
     if (node->aabb.TestIntersection(collider)) { // if this node touched the given collider, then its children may as well.
         if (node->children != nullptr) {
             for (auto& child : *node->children) {
-                AddIntersectingNodes(child, collidingNodes, collider);
+                AddIntersectingLeafNodes(child, collidingNodes, collider);
             } 
         }
         
@@ -36,9 +49,9 @@ void SpatialAccelerationStructure::AddIntersectingNodes(SpatialAccelerationStruc
 }
 
 std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& collider) {
-    // recursively find intersecting nodes (but only add them to this vector if they have objects)
+    // find leaf nodes whose AABBs intersect the collider
     std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
-    AddIntersectingNodes(&root, collidingNodes, collider);
+    AddIntersectingLeafNodes(&root, collidingNodes, collider);
     
     // test the aabbs of the objects inside each node and if so add them to the vector
     std::vector<SpatialAccelerationStructure::ColliderComponent*> collidingComponents;
@@ -58,7 +71,7 @@ void SpatialAccelerationStructure::SasNode::UpdateSplitPoint() {
     assert(!split);
     glm::dvec3 meanPosition = {0, 0, 0};
     for (auto & obj : objects) {
-        meanPosition += obj->transform->position()/(double)objects.size();
+        meanPosition += obj->aabb.Center()/(double)objects.size();
     }
     splitPoint = meanPosition;
 
@@ -69,7 +82,7 @@ void SpatialAccelerationStructure::SasNode::UpdateSplitPoint() {
 void SpatialAccelerationStructure::SasNode::CalculateAABB() {
     // first find a single object or child node that has an aabb, and use that as a starting point
     if (objects.size() > 0) {
-        aabb = objects[0]->GetAABB();
+        aabb = objects[0]->aabb;
     }
     else if (children != nullptr) {
         bool found = false;
@@ -85,7 +98,7 @@ void SpatialAccelerationStructure::SasNode::CalculateAABB() {
 
     // now aabb is within the real aabb, we get to real aabb by growing aabb to contain every child node and object
     for (auto & obj: objects) {
-        aabb.Grow(obj->GetAABB());
+        aabb.Grow(obj->aabb);
     }
     if (children != nullptr) {
         for (auto & child: *children) {
@@ -109,13 +122,13 @@ int SpatialAccelerationStructure::SasInsertHeuristic(const SpatialAccelerationSt
     return -1;
 }  
 
-void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider) {
-    const AABB& aabb = collider->GetAABB();
+void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider, const TransformComponent& transform) {
+    collider->RecalculateAABB(transform);
 
     // Recursively pick best child node starting from root until we reach leaf node
     SasNode* currentNode = &root;
     while (true) {
-        int childIndex = SasInsertHeuristic(*currentNode, aabb);
+        int childIndex = SasInsertHeuristic(*currentNode, collider->aabb);
         if (childIndex == -1) {
             break;
         }
@@ -130,7 +143,7 @@ void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider) {
 
     // Expand node and its ancestors to make sure they contain collider
     while (true) {
-        currentNode->aabb.Grow(aabb);
+        currentNode->aabb.Grow(collider->aabb);
         if (currentNode->parent == nullptr) {
             return;
         }
@@ -144,17 +157,19 @@ void SpatialAccelerationStructure::RemoveCollider() {
 
 }
 
-void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::ColliderComponent& collider) {
-    const AABB& newAabb = collider.GetAABB();
+void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::ColliderComponent& collider, const TransformComponent& transform) {
+    collider.RecalculateAABB(transform);
+    const AABB& newAabb = collider.aabb;
 
     // Go up the tree from the collider's current node to find the first node that fully envelopes the collider.
     // (if collider's current node still envelops the collider, this will do nothing)
     
+    SasNode* oldNode = collider.node;
     SasNode* smallestNodeThatEnvelopes = collider.node;
     while (true) {
         if (!smallestNodeThatEnvelopes->aabb.TestEnvelopes(newAabb)) {
             // If we reach the root and it doesn't fit, it will grow the root node's aabb to contain the collider.
-            if (smallestNodeThatEnvelopes->parent != nullptr) {
+            if (smallestNodeThatEnvelopes->parent == nullptr) {
                 smallestNodeThatEnvelopes->aabb.Grow(newAabb);
                 break; //obvi not gonna be any more parent nodes after this
             }
@@ -168,6 +183,19 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
         }
     }
 
+    // if the node still fits don't do anything
+    if (oldNode == smallestNodeThatEnvelopes) {
+        return;
+    }
+
+    // remove collider from old node
+    for (unsigned int i = 0; i < oldNode->objects.size(); i++) { // TODO: O(n) time here could actually be an issue
+        if (oldNode->objects[i] == &collider) {
+            oldNode->objects.erase(oldNode->objects.begin() + i);
+            break;
+        }
+    }
+
     // Then, we use the insert heuristic to go down child nodes until we find the best leaf node for the collider
     SasNode* newNodeForCollider = smallestNodeThatEnvelopes;
     while (true) {
@@ -175,6 +203,7 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
         if (childIndex == -1) { // then we're at a leaf node, add the collider to it
             collider.node = newNodeForCollider;
             newNodeForCollider->objects.push_back(&collider);
+            return;
         }
         else {
             newNodeForCollider = newNodeForCollider->children->at(childIndex);
@@ -193,8 +222,8 @@ SpatialAccelerationStructure::~SpatialAccelerationStructure() {
 SpatialAccelerationStructure::ColliderComponent* SpatialAccelerationStructure::ColliderComponent::New(TransformComponent* transformComponent) {
     auto ptr = COLLIDER_COMPONENTS.GetNew();
     ptr->live = true;
-    ptr->transform = transformComponent;
     ptr->aabbType = AABBBoundingCube;
+    ptr->node = nullptr;
     //SpatialAccelerationStructure::Get().AddCollider(ptr); not calling this because gameobject has to decide whether or not it actually wants collisions
     return ptr; 
 }
@@ -205,16 +234,15 @@ void SpatialAccelerationStructure::ColliderComponent::Destroy() {
 
 // TODO: collider AABBs should be augmented to contain their motion over the next time increment
     // If we ever use a second SAS for accelerating visibility queries too, then don't do it for that
-const AABB& SpatialAccelerationStructure::ColliderComponent::GetAABB() {
+void SpatialAccelerationStructure::ColliderComponent::RecalculateAABB(const TransformComponent& colliderTransform) {
     if (aabbType == AABBBoundingCube) {
         glm::dvec3 min = {-std::sqrt(0.75), -std::sqrt(0.75), -std::sqrt(0.75)};
         glm::dvec3 max = {std::sqrt(0.75), std::sqrt(0.75), std::sqrt(0.75)};
-        min *= transform->scale() * AABB_FAT_FACTOR;
-        max *= transform->scale() * AABB_FAT_FACTOR;
-        min += transform->position();
-        max += transform->position();
+        min *= colliderTransform.scale() * AABB_FAT_FACTOR;
+        max *= colliderTransform.scale() * AABB_FAT_FACTOR;
+        min += colliderTransform.position();
+        max += colliderTransform.position();
         aabb = AABB(min, max);
-        return aabb;
     }
     else {
         std::printf("PROBLEM\n");

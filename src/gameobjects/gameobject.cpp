@@ -3,7 +3,7 @@
 #include <cstdio>
 #include "gameobject.hpp"
 
-std::shared_ptr<GameObject> GameObject::New(unsigned int meshId, unsigned int textureId, bool haveCollisions = true, bool havePhysics = false) {
+std::shared_ptr<GameObject> GameObject::New(unsigned int meshId, unsigned int textureId, bool haveCollisions, bool havePhysics) {
     auto rawPtr = new GameObject(meshId, textureId, haveCollisions, havePhysics);
     auto ptr = std::shared_ptr<GameObject>(rawPtr);
     GAMEOBJECTS.emplace(rawPtr, ptr);
@@ -41,6 +41,6 @@ GameObject::GameObject(unsigned int meshId, unsigned int textureId, bool haveCol
     deleted = false;
     colliderComponent->live = haveCollider;
     if (haveCollider) {
-        SpatialAccelerationStructure::Get().AddCollider(colliderComponent);
+        SpatialAccelerationStructure::Get().AddCollider(colliderComponent, *transformComponent);
     }
 };
