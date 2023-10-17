@@ -35,6 +35,26 @@ struct AABB {
         return (min.x <= other.max.x && max.x >= other.min.x) && (min.y <= other.max.y && max.y >= other.min.y) && (min.z <= other.max.z && max.z >= other.min.z);
     }
 
+    // returns true if they touching
+    // uses https://tavianator.com/2011/ray_box.html 
+    bool TestIntersection(const glm::dvec3& origin, const glm::dvec3& direction_inverse) {
+        double t1 = (min[0] - origin[0])*direction_inverse[0];
+        double t2 = (max[0] - origin[0])*direction_inverse[0];
+
+        double tmin = std::min(t1, t2);
+        double tmax = std::max(t1, t2);
+
+        for (int i = 1; i < 3; ++i) {
+            t1 = (min[i] - origin[i])*direction_inverse[i];
+            t2 = (max[i] - origin[i])*direction_inverse[i];
+
+            tmin = std::max(tmin, std::min(t1, t2));
+            tmax = std::min(tmax, std::max(t1, t2));
+        }
+
+        return tmax > std::max(tmin, 0.0);
+    }
+
     // returns average of min an max
     glm::dvec3 Center() {
         return (min + max) * 0.5;
@@ -103,8 +123,11 @@ class SpatialAccelerationStructure { // (SAS)
     // Call every frame. Updates the SAS to use the most up-to-date object transforms.
     void Update();
 
-    // Returns a vector of colliders in the SAS that probably intersect the given AABB.
+    // Returns a vector of colliders in the SAS that might intersect the given AABB.
     std::vector<ColliderComponent*> Query(const AABB& collider);
+
+    // Returns a vector of colliders in the SAS that might intersect the given ray.
+    std::vector<ColliderComponent*> Query(const glm::dvec3& origin, const glm::dvec3& direction);
 
     // Adds a collider to the SAS.
     void AddCollider(ColliderComponent* collider, const TransformComponent& transform);
@@ -114,8 +137,9 @@ class SpatialAccelerationStructure { // (SAS)
 
     private:
 
-    // recursive helper function for Query(), ignore (member func because SasNode is private)
+    // recursive helper functions for Query(), ignore (member func because SasNode is private)
     void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider);
+    void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const glm::dvec3& origin, const glm::dvec3& inverse_direction);
 
     // call whenever collider moves or changes size
     void UpdateCollider(ColliderComponent& collider, const TransformComponent& transform);

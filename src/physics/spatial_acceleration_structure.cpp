@@ -48,6 +48,20 @@ void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationS
     }
 }
 
+void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const glm::dvec3& origin, const glm::dvec3& inverse_direction) {
+    if (node->aabb.TestIntersection(origin, inverse_direction)) { // if this node touched the given collider, then its children may as well.
+        if (node->children != nullptr) {
+            for (auto& child : *node->children) {
+                AddIntersectingLeafNodes(child, collidingNodes, origin, inverse_direction);
+            } 
+        }
+        
+        if (!node->objects.empty()) {
+            collidingNodes.push_back(node);
+        }
+    }
+}
+
 std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& collider) {
     // find leaf nodes whose AABBs intersect the collider
     std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
@@ -65,6 +79,28 @@ std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAcceleratio
 
     return collidingComponents;
 }
+
+// TODO: redundant code in these two query functions, could improve
+std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAccelerationStructure::Query(const glm::dvec3& origin, const glm::dvec3& direction) {
+    glm::dvec3 inverse_direction = glm::dvec3(1.0, 1.0, 1.0)/direction; 
+
+    // find leaf nodes whose AABBs intersect the ray
+    std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
+    AddIntersectingLeafNodes(&root, collidingNodes, origin, inverse_direction);
+    
+    // test the aabbs of the objects inside each node and if so add them to the vector
+    std::vector<SpatialAccelerationStructure::ColliderComponent*> collidingComponents;
+    for (auto & node: collidingNodes) {
+        for (auto & obj: node->objects) {
+            if (obj->aabb.TestIntersection(origin, inverse_direction)) {
+                collidingComponents.push_back(obj);
+            }
+        }
+    }
+
+    return collidingComponents;
+}
+
 
 void SpatialAccelerationStructure::SasNode::UpdateSplitPoint() {
     assert(objects.size() >= NODE_SPLIT_THRESHOLD);

@@ -19,6 +19,7 @@ void GameObject::Destroy() {
 GameObject::~GameObject() {
     renderComponent->Destroy();
     transformComponent->Destroy();
+    colliderComponent->Destroy();
     GAMEOBJECTS.erase(this); 
 };
 
