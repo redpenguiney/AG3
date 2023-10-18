@@ -139,6 +139,7 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
     SasNode* newNodeForCollider = smallestNodeThatEnvelopes;
     while (true) {
         int childIndex = SasInsertHeuristic(*newNodeForCollider, newAabb);
+        // TODO: we might need to grow this 
         if (childIndex == -1) { // then we're at a leaf node, add the collider to it
             collider.node = newNodeForCollider;
             newNodeForCollider->objects.push_back(&collider);
