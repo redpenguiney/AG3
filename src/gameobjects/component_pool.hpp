@@ -11,7 +11,7 @@
 // Automatically resizes.
 // Stores all objects in mostly contiguous memory for cache performance.
 // Guarantees that pointers to pool contents will always remain accurate, by instead of using std::vector, using multiple arrays.
-// Just set COMPONENTS_PER_POOL to 65536 if you aren't sure, no default value because if you specify it in some places but not others you get types mixed up
+// COMPONENTS_PER_POOL template argument removed for reasons
 template<typename T>
 class ComponentPool {
     friend T;

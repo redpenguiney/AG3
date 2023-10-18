@@ -137,7 +137,7 @@ void GraphicsEngine::UpdateRenderComponents() {
     for (unsigned int i = 0; i < RENDER_COMPONENTS.pools.size(); i++) {
         auto renderArray = RENDER_COMPONENTS.pools.at(i);
         auto transformArray = TransformComponent::TRANSFORM_COMPONENTS.pools.at(i);
-        for (unsigned int j = 0; j < 10000; j++) {
+        for (unsigned int j = 0; j < RENDER_COMPONENTS.COMPONENTS_PER_POOL; j++) {
             auto renderComp = renderArray + j;
             auto transformComp = transformArray + j;
             if (renderComp->live) {
