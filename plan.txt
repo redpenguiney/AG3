@@ -9,5 +9,5 @@ while (true) {
     Graphics::UpdateMeshTransforms(RenderComponents, TransformComponents);
     Graphics::Draw(RenderComponents);
 
-    
+    Scripts::DoWhatever(GameObjects);    
 }

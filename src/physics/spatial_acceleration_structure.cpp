@@ -255,17 +255,22 @@ SpatialAccelerationStructure::~SpatialAccelerationStructure() {
 
 }
 
-SpatialAccelerationStructure::ColliderComponent* SpatialAccelerationStructure::ColliderComponent::New(TransformComponent* transformComponent) {
+SpatialAccelerationStructure::ColliderComponent* SpatialAccelerationStructure::ColliderComponent::New(std::shared_ptr<GameObject> gameobject) {
     auto ptr = COLLIDER_COMPONENTS.GetNew();
     ptr->live = true;
     ptr->aabbType = AABBBoundingCube;
     ptr->node = nullptr;
+    ptr->gameobject = gameobject;
     //SpatialAccelerationStructure::Get().AddCollider(ptr); not calling this because gameobject has to decide whether or not it actually wants collisions
     return ptr; 
 }
 
 void SpatialAccelerationStructure::ColliderComponent::Destroy() {
     COLLIDER_COMPONENTS.ReturnObject(this);
+}
+
+std::shared_ptr<GameObject>& SpatialAccelerationStructure::ColliderComponent::GetGameObject() {
+    return gameobject;
 }
 
 // TODO: collider AABBs should be augmented to contain their motion over the next time increment

@@ -6,6 +6,7 @@
 std::shared_ptr<GameObject> GameObject::New(unsigned int meshId, unsigned int textureId, bool haveCollisions, bool havePhysics) {
     auto rawPtr = new GameObject(meshId, textureId, haveCollisions, havePhysics);
     auto ptr = std::shared_ptr<GameObject>(rawPtr);
+    ptr->colliderComponent->gameobject = ptr;
     GAMEOBJECTS.emplace(rawPtr, ptr);
     return ptr;
 }    
@@ -37,7 +38,7 @@ void GameObject::Cleanup() {
 GameObject::GameObject(unsigned int meshId, unsigned int textureId, bool haveCollider, bool havePhysics):
     renderComponent(GraphicsEngine::RenderComponent::New(meshId, textureId)),
     transformComponent(TransformComponent::New()),
-    colliderComponent(SpatialAccelerationStructure::ColliderComponent::New(transformComponent))
+    colliderComponent(SpatialAccelerationStructure::ColliderComponent::New(nullptr)) // it needs a shared_ptr so we need to set that in New()
 {
     deleted = false;
     colliderComponent->live = haveCollider;

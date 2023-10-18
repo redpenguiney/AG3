@@ -1,10 +1,13 @@
 #pragma once
 #include <cassert>
 #include <cstddef>
+#include <memory>
 #include <vector>
 #include <array>
 #include "../../external_headers/GLM/ext.hpp"
 #include "../gameobjects/transform_component.cpp"
+
+class GameObject;
 
 struct AABB {
     glm::dvec3 min;
@@ -93,7 +96,8 @@ class SpatialAccelerationStructure { // (SAS)
         BroadPhaseAABBType aabbType;
 
         // DO NOT delete this pointer.
-        static ColliderComponent* New(TransformComponent* transformComponent);
+        // The gameobject argument kinda has to be a nullptr and then you manually set the field to the shared_ptr, so this is kinda dumb. TODO
+        static ColliderComponent* New(std::shared_ptr<GameObject> gameobject);
 
         // call instead of deleting the pointer.
         // obviously don't touch component after this.
@@ -104,11 +108,19 @@ class SpatialAccelerationStructure { // (SAS)
 
         //TransformComponent* transform;
 
+        // returns gameobject this collider belongs to
+        std::shared_ptr<GameObject>& GetGameObject();
+
         private:
+
         AABB aabb;
 
         // pointer to node the component is stored in
         SasNode* node;
+
+        // pointer to gameobject using this collier. No, no way around this, we have to be able to get gameobjects from a collider stored in the SAS.
+        std::shared_ptr<GameObject> gameobject;
+        friend class GameObject; // gameobject has to set the gameobject ptr after creating the collider for annoying reasons
         
         // private constructor to enforce usage of object pool
         friend class ComponentPool<ColliderComponent>;
