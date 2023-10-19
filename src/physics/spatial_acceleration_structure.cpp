@@ -28,7 +28,7 @@ void SpatialAccelerationStructure::Update() {
             if (collider.live) {
                 auto queryResult = Query(collider.aabb); // remember query result will include itself
                 // glm::vec3 color = (queryResult.size() > 1) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
-                std::printf("Object is touching %u\n", queryResult.size());
+                //std::printf("Object is touching %u\n", queryResult.size());
             }
         }
     }
@@ -87,7 +87,6 @@ std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAcceleratio
     // find leaf nodes whose AABBs intersect the ray
     std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
     AddIntersectingLeafNodes(&root, collidingNodes, origin, inverse_direction);
-    std::printf("Considering %u\n", collidingNodes.size());
 
     // test the aabbs of the objects inside each node and if so add them to the vector
     std::vector<SpatialAccelerationStructure::ColliderComponent*> collidingComponents;
@@ -275,7 +274,7 @@ std::shared_ptr<GameObject>& SpatialAccelerationStructure::ColliderComponent::Ge
     return gameobject;
 }
 
-// TODO: collider AABBs should be augmented to contain their motion over the next time increment
+// TODO: collider AABBs should be augmented to contain their motion over the next time increment.
     // If we ever use a second SAS for accelerating visibility queries too, then don't do it for that
 void SpatialAccelerationStructure::ColliderComponent::RecalculateAABB(const TransformComponent& colliderTransform) {
     if (aabbType == AABBBoundingCube) {

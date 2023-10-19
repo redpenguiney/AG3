@@ -10,7 +10,7 @@ class Camera {
 
     // returns the camera's projection matrix.
     // aspect is width/height
-    glm::mat4x4 GetProj(float aspect, float near=0.1, float far=1000.0);
+    glm::mat4x4 GetProj(float aspect, float near=0.1, float far=10000.0);
 
     glm::mat4x4 GetCamera();
 };

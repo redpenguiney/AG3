@@ -171,22 +171,22 @@ glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
     } else if (debugFreecamYaw < -180) {
         debugFreecamYaw += 360;
     } 
-    debugFreecamPitch = std::max((float)-89.999, std::min(debugFreecamPitch, (float)89.999));
+    debugFreecamPitch = std::max(-90.0, std::min(debugFreecamPitch, 90.0));
 
-    glm::quat rotation = glm::rotate(glm::rotate(glm::identity<glm::mat4x4>(), glm::radians(debugFreecamPitch), glm::vec3(1, 0, 0)), glm::radians(debugFreecamYaw), glm::vec3(0, 1, 0));
+    glm::dquat rotation = glm::rotate(glm::rotate(glm::identity<glm::dmat4x4>(), glm::radians(debugFreecamPitch), glm::dvec3(1, 0, 0)), glm::radians(debugFreecamYaw), glm::dvec3(0, 1, 0));
 
     // camera movement
     auto look = LookVector(glm::radians(debugFreecamPitch), glm::radians(debugFreecamYaw));
-    auto right = glm::cross(look, glm::dvec3(0, 1, 0));
+    auto right = LookVector(0, glm::radians(debugFreecamYaw + 90));
     auto up = glm::cross(look, right);
-    glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_A] - PRESSED_KEYS[GLFW_KEY_D]);
+    glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_D] - PRESSED_KEYS[GLFW_KEY_A]);
     glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_Q] - PRESSED_KEYS[GLFW_KEY_E]);
-    glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_S] - PRESSED_KEYS[GLFW_KEY_W]);
+    glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_W] - PRESSED_KEYS[GLFW_KEY_S]);
     debugFreecamPos += rightMovement + forwardMovement + upMovement;
 
     
 
-    return glm::mat4x4(rotation); 
+    return glm::mat4x4((glm::quat)rotation); 
 }
 
 void GraphicsEngine::AddCachedMeshes() {

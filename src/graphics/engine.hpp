@@ -42,11 +42,12 @@ class GraphicsEngine {
     // freecam is just a thing for debugging
     bool debugFreecamEnabled = false;
     glm::dvec3 debugFreecamPos = {0, 0, 0};
-    float debugFreecamPitch = 0;
-    float debugFreecamYaw = 0;
+    double debugFreecamPitch = 0; // in degrees, don't get tripped up when you do lookvector which wants radians
+    double debugFreecamYaw = 0;
     double debugFreecamSpeed = 0;
     static const inline double debugFreecamAcceleration = 0.01;
 
+    // Be advised. If you're tryna get camera position/orientation while using debugfreecam, you might want to use debugFreecamPitch/Yaw/Pos instead
     Camera camera;
     Window window = Window(500, 500); // handles windowing, interfaces with GLFW in general
 

@@ -16,6 +16,8 @@ class TransformComponent: public BaseComponent {
     static TransformComponent* New() {
         auto ptr = TRANSFORM_COMPONENTS.GetNew();
         ptr->rotation_ = glm::identity<glm::quat>();
+        ptr->scale_ = {1, 1, 1};
+        ptr->position_ = {0, 0, 0};
         ptr->rotScaleMatrix = glm::identity<glm::mat4x4>();
         return ptr;
     }

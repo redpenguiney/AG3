@@ -52,11 +52,12 @@ glm::dvec3 GetTriangleNormal(glm::dvec3 triVertex0, glm::dvec3 triVertex1, glm::
 // If ray did not hit anything, result.hitObject == nullptr.
 RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
     auto possible_colliding = SpatialAccelerationStructure::Get().Query(origin, direction);
-    std::printf("Ray might be hitting ");
-    for (auto & collider: possible_colliding) {
-        std::cout << collider->GetGameObject()->name << " ";
-    }
-    std::printf("muy guy %f %f %f\n", direction.x, direction.y, direction.z);
+    // std::printf("Ray might be hitting ");
+    // for (auto & collider: possible_colliding) {
+    //     std::cout << collider->GetGameObject()->name << " ";
+    // }
+    // //std::printf("\n");
+    //std::printf("muy guy %f %f %f\n", direction.x, direction.y, direction.z);
 
     for (auto & comp: possible_colliding) {
         auto& obj = comp->GetGameObject();
@@ -64,12 +65,15 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
         
         // test every triangle of the mesh against the ray, if any of them hit we win
         const unsigned int triCount = mesh->indices.size()/3;
+        std::printf("There are %u triangles to test.\n", triCount);
+
         const unsigned int floatsPerVertex = (sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!mesh->instancedColor) ? sizeof(glm::vec4) : 0) + ((!mesh->instancedTextureZ) ? sizeof(GLfloat) : 0))/sizeof(GLfloat);
         for (unsigned int i = 0; i < triCount; i++) {
             glm::dvec3 trianglePoints[3];
-            for (unsigned int j = 0; j < 3; j++) {
+            for (unsigned int j = 0; j < 3; j++) { // URGENT TODO: multiply each point by model matrix
                 trianglePoints[j] = glm::dvec3(mesh->vertices[((i * 3) + j) * floatsPerVertex], mesh->vertices[((i * 3) + j) * floatsPerVertex + 1], mesh->vertices[((i * 3) + j) * floatsPerVertex + 2]);
             }
+            std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f\n.");
             glm::dvec3 intersectionPoint;
             if (IsTriangleColliding(origin, direction, trianglePoints[0], trianglePoints[1], trianglePoints[2], intersectionPoint)) {
                 return RaycastResult {intersectionPoint, GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2])};
