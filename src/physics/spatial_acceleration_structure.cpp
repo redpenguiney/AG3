@@ -27,8 +27,8 @@ void SpatialAccelerationStructure::Update() {
             ColliderComponent& collider = pool[i];
             if (collider.live) {
                 auto queryResult = Query(collider.aabb); // remember query result will include itself
-                glm::vec3 color = (queryResult.size() > 1) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
-                std::cout << "COLOR is" << color.x << " " << color.y << " " << color.z << "\n";
+                // glm::vec3 color = (queryResult.size() > 1) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+                std::printf("Object is touching %u\n", queryResult.size());
             }
         }
     }
@@ -82,12 +82,13 @@ std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAcceleratio
 
 // TODO: redundant code in these two query functions, could improve
 std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAccelerationStructure::Query(const glm::dvec3& origin, const glm::dvec3& direction) {
-    glm::dvec3 inverse_direction = glm::dvec3(1.0, 1.0, 1.0)/direction; 
+    glm::dvec3 inverse_direction = glm::dvec3(1.0/direction.x, 1.0/direction.y, 1.0/direction.z); 
 
     // find leaf nodes whose AABBs intersect the ray
     std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
     AddIntersectingLeafNodes(&root, collidingNodes, origin, inverse_direction);
-    
+    std::printf("Considering %u\n", collidingNodes.size());
+
     // test the aabbs of the objects inside each node and if so add them to the vector
     std::vector<SpatialAccelerationStructure::ColliderComponent*> collidingComponents;
     for (auto & node: collidingNodes) {

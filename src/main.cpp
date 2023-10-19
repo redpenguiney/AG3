@@ -1,11 +1,13 @@
 #include<cstdlib>
 #include<cstdio>
+#include <string>
 #include <vector>
 
 #include "graphics/engine.hpp"
 #include "graphics/shader_program.hpp"
 #include "graphics/texture.hpp"
 #include "gameobjects/gameobject.hpp"
+#include "physics/raycast.hpp"
 
 using namespace std;
 
@@ -46,6 +48,7 @@ int main() {
                 //g->transformComponent->SetScl(glm::dvec3(1, 2, 1));
                 //g->renderComponent->SetColor(glm::vec4(i % 2, (i + 1) % 2, (i + 1) % 2, 1.0));
                 g->renderComponent->SetTextureZ(-1.0);
+                g->name = std::string("Gameobject #") + to_string(x);
                 i++;
             } 
         }
@@ -68,6 +71,11 @@ int main() {
     printf("Starting main loop.\n");
     
     while (!GE.ShouldClose()) {
+        auto castResult = Raycast(GE.camera.position, LookVector(GE.camera.rotation.x, GE.camera.rotation.y));
+        if (castResult.hitObject != nullptr) {
+            std::printf("HIT\n");
+        }
+
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         //auto start = Time();
         SpatialAccelerationStructure::Get().Update();

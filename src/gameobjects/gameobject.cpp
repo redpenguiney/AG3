@@ -40,6 +40,7 @@ GameObject::GameObject(unsigned int meshId, unsigned int textureId, bool haveCol
     transformComponent(TransformComponent::New()),
     colliderComponent(SpatialAccelerationStructure::ColliderComponent::New(nullptr)) // it needs a shared_ptr so we need to set that in New()
 {
+    name = "Gameobject";
     deleted = false;
     colliderComponent->live = haveCollider;
     if (haveCollider) {

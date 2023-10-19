@@ -1,3 +1,4 @@
+#pragma once
 #include <memory>
 #include<unordered_set>
 #include <vector>
@@ -14,6 +15,7 @@ struct CreateGameobjectParams;
 // The gameobject system uses ECS (google it).
 class GameObject {
     public:
+    std::string name; // just an identifier i have mainly for debug reasons, scripts could also use it i guess
 
     // all gameobjects will reserve a render, transform, and collision component even if they don't need them to ensure cache stuff
         // TODO: this might not be neccesary

@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <cstddef>
+#include <cstdio>
 #include <memory>
 #include <vector>
 #include <array>
@@ -55,6 +56,8 @@ struct AABB {
             tmax = std::min(tmax, std::max(t1, t2));
         }
 
+        std::printf("min %f max %f \n", tmin, tmax);
+        std::printf("dirinv %f %f %f\n", direction_inverse.x, direction_inverse.y, direction_inverse.z);
         return tmax > std::max(tmin, 0.0);
     }
 

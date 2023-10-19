@@ -1,6 +1,8 @@
 #pragma once
 #include "raycast.hpp"
 #include "spatial_acceleration_structure.hpp"
+#include <cstdio>
+#include <vector>
 
 // copy pasted from https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm#C++_implementation
 // If the ray intersects the triangle, sets intersection point and returns true, else returns false
@@ -42,13 +44,38 @@ bool IsTriangleColliding(glm::dvec3 origin, glm::dvec3 direction, glm::dvec3 tri
     }
 }
 
-// TODO: this uses objects' Mesh instead of a simplified thing 
-// Returns first gameobject ray hits
-std::shared_ptr<GameObject> Raycast(glm::dvec3 origin, glm::dvec3 direction) {
+glm::dvec3 GetTriangleNormal(glm::dvec3 triVertex0, glm::dvec3 triVertex1, glm::dvec3 triVertex2) {
+    return glm::dvec3(0, 1, 0);
+}
+
+// TODO: this uses objects' Mesh instead of a simplified physics mesh 
+// If ray did not hit anything, result.hitObject == nullptr.
+RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
     auto possible_colliding = SpatialAccelerationStructure::Get().Query(origin, direction);
+    std::printf("Ray might be hitting ");
+    for (auto & collider: possible_colliding) {
+        std::cout << collider->GetGameObject()->name << " ";
+    }
+    std::printf("muy guy %f %f %f\n", direction.x, direction.y, direction.z);
 
     for (auto & comp: possible_colliding) {
         auto& obj = comp->GetGameObject();
-        Mesh::Get(obj->renderComponent->meshId).
+        auto& mesh = Mesh::Get(obj->renderComponent->meshId);
+        
+        // test every triangle of the mesh against the ray, if any of them hit we win
+        const unsigned int triCount = mesh->indices.size()/3;
+        const unsigned int floatsPerVertex = (sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!mesh->instancedColor) ? sizeof(glm::vec4) : 0) + ((!mesh->instancedTextureZ) ? sizeof(GLfloat) : 0))/sizeof(GLfloat);
+        for (unsigned int i = 0; i < triCount; i++) {
+            glm::dvec3 trianglePoints[3];
+            for (unsigned int j = 0; j < 3; j++) {
+                trianglePoints[j] = glm::dvec3(mesh->vertices[((i * 3) + j) * floatsPerVertex], mesh->vertices[((i * 3) + j) * floatsPerVertex + 1], mesh->vertices[((i * 3) + j) * floatsPerVertex + 2]);
+            }
+            glm::dvec3 intersectionPoint;
+            if (IsTriangleColliding(origin, direction, trianglePoints[0], trianglePoints[1], trianglePoints[2], intersectionPoint)) {
+                return RaycastResult {intersectionPoint, GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2])};
+            }
+        }
     }
+
+    return RaycastResult {.hitObject = nullptr};
 }

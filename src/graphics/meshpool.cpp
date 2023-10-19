@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include "meshpool.hpp"
 
+// TODO: use GL_SHORT for indices in meshpools where there are fewer than 65536 indices
+
 // constructor takes mesh reference to set variables, doesn't actually add the given mesh or anything
 Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh): 
     instanceSize(sizeof(glm::mat4x4) + ((mesh->instancedColor) ? sizeof(glm::vec4) : 0) + (mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // instances will be bigger if the mesh also wants color/texturez to be instanced
