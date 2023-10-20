@@ -1,8 +1,10 @@
 #pragma once
+#define GLM_FORCE_SWIZZLE
 #include "raycast.hpp"
 #include "spatial_acceleration_structure.hpp"
 #include <cstdio>
 #include <vector>
+#include "../../external_headers/GLM/gtx/string_cast.hpp"
 
 // copy pasted from https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm#C++_implementation
 // If the ray intersects the triangle, sets intersection point and returns true, else returns false
@@ -62,6 +64,7 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
     for (auto & comp: possible_colliding) {
         auto& obj = comp->GetGameObject();
         auto& mesh = Mesh::Get(obj->renderComponent->meshId);
+        auto modelMatrix = obj->transformComponent->GetPhysicsModelMatrix();
         
         // test every triangle of the mesh against the ray, if any of them hit we win
         const unsigned int triCount = mesh->indices.size()/3;
@@ -70,9 +73,13 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
         const unsigned int floatsPerVertex = (sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!mesh->instancedColor) ? sizeof(glm::vec4) : 0) + ((!mesh->instancedTextureZ) ? sizeof(GLfloat) : 0))/sizeof(GLfloat);
         for (unsigned int i = 0; i < triCount; i++) {
             glm::dvec3 trianglePoints[3];
-            for (unsigned int j = 0; j < 3; j++) { // URGENT TODO: multiply each point by model matrix
-                int vertexIndex = ((i * 3) + j) * floatsPerVertex;
-                trianglePoints[j] = glm::dvec3(mesh->vertices[vertexIndex], mesh->vertices[vertexIndex + 1], mesh->vertices[vertexIndex + 2]);
+            for (unsigned int j = 0; j < 3; j++) {
+                int vertexIndex = mesh->indices[(i * 3) + j] * floatsPerVertex;
+                glm::dvec4 point = glm::dvec4(mesh->vertices.at(vertexIndex), mesh->vertices.at(vertexIndex + 1), mesh->vertices.at(vertexIndex + 2), 1);
+                std::cout << "Matrix is " << glm::to_string(modelMatrix) << "\n"; 
+                point = modelMatrix * point;
+                //std::printf("After %f %f %f %f\n", point.x, point.y, point.z, point.w);
+                trianglePoints[j] = point.xyz();
             }
             //std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f\n.");
             glm::dvec3 intersectionPoint;

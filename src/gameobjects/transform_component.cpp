@@ -10,7 +10,7 @@ class TransformComponent: public BaseComponent {
 
     const glm::dvec3& position() const { return position_; } // allows public read only access to rotation
     const glm::quat& rotation() const { return rotation_; } // allows public read only access to rotation
-    const glm::dvec3& scale() const { return scale_; } // allows public read only access to scale
+    const glm::vec3& scale() const { return scale_; } // allows public read only access to scale
 
     // DO NOT delete this pointer.
     static TransformComponent* New() {
@@ -39,18 +39,26 @@ class TransformComponent: public BaseComponent {
         UpdateRotScaleMatrix();
     }
 
-    void SetScl(glm::dvec3 scl) {
+    void SetScl(glm::vec3 scl) {
         scale_ = scl;
         moved = true;
         UpdateRotScaleMatrix();
     }
 
     // cameraPosition used for floating origin
-    glm::mat4x4 GetModel(const glm::dvec3 & cameraPosition) {
-        auto mat = rotScaleMatrix;
+    // TODO: option to not do floating origin
+    glm::mat4x4 GetGraphicsModelMatrix(const glm::dvec3 & cameraPosition) {
+        auto mat = rotScaleMatrix; // TODO: is the copy really neccesary?
         mat[3] = glm::vec4((position() - cameraPosition), 1.0);
         //mat = glm::translate(mat, glm::vec3(position - cameraPosition));
         // std::printf("\nPos is\n%f,%f,%f,%f,\n%f,%f,%f,%f,\n%f,%f,%f,%f,\n%f,%f,%f,%f,", mat[0][0], mat[0][1], mat[0][2], mat[0][3], mat[1][0], mat[1][1], mat[1][2], mat[1][3], mat[2][0], mat[2][1], mat[2][2], mat[2][3], mat[3][0], mat[3][1], mat[3][2], mat[3][3]);
+        return mat;
+    }
+
+    // TODO: might be slow idk, store it if you have to
+    glm::dmat4x4 GetPhysicsModelMatrix() {
+        glm::dmat4x4 mat = rotScaleMatrix;
+        mat[3] = glm::vec4(position_, 1);
         return mat;
     }
 
@@ -83,5 +91,5 @@ class TransformComponent: public BaseComponent {
     bool moved;
     glm::dvec3 position_;
     glm::quat rotation_;
-    glm::dvec3 scale_; 
+    glm::vec3 scale_; 
 };

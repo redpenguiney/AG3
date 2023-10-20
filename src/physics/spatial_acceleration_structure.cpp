@@ -280,8 +280,12 @@ void SpatialAccelerationStructure::ColliderComponent::RecalculateAABB(const Tran
     if (aabbType == AABBBoundingCube) {
         glm::dvec3 min = {-std::sqrt(0.75), -std::sqrt(0.75), -std::sqrt(0.75)};
         glm::dvec3 max = {std::sqrt(0.75), std::sqrt(0.75), std::sqrt(0.75)};
-        min *= colliderTransform.scale() * AABB_FAT_FACTOR;
-        max *= colliderTransform.scale() * AABB_FAT_FACTOR;
+        
+        min *= AABB_FAT_FACTOR;
+        min *= colliderTransform.scale();
+        max *= AABB_FAT_FACTOR;
+        max *= colliderTransform.scale();
+
         min += colliderTransform.position();
         max += colliderTransform.position();
         aabb = AABB(min, max);

@@ -1,5 +1,6 @@
 #include<cstdlib>
 #include<cstdio>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -16,14 +17,6 @@ int main() {
     auto & GE = GraphicsEngine::Get();
     //GE.camera.position.y = 3;
 
-    // mesh.instanceCount/amount correctly drawn/amount i asked for
-    // 4/12/40
-    // 4/8/20
-    // 2/10/40
-    // 2/6/20
-    // 1/10/40 
-    // 1/5/20
-
     auto skyboxFaces = vector<std::string>(
     {
         "../textures/sky/right.png",
@@ -34,15 +27,18 @@ int main() {
         "../textures/sky/front.png"
     });
     GE.skyboxTexture = Texture::New(TEXTURE_CUBEMAP, skyboxFaces);
+    GE.debugFreecamPos = glm::vec3(4, 4, 4);
 
-    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false, -1.0, 1.0, 16384);
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
     auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
     
+    std::shared_ptr<GameObject> thing;
     int i = 0;
     for (int x = 0; x < 1; x++) {
         for (int y = 0; y < 1; y++) {
             for (int z = 0; z < 1; z++) {
                 auto g = GameObject::New(m->meshId, t->textureId);
+                thing = g;
                 g->transformComponent->SetPos({x * 6, y * 3 - 0, z * 3});
                 //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
                 //g->transformComponent->SetScl(glm::dvec3(1, 2, 1));
@@ -57,19 +53,10 @@ int main() {
     GE.debugFreecamEnabled = true;
     GE.window.SetMouseLocked(true);
     
-    // std::printf("\n Indices: \n");
-    // for (auto & i : Mesh::Get(m)->indices) {
-    //     std::printf("%i ", i);
-    // }
-    // std::printf("\n Vertices: \n");
-    // for (auto & v : Mesh::Get(m)->vertices) {
-    //     std::printf("%f ", v);
-    // }
-
     glPointSize(4.0); // debug thing, ignore
 
     printf("Starting main loop.\n");
-    
+
     while (!GE.ShouldClose()) {
 
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
@@ -77,8 +64,12 @@ int main() {
         SpatialAccelerationStructure::Get().Update();
 
         auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
-        if (castResult.hitObject != nullptr) {
-           std::printf("HIT\n");
+        if (castResult.hitObject != nullptr && KEY) {
+            thing->renderComponent->SetColor(glm::vec4(1, 0, 0, 1));
+            thing->transformComponent->SetPos(thing->transformComponent->position() + glm::dvec3(0, 0.01, 0));
+        }
+        else {
+            thing->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
         }
 
         GE.RenderScene();

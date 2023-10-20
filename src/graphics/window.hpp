@@ -11,6 +11,9 @@ inline std::unordered_map<unsigned int, bool> PRESSED_KEYS;
 inline std::unordered_map<unsigned int, bool> PRESS_BEGAN_KEYS;
 inline std::unordered_map<unsigned int, bool> PRESS_ENDED_KEYS;
 
+inline bool LMB_DOWN;
+inline bool RMB_DOWN;
+
 inline glm::dvec2 MOUSE_POS;
 inline glm::dvec2 MOUSE_DELTA; // how much mouse has moved since last frame
 
