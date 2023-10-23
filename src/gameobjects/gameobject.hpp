@@ -5,12 +5,34 @@
 #include "../graphics/engine.hpp"
 #include "transform_component.cpp"
 #include "../physics/spatial_acceleration_structure.hpp"
+#include "pointlight_component.hpp"
+#include <optional>
 
 class GameObject;
 inline std::unordered_map<GameObject*, std::shared_ptr<GameObject>> GAMEOBJECTS;
 
-// TODO
-struct CreateGameobjectParams;
+struct CreateGameObjectParams {
+    bool haveGraphics;
+    unsigned int meshId;
+    unsigned int textureId;
+    unsigned int shaderId;
+    
+    bool haveCollisions;
+    bool havePhysics;
+
+    bool havePointLight;
+
+    CreateGameObjectParams():
+    haveGraphics(false),
+    meshId(0),
+    textureId(0),
+    shaderId(0),
+
+    haveCollisions(false),
+    havePhysics(false),
+
+    havePointLight(false) {}
+};
 
 // The gameobject system uses ECS (google it).
 class GameObject {
@@ -25,7 +47,9 @@ class GameObject {
     TransformComponent* const transformComponent;
     SpatialAccelerationStructure::ColliderComponent* const colliderComponent;
 
-    static std::shared_ptr<GameObject> New(unsigned int meshId, unsigned int textureId, bool haveCollisions = true, bool havePhysics = false);
+    PointLightComponent* const pointLightComponent;
+
+    static std::shared_ptr<GameObject> New(const CreateGameObjectParams& params);
 
     // NOTE: only removes shared_ptr from GAMEOBJECTS, destructor will not be called until all other shared_ptrs to this gameobject are deleted.
         // Those shared_ptrs remain completely valid and can be read/written freely (although why would you if you're destroying it???).
@@ -43,6 +67,6 @@ class GameObject {
         // no copy constructing gameobjects.
         GameObject(const GameObject&) = delete; 
 
-        GameObject(unsigned int meshId, unsigned int textureId, bool haveCollider, bool havePhysics);
+        GameObject(const CreateGameObjectParams& params);
         
 };

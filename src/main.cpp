@@ -13,9 +13,14 @@
 using namespace std;
 
 int main() {
-    std::printf("Main loop rehched.\n");
+    std::printf("Main function reached.\n");
+
     auto & GE = GraphicsEngine::Get();
     //GE.camera.position.y = 3;
+
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false, -1.0, 1.0, 16384);
+    auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
+    std::printf("ITS %u %u\n", m->meshId, t->textureId);
 
     auto skyboxFaces = vector<std::string>(
     {
@@ -29,15 +34,19 @@ int main() {
     GE.skyboxTexture = Texture::New(TEXTURE_CUBEMAP, skyboxFaces);
     GE.debugFreecamPos = glm::vec3(4, 4, 4);
 
-    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
-    auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
     
     std::shared_ptr<GameObject> thing;
     int i = 0;
-    for (int x = 0; x < 1; x++) {
-        for (int y = 0; y < 1; y++) {
-            for (int z = 0; z < 1; z++) {
-                auto g = GameObject::New(m->meshId, t->textureId);
+    for (int x = 0; x < 10; x++) {
+        for (int y = 0; y < 10; y++) {
+            for (int z = 0; z < 10; z++) {
+                CreateGameObjectParams params;
+                params.haveGraphics = true;
+                params.meshId = m->meshId;
+                params.textureId = t->textureId;
+                params.haveCollisions = true;
+                std::printf("%u %uawww\n", params.meshId, params.textureId);
+                auto g = GameObject::New(params);
                 thing = g;
                 g->transformComponent->SetPos({x * 6, y * 3 - 0, z * 3});
                 //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
@@ -48,6 +57,16 @@ int main() {
                 i++;
             } 
         }
+    }
+
+    {
+        // make light
+        CreateGameObjectParams params;
+        params.havePointLight = true;
+        params.haveGraphics = false;
+        auto g = GameObject::New(params);
+        g->pointLightComponent->SetRange(100);
+        g->pointLightComponent->SetColor({1, 0, 0});
     }
     
     GE.debugFreecamEnabled = true;
@@ -64,13 +83,13 @@ int main() {
         SpatialAccelerationStructure::Get().Update();
 
         auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
-        if (castResult.hitObject != nullptr && KEY) {
-            thing->renderComponent->SetColor(glm::vec4(1, 0, 0, 1));
-            thing->transformComponent->SetPos(thing->transformComponent->position() + glm::dvec3(0, 0.01, 0));
-        }
-        else {
-            thing->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-        }
+        // if (castResult.hitObject != nullptr) {
+        //     thing->renderComponent->SetColor(glm::vec4(1, 0, 0, 1));
+        //     thing->transformComponent->SetPos(thing->transformComponent->position() + castResult.hitNormal * 0.01);
+        // }
+        // else {
+        //     thing->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
+        // }
 
         GE.RenderScene();
        // LogElapsed(start, "Drawing elapsed\n");
@@ -84,6 +103,6 @@ int main() {
     GameObject::Cleanup(); printf("Cleaned up all gameobjects.\n");
 
     LogElapsed(start, "Exit process elapsed ");
-    printf("Program ran successfully. Exiting.\n");
+    printf("Program ran successfully (unless someone's destructor crashes after this print statement). Exiting.\n");
     return EXIT_SUCCESS;
 }

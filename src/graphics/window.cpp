@@ -35,7 +35,7 @@ Window::Window(int widthh, int heightt) {
         abort();
     }
 
-    glfwSetWindowPos(glfwWindow, 0, 0);
+    glfwSetWindowPos(glfwWindow, 540, 360);
 
     printf("Window creation successful.\n");
 

@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 in vec3 fragmentColor;
 in vec3 fragmentNormal;
@@ -8,21 +8,36 @@ in vec4 lightSpaceCoords;
 layout(location = 0) out vec4 Output;
 
 uniform sampler2DArray textures;
-uniform sampler2D shadowmap;
 
-float getShadow(vec4 pos) {
-    vec3 projCoords = pos.xyz / pos.w;
-    projCoords = projCoords * 0.5 + 0.5;
-    if (projCoords.z > 1.0) {return 1.0;}
-    float closestDepth = texture(shadowmap, projCoords.xy).r;   
-    float currentDepth = projCoords.z;
-    float bias = 0.001;  
-    float shadow = currentDepth - bias > closestDepth  ? 0.4 : 1.0;  
-    return shadow;
-}
+struct pointLight {
+    vec4 colorAndRange; // w-coord is range, xyz is rgb
+    vec4 rel_pos; // w-coord is padding
+};
+
+layout(std430, binding = 2) buffer pointLightSSBO {
+    uint pointLightCount;
+    vec3 morePaddingLol;
+    pointLight pointLights[];
+};
+
+vec3 CalculateLightInfluence(vec3 color, vec3 rel_pos, float range) {
+    vec3 norm = normalize(fragmentNormal);
+    vec3 lightDir = normalize(rel_pos); 
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diff * color;
+
+    vec3 ambient = 0.1 * color;
+    return ambient + diffuse;
+};
+
 
 void main()
 {
+    vec3 light = vec3(0, 0, 0);
+    for (uint i = 0; i < pointLightCount; i++) {
+        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w);
+    }
+
     vec4 tx;
     if (fragmentTexCoords.z == -1.0) {
         tx = vec4(1.0, 1.0, 1.0, 1.0);
@@ -34,8 +49,6 @@ void main()
         discard;
     };
     vec4 color = tx * vec4(fragmentColor, 1);
-    float brightness = 1.0; //getShadow(lightSpaceCoords);
-    Output = vec4(color.xyz * vec3(brightness, brightness, brightness), 0);
-    //Output = texture(shadowmap, fragmentTexCoords.xy);
-    //Output = vec4(lightSpaceCoords.xyz/lightSpaceCoords.w, 0.0);
-}
+    Output = vec4(color.xyz * light, color.w);
+
+};

@@ -3,17 +3,26 @@
 #include <cassert>
 #include <cstdio>
 #include <iostream>
+#include "../gameobjects/pointlight_component.hpp"
 
 GraphicsEngine& GraphicsEngine::Get() {
     static GraphicsEngine engine;
     return engine;
 }
 
-GraphicsEngine::GraphicsEngine() {
+// thing we send to gpu to tell it about a light
+struct PointLightInfo {
+    glm::vec4 colorAndRange; // w-coord is range, xyz is rgb
+    glm::vec4 rel_pos; // w-coord is padding; openGL wants everything on a vec4 alignment
+};
+
+GraphicsEngine::GraphicsEngine(): pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, sizeof(PointLightInfo) * 1024) {
     debugFreecamEnabled = false;
     debugFreecamPos = {0.0, 0.0, 0.0};
     debugFreecamPitch = 0.0;
     debugFreecamYaw = 0.0;
+
+    
 
     defaultShaderProgramId = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl")->shaderProgramId;
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
@@ -57,8 +66,19 @@ void GraphicsEngine::RenderScene() {
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
 
-    // Do various things
-    Update();
+    if (PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
+        window.Close();
+    }
+    if (PRESS_BEGAN_KEYS[GLFW_KEY_TAB]) {
+        window.SetMouseLocked(!window.mouseLocked);
+    }
+
+    // Update various things
+    AddCachedMeshes();
+    UpdateRenderComponents();      
+    UpdateMeshpools(); // NOTE: this was at the end of the function before, if it breaks move to after DrawSkybox()
+    UpdateLights();
+    //CalculateLightingClusters();
 
     // Update shaders with the camera's new rotation/projection
     glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
@@ -79,7 +99,7 @@ void GraphicsEngine::RenderScene() {
     // Draw skybox afterwards to encourage early z-test
     DrawSkybox();
 
-    UpdateMeshpools();
+    
     window.Update(); // this flips the buffer so it goes at the end; TODO maybe poll events at start of frame instead
 }
 
@@ -90,6 +110,21 @@ void GraphicsEngine::DrawSkybox() {
     skybox->Draw();
     
     glClear(GL_DEPTH_BUFFER_BIT); // make sure skybox isn't drawn over everything else
+}
+
+void GraphicsEngine::UpdateLights() {
+    // say how many point lights there are
+    *(GLuint*)(pointLightDataBuffer.Data()) = PointLightComponent::POINT_LIGHT_COMPONENTS.size();
+
+    // set properties of point lights on gpu
+    const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one float we need vec4 alignment so yeah
+    unsigned int i = 0;
+    for (auto &pointLight : PointLightComponent::POINT_LIGHT_COMPONENTS) {
+        std::printf("doing thing with light\n");
+        i++;
+        glm::vec3 relCamPos = ((debugFreecamEnabled ? debugFreecamPos : camera.position) - pointLight->transform->position());
+        *(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo))) = PointLightInfo {.colorAndRange = glm::vec4(pointLight->lightColor.x, pointLight->lightColor.y, pointLight->lightColor.z, pointLight->lightRange), .rel_pos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)};
+    }
 }
 
 void GraphicsEngine::SetColor(MeshLocation& location, glm::vec4 rgba) {
@@ -105,17 +140,6 @@ void GraphicsEngine::SetModelMatrix(MeshLocation& location, glm::mat4x4 model) {
 void GraphicsEngine::SetTextureZ(MeshLocation& location, float textureZ) {
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetTextureZ(location.poolSlot, location.poolInstance, textureZ);
-}
-
-void GraphicsEngine::Update() {  
-    if (PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
-        window.Close();
-    }
-    if (PRESS_BEGAN_KEYS[GLFW_KEY_TAB]) {
-        window.SetMouseLocked(!window.mouseLocked);
-    }
-    AddCachedMeshes();
-    UpdateRenderComponents();        
 }
 
 void GraphicsEngine::UpdateMeshpools() {
@@ -238,19 +262,25 @@ void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int textureId, un
     meshesToAdd[shaderId][textureId][meshId].push_back(meshLocation);
 }
 
-GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id) {
+GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned int mesh_id, unsigned int texture_id, bool visible, unsigned int shader_id) {
     auto ptr = Get().RENDER_COMPONENTS.GetNew();
-    ptr->live = true;
-    ptr->colorChanged = (Mesh::Get(mesh_id)->instancedColor)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
-    ptr->textureZChanged = (Mesh::Get(mesh_id)->instancedTextureZ)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
-    ptr->color = glm::vec4(1, 1, 1, 1);
-    ptr->textureZ = -1.0;
-    ptr->meshId = mesh_id;
+    ptr->live = visible;
 
-    ptr->meshLocation.textureId = texture_id;
-    ptr->meshLocation.shaderProgramId = shader_id;
+    if (visible) {
+        assert(mesh_id != 0 && texture_id != 0);
 
-    Get().AddObject(shader_id, texture_id, mesh_id, &ptr->meshLocation); 
+        ptr->colorChanged = (Mesh::Get(mesh_id)->instancedColor)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+        ptr->textureZChanged = (Mesh::Get(mesh_id)->instancedTextureZ)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+        ptr->color = glm::vec4(1, 1, 1, 1);
+        ptr->textureZ = -1.0;
+        ptr->meshId = mesh_id;
+
+        ptr->meshLocation.textureId = texture_id;
+        ptr->meshLocation.shaderProgramId = shader_id;
+
+        Get().AddObject(shader_id, texture_id, mesh_id, &ptr->meshLocation); 
+    }
+
     return ptr;
 
 };

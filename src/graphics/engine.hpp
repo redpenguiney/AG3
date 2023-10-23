@@ -78,7 +78,7 @@ class GraphicsEngine {
         unsigned int meshId;
 
         // DO NOT delete this pointer.
-        static RenderComponent* New(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id = Get().defaultShaderProgramId);
+        static RenderComponent* New(unsigned int mesh_id, unsigned int texture_id, bool visible = true, unsigned int shader_id = Get().defaultShaderProgramId);
 
         // call instead of deleting the pointer.
         // obviously don't touch component after this.
@@ -90,6 +90,7 @@ class GraphicsEngine {
         void SetTextureZ(float textureZ);
 
         private:
+
         // TODO: getters for color and textureZ
         glm::vec4 color;
         float textureZ;
@@ -108,6 +109,18 @@ class GraphicsEngine {
     };
 
     private:
+    // SSBO that stores all points lights so that the GPU can use them.
+    // Format is:
+    // struct lightInfo {
+        // vec4 colorAndRange; // w-coord is range, xyz is rgb
+        // vec4 rel_pos; // w-coord is padding
+    // }
+    // unsigned int numLights;
+    // vec3 padding
+    // lightInfo pointLights[];
+    
+    BufferedBuffer pointLightDataBuffer;
+
     RenderableMesh* skybox; 
 
     unsigned int defaultShaderProgramId;
@@ -133,6 +146,8 @@ class GraphicsEngine {
     GraphicsEngine();
     ~GraphicsEngine();
 
+    void CalculateLightingClusters();
+    void UpdateLights();
     void DrawSkybox();
     void Update();
     void UpdateRenderComponents();

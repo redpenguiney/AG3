@@ -5,7 +5,7 @@
 #include <vector>
 #include <iterator> 
 #include <cstddef>
-#include "base_component.cpp"
+#include "base_component.hpp"
 
 // Object pool for components (although i suppose you could use it for something besides components).
 // Automatically resizes.

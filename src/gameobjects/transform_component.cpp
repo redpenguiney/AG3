@@ -1,6 +1,6 @@
 #pragma once
 #include "component_pool.hpp"
-#include "base_component.cpp"
+#include "base_component.hpp"
 #include "../../external_headers/GLM/ext.hpp"
 #include <cstdio>
 

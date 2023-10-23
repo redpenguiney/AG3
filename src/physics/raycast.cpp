@@ -4,7 +4,6 @@
 #include "spatial_acceleration_structure.hpp"
 #include <cstdio>
 #include <vector>
-#include "../../external_headers/GLM/gtx/string_cast.hpp"
 
 // copy pasted from https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm#C++_implementation
 // If the ray intersects the triangle, sets intersection point and returns true, else returns false
@@ -47,7 +46,7 @@ bool IsTriangleColliding(glm::dvec3 origin, glm::dvec3 direction, glm::dvec3 tri
 }
 
 glm::dvec3 GetTriangleNormal(glm::dvec3 triVertex0, glm::dvec3 triVertex1, glm::dvec3 triVertex2) {
-    return glm::dvec3(0, 1, 0);
+    return glm::cross((triVertex1 - triVertex0), (triVertex2 - triVertex0));
 }
 
 // TODO: this uses objects' Mesh instead of a simplified physics mesh 
@@ -76,7 +75,6 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
             for (unsigned int j = 0; j < 3; j++) {
                 int vertexIndex = mesh->indices[(i * 3) + j] * floatsPerVertex;
                 glm::dvec4 point = glm::dvec4(mesh->vertices.at(vertexIndex), mesh->vertices.at(vertexIndex + 1), mesh->vertices.at(vertexIndex + 2), 1);
-                std::cout << "Matrix is " << glm::to_string(modelMatrix) << "\n"; 
                 point = modelMatrix * point;
                 //std::printf("After %f %f %f %f\n", point.x, point.y, point.z, point.w);
                 trianglePoints[j] = point.xyz();

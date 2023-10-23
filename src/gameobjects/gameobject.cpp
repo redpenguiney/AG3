@@ -3,8 +3,8 @@
 #include <cstdio>
 #include "gameobject.hpp"
 
-std::shared_ptr<GameObject> GameObject::New(unsigned int meshId, unsigned int textureId, bool haveCollisions, bool havePhysics) {
-    auto rawPtr = new GameObject(meshId, textureId, haveCollisions, havePhysics);
+std::shared_ptr<GameObject> GameObject::New(const CreateGameObjectParams& params) {
+    auto rawPtr = new GameObject(params);
     auto ptr = std::shared_ptr<GameObject>(rawPtr);
     ptr->colliderComponent->gameobject = ptr;
     GAMEOBJECTS.emplace(rawPtr, ptr);
@@ -21,6 +21,10 @@ GameObject::~GameObject() {
     renderComponent->Destroy();
     transformComponent->Destroy();
     colliderComponent->Destroy();
+    if (pointLightComponent != nullptr) {
+        delete pointLightComponent;
+    }
+    
     GAMEOBJECTS.erase(this); 
 };
 
@@ -35,15 +39,16 @@ void GameObject::Cleanup() {
     }
 }
 
-GameObject::GameObject(unsigned int meshId, unsigned int textureId, bool haveCollider, bool havePhysics):
-    renderComponent(GraphicsEngine::RenderComponent::New(meshId, textureId)),
+GameObject::GameObject(const CreateGameObjectParams& params):
+    renderComponent(GraphicsEngine::RenderComponent::New(params.meshId, params.textureId, params.haveGraphics)),
     transformComponent(TransformComponent::New()),
-    colliderComponent(SpatialAccelerationStructure::ColliderComponent::New(nullptr)) // it needs a shared_ptr so we need to set that in New()
+    colliderComponent(SpatialAccelerationStructure::ColliderComponent::New(nullptr)), // it needs a shared_ptr so we need to set that in New()
+    pointLightComponent((params.havePointLight) ? new PointLightComponent(transformComponent): nullptr)
 {
-    name = "Gameobject";
+    name = "GameObject";
     deleted = false;
-    colliderComponent->live = haveCollider;
-    if (haveCollider) {
+    colliderComponent->live = params.haveCollisions;
+    if (params.haveCollisions) {
         SpatialAccelerationStructure::Get().AddCollider(colliderComponent, *transformComponent);
     }
 };

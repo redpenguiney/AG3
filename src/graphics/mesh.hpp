@@ -33,7 +33,7 @@ class Mesh {
 
     private:
     Mesh(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor, bool instanceTextureZ, unsigned int expectedCount);
-    inline static std::atomic<unsigned int> LAST_MESH_ID = {0};
+    inline static std::atomic<unsigned int> LAST_MESH_ID = {1};
     inline static std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
     inline static tinyobj::ObjReader OBJ_LOADER;
 

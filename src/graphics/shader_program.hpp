@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <unordered_map>
+#include <vector>
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLM/glm.hpp"
 
@@ -12,34 +13,9 @@
 class ShaderProgram;
 class Shader {
     friend class ShaderProgram;
-    Shader(const char* path, GLenum shaderType) {
-        
-        // Get string from file contents 
-        std::ifstream stream(path);
-        if (stream.fail()) { // Verify file was successfully found/open
-            printf("\nUnable to find or read the file at path %s. Aborting.", path);
-            abort();
-        }
-        std::string shaderSource = {std::istreambuf_iterator<char>(stream), {}};
-        const char* shaderSourcePtr = shaderSource.c_str();
-        GLint sourceLength = shaderSource.length();
+    Shader(const char* path, GLenum shaderType, const std::vector<const char*>& includedFiles);
 
-        // Compile the shader
-        GLint compiled;
-        shaderId = glCreateShader(shaderType);
-        glShaderSource(shaderId, 1, &shaderSourcePtr, &sourceLength);
-        glCompileShader(shaderId);
-        glGetShaderiv(shaderId, GL_COMPILE_STATUS, & compiled);
-        if (compiled != GL_TRUE){
-            printf("\nFailed to compile %s. Aborting.", path);
-            PrintInfoLog();
-            abort();
-        };
-    }
-
-    ~Shader() {
-        glDeleteShader(shaderId);
-    }
+    ~Shader();
 
     void PrintInfoLog() {
         int InfoLogLength = 0;
@@ -65,18 +41,33 @@ class ShaderProgram {
     const unsigned int& shaderProgramId = programId;
 
     const bool useCameraMatrix; // if true, the uniform mat4 "camera" in this program's vertex shader will be automatically set to a projection + view matrix.
+    const bool useClusteredLighting; // if true, the ssbo "clusters" in this program's vertex & fragment shaders will be automatically bound
 
+    // TODO: the graphics engine should really just do this itself. 
+    // Passes projection/camera matrix to shaders that have useCameraMatrix == true.
+    // Called by GraphicsEngine.
     static void SetCameraUniforms(glm::mat4x4 cameraProjMatrix);
 
-    static std::shared_ptr<ShaderProgram> New(const char* vertexPath, const char* fragmentPath, const bool useCameraUniform = true);
+    // Returns id of generated program.
+    // additionalIncludedFiles is an optional vector of filepaths to files included by the other shaders.
+    static std::shared_ptr<ShaderProgram> New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles = {}, const bool useCameraUniform = true, const bool useLightClusters = true);
 
+    // Creates a compute shader for performing arbitrary GPU calculations.
+    // Returns id of generated program.
+    static std::shared_ptr<ShaderProgram> NewCompute(const char* computePath);
+
+    // Get a pointer to a shader program by its id.
     static std::shared_ptr<ShaderProgram>& Get(unsigned int shaderProgramId);
 
+    // unloads the program with the given shaderProgramId, freeing its memory.
+    // Calling this function while objects still use the shader will error.
+    // You only need to call this if for whatever reason you are repeatedly swapping out shader programs (like bc ur joining different servers with different resources)
     static void Unload(unsigned int shaderProgramId);
 
     ~ShaderProgram();
 
-    void UniformMat4x4(std::string uniformName, glm::mat4x4 matrix, bool transposeMatrix = false);
+    // sets the uniform variable in this shader program with the given name to the given value
+    void Uniform(std::string uniformName, glm::mat4x4 matrix, bool transposeMatrix = false);
 
     void Use();
 
@@ -89,6 +80,7 @@ class ShaderProgram {
     std::unordered_map<std::string, int> uniform_locations; // used to set uniform variables
     inline static std::unordered_map<unsigned int, std::shared_ptr<ShaderProgram>> LOADED_PROGRAMS; 
 
-    ShaderProgram(const char* vertexPath, const char* fragmentPath, const bool useCameraUniform);
+    ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool useCameraUniform, const bool useLightClusters);
+    ShaderProgram(const char* computePath);
 
 };

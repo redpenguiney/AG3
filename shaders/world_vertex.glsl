@@ -1,4 +1,7 @@
-#version 460 // TODO: DON'T USE THIS SHADER VERSION
+#version 330
+// #extension GL_ARB_shading_language_include : require
+// #include "phong.glsl"
+
 
 layout(location=0) in vec3 vertexPos;
 layout(location=1) in vec4 vertexColor;
@@ -20,6 +23,7 @@ out vec4 lightSpaceCoords;
 
 void main()
 {
+    // TODO: we need to rotate normals i think?
     gl_Position = camera * model * vec4(vertexPos, 1.0);
     fragmentColor = vertexColor.xyz;
     fragmentNormal = vertexNormal;
