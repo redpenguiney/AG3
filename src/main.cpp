@@ -65,6 +65,7 @@ int main() {
         params.havePointLight = true;
         params.haveGraphics = false;
         auto g = GameObject::New(params);
+        g->transformComponent->SetPos({0, 0, 0});
         g->pointLightComponent->SetRange(100);
         g->pointLightComponent->SetColor({1, 0, 0});
     }

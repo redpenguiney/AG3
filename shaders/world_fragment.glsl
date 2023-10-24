@@ -14,7 +14,7 @@ struct pointLight {
     vec4 rel_pos; // w-coord is padding
 };
 
-layout(std430, binding = 2) buffer pointLightSSBO {
+layout(std430, binding = 0) buffer pointLightSSBO {
     uint pointLightCount;
     vec3 morePaddingLol;
     pointLight pointLights[];

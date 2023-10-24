@@ -72,6 +72,10 @@ void BufferedBuffer::Bind() {
     glBindBuffer(bufferBindingLocation, bufferId);
 }
 
+void BufferedBuffer::BindBase(unsigned int index) {
+    glBindBufferBase(bufferBindingLocation, index, bufferId);
+}
+
 // returns pointer to buffer contents that you can write to
 char* BufferedBuffer::Data() {
     return _bufferData + (size * currentBuffer);

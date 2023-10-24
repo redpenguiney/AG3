@@ -21,6 +21,7 @@ class BufferedBuffer {
     void Update();
     void Reallocate(unsigned int newSize);
     void Bind();
+    void BindBase(unsigned int index);
     char* Data();
     unsigned int GetOffset();
 

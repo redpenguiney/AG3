@@ -85,6 +85,8 @@ void GraphicsEngine::RenderScene() {
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix);
 
+    pointLightDataBuffer.BindBase(0);
+
     // Draw world stuff.
     for (auto & [shaderId, map1] : meshpools) {
         ShaderProgram::Get(shaderId)->Use();
