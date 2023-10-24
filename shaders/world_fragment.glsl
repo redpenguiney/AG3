@@ -21,12 +21,12 @@ layout(std430, binding = 0) buffer pointLightSSBO {
 };
 
 vec3 CalculateLightInfluence(vec3 color, vec3 rel_pos, float range) {
-    vec3 norm = normalize(fragmentNormal);
-    vec3 lightDir = normalize(rel_pos); 
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * color;
+    //vec3 norm = normalize(fragmentNormal);
+    //vec3 lightDir = normalize(rel_pos); 
+    //float diff = max(dot(norm, lightDir), 0.0);
+    //vec3 diffuse = diff * color;
 
-    vec3 ambient = color * 0.1;
+    vec3 ambient = color * 0.5;
     return ambient;
 };
 

@@ -30,7 +30,6 @@ struct MeshLocation {
     }
 };
 
-// Seperating into header and cpp due to circular dependency, not because i wanted to.
 // Handles graphics, obviously.
 class GraphicsEngine {
     public:

@@ -91,6 +91,7 @@ void GraphicsEngine::RenderScene() {
         ShaderProgram::Get(shaderId)->Use();
         pointLightDataBuffer.Bind();
         pointLightDataBuffer.BindBase(0);
+        pointLightDataBuffer.Bind();
         for (auto & [textureId, map2] : map1) {
             Texture::Get(textureId)->Use();
             for (auto & [poolId, pool] : map2) {
@@ -123,6 +124,7 @@ void GraphicsEngine::UpdateLights() {
     const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one float, we need vec4 alignment so yeah
     unsigned int i = 0;
     for (auto &pointLight : PointLightComponent::POINT_LIGHT_COMPONENTS) {
+        std::printf("light color = %f %f %f\n", pointLight->lightColor.x, pointLight->lightColor.y, pointLight->lightColor.z);
         glm::vec3 relCamPos = ((debugFreecamEnabled ? debugFreecamPos : camera.position) - pointLight->transform->position());
         (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))).colorAndRange = glm::vec4(pointLight->lightColor.x, pointLight->lightColor.y, pointLight->lightColor.z, pointLight->lightRange);
         (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))).relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0);
