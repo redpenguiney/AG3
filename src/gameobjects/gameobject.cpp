@@ -15,12 +15,21 @@ void GameObject::Destroy() {
     assert(!deleted);
     deleted = true;
     GAMEOBJECTS.erase(this);
+    if (colliderComponent->live) {
+        colliderComponent->RemoveFromSas();
+    }
 }
 
 GameObject::~GameObject() {
-    renderComponent->Destroy();
+    if (renderComponent->live) {
+        renderComponent->Destroy();
+    }
     transformComponent->Destroy();
-    colliderComponent->Destroy();
+
+    if (colliderComponent->live) {
+        colliderComponent->Destroy();
+    }
+    
     if (pointLightComponent != nullptr) {
         delete pointLightComponent;
     }
@@ -35,6 +44,7 @@ void GameObject::Cleanup() {
         addresses.push_back(gameobject);
     }
     for (auto & gameobject: addresses) {
+        gameobject->colliderComponent->gameobject = nullptr;
         gameobject->Destroy();
     }
 }

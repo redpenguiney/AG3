@@ -18,7 +18,7 @@ int main() {
     auto & GE = GraphicsEngine::Get();
     //GE.camera.position.y = 3;
 
-    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, false, -1.0, 1.0, 16384);
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
     auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
     std::printf("ITS %u %u\n", m->meshId, t->textureId);
 
@@ -52,7 +52,7 @@ int main() {
                 //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
                 //g->transformComponent->SetScl(glm::dvec3(1, 2, 1));
                 //g->renderComponent->SetColor(glm::vec4(i % 2, (i + 1) % 2, (i + 1) % 2, 1.0));
-                g->renderComponent->SetTextureZ(-1.0);
+                g->renderComponent->SetTextureZ(0.0);
                 g->name = std::string("Gameobject #") + to_string(x);
                 i++;
             } 

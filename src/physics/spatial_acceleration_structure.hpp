@@ -106,6 +106,9 @@ class SpatialAccelerationStructure { // (SAS)
         // obviously don't touch component after this.
         void Destroy();
 
+        // Removes the collider from the spatial acceleration structure, meaning it will no longer do collisions.
+        void RemoveFromSas();
+
         // recalculate AABB of collider component from its transform
         void RecalculateAABB(const TransformComponent& colliderTransform);
 
@@ -146,9 +149,6 @@ class SpatialAccelerationStructure { // (SAS)
 
     // Adds a collider to the SAS.
     void AddCollider(ColliderComponent* collider, const TransformComponent& transform);
-
-    // Duh.
-    void RemoveCollider();
 
     private:
 

@@ -13,7 +13,7 @@ GraphicsEngine& GraphicsEngine::Get() {
 // thing we send to gpu to tell it about a light
 struct PointLightInfo {
     glm::vec4 colorAndRange; // w-coord is range, xyz is rgb
-    glm::vec4 rel_pos; // w-coord is padding; openGL wants everything on a vec4 alignment
+    glm::vec4 relPos; // w-coord is padding; openGL wants everything on a vec4 alignment
 };
 
 GraphicsEngine::GraphicsEngine(): pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, sizeof(PointLightInfo) * 1024) {
@@ -85,11 +85,12 @@ void GraphicsEngine::RenderScene() {
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix);
 
-    pointLightDataBuffer.BindBase(0);
 
     // Draw world stuff.
     for (auto & [shaderId, map1] : meshpools) {
         ShaderProgram::Get(shaderId)->Use();
+        pointLightDataBuffer.Bind();
+        pointLightDataBuffer.BindBase(0);
         for (auto & [textureId, map2] : map1) {
             Texture::Get(textureId)->Use();
             for (auto & [poolId, pool] : map2) {
@@ -119,13 +120,13 @@ void GraphicsEngine::UpdateLights() {
     *(GLuint*)(pointLightDataBuffer.Data()) = PointLightComponent::POINT_LIGHT_COMPONENTS.size();
 
     // set properties of point lights on gpu
-    const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one float we need vec4 alignment so yeah
+    const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one float, we need vec4 alignment so yeah
     unsigned int i = 0;
     for (auto &pointLight : PointLightComponent::POINT_LIGHT_COMPONENTS) {
-        std::printf("doing thing with light\n");
-        i++;
         glm::vec3 relCamPos = ((debugFreecamEnabled ? debugFreecamPos : camera.position) - pointLight->transform->position());
-        *(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo))) = PointLightInfo {.colorAndRange = glm::vec4(pointLight->lightColor.x, pointLight->lightColor.y, pointLight->lightColor.z, pointLight->lightRange), .rel_pos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)};
+        (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))).colorAndRange = glm::vec4(pointLight->lightColor.x, pointLight->lightColor.y, pointLight->lightColor.z, pointLight->lightRange);
+        (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))).relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0);
+        i++;
     }
 }
 

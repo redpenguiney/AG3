@@ -26,8 +26,8 @@ vec3 CalculateLightInfluence(vec3 color, vec3 rel_pos, float range) {
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * color;
 
-    vec3 ambient = 0.1 * color;
-    return ambient + diffuse;
+    vec3 ambient = color * 0.1;
+    return ambient;
 };
 
 
@@ -35,7 +35,7 @@ void main()
 {
     vec3 light = vec3(0, 0, 0);
     for (uint i = 0; i < pointLightCount; i++) {
-        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w);
+        light = CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w);
     }
 
     vec4 tx;
@@ -49,6 +49,6 @@ void main()
         discard;
     };
     vec4 color = tx * vec4(fragmentColor, 1);
-    Output = vec4(color.xyz * light, color.w);
+    Output = vec4(light, color.w);
 
 };

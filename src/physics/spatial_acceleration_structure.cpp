@@ -189,8 +189,16 @@ void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider, cons
     }
 }
 
-void SpatialAccelerationStructure::RemoveCollider() {
+void SpatialAccelerationStructure::ColliderComponent::RemoveFromSas() {
+    // remove object from node
+    for (unsigned int i = 0; i < node->objects.size(); i++) {
+        if (node->objects[i] == this) {
+            node->objects.erase(node->objects.begin() + i);
+            break;
+        }
+    }
 
+    // TODO: we need to do something when node is emptied, probably    
 }
 
 void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::ColliderComponent& collider, const TransformComponent& transform) {
