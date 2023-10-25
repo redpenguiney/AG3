@@ -25,8 +25,8 @@ BufferedBuffer::~BufferedBuffer() {
     glDeleteBuffers(1, &_bufferId);
 }
 
-// Must call every frame, or this entire class is literally useless.
-// Call AFTER drawing please.
+// Must call every frame if you're updating every frame.
+// Call AFTER drawing please. (todo: wait what why?)
 void BufferedBuffer::Update() {
     // Make the buffer section we just modified have a sync object so we won't write to it again until the GPU has finished using it.
     sync[currentBuffer] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);

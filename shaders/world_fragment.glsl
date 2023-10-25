@@ -14,19 +14,20 @@ struct pointLight {
     vec4 rel_pos; // w-coord is padding
 };
 
-layout(std430, binding = 0) buffer pointLightSSBO {
+layout(std430, binding = 1) buffer pointLightSSBO {
     uint pointLightCount;
-    vec3 morePaddingLol;
+    vec2 morePaddingLol;
+    float alsoPadding;
     pointLight pointLights[];
 };
 
-vec3 CalculateLightInfluence(vec3 color, vec3 rel_pos, float range) {
+vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range) {
     //vec3 norm = normalize(fragmentNormal);
     //vec3 lightDir = normalize(rel_pos); 
     //float diff = max(dot(norm, lightDir), 0.0);
     //vec3 diffuse = diff * color;
 
-    vec3 ambient = color * 0.5;
+    vec3 ambient = lightColor * 0.2;
     return ambient;
 };
 
@@ -34,8 +35,8 @@ vec3 CalculateLightInfluence(vec3 color, vec3 rel_pos, float range) {
 void main()
 {
     vec3 light = vec3(0, 0, 0);
-    for (uint i = 0; i < pointLightCount; i++) {
-        light = CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w);
+    for (uint i = 0; i < 1; i++) {
+        light = CalculateLightInfluence(pointLights[0].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w);
     }
 
     vec4 tx;
@@ -49,6 +50,6 @@ void main()
         discard;
     };
     vec4 color = tx * vec4(fragmentColor, 1);
-    Output = vec4(light, color.w);
+    Output = vec4(light, 1);
 
 };

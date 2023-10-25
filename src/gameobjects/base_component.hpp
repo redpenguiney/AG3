@@ -1,8 +1,17 @@
 #pragma once
+#include "component_pool.hpp"
+
+// A pointer to a component that gameobjects use to make sure the component is actually used by the gameobject.
+// See, for several components, for cache reasons every gameobject has to grab 
+template<typename T>
+class ComponentHandle {
+
+};
 
 // Component pool needs components to have a few fields, so this makes sure it does.
 // TODO: how to make this compatible with free list memory optimization?
-class BaseComponent {
+template<typename T>
+struct BaseComponent {
     public: // not private bc i couldn't make it work
     
     // indicates that the component is in use.
