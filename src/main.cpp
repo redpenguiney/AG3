@@ -101,7 +101,7 @@ int main() {
 
     auto start = Time();
 
-    GameObject::Cleanup(); printf("Cleaned up all gameobjects.\n");
+    ComponentRegistry::CleanupComponents(); printf("Cleaned up all gameobjects.\n");
 
     LogElapsed(start, "Exit process elapsed ");
     printf("Program ran successfully (unless someone's destructor crashes after this print statement). Exiting.\n");

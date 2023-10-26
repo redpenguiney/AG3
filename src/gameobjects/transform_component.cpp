@@ -5,7 +5,7 @@
 #include <cstdio>
 
 // TODO: use doubles in matrices for physics???
-class TransformComponent: public BaseComponent {
+class TransformComponent: public BaseComponent<TransformComponent> {
     public:
 
     const glm::dvec3& position() const { return position_; } // allows public read only access to rotation

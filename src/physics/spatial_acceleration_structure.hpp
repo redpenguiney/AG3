@@ -94,7 +94,7 @@ class SpatialAccelerationStructure { // (SAS)
     struct SasNode;
     public:
 
-    class ColliderComponent: public BaseComponent {
+    class ColliderComponent: public BaseComponent<ColliderComponent> {
         public:
         BroadPhaseAABBType aabbType;
 

@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <iostream>
 #include "../gameobjects/pointlight_component.hpp"
+#include "../gameobjects/component_registry.hpp"
 
 GraphicsEngine& GraphicsEngine::Get() {
     static GraphicsEngine engine;
@@ -117,6 +118,9 @@ void GraphicsEngine::DrawSkybox() {
 }
 
 void GraphicsEngine::UpdateLights() {
+    // Get components of all gameobjects that have a transform and point light component
+    auto pools = ComponentRegistry::GetSystemComponents({ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::TransformComponentBitIndex});
+
     // say how many point lights there are
     *(GLuint*)(pointLightDataBuffer.Data()) = PointLightComponent::POINT_LIGHT_COMPONENTS.size();
 

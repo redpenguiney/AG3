@@ -67,11 +67,8 @@ class GraphicsEngine {
     // Gameobjects that want to be rendered should have a pointer to one of these.
     // However, they are stored here in a vector because that's better for the cache. (google ECS).
     // NEVER DELETE THIS POINTER, JUST CALL Destroy(). DO NOT STORE OUTSIDE A GAMEOBJECT. THESE USE AN OBJECT POOL.
-    class RenderComponent: BaseComponent {
+    class RenderComponent: BaseComponent<RenderComponent> {
         public:
-        // because object pool, instances of this struct might just be uninitialized memory
-        // also, gameobjects have to reserve a render component even if they don't use one (see gameobject.cpp), so they can set this to false if they don't actually want one
-        bool live;
 
         // not const because object pool, don't actually change this
         unsigned int meshId;

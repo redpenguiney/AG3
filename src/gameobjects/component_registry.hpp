@@ -1,68 +1,18 @@
 #pragma once
 #include <array>
+#include <cassert>
+#include <cstddef>
 #include <memory>
 #include <vector>
 #include "component_pool.hpp"
 #include "gameobject.hpp"
+#include <vector>
+#include "../graphics/engine.hpp"
+#include "transform_component.cpp"
+#include "../physics/spatial_acceleration_structure.hpp"
+#include "pointlight_component.hpp"
+#include <optional>
 
-class GameObject;
-inline std::unordered_map<GameObject*, std::shared_ptr<GameObject>> GAMEOBJECTS;
-
-struct CreateGameObjectParams {
-    bool haveGraphics;
-    unsigned int meshId;
-    unsigned int textureId;
-    unsigned int shaderId;
-    
-    bool haveCollisions;
-    bool havePhysics;
-
-    bool havePointLight;
-
-    CreateGameObjectParams():
-    haveGraphics(false),
-    meshId(0),
-    textureId(0),
-    shaderId(0),
-
-    haveCollisions(false),
-    havePhysics(false),
-
-    havePointLight(false) {}
-};
-
-// The gameobject system uses ECS (google it).
-class GameObject {
-    public:
-    std::string name; // just an identifier i have mainly for debug reasons, scripts could also use it i guess
-
-    // fyi the const in this position means that the address the pointer points to won't change, not that the pointer points to constant data
-    // nullptr if gameobject doesn't have that component
-
-    GraphicsEngine::RenderComponent* const renderComponent;
-    TransformComponent* const transformComponent;
-    SpatialAccelerationStructure::ColliderComponent* const colliderComponent;
-
-    PointLightComponent* const pointLightComponent;
-
-    static void Cleanup();
-
-    ~GameObject();
-
-    private:
-        // todo: seems mid that this exists
-        bool deleted;
-
-        // no copy constructing gameobjects.
-        GameObject(const GameObject&) = delete; 
-
-        // private because ComponentRegistry makes it and also because it needs to return a shared_ptr.
-        GameObject(const CreateGameObjectParams& params);
-        
-};
-
-// This file stores all components in a way that keeps them both organized and cache-friendly.
-// Pointers to components remain valid thanks to component pool fyi.
 namespace ComponentRegistry {
     enum ComponentBitIndex {
         TransformComponentBitIndex = 0,
@@ -71,7 +21,59 @@ namespace ComponentRegistry {
         RigidbodyComponentBitIndex = 3,
         PointlightComponentBitIndex = 4
     };
+}
 
+struct CreateGameObjectParams {
+    unsigned int meshId;
+    unsigned int textureId;
+    unsigned int shaderId;
+    
+    std::vector<ComponentRegistry::ComponentBitIndex> requestedComponents;
+
+    CreateGameObjectParams(const std::vector<ComponentRegistry::ComponentBitIndex> componentList):
+    meshId(0),
+    textureId(0),
+    shaderId(0),
+    requestedComponents(componentList)
+    {}
+};
+
+// Just a little pointer wrapper for gameobjects that throws an error when trying to dereference a nullptr to a component (gameobjects have a nullptr to components they don't have)
+// Still the gameobject's job to get and return objects to/from the pool since the pool used depends on the exact set of components the gameobject uses.
+template<typename T>
+class ComponentHandle {
+    public:
+    ComponentHandle(T* const comp_ptr);
+    T& operator*() const;
+    T* operator->() const;
+    T* const ptr;
+};
+
+// The gameobject system uses ECS (google it).
+class GameObject {
+    public:
+    std::string name; // just an identifier i have mainly for debug reasons, scripts could also use it i guess
+
+    // TODO: any way to avoid not storing ptrs for components we don't have?
+    ComponentHandle<TransformComponent> transformComponent;
+    ComponentHandle<GraphicsEngine::RenderComponent> renderComponent;
+    ComponentHandle<SpatialAccelerationStructure::ColliderComponent> colliderComponent;
+
+    ~GameObject();
+
+    private:
+    // no copy constructing gameobjects.
+    GameObject(const GameObject&) = delete; 
+
+    // private because ComponentRegistry makes it and also because it needs to return a shared_ptr.
+    GameObject(const CreateGameObjectParams& params);
+    
+};
+
+// This file stores all components in a way that keeps them both organized and cache-friendly.
+// Basically entites with the same set of components have their components stored together.
+// Pointers to components are never invalidated thanks to component pool fyi.
+namespace ComponentRegistry {
     // How many different component classes there are. 
     static inline const unsigned int N_COMPONENT_TYPES = 8; 
 
@@ -82,4 +84,7 @@ namespace ComponentRegistry {
 
     // Returns a new game object with the given components.
     std::shared_ptr<GameObject> NewGameObject(std::vector<ComponentBitIndex> requestedComponents);
+
+    // Call at end of program. Deletes all gameobjects, components, and component pools.
+    void CleanupComponents();
 };
