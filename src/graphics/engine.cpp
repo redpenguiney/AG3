@@ -121,23 +121,41 @@ void GraphicsEngine::UpdateLights() {
     // Get components of all gameobjects that have a transform and point light component
     auto pools = ComponentRegistry::GetSystemComponents({ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::TransformComponentBitIndex});
 
-    // say how many point lights there are
-    *(GLuint*)(pointLightDataBuffer.Data()) = PointLightComponent::POINT_LIGHT_COMPONENTS.size();
+    
 
     // set properties of point lights on gpu
-    const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one float, we need vec4 alignment so yeah
-    unsigned int i = 0;
-    for (auto &pointLight : PointLightComponent::POINT_LIGHT_COMPONENTS) {
-        std::printf("light color = %f %f %f %f\n", pointLight->lightColor.x, pointLight->lightColor.y, pointLight->lightColor.z, pointLight->Range());
-        glm::vec3 relCamPos = ((debugFreecamEnabled ? debugFreecamPos : camera.position) - pointLight->transform->position());
-        auto info = PointLightInfo {
-            .colorAndRange = glm::vec4(pointLight->lightColor.x, pointLight->lightColor.y, pointLight->lightColor.z, pointLight->lightRange),
-            .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
-        };
-        std::printf("byte offset %u\n", POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)));
-        (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))) = info;
-        i++;
+    const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
+    unsigned int lightCount = 0;
+    for (auto & poolVec : pools) {
+        ComponentPool<TransformComponent>* transforms = (ComponentPool<TransformComponent>*)poolVec[ComponentRegistry::TransformComponentBitIndex];
+        ComponentPool<PointLightComponent>* pointLights = (ComponentPool<PointLightComponent>*)poolVec[ComponentRegistry::PointlightComponentBitIndex];
+        
+        for (unsigned int i = 0; i < pointLights->pools.size(); i++) {
+            auto pointlightArray = pointLights->pools.at(i);
+            auto transformArray = transforms->pools.at(i);
+            for (unsigned int j = 0; j < pointLights->COMPONENTS_PER_POOL; j++) {
+                auto pointLight = pointlightArray + j;
+                auto transform = transformArray + j;
+
+                if (pointLight->live) {
+                    std::printf("light color = %f %f %f %f\n", pointLight->Color().x, pointLight->Color().y, pointLight->Color().z, pointLight->Range());
+                    glm::vec3 relCamPos = ((debugFreecamEnabled ? debugFreecamPos : camera.position) - transform->position());
+                    auto info = PointLightInfo {
+                        .colorAndRange = glm::vec4(pointLight->Color().x, pointLight->Color().y, pointLight->Color().z, pointLight->Range()),
+                        .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
+                    };
+                    std::printf("byte offset %u\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
+                    (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))) = info;
+
+                    lightCount++;
+                }
+                
+            }
+        }
     }
+
+    // say how many point lights there are
+    *(GLuint*)(pointLightDataBuffer.Data()) = lightCount;
 }
 
 void GraphicsEngine::SetColor(MeshLocation& location, glm::vec4 rgba) {
@@ -169,22 +187,30 @@ void GraphicsEngine::UpdateRenderComponents() {
     //auto start = Time();
     auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
+    // Get components of all gameobjects that have a transform and point light component
+    auto pools = ComponentRegistry::GetSystemComponents({ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::TransformComponentBitIndex});
+
     //assert(RENDER_COMPONENTS.pools.size() == TransformComponent::TRANSFORM_COMPONENTS.pools.size());
     //static_assert(RENDER_COMPONENT_POOL_SIZE == TransformComponent::TRANSFORM_COMPONENT_POOL_SIZE, "render comp and transform comp need to have to same pool size");
-    for (unsigned int i = 0; i < RENDER_COMPONENTS.pools.size(); i++) {
-        auto renderArray = RENDER_COMPONENTS.pools.at(i);
-        auto transformArray = TransformComponent::TRANSFORM_COMPONENTS.pools.at(i);
-        for (unsigned int j = 0; j < RENDER_COMPONENTS.COMPONENTS_PER_POOL; j++) {
-            auto renderComp = renderArray + j;
-            auto transformComp = transformArray + j;
-            if (renderComp->live) {
-                SetModelMatrix(renderComp->meshLocation, transformComp->GetGraphicsModelMatrix(cameraPos));
-                
-                if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1; SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
-                if (renderComp->colorChanged > 0) {renderComp->colorChanged -= 1; SetColor(renderComp->meshLocation, renderComp->color);}
+    for (auto & poolVec: pools) {
+        auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[ComponentRegistry::TransformComponentBitIndex]);
+        auto renderComponents = (ComponentPool<RenderComponent>*)(poolVec[ComponentRegistry::RenderComponentBitIndex]);
+        for (unsigned int i = 0; i < renderComponents->pools.size(); i++) {
+            auto renderArray = renderComponents->pools.at(i);
+            auto transformArray = transformComponents->pools.at(i);
+            for (unsigned int j = 0; j < renderComponents->COMPONENTS_PER_POOL; j++) {
+                auto renderComp = renderArray + j;
+                auto transformComp = transformArray + j;
+                if (renderComp->live) {
+                    SetModelMatrix(renderComp->meshLocation, transformComp->GetGraphicsModelMatrix(cameraPos));
+                    
+                    if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1; SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
+                    if (renderComp->colorChanged > 0) {renderComp->colorChanged -= 1; SetColor(renderComp->meshLocation, renderComp->color);}
+                }
             }
         }
     }
+    
 
     //LogElapsed(start, "\nRendercomp update elapsed ");
 }
@@ -275,11 +301,7 @@ void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int textureId, un
     meshesToAdd[shaderId][textureId][meshId].push_back(meshLocation);
 }
 
-GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned int mesh_id, unsigned int texture_id, bool visible, unsigned int shader_id) {
-    auto ptr = Get().RENDER_COMPONENTS.GetNew();
-    ptr->live = visible;
-
-    if (visible) {
+void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id) {
         assert(mesh_id != 0 && texture_id != 0);
 
         ptr->colorChanged = (Mesh::Get(mesh_id)->instancedColor)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
@@ -292,9 +314,6 @@ GraphicsEngine::RenderComponent* GraphicsEngine::RenderComponent::New(unsigned i
         ptr->meshLocation.shaderProgramId = shader_id;
 
         Get().AddObject(shader_id, texture_id, mesh_id, &ptr->meshLocation); 
-    }
-
-    return ptr;
 
 };
 

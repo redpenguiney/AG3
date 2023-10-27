@@ -7,7 +7,7 @@
 #include "graphics/engine.hpp"
 #include "graphics/shader_program.hpp"
 #include "graphics/texture.hpp"
-#include "gameobjects/gameobject.hpp"
+#include "gameobjects/component_registry.hpp"
 #include "physics/raycast.hpp"
 
 using namespace std;
@@ -40,13 +40,11 @@ int main() {
     for (int x = 0; x < 10; x++) {
         for (int y = 0; y < 10; y++) {
             for (int z = 0; z < 10; z++) {
-                CreateGameObjectParams params;
-                params.haveGraphics = true;
+                CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
                 params.meshId = m->meshId;
                 params.textureId = t->textureId;
-                params.haveCollisions = true;
                 std::printf("%u %uawww\n", params.meshId, params.textureId);
-                auto g = GameObject::New(params);
+                auto g = ComponentRegistry::NewGameObject(params);
                 thing = g;
                 g->transformComponent->SetPos({x * 6, y * 3 - 0, z * 3});
                 //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
@@ -61,13 +59,11 @@ int main() {
 
     {
         // make light
-        CreateGameObjectParams params;
-        params.havePointLight = true;
-        params.haveGraphics = false;
-        auto g = GameObject::New(params);
-        g->transformComponent->SetPos({0, 0, 0});
-        g->pointLightComponent->SetRange(100);
-        g->pointLightComponent->SetColor({1, 0, 0});
+        // CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex});
+        // auto g = ComponentRegistry::NewGameObject(params);
+        // g->transformComponent->SetPos({0, 0, 0});
+        // g->pointLightComponent->SetRange(100);
+        // g->pointLightComponent->SetColor({1, 0, 0});
     }
     
     GE.debugFreecamEnabled = true;

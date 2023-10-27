@@ -1,5 +1,4 @@
 #pragma once
-#include "component_pool.hpp"
 #include "base_component.hpp"
 #include "../../external_headers/GLM/ext.hpp"
 #include <cstdio>
@@ -12,20 +11,17 @@ class TransformComponent: public BaseComponent<TransformComponent> {
     const glm::quat& rotation() const { return rotation_; } // allows public read only access to rotation
     const glm::vec3& scale() const { return scale_; } // allows public read only access to scale
 
-    // DO NOT delete this pointer.
-    static TransformComponent* New() {
-        auto ptr = TRANSFORM_COMPONENTS.GetNew();
-        ptr->rotation_ = glm::identity<glm::quat>();
-        ptr->scale_ = {1, 1, 1};
-        ptr->position_ = {0, 0, 0};
-        ptr->rotScaleMatrix = glm::identity<glm::mat4x4>();
-        return ptr;
+    // Called when a gameobject is given this component.
+    void Init() {
+        rotation_ = glm::identity<glm::quat>();
+        scale_ = {1, 1, 1};
+        position_ = {0, 0, 0};
+        rotScaleMatrix = glm::identity<glm::mat4x4>();
     }
 
-    // call instead of deleting the pointer.
-    // obviously don't touch component after this.
+    // Called when this component is returned to a pool.
     void Destroy() {
-        TRANSFORM_COMPONENTS.ReturnObject(this);
+        
     }
 
     void SetPos(glm::dvec3 pos) {
@@ -75,12 +71,6 @@ class TransformComponent: public BaseComponent<TransformComponent> {
     TransformComponent() {
 
     }
-
-    friend class GraphicsEngine; // GE and PE both need to iterate through TRANSFORM_COMPONENTS
-    // friend class PhysicsEngine;
-
-    // object pool
-    static inline ComponentPool<TransformComponent> TRANSFORM_COMPONENTS;
 
     // rotation and scale part of matrix will not neccesarily change every frame like position will due to floating origin
     // therefore we store it here to avoid matrix multiplcation/math

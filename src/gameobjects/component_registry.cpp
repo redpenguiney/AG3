@@ -1,9 +1,10 @@
 #include "component_registry.hpp"
 #include <algorithm>
 #include <array>
-#include <memory>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
 #include <unordered_map>
-#include <bitset>
 #include <vector>
 
 namespace ComponentRegistry {
@@ -41,7 +42,44 @@ namespace ComponentRegistry {
     }
 
     std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params) {
-        return std::make_shared<GameObject>(params);
+        // make sure there are the needed component pools for this kind of gameobject
+        if (!componentBuckets.count(params.requestedComponents)) {
+            componentBuckets[params.requestedComponents] = std::array<void*, N_COMPONENT_TYPES> {
+                params.requestedComponents[TransformComponentBitIndex] ? new ComponentPool<TransformComponent>() : nullptr,
+                params.requestedComponents[RenderComponentBitIndex] ? new ComponentPool<GraphicsEngine::RenderComponent>() : nullptr,
+                params.requestedComponents[ColliderComponentBitIndex] ? new ComponentPool<SpatialAccelerationStructure::ColliderComponent>() : nullptr,
+                //params.requestedComponents[RigidBodyBitIndex] ? new ComponentPool<TransformComponent>() : nullptr
+            };
+        }
+
+        // Get components for the gameobject
+        std::vector<void*> components;
+        for (int i = 0; i < params.requestedComponents.size(); i++) {
+            if (params.requestedComponents[i] == true) { // if the gameobject wants this component
+                switch (i) {
+                case TransformComponentBitIndex:
+                components[i] = (ComponentPool<TransformComponent>*)(componentBuckets[params.requestedComponents][i]);
+                break;
+                case RenderComponentBitIndex:
+                components[i] = (ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets[params.requestedComponents][i]);
+                break;
+                case ColliderComponentBitIndex:
+                components[i] = (ComponentPool<SpatialAccelerationStructure::ColliderComponent>*)(componentBuckets[params.requestedComponents][i]);
+                break;
+                default:
+                std::printf("you goofy goober you didn't make a case here for index %u\n", i);
+                abort();
+                break;
+                }
+            }
+            else {
+                components[i] = nullptr;
+            }
+        }
+
+        auto ptr = std::make_shared<GameObject>(params, components);
+        gameObjects[ptr.get()] = ptr;
+        return ptr;
     }
 };
 
@@ -58,8 +96,15 @@ GameObject::~GameObject() {
     ComponentRegistry::gameObjects.erase(this); 
 };
 
-GameObject::GameObject(const CreateGameObjectParams& params):
-    renderComponent((std::find(params.requestedComponents.begin(), params.requestedComponents.end(), ComponentRegistry::RenderComponentBitIndex) != params.requestedComponents.end()) ? )
+GameObject::GameObject(const CreateGameObjectParams& params, std::vector<void*> components):
+    // a way to make this less verbose and more type safe would be nice
+    renderComponent((GraphicsEngine::RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex]),
+    transformComponent((TransformComponent*)components[ComponentRegistry::TransformComponentBitIndex]),
+    colliderComponent((SpatialAccelerationStructure::ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex])
+
 {
+    assert(transformComponent.ptr != nullptr);
+    transformComponent->Init();
+    if (renderComponent.ptr) {renderComponent->Init();}
     name = "GameObject";
 };

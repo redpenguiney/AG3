@@ -5,7 +5,7 @@
 
 class GraphicsEngine;
 
-class PointLightComponent: BaseComponent<PointLightComponent> {
+class PointLightComponent: public BaseComponent<PointLightComponent> {
     public:
     PointLightComponent(TransformComponent const* transformComponent);
     ~PointLightComponent();

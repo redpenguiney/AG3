@@ -12,7 +12,6 @@
 #include <vector>
 #include "../debug/debug.hpp"
 #include "camera.hpp"
-#include "../gameobjects/component_pool.hpp"
 #include "../gameobjects/transform_component.cpp"
 #include "../utility/utility.hpp"
 #include "texture.hpp"
@@ -73,11 +72,10 @@ class GraphicsEngine {
         // not const because object pool, don't actually change this
         unsigned int meshId;
 
-        // DO NOT delete this pointer.
-        static RenderComponent* New(unsigned int mesh_id, unsigned int texture_id, bool visible = true, unsigned int shader_id = Get().defaultShaderProgramId);
+        // called to initialize when given to a gameobject
+        void Init(unsigned int mesh_id, unsigned int texture_id, bool visible = true, unsigned int shader_id = Get().defaultShaderProgramId);
 
-        // call instead of deleting the pointer.
-        // obviously don't touch component after this.
+        // call before returning to pool
         void Destroy();
 
         // We have both GraphicsEngine::SetColor() and RenderComponent::SetColor() because people may want to set color immediately, but GraphicsEngine::SetColor()
@@ -127,12 +125,6 @@ class GraphicsEngine {
     // this is a map<shaderId, map<textureId, map<poolId, Meshpool*>>>
     std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, Meshpool*>>> meshpools;
     unsigned long long lastPoolId = 0; 
-
-    // tells how to get to the meshpool data of an object from its drawId
-    //std::unordered_map<unsigned long long, MeshLocation> drawIdPoolLocations;
-    //unsigned long long lastDrawId = 0;
-
-    ComponentPool<RenderComponent> RENDER_COMPONENTS;
 
     // Cache of meshes to add when addCachedMeshes is called. 
     // Used so that instead of adding 1 mesh to a meshpool 1000 times, we just add 1000 instances of a mesh to meshpool once to make creating renderable objects faster.

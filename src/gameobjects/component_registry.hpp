@@ -1,17 +1,20 @@
 #pragma once
 #include <array>
+#include <bitset>
 #include <cassert>
 #include <cstddef>
 #include <memory>
 #include <vector>
 #include "component_pool.hpp"
-#include "gameobject.hpp"
+#include "component_registry.hpp"
 #include <vector>
 #include "../graphics/engine.hpp"
 #include "transform_component.cpp"
 #include "../physics/spatial_acceleration_structure.hpp"
 #include "pointlight_component.hpp"
 #include <optional>
+
+struct CreateGameObjectParams;
 
 namespace ComponentRegistry {
     enum ComponentBitIndex {
@@ -21,24 +24,36 @@ namespace ComponentRegistry {
         RigidbodyComponentBitIndex = 3,
         PointlightComponentBitIndex = 4
     };
+
+    // How many different component classes there are. 
+    static inline const unsigned int N_COMPONENT_TYPES = 8; 
+
+    // Returns a new game object with the given components.
+    std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params);
 }
 
 struct CreateGameObjectParams {
     unsigned int meshId;
     unsigned int textureId;
     unsigned int shaderId;
-    
-    std::vector<ComponentRegistry::ComponentBitIndex> requestedComponents;
 
     CreateGameObjectParams(const std::vector<ComponentRegistry::ComponentBitIndex> componentList):
     meshId(0),
     textureId(0),
-    shaderId(0),
-    requestedComponents(componentList)
-    {}
+    shaderId(0)
+    {
+        // bitset defaults to all false so we good
+        for (auto & i : componentList) {
+            requestedComponents[i] = true;
+        }
+    }
+
+    private:
+    friend std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const CreateGameObjectParams& params);
+    std::bitset<ComponentRegistry::N_COMPONENT_TYPES> requestedComponents;
 };
 
-// Just a little pointer wrapper for gameobjects that throws an error when trying to dereference a nullptr to a component (gameobjects have a nullptr to components they don't have)
+// Just a little pointer wrapper for gameobjects that throws an error when trying to dereference a nullptr to a component (gameobjects have a nullptr to any components they don't have)
 // Still the gameobject's job to get and return objects to/from the pool since the pool used depends on the exact set of components the gameobject uses.
 template<typename T>
 class ComponentHandle {
@@ -62,11 +77,13 @@ class GameObject {
     ~GameObject();
 
     private:
+    
     // no copy constructing gameobjects.
     GameObject(const GameObject&) = delete; 
 
     // private because ComponentRegistry makes it and also because it needs to return a shared_ptr.
-    GameObject(const CreateGameObjectParams& params);
+    friend class std::shared_ptr<GameObject>;
+    GameObject(const CreateGameObjectParams& params, std::vector<void*> components); // components is not type safe because component registry weird, index is ComponentBitIndex, value is nullptr or ptr to componeny
     
 };
 
@@ -74,16 +91,13 @@ class GameObject {
 // Basically entites with the same set of components have their components stored together.
 // Pointers to components are never invalidated thanks to component pool fyi.
 namespace ComponentRegistry {
-    // How many different component classes there are. 
-    static inline const unsigned int N_COMPONENT_TYPES = 8; 
-
     // Given a vector of BitIndexes for components a system wants to iterate over, returns a vector of vectors of void pointers to component pools, where each interior vector contains a component pool for each of the requested components, in the order they were requested.
     // Yeah its not type safe, TODO getting rid of the void* would be nice
     // For example, if you called this with {TransformComponentBitIndex, RenderComponentBitIndex}, you'd get {{ComponentPool<TransformComponent>*, ComponentPool<RenderComponent>*}, {ComponentPool<TransformComponent>*, ComponentPool<RenderComponent>*}, ...}
     std::vector<std::vector<void*>> GetSystemComponents(std::vector<ComponentBitIndex> requestedComponents);
-
-    // Returns a new game object with the given components.
-    std::shared_ptr<GameObject> NewGameObject(std::vector<ComponentBitIndex> requestedComponents);
+    
+    std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params);
+    
 
     // Call at end of program. Deletes all gameobjects, components, and component pools.
     void CleanupComponents();
