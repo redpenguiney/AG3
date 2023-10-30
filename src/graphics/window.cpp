@@ -1,4 +1,3 @@
-#pragma once
 #include "window.hpp"
 #include "gl_error_handler.cpp"
 

@@ -1,4 +1,3 @@
-#pragma once
 #include "renderable_mesh.hpp"
 #include <cassert>
 

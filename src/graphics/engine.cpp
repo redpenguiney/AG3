@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include "../gameobjects/pointlight_component.hpp"
 #include "../gameobjects/component_registry.hpp"
@@ -144,7 +145,7 @@ void GraphicsEngine::UpdateLights() {
                         .colorAndRange = glm::vec4(pointLight->Color().x, pointLight->Color().y, pointLight->Color().z, pointLight->Range()),
                         .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
                     };
-                    std::printf("byte offset %u\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
+                    std::printf("byte offset %llu\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
                     (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))) = info;
 
                     lightCount++;
@@ -159,11 +160,13 @@ void GraphicsEngine::UpdateLights() {
 }
 
 void GraphicsEngine::SetColor(MeshLocation& location, glm::vec4 rgba) {
+    
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetColor(location.poolSlot, location.poolInstance, rgba);
 }
 
 void GraphicsEngine::SetModelMatrix(MeshLocation& location, glm::mat4x4 model) {
+    std::cout << "Location at " << &location << ".\n";
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
 }
@@ -188,20 +191,27 @@ void GraphicsEngine::UpdateRenderComponents() {
     auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
     // Get components of all gameobjects that have a transform and point light component
-    auto pools = ComponentRegistry::GetSystemComponents({ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::TransformComponentBitIndex});
+    auto pools = ComponentRegistry::GetSystemComponents({ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::TransformComponentBitIndex});
 
-    //assert(RENDER_COMPONENTS.pools.size() == TransformComponent::TRANSFORM_COMPONENTS.pools.size());
-    //static_assert(RENDER_COMPONENT_POOL_SIZE == TransformComponent::TRANSFORM_COMPONENT_POOL_SIZE, "render comp and transform comp need to have to same pool size");
     for (auto & poolVec: pools) {
         auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[ComponentRegistry::TransformComponentBitIndex]);
         auto renderComponents = (ComponentPool<RenderComponent>*)(poolVec[ComponentRegistry::RenderComponentBitIndex]);
+        
         for (unsigned int i = 0; i < renderComponents->pools.size(); i++) {
+            std::cout << "RENDER COMP POOL PAGE AT " << renderComponents->pools[i] << "\n";
+            std::cout << "Testing i= " << i << "\n";
             auto renderArray = renderComponents->pools.at(i);
             auto transformArray = transformComponents->pools.at(i);
             for (unsigned int j = 0; j < renderComponents->COMPONENTS_PER_POOL; j++) {
+                std::cout << "\tTesting j=" << j << "\n";
                 auto renderComp = renderArray + j;
                 auto transformComp = transformArray + j;
                 if (renderComp->live) {
+                    std::cout << "Component at " << renderComp << "\n";
+                    if (renderComp->componentPoolId != i) {
+                        std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
+                        abort();
+                    }
                     SetModelMatrix(renderComp->meshLocation, transformComp->GetGraphicsModelMatrix(cameraPos));
                     
                     if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1; SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
@@ -287,6 +297,7 @@ void GraphicsEngine::AddCachedMeshes() {
                     meshLocations[i]->poolSlot = objectPositions[i].first;
                     meshLocations[i]->poolInstance = objectPositions[i].second;
                     meshLocations[i]->initialized = true;
+                    //std::cout  << "Initalized mesh location " << (meshLocations[i]) << ".\n";
                 }
             } 
         }
@@ -301,19 +312,27 @@ void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int textureId, un
     meshesToAdd[shaderId][textureId][meshId].push_back(meshLocation);
 }
 
+unsigned int GraphicsEngine::GetDefaultShaderId() {
+    return defaultShaderProgramId;
+}
+
 void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id) {
-        assert(mesh_id != 0 && texture_id != 0);
+    assert(live);
+    assert(mesh_id != 0 && texture_id != 0);
 
-        ptr->colorChanged = (Mesh::Get(mesh_id)->instancedColor)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
-        ptr->textureZChanged = (Mesh::Get(mesh_id)->instancedTextureZ)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
-        ptr->color = glm::vec4(1, 1, 1, 1);
-        ptr->textureZ = -1.0;
-        ptr->meshId = mesh_id;
+    colorChanged = (Mesh::Get(mesh_id)->instancedColor)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+    textureZChanged = (Mesh::Get(mesh_id)->instancedTextureZ)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+    color = glm::vec4(1, 1, 1, 1);
+    textureZ = -1.0;
+    meshId = mesh_id;
 
-        ptr->meshLocation.textureId = texture_id;
-        ptr->meshLocation.shaderProgramId = shader_id;
+    meshLocation.textureId = texture_id;
+    meshLocation.shaderProgramId = shader_id;
+    meshLocation.initialized = false;
 
-        Get().AddObject(shader_id, texture_id, mesh_id, &ptr->meshLocation); 
+    // std::cout << "Initialized RenderComponent with mesh locatino at " << &meshLocation << " and pool at " << pool << "\n.";
+
+    Get().AddObject(shader_id, texture_id, mesh_id, &meshLocation); 
 
 };
 
@@ -337,14 +356,10 @@ void GraphicsEngine::RenderComponent::Destroy() {
     else { // otherwise just remove object from graphics engine
         Get().meshpools[shaderId][textureId][meshLocation.poolId]->RemoveObject(meshLocation.poolSlot, meshLocation.poolInstance);
     }
-
-    live = false;
-    
-    Get().RENDER_COMPONENTS.ReturnObject(this);
 }
 
 GraphicsEngine::RenderComponent::RenderComponent() {
-    live = false;
+
 }
 
 void GraphicsEngine::RenderComponent::SetColor(glm::vec4 rgba) {

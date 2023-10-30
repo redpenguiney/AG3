@@ -50,6 +50,6 @@ void main()
         discard;
     };
     vec4 color = tx * vec4(fragmentColor, 1);
-    Output = vec4(light, 1);
+    Output = color;
 
 };

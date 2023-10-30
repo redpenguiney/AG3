@@ -1,13 +1,12 @@
-#pragma once
 #include "pointlight_component.hpp"
+#include "component_pool.hpp"
 #include <memory>
 
-PointLightComponent::PointLightComponent(TransformComponent const* transformComponent): transform(transformComponent) {
-    POINT_LIGHT_COMPONENTS.insert(this);
-}
+PointLightComponent::PointLightComponent() {}
+PointLightComponent::~PointLightComponent() {}
 
-PointLightComponent::~PointLightComponent() {
-    POINT_LIGHT_COMPONENTS.erase(this);
+void PointLightComponent::Destroy() {
+    pool->ReturnObject(this);
 }
 
 void PointLightComponent::SetColor(glm::vec3 color) {

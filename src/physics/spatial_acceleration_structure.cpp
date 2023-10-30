@@ -1,5 +1,5 @@
-#pragma once
 #include "spatial_acceleration_structure.hpp"
+#include "../gameobjects/component_registry.hpp"
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -8,27 +8,45 @@
 #include <vector>
 
 void SpatialAccelerationStructure::Update() {
-    for (unsigned int i = 0; i < ColliderComponent::COLLIDER_COMPONENTS.pools.size(); i++) {
-        for (unsigned int j = 0; j < ComponentPool<ColliderComponent>::COMPONENTS_PER_POOL; j++) {
-            ColliderComponent& collider = ColliderComponent::COLLIDER_COMPONENTS.pools[i][j];
-            TransformComponent& transform = TransformComponent::TRANSFORM_COMPONENTS.pools[i][j];
-            if (collider.live) {
-                if (transform.moved) {
-                    transform.moved = false;
-                    UpdateCollider(collider, transform);
-                    
-                }                
+    // Get components of all gameobjects that have a transform and collider component
+    auto pools = ComponentRegistry::GetSystemComponents({ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::TransformComponentBitIndex});
+
+    for (auto & poolVec: pools) {
+        auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[1]);
+        auto colliderComponents = (ComponentPool<ColliderComponent>*)(poolVec[0]);
+        for (unsigned int i = 0; i < colliderComponents->pools.size(); i++) {
+            auto colliderArray = colliderComponents->pools.at(i);
+            auto transformArray = transformComponents->pools.at(i);
+            for (unsigned int j = 0; j < colliderComponents->COMPONENTS_PER_POOL; j++) {
+                auto colliderComp = colliderArray + j;
+                auto transformComp = transformArray + j;
+                if (colliderComp->live) {
+                    if (transformComp->moved) {
+                        transformComp->moved = false;
+                        UpdateCollider(*colliderComp, *transformComp);
+                        
+                    }       
+                }         
             }
         }
     }
 
-    for (auto & pool: ColliderComponent::COLLIDER_COMPONENTS.pools) {
-        for (unsigned int i = 0; i < ComponentPool<ColliderComponent>::COMPONENTS_PER_POOL; i++) {
-            ColliderComponent& collider = pool[i];
-            if (collider.live) {
-                auto queryResult = Query(collider.aabb); // remember query result will include itself
-                // glm::vec3 color = (queryResult.size() > 1) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
-                //std::printf("Object is touching %u\n", queryResult.size());
+    for (auto & poolVec: pools) {
+        auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[1]);
+        auto colliderComponents = (ComponentPool<ColliderComponent>*)(poolVec[0]);
+        for (unsigned int i = 0; i < colliderComponents->pools.size(); i++) {
+            auto colliderArray = colliderComponents->pools.at(i);
+            auto transformArray = transformComponents->pools.at(i);
+            for (unsigned int j = 0; j < colliderComponents->COMPONENTS_PER_POOL; j++) {
+                auto colliderComp = colliderArray + j;
+                auto transformComp = transformArray + j;
+                if (colliderComp->live) {
+                    if (transformComp->moved) {
+                        transformComp->moved = false;
+                        UpdateCollider(*colliderComp, *transformComp);
+                        
+                    }       
+                }         
             }
         }
     }
@@ -264,22 +282,19 @@ SpatialAccelerationStructure::~SpatialAccelerationStructure() {
 
 }
 
-SpatialAccelerationStructure::ColliderComponent* SpatialAccelerationStructure::ColliderComponent::New(std::shared_ptr<GameObject> gameobject) {
-    auto ptr = COLLIDER_COMPONENTS.GetNew();
-    ptr->live = true;
-    ptr->aabbType = AABBBoundingCube;
-    ptr->node = nullptr;
-    ptr->gameobject = gameobject;
-    //SpatialAccelerationStructure::Get().AddCollider(ptr); not calling this because gameobject has to decide whether or not it actually wants collisions
-    return ptr; 
+void SpatialAccelerationStructure::ColliderComponent::Init(GameObject* gameobj) {
+    aabbType = AABBBoundingCube;
+    node = nullptr;
+    gameobject = gameobj;
+    SpatialAccelerationStructure::Get().AddCollider(this, *gameobject->transformComponent);
 }
 
 void SpatialAccelerationStructure::ColliderComponent::Destroy() {
-    COLLIDER_COMPONENTS.ReturnObject(this);
+    
 }
 
 std::shared_ptr<GameObject>& SpatialAccelerationStructure::ColliderComponent::GetGameObject() {
-    return gameobject;
+    return ComponentRegistry::GAMEOBJECTS[gameobject];
 }
 
 // TODO: collider AABBs should be augmented to contain their motion over the next time increment.

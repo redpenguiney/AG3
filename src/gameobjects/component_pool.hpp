@@ -1,4 +1,6 @@
 #pragma once
+#include <cassert>
+#include <cstdio>
 #include <deque>
 #include <iostream>
 #include <type_traits>
@@ -32,7 +34,7 @@ class ComponentPool {
 
         ~ComponentPool();
 
-        const static unsigned int COMPONENTS_PER_POOL = 65536;   
+        const static unsigned int COMPONENTS_PER_POOL = 10;   
 
     private:
         // adds new pool with room for COMPONENTS_PER_POOL more objects
@@ -46,6 +48,9 @@ class ComponentPool {
 // no .cpp because templates are dumb
 template<typename T>
 T* ComponentPool<T>::GetNew() {
+    std::cout << "Getting new " << typeid(T).name() << "\n";
+    T* foundObject = nullptr;
+
     // We use something called a "free list" to find a component
     int poolIndex = -1;
     for (T* & ptr: pools) {
@@ -53,17 +58,25 @@ T* ComponentPool<T>::GetNew() {
         poolIndex += 1;
         if (firstAvailable[poolIndex] == nullptr) {continue;} // if the pool is full go to the next one
 
-        T* foundObject = firstAvailable[poolIndex];
-        firstAvailable[poolIndex] = (T*)foundObject->next;
+        foundObject = firstAvailable[poolIndex];
+        firstAvailable[poolIndex] = foundObject->next;
 
-        return foundObject;
+        break;
     }
 
-    // if we got this far there is no available pool
-    AddPool();
-    T* foundObject = firstAvailable.back();
-    firstAvailable.back() = (T*)foundObject->next;
-
+    // if there is no available pool
+    if (!foundObject) {
+        
+        AddPool();
+        foundObject = firstAvailable.back();
+        //std::cout << "Vec back is " << firstAvailable.back() << " and it holds " << firstAvailable.size() << ".\n";
+        firstAvailable.back() = foundObject->next;
+        
+        //std::cout << "So it's treason then " << foundObject << "\n";
+    }
+    
+    foundObject->live = true;
+    // std::cout << "Component made that is live = " << foundObject->live << " and also its at " << (void*)foundObject << ".\n";
     return foundObject;
 }
 
@@ -74,7 +87,9 @@ ComponentPool<T>::ComponentPool() {
 
 template<typename T>
 void ComponentPool<T>::ReturnObject(T* component) {
-    component->next = firstAvailable[component->componentPoolId];
+    std::cout << "Returning component at " << component << " poolId " << component->componentPoolId << ".\n"; 
+    component->live = false;
+    component->next = firstAvailable.at(component->componentPoolId);
     firstAvailable[component->componentPoolId] = component;
 }
 
@@ -89,10 +104,12 @@ template<typename T>
 void ComponentPool<T>::AddPool() {
     unsigned int index = pools.size();
     T* firstPool = new T[COMPONENTS_PER_POOL];
-    firstAvailable.push_back(&(firstPool[0]));
+    std::cout << "Created new pool at " << firstPool << "\n";
+    firstAvailable.push_back(firstPool);
     for (unsigned int i = 0; i < COMPONENTS_PER_POOL - 1; i++) {
         firstPool[i].next = &(firstPool[i + 1]);
         firstPool[i].componentPoolId = index;
+        firstPool[i].pool = this;
     }
     firstPool[COMPONENTS_PER_POOL - 1].next = nullptr;
     pools.push_back(firstPool);

@@ -98,12 +98,10 @@ class SpatialAccelerationStructure { // (SAS)
         public:
         BroadPhaseAABBType aabbType;
 
-        // DO NOT delete this pointer.
-        // The gameobject argument kinda has to be a nullptr and then you manually set the field to the shared_ptr, so this is kinda dumb. TODO
-        static ColliderComponent* New(std::shared_ptr<GameObject> gameobject);
+        // Called when collider is gotten from pool
+        void Init(GameObject* gameobject);
 
-        // call instead of deleting the pointer.
-        // obviously don't touch component after this.
+        // Called before component is returned from pool
         void Destroy();
 
         // Removes the collider from the spatial acceleration structure, meaning it will no longer do collisions.
@@ -114,7 +112,7 @@ class SpatialAccelerationStructure { // (SAS)
 
         //TransformComponent* transform;
 
-        // returns gameobject this collider belongs to
+        // returns gameobject this collider belongs to; TODO does this really need to be shared_ptr
         std::shared_ptr<GameObject>& GetGameObject();
 
         private:
@@ -125,7 +123,7 @@ class SpatialAccelerationStructure { // (SAS)
         SasNode* node;
 
         // pointer to gameobject using this collier. No, no way around this, we have to be able to get gameobjects from a collider stored in the SAS.
-        std::shared_ptr<GameObject> gameobject;
+        GameObject* gameobject;
         friend class GameObject; // gameobject has to set the gameobject ptr after creating the collider for annoying reasons
         
         // private constructor to enforce usage of object pool
@@ -133,10 +131,8 @@ class SpatialAccelerationStructure { // (SAS)
         friend class SpatialAccelerationStructure;
         ColliderComponent() {}
         ~ColliderComponent() {}
-        
-        // object pool
-        static inline ComponentPool<ColliderComponent> COLLIDER_COMPONENTS;
-    };
+    
+        };
 
     // Call every frame. Updates the SAS to use the most up-to-date object transforms.
     void Update();

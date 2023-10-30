@@ -1,4 +1,3 @@
-#pragma once
 #define GLM_FORCE_SWIZZLE
 #include "raycast.hpp"
 #include "spatial_acceleration_structure.hpp"

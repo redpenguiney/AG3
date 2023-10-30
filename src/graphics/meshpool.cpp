@@ -36,6 +36,7 @@ Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh):
 
 // Adds count identical meshes to pool, and returns a vector of pairs of (slot, instanceOffset) used to access the object.
 std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const unsigned int meshId, unsigned int count) {
+    std::printf("Be advised: adding %u of %u\n", count, meshId);
     std::vector<std::pair<unsigned int, unsigned int>> objLocations;
     unsigned int meshInstanceCapacity = Mesh::Get(meshId)->instanceCount;
     auto& contents = slotContents[meshId];
@@ -219,14 +220,14 @@ void Meshpool::Draw() {
     glBindVertexArray(vao);
     indexBuffer.Bind();
     indirectDrawBuffer.Bind();
-    //double start1 = Time();
+    double start1 = Time();
    // glMultiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, 0, drawCount, 0); TODO: GET INDIRECT DRAWING TO WORK
     for (auto & command: drawCommands) {
         if (command.count == 0) {continue;}
         glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance + (instancedVertexBuffer.GetOffset()/instanceSize));
     }
     
-    //std::printf("\nBRUH IT ELAPSED %fms", Time() - start1);
+    
 }
 
 // needed for BufferedBuffer's double/triple buffering, call every frame.

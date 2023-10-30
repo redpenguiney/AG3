@@ -66,14 +66,14 @@ class GraphicsEngine {
     // Gameobjects that want to be rendered should have a pointer to one of these.
     // However, they are stored here in a vector because that's better for the cache. (google ECS).
     // NEVER DELETE THIS POINTER, JUST CALL Destroy(). DO NOT STORE OUTSIDE A GAMEOBJECT. THESE USE AN OBJECT POOL.
-    class RenderComponent: BaseComponent<RenderComponent> {
+    class RenderComponent: public BaseComponent<RenderComponent> {
         public:
 
         // not const because object pool, don't actually change this
         unsigned int meshId;
 
         // called to initialize when given to a gameobject
-        void Init(unsigned int mesh_id, unsigned int texture_id, bool visible = true, unsigned int shader_id = Get().defaultShaderProgramId);
+        void Init(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id = Get().defaultShaderProgramId);
 
         // call before returning to pool
         void Destroy();
@@ -101,6 +101,8 @@ class GraphicsEngine {
         friend class ComponentPool<RenderComponent>;
         RenderComponent();
     };
+
+    unsigned int GetDefaultShaderId();
 
     private:
     // SSBO that stores all points lights so that the GPU can use them.

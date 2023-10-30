@@ -1,14 +1,16 @@
 #pragma once
-#include "transform_component.cpp"
 #include <memory>
 #include <unordered_set>
+#include "base_component.hpp"
+#include "../../external_headers/GLM//vec3.hpp"
 
 class GraphicsEngine;
 
 class PointLightComponent: public BaseComponent<PointLightComponent> {
     public:
-    PointLightComponent(TransformComponent const* transformComponent);
+    PointLightComponent();
     ~PointLightComponent();
+    void Destroy();
 
     // get distance from light at which it isn't visible
     float Range();
