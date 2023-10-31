@@ -166,7 +166,6 @@ void GraphicsEngine::SetColor(MeshLocation& location, glm::vec4 rgba) {
 }
 
 void GraphicsEngine::SetModelMatrix(MeshLocation& location, glm::mat4x4 model) {
-    std::cout << "Location at " << &location << ".\n";
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
 }
@@ -198,18 +197,18 @@ void GraphicsEngine::UpdateRenderComponents() {
         auto renderComponents = (ComponentPool<RenderComponent>*)(poolVec[ComponentRegistry::RenderComponentBitIndex]);
         
         for (unsigned int i = 0; i < renderComponents->pools.size(); i++) {
-            std::cout << "RENDER COMP POOL PAGE AT " << renderComponents->pools[i] << "\n";
-            std::cout << "Testing i= " << i << "\n";
+            //std::cout << "RENDER COMP POOL PAGE AT " << renderComponents->pools[i] << "\n";
+            //std::cout << "Testing i= " << i << "\n";
             auto renderArray = renderComponents->pools.at(i);
             auto transformArray = transformComponents->pools.at(i);
             for (unsigned int j = 0; j < renderComponents->COMPONENTS_PER_POOL; j++) {
-                std::cout << "\tTesting j=" << j << "\n";
+                //std::cout << "\tTesting j=" << j << "\n";
                 auto renderComp = renderArray + j;
                 auto transformComp = transformArray + j;
                 if (renderComp->live) {
-                    std::cout << "Component at " << renderComp << "\n";
+                    //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
                     if (renderComp->componentPoolId != i) {
-                        std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
+                        //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
                         abort();
                     }
                     SetModelMatrix(renderComp->meshLocation, transformComp->GetGraphicsModelMatrix(cameraPos));

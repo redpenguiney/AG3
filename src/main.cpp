@@ -36,10 +36,10 @@ int main() {
 
     
     int i = 0;
-    for (int x = 0; x < 10; x++) {
-        for (int y = 0; y < 1; y++) {
+    for (int x = 0; x < 2; x++) {
+        for (int y = 0; y < 10; y++) {
             for (int z = 0; z < 1; z++) {
-                CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+                CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
                 params.meshId = m->meshId;
                 params.textureId = t->textureId;
                 auto g = ComponentRegistry::NewGameObject(params);
@@ -74,16 +74,16 @@ int main() {
 
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         //auto start = Time();
-        //SpatialAccelerationStructure::Get().Update();
+        SpatialAccelerationStructure::Get().Update();
 
-        // auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
-        // if (castResult.hitObject != nullptr) {
-        //     thing->renderComponent->SetColor(glm::vec4(1, 0, 0, 1));
-        //     thing->transformComponent->SetPos(thing->transformComponent->position() + castResult.hitNormal * 0.01);
-        // }
-        // else {
-        //     thing->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-        // }
+        auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
+        if (castResult.hitObject != nullptr) {
+            //thing->renderComponent->SetColor(glm::vec4(1, 0, 0, 1));
+            castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position() + castResult.hitNormal * 0.01);
+        }
+        else {
+            // thing->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
+        }
 
         GE.RenderScene();
        // LogElapsed(start, "Drawing elapsed\n");

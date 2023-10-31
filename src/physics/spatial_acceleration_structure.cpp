@@ -12,8 +12,8 @@ void SpatialAccelerationStructure::Update() {
     auto pools = ComponentRegistry::GetSystemComponents({ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::TransformComponentBitIndex});
 
     for (auto & poolVec: pools) {
-        auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[1]);
-        auto colliderComponents = (ComponentPool<ColliderComponent>*)(poolVec[0]);
+        auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[ComponentRegistry::TransformComponentBitIndex]);
+        auto colliderComponents = (ComponentPool<ColliderComponent>*)(poolVec[ComponentRegistry::ColliderComponentBitIndex]);
         for (unsigned int i = 0; i < colliderComponents->pools.size(); i++) {
             auto colliderArray = colliderComponents->pools.at(i);
             auto transformArray = transformComponents->pools.at(i);
@@ -23,6 +23,7 @@ void SpatialAccelerationStructure::Update() {
                 if (colliderComp->live) {
                     if (transformComp->moved) {
                         transformComp->moved = false;
+                        std::cout << "Updating collider " << colliderComp << " at i=" << i <<", j=" << j << ".\n";
                         UpdateCollider(*colliderComp, *transformComp);
                         
                     }       
@@ -31,25 +32,26 @@ void SpatialAccelerationStructure::Update() {
         }
     }
 
-    for (auto & poolVec: pools) {
-        auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[1]);
-        auto colliderComponents = (ComponentPool<ColliderComponent>*)(poolVec[0]);
-        for (unsigned int i = 0; i < colliderComponents->pools.size(); i++) {
-            auto colliderArray = colliderComponents->pools.at(i);
-            auto transformArray = transformComponents->pools.at(i);
-            for (unsigned int j = 0; j < colliderComponents->COMPONENTS_PER_POOL; j++) {
-                auto colliderComp = colliderArray + j;
-                auto transformComp = transformArray + j;
-                if (colliderComp->live) {
-                    if (transformComp->moved) {
-                        transformComp->moved = false;
-                        UpdateCollider(*colliderComp, *transformComp);
+    // dear god why were there two of these
+    // for (auto & poolVec: pools) {
+    //     auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[1]);
+    //     auto colliderComponents = (ComponentPool<ColliderComponent>*)(poolVec[0]);
+    //     for (unsigned int i = 0; i < colliderComponents->pools.size(); i++) {
+    //         auto colliderArray = colliderComponents->pools.at(i);
+    //         auto transformArray = transformComponents->pools.at(i);
+    //         for (unsigned int j = 0; j < colliderComponents->COMPONENTS_PER_POOL; j++) {
+    //             auto colliderComp = colliderArray + j;
+    //             auto transformComp = transformArray + j;
+    //             if (colliderComp->live) {
+    //                 if (transformComp->moved) {
+    //                     transformComp->moved = false;
+    //                     UpdateCollider(*colliderComp, *transformComp);
                         
-                    }       
-                }         
-            }
-        }
-    }
+    //                 }       
+    //             }         
+    //         }
+    //     }
+    // }
 }
 
 void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const AABB& collider) {
@@ -300,6 +302,7 @@ std::shared_ptr<GameObject>& SpatialAccelerationStructure::ColliderComponent::Ge
 // TODO: collider AABBs should be augmented to contain their motion over the next time increment.
     // If we ever use a second SAS for accelerating visibility queries too, then don't do it for that
 void SpatialAccelerationStructure::ColliderComponent::RecalculateAABB(const TransformComponent& colliderTransform) {
+    std::cout << "Reacalculating AABB of " << this << "\n";
     if (aabbType == AABBBoundingCube) {
         glm::dvec3 min = {-std::sqrt(0.75), -std::sqrt(0.75), -std::sqrt(0.75)};
         glm::dvec3 max = {std::sqrt(0.75), std::sqrt(0.75), std::sqrt(0.75)};

@@ -64,7 +64,7 @@ namespace ComponentRegistry {
                 [ColliderComponentBitIndex] = params.requestedComponents[ColliderComponentBitIndex] ? new ComponentPool<SpatialAccelerationStructure::ColliderComponent>() : nullptr,
                 //params.requestedComponents[RigidBodyBitIndex] ? new ComponentPool<TransformComponent>() : nullptr
             }};
-            std::cout << "RENDER COMP POOL PAGE AT " << ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets[params.requestedComponents][RenderComponentBitIndex]))->pools[0] << "\n";
+            //std::cout << "RENDER COMP POOL PAGE AT " << ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets[params.requestedComponents][RenderComponentBitIndex]))->pools[0] << "\n";
         }
 
         // Get components for the gameobject
@@ -104,13 +104,13 @@ namespace ComponentRegistry {
 
 GameObject::~GameObject() {
 
-    std::cout << "Destroying.\n";
+    //std::cout << "Destroying.\n";
     // ComponentRegistry::gameObjects.erase(this); The only way the destructor could have been called if someone already erased that.
     if (transformComponent.ptr) {transformComponent->Destroy();}
     if (renderComponent.ptr) {renderComponent->Destroy();}
     if (colliderComponent.ptr) {colliderComponent->Destroy();}
     // if (pointLightComponent.ptr) {pointLightComponent->Destroy();}
-    std::cout << "Returning to pool.\n";
+    //std::cout << "Returning to pool.\n";
     if (transformComponent.ptr) {transformComponent->pool->ReturnObject(transformComponent.ptr);}
     if (renderComponent.ptr) {renderComponent->pool->ReturnObject(renderComponent.ptr);}
     if (colliderComponent.ptr) {colliderComponent->pool->ReturnObject(colliderComponent.ptr);}
