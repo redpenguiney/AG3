@@ -49,6 +49,7 @@ glm::dvec3 GetTriangleNormal(glm::dvec3 triVertex0, glm::dvec3 triVertex1, glm::
 }
 
 // TODO: this uses objects' Mesh instead of a simplified physics mesh 
+// TODO: hit point only works on convex stuff, because while for a convex shape there will be 2 hit points if it intersects (front and back) and we just use backface culling, but for a concave shape we would have to actually test every triangle and figure out which one is closest, or use convex decomposition.
 // If ray did not hit anything, result.hitObject == nullptr.
 RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
     auto possible_colliding = SpatialAccelerationStructure::Get().Query(origin, direction);
@@ -80,9 +81,16 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
             }
             //std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f\n.");
             glm::dvec3 intersectionPoint;
-            if (IsTriangleColliding(origin, direction, trianglePoints[0], trianglePoints[1], trianglePoints[2], intersectionPoint)) {
-                return RaycastResult {intersectionPoint, GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]), obj};
+            auto normal = GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
+            
+            // backface culling so that we hit the right triangle
+            if (glm::dot(normal, direction) < 0) { // works according to https://en.wikipedia.org/wiki/Back-face_culling
+                // TODO: IsTriangleColliding() might (?) independently calculate the normal which is waste of resources? compiler could probably optimize out that but idk
+                if (IsTriangleColliding(origin, direction, trianglePoints[0], trianglePoints[1], trianglePoints[2], intersectionPoint)) {
+                    return RaycastResult {intersectionPoint, normal, obj};
+                }
             }
+            
         }
     }
 

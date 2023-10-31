@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include "meshpool.hpp"
 
-// TODO: use GL_SHORT for indices in meshpools where there are fewer than 65536 indices
+// TODO: use GL_SHORT for indices in meshpools where there are fewer than 65536 indices (wait is that even possible)
 
 // constructor takes mesh reference to set variables, doesn't actually add the given mesh or anything
 Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh): 

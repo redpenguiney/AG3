@@ -75,10 +75,12 @@ void GraphicsEngine::RenderScene() {
         window.SetMouseLocked(!window.mouseLocked);
     }
 
+    
+
     // Update various things
     AddCachedMeshes();
     UpdateRenderComponents();      
-    UpdateMeshpools(); // NOTE: this was at the end of the function before, if it breaks move to after DrawSkybox()
+    
     UpdateLights();
     //CalculateLightingClusters();
 
@@ -104,7 +106,7 @@ void GraphicsEngine::RenderScene() {
 
     // Draw skybox afterwards to encourage early z-test
     DrawSkybox();
-
+    UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
     
     window.Update(); // this flips the buffer so it goes at the end; TODO maybe poll events at start of frame instead
 }

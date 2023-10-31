@@ -23,7 +23,7 @@ void SpatialAccelerationStructure::Update() {
                 if (colliderComp->live) {
                     if (transformComp->moved) {
                         transformComp->moved = false;
-                        std::cout << "Updating collider " << colliderComp << " at i=" << i <<", j=" << j << ".\n";
+                        // std::cout << "Updating collider " << colliderComp << " at i=" << i <<", j=" << j << ".\n";
                         UpdateCollider(*colliderComp, *transformComp);
                         
                     }       
@@ -302,7 +302,7 @@ std::shared_ptr<GameObject>& SpatialAccelerationStructure::ColliderComponent::Ge
 // TODO: collider AABBs should be augmented to contain their motion over the next time increment.
     // If we ever use a second SAS for accelerating visibility queries too, then don't do it for that
 void SpatialAccelerationStructure::ColliderComponent::RecalculateAABB(const TransformComponent& colliderTransform) {
-    std::cout << "Reacalculating AABB of " << this << "\n";
+    // std::cout << "Reacalculating AABB of " << this << "\n";
     if (aabbType == AABBBoundingCube) {
         glm::dvec3 min = {-std::sqrt(0.75), -std::sqrt(0.75), -std::sqrt(0.75)};
         glm::dvec3 max = {std::sqrt(0.75), std::sqrt(0.75), std::sqrt(0.75)};

@@ -36,9 +36,9 @@ int main() {
 
     
     int i = 0;
-    for (int x = 0; x < 2; x++) {
-        for (int y = 0; y < 10; y++) {
-            for (int z = 0; z < 1; z++) {
+    for (int x = 0; x < 20; x++) {
+        for (int y = 0; y < 5; y++) {
+            for (int z = 0; z < 20; z++) {
                 CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
                 params.meshId = m->meshId;
                 params.textureId = t->textureId;
