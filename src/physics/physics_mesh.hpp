@@ -11,8 +11,9 @@ class PhysicsMesh {
     static std::shared_ptr<PhysicsMesh>& Get(unsigned int id);
 
     // Creates a physics mesh based on the vertices of the (graphical) mesh.
-    =
-    static std::shared_ptr<PhysicsMesh> New(std::shared_ptr<Mesh>& mesh, float simplifyThreshold, bool convexDecomposition);
+    // simplifyThreshold is TODO
+    // convexDecomposition is TODO
+    static std::shared_ptr<PhysicsMesh> New(std::shared_ptr<Mesh>& mesh, float simplifyThreshold = 0, bool convexDecomposition = true);
 
     // Takes id of PhysicsMesh to unload as an argument.
     // Call if you aren't going to instantitate any more objects with this physics mesh and want to free up that memory.
@@ -32,6 +33,6 @@ class PhysicsMesh {
     private:
     PhysicsMesh();
 
-    inline static std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
+    inline static std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> LOADED_PHYS_MESHES; 
     inline static std::atomic<unsigned int> LAST_PHYS_MESH_ID = {1};
 };
