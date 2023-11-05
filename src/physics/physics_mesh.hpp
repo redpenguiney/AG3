@@ -23,16 +23,17 @@ class PhysicsMesh {
     const unsigned int physMeshId;
 
     struct ConvexMesh {
-        std::vector<double> vertices; // TODO: could be float instead?
-        std::vector<unsigned int> indices;
+        std::vector<float> vertices; // TODO: should be double instead? 
+        // TODO: do we want indices?
     };
 
     // To allow for accurate, fast, and simple collisions with concave and convex objects, stores a vector of convex meshes
     const std::vector<ConvexMesh> meshes; 
 
     private:
-    PhysicsMesh();
+    PhysicsMesh(std::shared_ptr<Mesh>& mesh);
 
     inline static std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> LOADED_PHYS_MESHES; 
+    inline static std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> MESHES_TO_PHYS_MESHES; 
     inline static std::atomic<unsigned int> LAST_PHYS_MESH_ID = {1};
 };

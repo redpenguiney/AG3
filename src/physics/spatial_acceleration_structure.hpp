@@ -7,6 +7,7 @@
 #include <array>
 #include "../../external_headers/GLM/ext.hpp"
 #include "../gameobjects/transform_component.cpp"
+#include "physics_mesh.hpp"
 
 class GameObject;
 
@@ -99,7 +100,7 @@ class SpatialAccelerationStructure { // (SAS)
         BroadPhaseAABBType aabbType;
 
         // Called when collider is gotten from pool
-        void Init(GameObject* gameobject);
+        void Init(GameObject* gameobject, std::shared_ptr<PhysicsMesh>& physMesh);
 
         // Called before component is returned from pool
         void Destroy();
@@ -114,6 +115,9 @@ class SpatialAccelerationStructure { // (SAS)
 
         // returns gameobject this collider belongs to; TODO does this really need to be shared_ptr
         std::shared_ptr<GameObject>& GetGameObject();
+
+        // pointer to accurate collider for object
+        std::shared_ptr<PhysicsMesh> physicsMesh;
 
         private:
 

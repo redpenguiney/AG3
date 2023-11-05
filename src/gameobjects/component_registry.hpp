@@ -33,6 +33,7 @@ namespace ComponentRegistry {
 }
 
 struct CreateGameObjectParams {
+    unsigned int physMeshId; // 0 if you want automatically generated
     unsigned int meshId;
     unsigned int textureId;
     unsigned int shaderId;

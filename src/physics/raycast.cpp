@@ -48,8 +48,6 @@ glm::dvec3 GetTriangleNormal(glm::dvec3 triVertex0, glm::dvec3 triVertex1, glm::
     return glm::cross((triVertex1 - triVertex0), (triVertex2 - triVertex0));
 }
 
-// TODO: this uses objects' Mesh instead of a simplified physics mesh 
-// TODO: hit point only works on convex stuff, because while for a convex shape there will be 2 hit points if it intersects (front and back) and we just use backface culling, but for a concave shape we would have to actually test every triangle and figure out which one is closest, or use convex decomposition.
 // If ray did not hit anything, result.hitObject == nullptr.
 RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
     auto possible_colliding = SpatialAccelerationStructure::Get().Query(origin, direction);
@@ -61,37 +59,39 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
     //std::printf("muy guy %f %f %f\n", direction.x, direction.y, direction.z);
 
     for (auto & comp: possible_colliding) {
-        auto& obj = comp->GetGameObject();
-        auto& mesh = Mesh::Get(obj->renderComponent->meshId);
+        auto& mesh = comp->physicsMesh;
+        auto obj = comp->GetGameObject();
         auto modelMatrix = obj->transformComponent->GetPhysicsModelMatrix();
-        
-        // test every triangle of the mesh against the ray, if any of them hit we win
-        const unsigned int triCount = mesh->indices.size()/3;
-        //std::printf("There are %u triangles to test.\n", triCount);
 
-        const unsigned int floatsPerVertex = (sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!mesh->instancedColor) ? sizeof(glm::vec4) : 0) + ((!mesh->instancedTextureZ) ? sizeof(GLfloat) : 0))/sizeof(GLfloat);
-        for (unsigned int i = 0; i < triCount; i++) {
-            glm::dvec3 trianglePoints[3];
-            for (unsigned int j = 0; j < 3; j++) {
-                int vertexIndex = mesh->indices[(i * 3) + j] * floatsPerVertex;
-                glm::dvec4 point = glm::dvec4(mesh->vertices.at(vertexIndex), mesh->vertices.at(vertexIndex + 1), mesh->vertices.at(vertexIndex + 2), 1);
-                point = modelMatrix * point;
-                //std::printf("After %f %f %f %f\n", point.x, point.y, point.z, point.w);
-                trianglePoints[j] = point.xyz();
-            }
-            //std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f\n.");
-            glm::dvec3 intersectionPoint;
-            auto normal = GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
-            
-            // backface culling so that we hit the right triangle
-            if (glm::dot(normal, direction) < 0) { // works according to https://en.wikipedia.org/wiki/Back-face_culling
-                // TODO: IsTriangleColliding() might (?) independently calculate the normal which is waste of resources? compiler could probably optimize out that but idk
-                if (IsTriangleColliding(origin, direction, trianglePoints[0], trianglePoints[1], trianglePoints[2], intersectionPoint)) {
-                    return RaycastResult {intersectionPoint, normal, obj};
+        // for every convex piece of the mesh, there are two hit triangles, and one of them is discarded through backface culling.
+        // we'll then sort the triangles to figure out which one the ray hit first.
+        for (auto & convexMesh: mesh->meshes) {
+            const unsigned int triCount = convexMesh.vertices.size()/9;
+            //std::printf("There are %u triangles to test.\n", triCount);
+
+            for (unsigned int i = 0; i < triCount; i++) {
+                glm::dvec3 trianglePoints[3];
+                for (unsigned int j = 0; j < 9; j++) {
+                    trianglePoints[j/3][j % 3] = convexMesh.vertices[(i * 9) + j];
                 }
+                //std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f\n.");
+                glm::dvec3 intersectionPoint;
+                auto normal = GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
+                
+                // backface culling so that we hit the right triangle
+                if (glm::dot(normal, direction) < 0) { // works according to https://en.wikipedia.org/wiki/Back-face_culling
+                    // TODO: IsTriangleColliding() might (?) independently calculate the normal which is waste of resources? compiler could probably optimize out that but idk
+                    if (IsTriangleColliding(origin, direction, trianglePoints[0], trianglePoints[1], trianglePoints[2], intersectionPoint)) {
+                        return RaycastResult {intersectionPoint, normal, obj};
+                    }
+                }
+                
             }
-            
+
+            foundTriangle:;
         }
+
+        
     }
 
     return RaycastResult {.hitObject = nullptr};

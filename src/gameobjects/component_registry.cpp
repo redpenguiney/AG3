@@ -126,6 +126,9 @@ GameObject::GameObject(const CreateGameObjectParams& params, std::array<void*, C
     assert(transformComponent.ptr != nullptr);
     transformComponent->Init();
     if (renderComponent.ptr) {renderComponent->Init(params.meshId, params.textureId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().GetDefaultShaderId());}
-    if (colliderComponent.ptr) {colliderComponent->Init(this);}; // init collider comp
+    if (colliderComponent.ptr) {
+        if (params.)
+        colliderComponent->Init(this);
+    };
     name = "GameObject";
 };

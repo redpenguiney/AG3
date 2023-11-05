@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <vector>
 
 void SpatialAccelerationStructure::Update() {
@@ -284,15 +285,16 @@ SpatialAccelerationStructure::~SpatialAccelerationStructure() {
 
 }
 
-void SpatialAccelerationStructure::ColliderComponent::Init(GameObject* gameobj) {
+void SpatialAccelerationStructure::ColliderComponent::Init(GameObject* gameobj, std::shared_ptr<PhysicsMesh>& physMesh) {
     aabbType = AABBBoundingCube;
     node = nullptr;
     gameobject = gameobj;
+    physicsMesh = physMesh;
     SpatialAccelerationStructure::Get().AddCollider(this, *gameobject->transformComponent);
 }
 
 void SpatialAccelerationStructure::ColliderComponent::Destroy() {
-    
+    physicsMesh = nullptr;
 }
 
 std::shared_ptr<GameObject>& SpatialAccelerationStructure::ColliderComponent::GetGameObject() {
