@@ -2,6 +2,7 @@
 #include "../gameobjects/component_registry.hpp"
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -96,6 +97,9 @@ std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAcceleratio
                 collidingComponents.push_back(obj);
             }
         }
+        if (node->objects.size() > NODE_SPLIT_THRESHOLD) {
+            node->Split();
+        }
     }
 
     return collidingComponents;
@@ -117,13 +121,16 @@ std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAcceleratio
                 collidingComponents.push_back(obj);
             }
         }
+        if (node->objects.size() > NODE_SPLIT_THRESHOLD) {
+            node->Split();
+        }
     }
 
     return collidingComponents;
 }
 
 
-void SpatialAccelerationStructure::SasNode::UpdateSplitPoint() {
+void SpatialAccelerationStructure::SasNode::Split() {
     assert(objects.size() >= NODE_SPLIT_THRESHOLD);
     assert(!split);
     glm::dvec3 meanPosition = {0, 0, 0};
@@ -133,7 +140,32 @@ void SpatialAccelerationStructure::SasNode::UpdateSplitPoint() {
     splitPoint = meanPosition;
 
     children = new std::array<SasNode*, 27> {nullptr};
+    for (int x = -1; x < 2; x++) {
+        for (int y = -1; y < 2; y++) {
+            for (int z = -1; z < 2; z++) {
+                auto child = (*children)[(x + 1) * 9 + (y + 1) * 3 + z + 1];
+            }
+        }
+    }
 
+    std::vector<unsigned int> indicesToRemove;
+    unsigned int i = 0;
+    for (auto & obj: objects) { 
+        auto index = SasInsertHeuristic(*this, obj->aabb);
+        if (index != -1) {
+            std::cout << "aoisjfoijesa " << children << "\n";
+            (*children).at(index)->objects.push_back(obj);   
+            indicesToRemove.push_back(i);
+        }
+        i++;
+    }
+
+    // iterate backwards through indicesToRemove to preserve index correctness
+    if (indicesToRemove.size() > 0) {
+        for (unsigned int i = indicesToRemove.size() - 1; i >= 0; i++) {
+            indicesToRemove.erase(indicesToRemove.begin() + i);
+        }
+    }
 }
 
 void SpatialAccelerationStructure::SasNode::CalculateAABB() {
@@ -169,14 +201,36 @@ void SpatialAccelerationStructure::SasNode::CalculateAABB() {
 
 SpatialAccelerationStructure::SasNode::SasNode() {
     split = false;
+    splitPoint = {NAN, NAN, NAN};
     parent = nullptr;
     children = nullptr;
 }
 
-// Returns index of best child node to insert object into, given the parent node and object's AABB.
-// Returns -1 if no child node.
+
 int SpatialAccelerationStructure::SasInsertHeuristic(const SpatialAccelerationStructure::SasNode& node, const AABB& aabb) {
-    return -1;
+    if (node.children == nullptr) {return -1;}
+    auto splitPoint = node.splitPoint;
+    unsigned int x = 1, y = 1, z = 1;
+    if (aabb.min.x > splitPoint.x) {
+        x += 1;
+    } 
+    if (aabb.max.x < splitPoint.x) {
+        x -= 1;
+    }
+    if (aabb.min.y > splitPoint.y) {
+        y += 1;
+    } 
+    if (aabb.max.y < splitPoint.y) {
+        y -= 1;
+    }
+    if (aabb.min.z > splitPoint.z) {
+        z += 1;
+    } 
+    if (aabb.max.z < splitPoint.z) {
+        z -= 1;
+    }
+
+    return x * 9 + y * 3 + z;
 }  
 
 void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider, const TransformComponent& transform) {

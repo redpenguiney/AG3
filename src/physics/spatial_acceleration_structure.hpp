@@ -170,7 +170,7 @@ class SpatialAccelerationStructure { // (SAS)
 
     // Node in the SAS's dynamic AABB tree
     struct SasNode {
-        glm::dvec3 splitPoint; // point that splits the aabb to determine aabbs of children
+        glm::dvec3 splitPoint; // point that splits the aabb to determine aabbs of children, initialized to (nan, nan, nan) 
 
         bool split; // when this node is queried and it has more objects than NODE_SPLIT_THRESHOLD and this bool is false, the node will be split.
             // however, if the node can't be split (because all objects are in same position or something) then we'll just set this bool to true and then set it to false when a new collider is added that might make the node splittable
@@ -186,11 +186,12 @@ class SpatialAccelerationStructure { // (SAS)
         void CalculateAABB();
 
         // sets splitPoint, calculated by mean position of objects inside, creates children nodes, and moves objects into children nodes
-        void UpdateSplitPoint();
+        void Split();
 
     };
 
-    // Returns index of best child node to insert object into, given the parent node and object's AABB
+    // Returns index of best child node to insert object into, given the parent node and object's AABB.
+    // Returns -1 if no child node.    
     static int SasInsertHeuristic(const SasNode& node, const AABB& aabb);
 
     SasNode root;
