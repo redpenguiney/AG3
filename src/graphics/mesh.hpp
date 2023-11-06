@@ -25,6 +25,7 @@ class Mesh {
                                       // def make it like a million for cubes and stuff, otherwise default of 1024 should be fine
                                       // NOTE: if you're constantly adding and removing unique meshes, they better all have same expectedCount or it's gonna cost you in memory
     const glm::vec3 originalSize; // When loading a mesh from file, it is automatically scaled so all vertex positions are in the range -0.5 to 0.5. (this lets you and the physics engine easily know what the actual size of the object is) Set gameobject scale to this value to restore it to original size.
+    const unsigned int vertexSize; // the size, in bytes, of a single vertex. 
 
     static std::shared_ptr<Mesh>& Get(unsigned int meshId);
     static std::shared_ptr<Mesh> FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor=true, bool instanceTextureZ=true, unsigned int expectedCount=1024);

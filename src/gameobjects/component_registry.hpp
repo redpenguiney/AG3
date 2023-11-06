@@ -39,6 +39,7 @@ struct CreateGameObjectParams {
     unsigned int shaderId;
 
     CreateGameObjectParams(const std::vector<ComponentRegistry::ComponentBitIndex> componentList):
+    physMeshId(0),
     meshId(0),
     textureId(0),
     shaderId(0)

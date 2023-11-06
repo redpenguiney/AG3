@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 
@@ -127,8 +128,18 @@ GameObject::GameObject(const CreateGameObjectParams& params, std::array<void*, C
     transformComponent->Init();
     if (renderComponent.ptr) {renderComponent->Init(params.meshId, params.textureId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().GetDefaultShaderId());}
     if (colliderComponent.ptr) {
-        if (params.)
-        colliderComponent->Init(this);
+        std::shared_ptr<PhysicsMesh> physMesh;
+        if (params.physMeshId == 0) {
+            if (params.meshId == 0) {
+                std::cout << "ERROR: When trying to create a ColliderComponent, no PhysicsMeshId was given, and no MeshId was given to produce one with.\n";
+                abort();
+            }
+            physMesh = PhysicsMesh::New(Mesh::Get(params.meshId));
+        }
+        else {
+            physMesh = PhysicsMesh::Get(params.physMeshId);
+        }
+        colliderComponent->Init(this, physMesh);
     };
     name = "GameObject";
 };

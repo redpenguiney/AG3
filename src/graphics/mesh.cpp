@@ -150,7 +150,8 @@ indices(indies),
 instancedColor(instanceColor),
 instancedTextureZ(instanceTextureZ),
 instanceCount(expectedCount),
-originalSize()
+originalSize(),
+vertexSize(sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!instancedColor) ? sizeof(glm::vec4) : 0) + ((!instancedTextureZ) ? sizeof(GLfloat) : 0)) // this is just sizeof(vertexPos) + sizeof(vertexNormals) + sizeof(textureXY) + sizeof(color if not instanced) + sizeof(textureZ if not instanced) 
 {}
 
 

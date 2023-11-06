@@ -9,5 +9,6 @@ struct RaycastResult {
     std::shared_ptr<GameObject> hitObject;
 };
 
+// If ray did not hit anything, result.hitObject == nullptr.
 RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction);
 

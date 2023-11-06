@@ -48,7 +48,7 @@ int main() {
                 //g->transformComponent->SetScl(glm::dvec3(1, 2, 1));
                 g->renderComponent->SetColor(glm::vec4(i % 2, (i + 1) % 2, (i + 1) % 2, 1.0));
                 g->renderComponent->SetTextureZ(0.0);
-                g->name = std::string("Gameobject #") + to_string(x);
+                g->name = std::string("Gameobject #") + to_string(i);
                 i++;
             } 
         }
@@ -79,6 +79,7 @@ int main() {
         auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
         if (castResult.hitObject != nullptr) {
             //thing->renderComponent->SetColor(glm::vec4(1, 0, 0, 1));
+            std::cout << "Hit object " << castResult.hitObject->name << " \n";
             castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position() + castResult.hitNormal * 0.01);
         }
         else {

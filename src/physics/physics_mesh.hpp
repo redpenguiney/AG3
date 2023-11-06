@@ -11,6 +11,7 @@ class PhysicsMesh {
     static std::shared_ptr<PhysicsMesh>& Get(unsigned int id);
 
     // Creates a physics mesh based on the vertices of the (graphical) mesh.
+    // If you call this function twice with the same arguments, you'll (hopefully) get 2 pointers to the same PhysicsMesh.
     // simplifyThreshold is TODO
     // convexDecomposition is TODO
     static std::shared_ptr<PhysicsMesh> New(std::shared_ptr<Mesh>& mesh, float simplifyThreshold = 0, bool convexDecomposition = true);
@@ -24,7 +25,6 @@ class PhysicsMesh {
 
     struct ConvexMesh {
         std::vector<float> vertices; // TODO: should be double instead? 
-        // TODO: do we want indices?
     };
 
     // To allow for accurate, fast, and simple collisions with concave and convex objects, stores a vector of convex meshes
