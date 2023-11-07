@@ -143,7 +143,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
     for (int x = -1; x < 2; x++) {
         for (int y = -1; y < 2; y++) {
             for (int z = -1; z < 2; z++) {
-                auto child = (*children)[(x + 1) * 9 + (y + 1) * 3 + z + 1];
+                auto child = (*children).at((x + 1) * 9 + (y + 1) * 3 + z + 1);
             }
         }
     }
@@ -153,7 +153,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
     for (auto & obj: objects) { 
         auto index = SasInsertHeuristic(*this, obj->aabb);
         if (index != -1) {
-            std::cout << "aoisjfoijesa " << children << "\n";
+            std::cout << "aoisjfoijesa " << children << " index " << index << "\n";
             (*children).at(index)->objects.push_back(obj);   
             indicesToRemove.push_back(i);
         }
