@@ -143,7 +143,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
     for (int x = -1; x < 2; x++) {
         for (int y = -1; y < 2; y++) {
             for (int z = -1; z < 2; z++) {
-                auto child = (*children).at((x + 1) * 9 + (y + 1) * 3 + z + 1);
+                (*children).at((x + 1) * 9 + (y + 1) * 3 + z + 1) = new SasNode();
             }
         }
     }
@@ -162,8 +162,10 @@ void SpatialAccelerationStructure::SasNode::Split() {
 
     // iterate backwards through indicesToRemove to preserve index correctness
     if (indicesToRemove.size() > 0) {
-        for (unsigned int i = indicesToRemove.size() - 1; i >= 0; i++) {
-            indicesToRemove.erase(indicesToRemove.begin() + i);
+        for (unsigned int i = indicesToRemove.size() - 1; i > 0; i--) {
+            std::cout << objects.size() << " objects, i = "<< i << " index " << indicesToRemove[i] << "\n";
+            assert(indicesToRemove[i] < objects.size());
+            objects.erase(objects.begin() + indicesToRemove[i]);
         }
     }
 }
