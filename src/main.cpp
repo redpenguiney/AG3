@@ -9,6 +9,7 @@
 #include "graphics/texture.hpp"
 #include "gameobjects/component_registry.hpp"
 #include "physics/raycast.hpp"
+#include "physics/engine.hpp"
 
 using namespace std;
 
@@ -16,6 +17,7 @@ int main() {
     std::printf("Main function reached.\n");
 
     auto & GE = GraphicsEngine::Get();
+    auto & PE = PhysicsEngine::Get();
     //GE.camera.position.y = 3;
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
@@ -36,10 +38,10 @@ int main() {
 
     
     int i = 0;
-    for (int x = 0; x < 20; x++) {
-        for (int y = 0; y < 5; y++) {
-            for (int z = 0; z < 20; z++) {
-                CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+    for (int x = 0; x < 40; x++) {
+        for (int y = 0; y < 4; y++) {
+            for (int z = 0; z < 40; z++) {
+                CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.textureId = t->textureId;
                 auto g = ComponentRegistry::NewGameObject(params);
@@ -75,6 +77,7 @@ int main() {
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         //auto start = Time();
         SpatialAccelerationStructure::Get().Update();
+        PE.Step(1);
 
         auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
         if (castResult.hitObject != nullptr) {

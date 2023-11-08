@@ -141,10 +141,10 @@ class SpatialAccelerationStructure { // (SAS)
     // Call every frame. Updates the SAS to use the most up-to-date object transforms.
     void Update();
 
-    // Returns a vector of colliders in the SAS that might intersect the given AABB.
+    // Returns the set of colliders whose AABBs intersect the given AABB (assuming the colliders are in the SAS, which they should be).
     std::vector<ColliderComponent*> Query(const AABB& collider);
 
-    // Returns a vector of colliders in the SAS that might intersect the given ray.
+    // Returns the set of colliders whose AABBs intersect the given ray (assuming the colliders are in the SAS, which they should be).
     std::vector<ColliderComponent*> Query(const glm::dvec3& origin, const glm::dvec3& direction);
 
     // Adds a collider to the SAS.

@@ -8,6 +8,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "rigidbody_component.hpp"
 
 // some wacky function i copypasted from https://stackoverflow.com/questions/8147027/how-do-i-call-stdmake-shared-on-a-class-with-only-protected-or-private-const .
 // Lets me put use std::make_shared on stuff with private constructors
@@ -63,7 +64,7 @@ namespace ComponentRegistry {
                 [TransformComponentBitIndex] = params.requestedComponents[TransformComponentBitIndex] ? new ComponentPool<TransformComponent>() : nullptr,
                 [RenderComponentBitIndex] = params.requestedComponents[RenderComponentBitIndex] ? new ComponentPool<GraphicsEngine::RenderComponent>() : nullptr,
                 [ColliderComponentBitIndex] = params.requestedComponents[ColliderComponentBitIndex] ? new ComponentPool<SpatialAccelerationStructure::ColliderComponent>() : nullptr,
-                //params.requestedComponents[RigidBodyBitIndex] ? new ComponentPool<TransformComponent>() : nullptr
+                [RigidbodyComponentBitIndex] = params.requestedComponents[RigidbodyComponentBitIndex] ? new ComponentPool<RigidbodyComponent>() : nullptr
             }};
             //std::cout << "RENDER COMP POOL PAGE AT " << ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets[params.requestedComponents][RenderComponentBitIndex]))->pools[0] << "\n";
         }
@@ -81,6 +82,9 @@ namespace ComponentRegistry {
                 break;
                 case ColliderComponentBitIndex:
                 components[i] = ((ComponentPool<SpatialAccelerationStructure::ColliderComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+                break;
+                case RigidbodyComponentBitIndex:
+                components[i] = ((ComponentPool<RigidbodyComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
                 break;
                 default:
                 std::printf("you goofy goober you didn't make a case here for index %u\n", i);
@@ -110,19 +114,21 @@ GameObject::~GameObject() {
     if (transformComponent.ptr) {transformComponent->Destroy();}
     if (renderComponent.ptr) {renderComponent->Destroy();}
     if (colliderComponent.ptr) {colliderComponent->Destroy();}
+    if (rigidbodyComponent.ptr) {rigidbodyComponent->Destroy();}
     // if (pointLightComponent.ptr) {pointLightComponent->Destroy();}
     //std::cout << "Returning to pool.\n";
     if (transformComponent.ptr) {transformComponent->pool->ReturnObject(transformComponent.ptr);}
     if (renderComponent.ptr) {renderComponent->pool->ReturnObject(renderComponent.ptr);}
     if (colliderComponent.ptr) {colliderComponent->pool->ReturnObject(colliderComponent.ptr);}
+    if (rigidbodyComponent.ptr) {rigidbodyComponent->pool->ReturnObject(rigidbodyComponent.ptr);}
 };
 
 GameObject::GameObject(const CreateGameObjectParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):
     // a way to make this less verbose and more type safe would be nice
     transformComponent((TransformComponent*)components[ComponentRegistry::TransformComponentBitIndex]),
     renderComponent((GraphicsEngine::RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex]),  
-    colliderComponent((SpatialAccelerationStructure::ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex])
-
+    colliderComponent((SpatialAccelerationStructure::ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex]),
+    rigidbodyComponent((RigidbodyComponent*)components[ComponentRegistry::RigidbodyComponentBitIndex])
 {
     assert(transformComponent.ptr != nullptr);
     transformComponent->Init();
@@ -141,5 +147,6 @@ GameObject::GameObject(const CreateGameObjectParams& params, std::array<void*, C
         }
         colliderComponent->Init(this, physMesh);
     };
+    if (rigidbodyComponent.ptr) {rigidbodyComponent->Init();}
     name = "GameObject";
 };

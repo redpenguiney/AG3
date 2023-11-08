@@ -76,6 +76,8 @@ T& ComponentHandle<T>::operator*() const {assert(ptr != nullptr); return *ptr;}
 template<typename T>
 T* ComponentHandle<T>::operator->() const {assert(ptr != nullptr); return ptr;};
 
+class RigidbodyComponent;
+
 // The gameobject system uses ECS (google it).
 class GameObject {
     public:
@@ -84,6 +86,7 @@ class GameObject {
     // TODO: any way to avoid not storing ptrs for components we don't have?
     ComponentHandle<TransformComponent> transformComponent;
     ComponentHandle<GraphicsEngine::RenderComponent> renderComponent;
+    ComponentHandle<RigidbodyComponent> rigidbodyComponent;
     ComponentHandle<SpatialAccelerationStructure::ColliderComponent> colliderComponent;
 
     ~GameObject();
