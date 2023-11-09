@@ -129,8 +129,12 @@ namespace ComponentRegistry {
         Iterator<Args...> begin();
         Iterator<Args...> end();
 
-        private:
+        Iterator(std::vector<value_type> pools);
 
+        private:
+        std::vector<value_type> pools;
+        unsigned int poolIndex;
+        unsigned int componentIndex;
     };
 
     inline std::unordered_map<GameObject*, std::shared_ptr<GameObject>> GAMEOBJECTS;

@@ -33,6 +33,14 @@ std::vector<unsigned int> requestedComponentIndicesFromTemplateArgs() {
 }
 
 namespace ComponentRegistry {
+    template<typename ... Args>
+    Iterator<Args...>::Iterator(std::vector<value_type> pools): 
+    pools(pools),
+    componentIndex(0),
+    poolIndex(0)
+    {
+
+    }
     
     // Stores all the component pools.
     // Bitset has a bit for each component class, if its 1 then the value corresonding to that key stores gameobjects with that component. (but only if the gameobject stores all the exact same components as the bitset describes)
@@ -61,7 +69,7 @@ namespace ComponentRegistry {
             innerLoopEnd:;
         }
 
-        return poolsToReturn;
+        return Iterator<Args...>(poolsToReturn);
     }
 
     std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params) {
