@@ -26,6 +26,12 @@ protected_make_shared( Args&&... args )
   return std::make_shared< helper >( std::forward< Args >( args )... );
 }
 
+// returns bitfield from variadic template args
+template <typename ... Args>
+std::vector<unsigned int> requestedComponentIndicesFromTemplateArgs() {
+
+}
+
 namespace ComponentRegistry {
     
     // Stores all the component pools.
@@ -33,20 +39,21 @@ namespace ComponentRegistry {
     std::unordered_map<std::bitset<N_COMPONENT_TYPES>, std::array<void*, N_COMPONENT_TYPES>> componentBuckets;
 
     // TODO: might be good to optimize by just precalculating this and updating when new gameobject component combination is added
-    std::vector<std::array<void*, N_COMPONENT_TYPES>> GetSystemComponents(std::vector<ComponentBitIndex> requestedComponents) {
-
+    template <typename ... Args>
+    Iterator<Args...> GetSystemComponents() {
+        auto requestedComponents = requestedComponentIndicesFromTemplateArgs<Args...>();
         std::vector<std::array<void*, N_COMPONENT_TYPES>> poolsToReturn;
 
         for (auto & [bitset, pools] : componentBuckets) {
             //std::cout << "Considering bucket with bitset " << bitset << " to supply "; for (auto & i: requestedComponents) {std::cout << i << " ";} std:: cout << ".\n";
-            unsigned int i = 0;
+            //unsigned int i = 0;
             for (auto & bitIndex: requestedComponents) {
                 if (bitset[bitIndex] == false) {
                     //std::cout << "Rejected bucket, missing index " << bitIndex << ".\n";
                     // this bucket is missing a pool for one of the requested components, don't send it to the system
                     goto innerLoopEnd;
                 }
-                i++;
+                //i++;
             }
             // this pool stores gameobjects with all the components we want, return it
             poolsToReturn.push_back(pools);

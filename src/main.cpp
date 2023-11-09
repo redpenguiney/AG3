@@ -10,6 +10,7 @@
 #include "gameobjects/component_registry.hpp"
 #include "physics/raycast.hpp"
 #include "physics/engine.hpp"
+#include "gameobjects/rigidbody_component.hpp"
 
 using namespace std;
 
@@ -79,16 +80,18 @@ int main() {
         SpatialAccelerationStructure::Get().Update();
         PE.Step(1);
 
-        auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
-        if (castResult.hitObject != nullptr) {
-            //thing->renderComponent->SetColor(glm::vec4(1, 0, 0, 1));
-            std::cout << "Hit object " << castResult.hitObject->name << " \n";
-            castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position() + castResult.hitNormal * 0.01);
-        }
-        else {
-            // thing->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-        }
+        if (LMB_DOWN) {
+            auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
+            if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
+                std::cout << "Hit object " << castResult.hitObject->name << " \n";
+                castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.1;
+            }
+            else {
+                // thing->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
+            }
 
+        }
+        
         GE.RenderScene();
        // LogElapsed(start, "Drawing elapsed\n");
         //GE.SetColor(drawId, glm::vec4(0.0, 1.0, 0.5, 1.0));

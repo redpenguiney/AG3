@@ -4,9 +4,9 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <tuple>
 #include <vector>
 #include "component_pool.hpp"
-#include "component_registry.hpp"
 #include <vector>
 #include "../graphics/engine.hpp"
 #include "transform_component.cpp"
@@ -106,12 +106,40 @@ class GameObject {
 // Basically entites with the same set of components have their components stored together.
 // Pointers to components are never invalidated thanks to component pool fyi.
 namespace ComponentRegistry {
+    // To hide all the non-type safe stuff, we need an iterator that just lets people iterate through the components of all gameobjects that have certain components (i.e give me all pairs of transform + render)
+    template <typename ... Args>
+    class Iterator {
+        public: 
+
+        // std libraries expect iterators to do this
+        using iterator_category = std::forward_iterator_tag; // this is a forward iterator
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = std::tuple<Args...>;
+        using pointer           = value_type*;  // or also value_type*
+        using reference         = value_type&;  // or also value_type&
+
+        // forward iterator stuff
+        Iterator<Args...>& operator++(); // prefix
+        reference operator*();
+        pointer operator->();
+        friend bool operator==(const Iterator<Args...>& a, const Iterator<Args...>& b);
+        friend bool operator!=(const Iterator<Args...>& a, const Iterator<Args...>& b);
+        Iterator<Args...> operator++(int); //postfix
+
+        Iterator<Args...> begin();
+        Iterator<Args...> end();
+
+        private:
+
+    };
+
     inline std::unordered_map<GameObject*, std::shared_ptr<GameObject>> GAMEOBJECTS;
 
     // Given a vector of BitIndexes for components a system wants to iterate over, returns a vector of vectors of void pointers to component pools, where each interior vector contains a void* to component pool for each component, in the order given by the enum, or nullptr if not wanted.
     // Yeah its not type safe, TODO getting rid of the void* would be nice
     // For example, if you called this with {TransformComponentBitIndex, RenderComponentBitIndex}, you'd get {{ComponentPool<TransformComponent>*, ComponentPool<RenderComponent>*}, {ComponentPool<TransformComponent>*, ComponentPool<RenderComponent>*}, ...}
-    std::vector<std::array<void*, N_COMPONENT_TYPES>> GetSystemComponents(std::vector<ComponentBitIndex> requestedComponents);
+    template <typename ... Args>
+    Iterator<Args...> GetSystemComponents();
     
     std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params);
     
@@ -120,3 +148,4 @@ namespace ComponentRegistry {
     // Won't work if there are shared_ptr<GameObject>s outside the GAMEOBJECTS map (inside lua code), so make sure all lua code is eliminated before calling.
     void CleanupComponents();
 };
+
