@@ -7,53 +7,26 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <tuple>
 #include <vector>
 
 void SpatialAccelerationStructure::Update() {
     // Get components of all gameobjects that have a transform and collider component
-    auto pools = ComponentRegistry::GetSystemComponents({ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::TransformComponentBitIndex});
+    auto components = ComponentRegistry::GetSystemComponents<TransformComponent, ColliderComponent>();
 
-    for (auto & poolVec: pools) {
-        auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[ComponentRegistry::TransformComponentBitIndex]);
-        auto colliderComponents = (ComponentPool<ColliderComponent>*)(poolVec[ComponentRegistry::ColliderComponentBitIndex]);
-        for (unsigned int i = 0; i < colliderComponents->pools.size(); i++) {
-            auto colliderArray = colliderComponents->pools.at(i);
-            auto transformArray = transformComponents->pools.at(i);
-            for (unsigned int j = 0; j < colliderComponents->COMPONENTS_PER_POOL; j++) {
-                auto colliderComp = colliderArray + j;
-                auto transformComp = transformArray + j;
-                if (colliderComp->live) {
-                    if (transformComp->moved) {
-                        transformComp->moved = false;
-                        // std::cout << "Updating collider " << colliderComp << " at i=" << i <<", j=" << j << ".\n";
-                        UpdateCollider(*colliderComp, *transformComp);
-                        
-                    }       
-                }         
-            }
-        }
+    for (auto & tuple: components) {
+        auto colliderComp = std::get<1>(tuple);
+        auto transformComp = std::get<0>(tuple);
+        if (colliderComp.live) {
+            if (transformComp.moved) {
+                transformComp.moved = false;
+                // std::cout << "Updating collider " << colliderComp << " at i=" << i <<", j=" << j << ".\n";
+                UpdateCollider(colliderComp, transformComp);
+                
+            } 
+        }      
     }
 
-    // dear god why were there two of these
-    // for (auto & poolVec: pools) {
-    //     auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[1]);
-    //     auto colliderComponents = (ComponentPool<ColliderComponent>*)(poolVec[0]);
-    //     for (unsigned int i = 0; i < colliderComponents->pools.size(); i++) {
-    //         auto colliderArray = colliderComponents->pools.at(i);
-    //         auto transformArray = transformComponents->pools.at(i);
-    //         for (unsigned int j = 0; j < colliderComponents->COMPONENTS_PER_POOL; j++) {
-    //             auto colliderComp = colliderArray + j;
-    //             auto transformComp = transformArray + j;
-    //             if (colliderComp->live) {
-    //                 if (transformComp->moved) {
-    //                     transformComp->moved = false;
-    //                     UpdateCollider(*colliderComp, *transformComp);
-                        
-    //                 }       
-    //             }         
-    //         }
-    //     }
-    // }
 }
 
 void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const AABB& collider) {

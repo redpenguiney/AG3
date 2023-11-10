@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <tuple>
 #include "../gameobjects/pointlight_component.hpp"
 #include "../gameobjects/component_registry.hpp"
 
@@ -122,39 +123,32 @@ void GraphicsEngine::DrawSkybox() {
 
 void GraphicsEngine::UpdateLights() {
     // Get components of all gameobjects that have a transform and point light component
-    auto pools = ComponentRegistry::GetSystemComponents({ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::TransformComponentBitIndex});
+    auto components = ComponentRegistry::GetSystemComponents<PointLightComponent, TransformComponent>();
 
     
 
     // set properties of point lights on gpu
     const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
     unsigned int lightCount = 0;
-    for (auto & poolVec : pools) {
-        ComponentPool<TransformComponent>* transforms = (ComponentPool<TransformComponent>*)poolVec[ComponentRegistry::TransformComponentBitIndex];
-        ComponentPool<PointLightComponent>* pointLights = (ComponentPool<PointLightComponent>*)poolVec[ComponentRegistry::PointlightComponentBitIndex];
-        
-        for (unsigned int i = 0; i < pointLights->pools.size(); i++) {
-            auto pointlightArray = pointLights->pools.at(i);
-            auto transformArray = transforms->pools.at(i);
-            for (unsigned int j = 0; j < pointLights->COMPONENTS_PER_POOL; j++) {
-                auto pointLight = pointlightArray + j;
-                auto transform = transformArray + j;
+    unsigned int i = 0;
+    for (auto & tuple : components) {
 
-                if (pointLight->live) {
-                    std::printf("light color = %f %f %f %f\n", pointLight->Color().x, pointLight->Color().y, pointLight->Color().z, pointLight->Range());
-                    glm::vec3 relCamPos = ((debugFreecamEnabled ? debugFreecamPos : camera.position) - transform->position());
-                    auto info = PointLightInfo {
-                        .colorAndRange = glm::vec4(pointLight->Color().x, pointLight->Color().y, pointLight->Color().z, pointLight->Range()),
-                        .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
-                    };
-                    std::printf("byte offset %llu\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
-                    (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))) = info;
+        PointLightComponent& pointLight = std::get<0>(tuple);
+        TransformComponent& transform = std::get<1>(tuple);
 
-                    lightCount++;
-                }
-                
-            }
+        if (pointLight.live) {
+            std::printf("light color = %f %f %f %f\n", pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range());
+            glm::vec3 relCamPos = ((debugFreecamEnabled ? debugFreecamPos : camera.position) - transform.position());
+            auto info = PointLightInfo {
+                .colorAndRange = glm::vec4(pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range()),
+                .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
+            };
+            std::printf("byte offset %llu\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
+            (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))) = info;
+
+            lightCount++;
         }
+        i++;
     }
 
     // say how many point lights there are
@@ -192,33 +186,21 @@ void GraphicsEngine::UpdateRenderComponents() {
     auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
     // Get components of all gameobjects that have a transform and point light component
-    auto pools = ComponentRegistry::GetSystemComponents({ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::TransformComponentBitIndex});
+    auto components = ComponentRegistry::GetSystemComponents<RenderComponent, TransformComponent>();
 
-    for (auto & poolVec: pools) {
-        auto transformComponents = (ComponentPool<TransformComponent>*)(poolVec[ComponentRegistry::TransformComponentBitIndex]);
-        auto renderComponents = (ComponentPool<RenderComponent>*)(poolVec[ComponentRegistry::RenderComponentBitIndex]);
-        
-        for (unsigned int i = 0; i < renderComponents->pools.size(); i++) {
-            //std::cout << "RENDER COMP POOL PAGE AT " << renderComponents->pools[i] << "\n";
-            //std::cout << "Testing i= " << i << "\n";
-            auto renderArray = renderComponents->pools.at(i);
-            auto transformArray = transformComponents->pools.at(i);
-            for (unsigned int j = 0; j < renderComponents->COMPONENTS_PER_POOL; j++) {
-                //std::cout << "\tTesting j=" << j << "\n";
-                auto renderComp = renderArray + j;
-                auto transformComp = transformArray + j;
-                if (renderComp->live) {
-                    //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
-                    if (renderComp->componentPoolId != i) {
-                        //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
-                        abort();
-                    }
-                    SetModelMatrix(renderComp->meshLocation, transformComp->GetGraphicsModelMatrix(cameraPos));
-                    
-                    if (renderComp->textureZChanged > 0) {renderComp->textureZChanged -= 1; SetTextureZ(renderComp->meshLocation, renderComp->textureZ);}
-                    if (renderComp->colorChanged > 0) {renderComp->colorChanged -= 1; SetColor(renderComp->meshLocation, renderComp->color);}
-                }
-            }
+    for (auto & tuple: components) {
+        RenderComponent& renderComp = std::get<0>(tuple);
+        TransformComponent& transformComp = std::get<1>(tuple);
+        if (renderComp.live) {
+            //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
+            // if (renderComp.componentPoolId != i) {
+            //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
+            //     abort();
+            // }
+            SetModelMatrix(renderComp.meshLocation, transformComp.GetGraphicsModelMatrix(cameraPos));
+            
+            if (renderComp.textureZChanged > 0) {renderComp.textureZChanged -= 1; SetTextureZ(renderComp.meshLocation, renderComp.textureZ);}
+            if (renderComp.colorChanged > 0) {renderComp.colorChanged -= 1; SetColor(renderComp.meshLocation, renderComp.color);}
         }
     }
     

@@ -26,10 +26,28 @@ protected_make_shared( Args&&... args )
   return std::make_shared< helper >( std::forward< Args >( args )... );
 }
 
-// returns bitfield from variadic template args
-template <typename ... Args>
-std::vector<unsigned int> requestedComponentIndicesFromTemplateArgs() {
+// template<typename ... PoolClasses>
 
+// returns vector of bit indices from variadic template args
+template <typename ... Args>
+std::vector<ComponentRegistry::ComponentBitIndex> requestedComponentIndicesFromTemplateArgs() {
+    std::vector<ComponentRegistry::ComponentBitIndex> indices;
+    if constexpr((std::is_same_v<TransformComponent, Args> || ...)) {
+        indices.push_back(ComponentRegistry::TransformComponentBitIndex);
+    }
+    if constexpr((std::is _same_v<GraphicsEngine::RenderComponent, Args> || ...)) {
+        indices.push_back(ComponentRegistry::RenderComponentBitIndex);
+    }
+    if constexpr((std::is_same_v<SpatialAccelerationStructure::ColliderComponent, Args> || ...)) {
+        indices.push_back(ComponentRegistry::ColliderComponentBitIndex);
+    }
+    if constexpr((std::is_same_v<RigidbodyComponent, Args> || ...)) {
+        indices.push_back(ComponentRegistry::RigidbodyComponentBitIndex);
+    }
+    if constexpr((std::is_same_v<PointLightComponent, Args> || ...)) {
+        indices.push_back(ComponentRegistry::PointlightComponentBitIndex);
+    }
+    return indices;
 }
 
 namespace ComponentRegistry {
