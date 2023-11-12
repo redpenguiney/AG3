@@ -13,14 +13,14 @@
 // Automatically resizes.
 // Stores all objects in mostly contiguous memory for cache performance.
 // Guarantees that pointers to pool contents will always remain accurate, by instead of using std::vector, using multiple arrays.
-// COMPONENTS_PER_POOL template argument removed for reasons
+// COMPONENTS_PER_PAGE template argument removed for reasons
 template<typename T>
 class ComponentPool {
     friend T;
 
     public:
-        // vectors of arrays of length COMPONENTS_PER_POOL
-        std::vector<T*> pools; // public because making an iterator was too much work
+        // vectors of arrays of length COMPONENTS_PER_PAGE
+        std::vector<T*> pages;
 
         ComponentPool();
         ComponentPool(const ComponentPool<T>&) = delete;
@@ -34,10 +34,10 @@ class ComponentPool {
 
         ~ComponentPool();
 
-        const static unsigned int COMPONENTS_PER_POOL = 16384;   
+        const static unsigned int COMPONENTS_PER_PAGE = 16384;   
 
     private:
-        // adds new pool with room for COMPONENTS_PER_POOL more objects
+        // adds new pool with room for COMPONENTS_PER_PAGE more objects
         void AddPool();
 
         std::vector<T*> firstAvailable; // for free list, first unallocated object in each pool  
@@ -53,7 +53,7 @@ T* ComponentPool<T>::GetNew() {
 
     // We use something called a "free list" to find a component
     int poolIndex = -1;
-    for (T* & ptr: pools) {
+    for (T* & ptr: pages) {
         (void)ptr; // make compiler shut up about unused variable "ptr"
         poolIndex += 1;
         if (firstAvailable[poolIndex] == nullptr) {continue;} // if the pool is full go to the next one
@@ -95,28 +95,28 @@ void ComponentPool<T>::ReturnObject(T* component) {
 
 template<typename T>
 ComponentPool<T>::~ComponentPool() {
-    for (auto & ptr: pools) {
+    for (auto & ptr: pages) {
         delete ptr;
     }
 }
 
 template<typename T>
 void ComponentPool<T>::AddPool() {
-    unsigned int index = pools.size();
-    T* firstPool = new T[COMPONENTS_PER_POOL];
+    unsigned int index = pages.size();
+    T* firstPool = new T[COMPONENTS_PER_PAGE];
     std::cout << "Created new pool page at " << firstPool << " of type " << typeid(T).name() << "\n";
     firstAvailable.push_back(firstPool);
 
-    for (unsigned int i = 0; i < COMPONENTS_PER_POOL - 1; i++) {
+    for (unsigned int i = 0; i < COMPONENTS_PER_PAGE - 1; i++) {
         firstPool[i].next = &(firstPool[i + 1]);
     }
-    firstPool[COMPONENTS_PER_POOL - 1].next = nullptr;
+    firstPool[COMPONENTS_PER_PAGE - 1].next = nullptr;
 
-    for (unsigned int i = 0; i < COMPONENTS_PER_POOL; i++) {
+    for (unsigned int i = 0; i < COMPONENTS_PER_PAGE; i++) {
         firstPool[i].componentPoolId = index;
         firstPool[i].pool = this;
         firstPool[i].live = false;
     }
     
-    pools.push_back(firstPool);
+    pages.push_back(firstPool);
 }

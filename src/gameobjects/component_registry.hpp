@@ -12,6 +12,7 @@
 #include "transform_component.cpp"
 #include "../physics/spatial_acceleration_structure.hpp"
 #include "pointlight_component.hpp"
+#include "rigidbody_component.hpp"
 #include <optional>
 
 struct CreateGameObjectParams;
@@ -31,6 +32,9 @@ namespace ComponentRegistry {
     // Returns a new game object with the given components.
     std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params);
 }
+
+template<typename T>
+constexpr ComponentRegistry::ComponentBitIndex indexFromClass();
 
 struct CreateGameObjectParams {
     unsigned int physMeshId; // 0 if you want automatically generated
@@ -113,37 +117,202 @@ namespace ComponentRegistry {
 
         // std libraries expect iterators to do this
         using iterator_category = std::forward_iterator_tag; // this is a forward iterator
-        using difference_type   = std::ptrdiff_t;
-        using value_type        = std::tuple<Args...>;
-        using pointer           = value_type*;  // or also value_type*
-        using reference         = value_type&;  // or also value_type&
+        using difference_type   = std::ptrdiff_t; // ?
+        using value_type        = std::tuple<Args* ...>; // thing you get by iterating thru
+        using pointer           = value_type*;
+        using reference         = value_type&; 
 
         // forward iterator stuff
-        Iterator<Args...>& operator++(); // prefix
-        reference operator*();
-        pointer operator->();
-        friend bool operator==(const Iterator<Args...>& a, const Iterator<Args...>& b);
-        friend bool operator!=(const Iterator<Args...>& a, const Iterator<Args...>& b);
-        Iterator<Args...> operator++(int); //postfix
+        Iterator<Args...>& operator++() { // prefix
+            do {
+            componentIndex += 1;
+            //std::cout << "added 1 to get " << componentIndex << " \n";
+            //std::cout << "the comp->live is " << getRef<TransformComponent>()->live << " \n";
+            }
+            while (componentIndex != ComponentPool<TransformComponent>::COMPONENTS_PER_PAGE && !getRef<TransformComponent>()->live);
 
-        Iterator<Args...> begin();
-        Iterator<Args...> end();
+            if (ComponentPool<TransformComponent>::COMPONENTS_PER_PAGE == componentIndex) {
+                //std::cout << "uh oh2 " << pageIndex << "\n"; 
+                componentIndex = 0;
+                pageIndex += 1;
+                if (((ComponentPool<TransformComponent>*)(*currentPoolArray)[TransformComponentBitIndex])->pages.size() == pageIndex) {
+                    pageIndex = 0;
+                    poolIndex += 1;
+                    if (poolIndex != pools.size()) {
+                        currentPoolArray = &pools.at(poolIndex);
+                    }
+                }
+            }
+            //std::printf("DID PREFIX, now %u %u %u\n", componentIndex, pageIndex, poolIndex);
+            return *this;
+        }
 
-        Iterator(std::vector<value_type> pools);
+        // Iterator<Args...> operator++(int) { // postfix; int arg is dumb and stupid
+        //     auto temp = *this;
+        //     componentIndex += 1;
+        //     if (ComponentPool<TransformComponent>::COMPONENTS_PER_PAGE == componentIndex) {
+        //         std::cout << "uh oh " << pageIndex << "\n"; 
+        //         componentIndex = 0;
+        //         pageIndex += 1;
+        //         if (((ComponentPool<TransformComponent>*)(*currentPoolArray)[TransformComponentBitIndex])->pages.size() == pageIndex) {
+        //             pageIndex = 0;
+        //             poolIndex += 1;
+        //             currentPoolArray = &pools.at(poolIndex);
+        //         }
+        //     }
+        //     return temp;
+        // }
+
+        reference operator*() {
+            //std::cout << "* operator used\n";
+            //std::cout << "here page index is " << pageIndex << "\n";
+            currentThingWeIteratingOn = {getRef<Args>() ...};
+            
+            return currentThingWeIteratingOn;
+        }
+
+        pointer operator->() {
+            //std::cout << "-> operator used\n";
+            currentThingWeIteratingOn = std::make_tuple<value_type>(getRef<Args>() ...);
+            return &currentThingWeIteratingOn;
+        }
+
+        friend bool operator==(const Iterator<Args...>& a, const Iterator<Args...>& b) {
+            return (a.componentIndex == b.componentIndex && a.pageIndex == b.pageIndex && a.poolIndex == b.poolIndex);
+        }
+
+        friend bool operator!=(const Iterator<Args...>& a, const Iterator<Args...>& b) {
+            return !(a == b);
+        }
+        
+
+        Iterator<Args...> begin() {
+            //std::cout << "Begin called.\n";
+            return *this;
+        } 
+        
+        Iterator<Args...> end() {
+            //std::cout << "End called.\n";
+            auto it = Iterator<Args...> ({});
+            it.componentIndex = 0;
+            it.pageIndex = 0;
+            it.poolIndex = pools.size();
+            return it;
+        }
+
+        Iterator(std::vector<std::array<void*, N_COMPONENT_TYPES>> pools): 
+        pools(pools),
+        componentIndex(0),
+        pageIndex(0),
+        poolIndex(0),
+        currentPoolArray(pools.size() == 0 ? nullptr: &(pools.at(pageIndex)))
+        {
+            //std::cout << "dear god you made an iterator why, there are " << pools.size() << " pools, set currentPoolArray to " << currentPoolArray << "\n";
+        }
+
+        Iterator(const Iterator<Args...> & original) {
+            pools = original.pools;
+            componentIndex = original.componentIndex;
+            pageIndex = original.pageIndex;
+            poolIndex = original.poolIndex;
+            currentPoolArray = original.currentPoolArray;
+            //std::cout << "We copied, there are now " << pools.size() << " pools when the original had " << original.pools.size() << " pools.\n";
+        }
+        
 
         private:
-        std::vector<value_type> pools;
-        unsigned int poolIndex;
-        unsigned int componentIndex;
+        value_type currentThingWeIteratingOn;
+
+        // a little black magic from https://stackoverflow.com/questions/18063451/get-index-of-a-tuple-elements-type
+        // lets you (statically) get tuple index from type
+        template <class T, class Tuple>
+        struct Index;
+
+        template <class T, class... Types>
+        struct Index<T, std::tuple<T, Types...>> {
+            static const std::size_t value = 0;
+        };
+
+        template <class T, class U, class... Types>
+        struct Index<T, std::tuple<U, Types...>> {
+            static const std::size_t value = 1 + Index<T, std::tuple<Types...>>::value;
+        };
+
+        std::vector<std::array<void*, N_COMPONENT_TYPES>> pools;
+        unsigned int componentIndex; // index into a pool of a componentPool
+        unsigned int poolIndex; // index into pools
+        unsigned int pageIndex; // within a componentPool, the index into the pools member
+        std::array<void*, N_COMPONENT_TYPES>* currentPoolArray;
+
+        template<typename T>
+        T* getRef() {
+            assert(currentPoolArray != nullptr);
+            //std::cout << "Getting ref for type " << typeid(T).name() << ", currentPoolArray=" << currentPoolArray << ".\n";
+            currentPoolArray = &(pools.at(poolIndex));
+            const unsigned int poolTypeIndex = indexFromClass<T>();
+            ComponentPool<T>* pool = (ComponentPool<T>*)((*currentPoolArray).at(poolTypeIndex));
+            //std::cout << "We at p = " << pool << "\n";
+            //std::cout << pageIndex << " my guy \n";
+            return &(pool->pages.at(pageIndex)[componentIndex]);
+        }
     };
 
     inline std::unordered_map<GameObject*, std::shared_ptr<GameObject>> GAMEOBJECTS;
 
-    // Given a vector of BitIndexes for components a system wants to iterate over, returns a vector of vectors of void pointers to component pools, where each interior vector contains a void* to component pool for each component, in the order given by the enum, or nullptr if not wanted.
-    // Yeah its not type safe, TODO getting rid of the void* would be nice
-    // For example, if you called this with {TransformComponentBitIndex, RenderComponentBitIndex}, you'd get {{ComponentPool<TransformComponent>*, ComponentPool<RenderComponent>*}, {ComponentPool<TransformComponent>*, ComponentPool<RenderComponent>*}, ...}
+    // Stores all the component pools.
+    // Bitset has a bit for each component class, if its 1 then the value corresonding to that key stores gameobjects with that component. (but only if the gameobject stores all the exact same components as the bitset describes)
+    // DONT TOUCH PLS
+    // TODO: make private somehow
+    inline std::unordered_map<std::bitset<N_COMPONENT_TYPES>, std::array<void*, N_COMPONENT_TYPES>> componentBuckets;
+
+    // returns vector of bit indices from variadic template args
     template <typename ... Args>
-    Iterator<Args...> GetSystemComponents();
+    std::vector<ComponentRegistry::ComponentBitIndex> requestedComponentIndicesFromTemplateArgs() {
+        std::vector<ComponentRegistry::ComponentBitIndex> indices;
+        if constexpr((std::is_same_v<TransformComponent, Args> || ...)) {
+            indices.push_back(ComponentRegistry::TransformComponentBitIndex);
+        }
+        if constexpr((std::is_same_v<GraphicsEngine::RenderComponent, Args> || ...)) {
+            indices.push_back(ComponentRegistry::RenderComponentBitIndex);
+        }
+        if constexpr((std::is_same_v<SpatialAccelerationStructure::ColliderComponent, Args> || ...)) {
+            indices.push_back(ComponentRegistry::ColliderComponentBitIndex);
+        }
+        if constexpr((std::is_same_v<RigidbodyComponent, Args> || ...)) {
+            indices.push_back(ComponentRegistry::RigidbodyComponentBitIndex);
+        }
+        if constexpr((std::is_same_v<PointLightComponent, Args> || ...)) {
+            indices.push_back(ComponentRegistry::PointlightComponentBitIndex);
+        }
+        return indices;
+    }
+
+    // Gives an iterator so you can iterate through all gameobjects that have the requested components (except you don't actually get the gameobject, just a tuple of components)
+    // TODO: might be good to optimize by just precalculating this and updating when new gameobject component combination is added
+    template <typename ... Args>
+    Iterator<Args...> GetSystemComponents() {
+        auto requestedComponents = requestedComponentIndicesFromTemplateArgs<Args...>();
+        std::vector<std::array<void*, N_COMPONENT_TYPES>> poolsToReturn;
+
+        for (auto & [bitset, pools] : componentBuckets) {
+            //std::cout << "Considering bucket with bitset " << bitset << " to supply "; for (auto & i: requestedComponents) {std::cout << i << " ";} std:: cout << ".\n";
+            //unsigned int i = 0;
+            for (auto & bitIndex: requestedComponents) {
+                if (bitset[bitIndex] == false) {
+                    //std::cout << "Rejected bucket, missing index " << bitIndex << ".\n";
+                    // this bucket is missing a pool for one of the requested components, don't send it to the system
+                    goto innerLoopEnd;
+                }
+                //i++;
+            }
+            // this pool stores gameobjects with all the components we want, return it
+            poolsToReturn.push_back(pools);
+
+            innerLoopEnd:;
+        }
+
+        return Iterator<Args...>(poolsToReturn);
+    }
     
     std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params);
     

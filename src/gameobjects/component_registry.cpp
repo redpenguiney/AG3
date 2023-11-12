@@ -28,67 +28,9 @@ protected_make_shared( Args&&... args )
 
 // template<typename ... PoolClasses>
 
-// returns vector of bit indices from variadic template args
-template <typename ... Args>
-std::vector<ComponentRegistry::ComponentBitIndex> requestedComponentIndicesFromTemplateArgs() {
-    std::vector<ComponentRegistry::ComponentBitIndex> indices;
-    if constexpr((std::is_same_v<TransformComponent, Args> || ...)) {
-        indices.push_back(ComponentRegistry::TransformComponentBitIndex);
-    }
-    if constexpr((std::is _same_v<GraphicsEngine::RenderComponent, Args> || ...)) {
-        indices.push_back(ComponentRegistry::RenderComponentBitIndex);
-    }
-    if constexpr((std::is_same_v<SpatialAccelerationStructure::ColliderComponent, Args> || ...)) {
-        indices.push_back(ComponentRegistry::ColliderComponentBitIndex);
-    }
-    if constexpr((std::is_same_v<RigidbodyComponent, Args> || ...)) {
-        indices.push_back(ComponentRegistry::RigidbodyComponentBitIndex);
-    }
-    if constexpr((std::is_same_v<PointLightComponent, Args> || ...)) {
-        indices.push_back(ComponentRegistry::PointlightComponentBitIndex);
-    }
-    return indices;
-}
 
-namespace ComponentRegistry {
-    template<typename ... Args>
-    Iterator<Args...>::Iterator(std::vector<value_type> pools): 
-    pools(pools),
-    componentIndex(0),
-    poolIndex(0)
-    {
 
-    }
-    
-    // Stores all the component pools.
-    // Bitset has a bit for each component class, if its 1 then the value corresonding to that key stores gameobjects with that component. (but only if the gameobject stores all the exact same components as the bitset describes)
-    std::unordered_map<std::bitset<N_COMPONENT_TYPES>, std::array<void*, N_COMPONENT_TYPES>> componentBuckets;
-
-    // TODO: might be good to optimize by just precalculating this and updating when new gameobject component combination is added
-    template <typename ... Args>
-    Iterator<Args...> GetSystemComponents() {
-        auto requestedComponents = requestedComponentIndicesFromTemplateArgs<Args...>();
-        std::vector<std::array<void*, N_COMPONENT_TYPES>> poolsToReturn;
-
-        for (auto & [bitset, pools] : componentBuckets) {
-            //std::cout << "Considering bucket with bitset " << bitset << " to supply "; for (auto & i: requestedComponents) {std::cout << i << " ";} std:: cout << ".\n";
-            //unsigned int i = 0;
-            for (auto & bitIndex: requestedComponents) {
-                if (bitset[bitIndex] == false) {
-                    //std::cout << "Rejected bucket, missing index " << bitIndex << ".\n";
-                    // this bucket is missing a pool for one of the requested components, don't send it to the system
-                    goto innerLoopEnd;
-                }
-                //i++;
-            }
-            // this pool stores gameobjects with all the components we want, return it
-            poolsToReturn.push_back(pools);
-
-            innerLoopEnd:;
-        }
-
-        return Iterator<Args...>(poolsToReturn);
-    }
+namespace ComponentRegistry { 
 
     std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params) {
         // make sure there are the needed component pools for this kind of gameobject
@@ -140,6 +82,22 @@ namespace ComponentRegistry {
     }
 };
 
+template<> ComponentRegistry::ComponentBitIndex indexFromClass<TransformComponent>() {
+    return ComponentRegistry::TransformComponentBitIndex;
+}
+template<> ComponentRegistry::ComponentBitIndex indexFromClass<GraphicsEngine::RenderComponent>() {
+    return ComponentRegistry::RenderComponentBitIndex;
+}
+template<> ComponentRegistry::ComponentBitIndex indexFromClass<SpatialAccelerationStructure::ColliderComponent>() {
+    return ComponentRegistry::ColliderComponentBitIndex;
+}
+template<> ComponentRegistry::ComponentBitIndex indexFromClass<RigidbodyComponent>() {
+    return ComponentRegistry::RigidbodyComponentBitIndex;
+}
+template<> ComponentRegistry::ComponentBitIndex indexFromClass<PointLightComponent>() {
+    return ComponentRegistry::PointlightComponentBitIndex;
+}
+
 GameObject::~GameObject() {
 
     //std::cout << "Destroying.\n";
@@ -160,10 +118,10 @@ GameObject::GameObject(const CreateGameObjectParams& params, std::array<void*, C
     // a way to make this less verbose and more type safe would be nice
     transformComponent((TransformComponent*)components[ComponentRegistry::TransformComponentBitIndex]),
     renderComponent((GraphicsEngine::RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex]),  
-    colliderComponent((SpatialAccelerationStructure::ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex]),
-    rigidbodyComponent((RigidbodyComponent*)components[ComponentRegistry::RigidbodyComponentBitIndex])
+    rigidbodyComponent((RigidbodyComponent*)components[ComponentRegistry::RigidbodyComponentBitIndex]),
+    colliderComponent((SpatialAccelerationStructure::ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex])
 {
-    assert(transformComponent.ptr != nullptr);
+    assert(transformComponent.ptr != nullptr); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
     transformComponent->Init();
     if (renderComponent.ptr) {renderComponent->Init(params.meshId, params.textureId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().GetDefaultShaderId());}
     if (colliderComponent.ptr) {

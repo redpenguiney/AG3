@@ -133,8 +133,8 @@ void GraphicsEngine::UpdateLights() {
     unsigned int i = 0;
     for (auto & tuple : components) {
 
-        PointLightComponent& pointLight = std::get<0>(tuple);
-        TransformComponent& transform = std::get<1>(tuple);
+        PointLightComponent& pointLight = *std::get<0>(tuple);
+        TransformComponent& transform = *std::get<1>(tuple);
 
         if (pointLight.live) {
             std::printf("light color = %f %f %f %f\n", pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range());
@@ -182,15 +182,16 @@ void GraphicsEngine::UpdateMeshpools() {
 }
 
 void GraphicsEngine::UpdateRenderComponents() {
-    //auto start = Time();
+    auto start = Time();
     auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
     // Get components of all gameobjects that have a transform and point light component
     auto components = ComponentRegistry::GetSystemComponents<RenderComponent, TransformComponent>();
+    LogElapsed(start, "\nRendercomp update elapsed ");
 
     for (auto & tuple: components) {
-        RenderComponent& renderComp = std::get<0>(tuple);
-        TransformComponent& transformComp = std::get<1>(tuple);
+        RenderComponent& renderComp = *std::get<0>(tuple);
+        TransformComponent& transformComp = *std::get<1>(tuple);
         if (renderComp.live) {
             //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
             // if (renderComp.componentPoolId != i) {
@@ -205,7 +206,7 @@ void GraphicsEngine::UpdateRenderComponents() {
     }
     
 
-    //LogElapsed(start, "\nRendercomp update elapsed ");
+    
 }
 
 glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {

@@ -1,3 +1,4 @@
+#pragma once
 #include "base_component.hpp"
 #include "../../external_headers/GLM/vec3.hpp"
 

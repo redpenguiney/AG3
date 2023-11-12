@@ -39,9 +39,9 @@ int main() {
 
     
     int i = 0;
-    for (int x = 0; x < 40; x++) {
-        for (int y = 0; y < 4; y++) {
-            for (int z = 0; z < 40; z++) {
+    for (int x = 0; x < 50; x++) {
+        for (int y = 0; y < 50; y++) {
+            for (int z = 0; z < 50; z++) {
                 CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.textureId = t->textureId;
@@ -81,14 +81,14 @@ int main() {
         PE.Step(1);
 
         if (LMB_DOWN) {
-            auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
-            if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
-                std::cout << "Hit object " << castResult.hitObject->name << " \n";
-                castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.1;
-            }
-            else {
-                // thing->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-            }
+            // auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
+            // if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
+            //     std::cout << "Hit object " << castResult.hitObject->name << " \n";
+            //     castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.1;
+            // }
+            // else {
+            //     // thing->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
+            // }
 
         }
         

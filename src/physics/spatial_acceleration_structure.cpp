@@ -13,10 +13,11 @@
 void SpatialAccelerationStructure::Update() {
     // Get components of all gameobjects that have a transform and collider component
     auto components = ComponentRegistry::GetSystemComponents<TransformComponent, ColliderComponent>();
+    std::cout << "Got system components.\n";
 
     for (auto & tuple: components) {
-        auto colliderComp = std::get<1>(tuple);
-        auto transformComp = std::get<0>(tuple);
+        auto colliderComp = *std::get<1>(tuple);
+        auto transformComp = *std::get<0>(tuple);
         if (colliderComp.live) {
             if (transformComp.moved) {
                 transformComp.moved = false;
