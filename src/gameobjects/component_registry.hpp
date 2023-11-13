@@ -139,13 +139,8 @@ namespace ComponentRegistry {
 
         // forward iterator stuff
         Iterator<Args...>& operator++() { // prefix
-            do {
             componentIndex += 1;
-            //std::cout << "added 1 to get " << componentIndex << " \n";
-            //std::cout << "the comp->live is " << getRef<TransformComponent>()->live << " \n";
-            }
-            while (componentIndex != ComponentPool<TransformComponent>::COMPONENTS_PER_PAGE && !getRef<TransformComponent>()->live);
-
+        
             if (ComponentPool<TransformComponent>::COMPONENTS_PER_PAGE == componentIndex) {
                 //std::cout << "uh oh2 " << pageIndex << "\n"; 
                 componentIndex = 0;
@@ -236,6 +231,7 @@ namespace ComponentRegistry {
         
 
         private:
+        std::tuple<Args* ...> currentPagePtrs;
         value_type currentThingWeIteratingOn;
 
         // a little black magic from https://stackoverflow.com/questions/18063451/get-index-of-a-tuple-elements-type
@@ -265,10 +261,10 @@ namespace ComponentRegistry {
             //std::cout << "Getting ref for type " << typeid(T).name() << ", currentPoolArray=" << currentPoolArray << ".\n";
             //currentPoolArray = &(pools.at(poolIndex));
             constexpr unsigned int poolTypeIndex = indexFromClass<T>();
-            ComponentPool<T>* pool = (ComponentPool<T>*)((*currentPoolArray).at(poolTypeIndex));
+            ComponentPool<T>* pool = (ComponentPool<T>*)((*currentPoolArray)[poolTypeIndex]);
             //std::cout << "We at p = " << pool << "\n";
             //std::cout << pageIndex << " my guy \n";
-            return &(pool->pages.at(pageIndex)[componentIndex]);
+            return std::get<Index<T*, typeid(currentPagePtrs)>>(currentPagePtrs) + componentIndex;
         }
     };
 

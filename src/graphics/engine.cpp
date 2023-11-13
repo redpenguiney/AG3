@@ -190,8 +190,8 @@ void GraphicsEngine::UpdateRenderComponents() {
     
 
     for (auto & tuple: components) {
-        RenderComponent& renderComp = *std::get<0>(tuple);
-        TransformComponent& transformComp = *std::get<1>(tuple);
+        auto & renderComp = *std::get<0>(tuple);
+        auto & transformComp = *std::get<1>(tuple);
         if (renderComp.live) {
             //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
             // if (renderComp.componentPoolId != i) {
