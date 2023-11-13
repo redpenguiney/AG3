@@ -35,6 +35,21 @@ namespace ComponentRegistry {
 
 template<typename T>
 constexpr ComponentRegistry::ComponentBitIndex indexFromClass();
+template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<TransformComponent>() {
+    return ComponentRegistry::TransformComponentBitIndex;
+}
+template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<GraphicsEngine::RenderComponent>() {
+    return ComponentRegistry::RenderComponentBitIndex;
+}
+template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<SpatialAccelerationStructure::ColliderComponent>() {
+    return ComponentRegistry::ColliderComponentBitIndex;
+}
+template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<RigidbodyComponent>() {
+    return ComponentRegistry::RigidbodyComponentBitIndex;
+}
+template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<PointLightComponent>() {
+    return ComponentRegistry::PointlightComponentBitIndex;
+}
 
 struct CreateGameObjectParams {
     unsigned int physMeshId; // 0 if you want automatically generated
@@ -246,10 +261,10 @@ namespace ComponentRegistry {
 
         template<typename T>
         T* getRef() {
-            assert(currentPoolArray != nullptr);
+            //assert(currentPoolArray != nullptr);
             //std::cout << "Getting ref for type " << typeid(T).name() << ", currentPoolArray=" << currentPoolArray << ".\n";
-            currentPoolArray = &(pools.at(poolIndex));
-            const unsigned int poolTypeIndex = indexFromClass<T>();
+            //currentPoolArray = &(pools.at(poolIndex));
+            constexpr unsigned int poolTypeIndex = indexFromClass<T>();
             ComponentPool<T>* pool = (ComponentPool<T>*)((*currentPoolArray).at(poolTypeIndex));
             //std::cout << "We at p = " << pool << "\n";
             //std::cout << pageIndex << " my guy \n";

@@ -82,22 +82,6 @@ namespace ComponentRegistry {
     }
 };
 
-template<> ComponentRegistry::ComponentBitIndex indexFromClass<TransformComponent>() {
-    return ComponentRegistry::TransformComponentBitIndex;
-}
-template<> ComponentRegistry::ComponentBitIndex indexFromClass<GraphicsEngine::RenderComponent>() {
-    return ComponentRegistry::RenderComponentBitIndex;
-}
-template<> ComponentRegistry::ComponentBitIndex indexFromClass<SpatialAccelerationStructure::ColliderComponent>() {
-    return ComponentRegistry::ColliderComponentBitIndex;
-}
-template<> ComponentRegistry::ComponentBitIndex indexFromClass<RigidbodyComponent>() {
-    return ComponentRegistry::RigidbodyComponentBitIndex;
-}
-template<> ComponentRegistry::ComponentBitIndex indexFromClass<PointLightComponent>() {
-    return ComponentRegistry::PointlightComponentBitIndex;
-}
-
 GameObject::~GameObject() {
 
     //std::cout << "Destroying.\n";

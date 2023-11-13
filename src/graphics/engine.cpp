@@ -187,7 +187,7 @@ void GraphicsEngine::UpdateRenderComponents() {
 
     // Get components of all gameobjects that have a transform and point light component
     auto components = ComponentRegistry::GetSystemComponents<RenderComponent, TransformComponent>();
-    LogElapsed(start, "\nRendercomp update elapsed ");
+    
 
     for (auto & tuple: components) {
         RenderComponent& renderComp = *std::get<0>(tuple);
@@ -206,7 +206,7 @@ void GraphicsEngine::UpdateRenderComponents() {
     }
     
 
-    
+    LogElapsed(start, "\nRendercomp update elapsed ");
 }
 
 glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
