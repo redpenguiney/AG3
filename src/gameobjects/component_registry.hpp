@@ -3,6 +3,7 @@
 #include <bitset>
 #include <cassert>
 #include <cstddef>
+#include <cstdio>
 #include <memory>
 #include <tuple>
 #include <vector>
@@ -86,6 +87,7 @@ class ComponentHandle {
 };
 
 // templates can't go in cpps
+// TODO: apparently they can
 template<typename T>
 ComponentHandle<T>::ComponentHandle(T* const comp_ptr) : ptr(comp_ptr) {}
 
@@ -145,11 +147,12 @@ namespace ComponentRegistry {
                 //std::cout << "uh oh2 " << pageIndex << "\n"; 
                 componentIndex = 0;
                 pageIndex += 1;
-                if (((ComponentPool<TransformComponent>*)(*currentPoolArray)[TransformComponentBitIndex])->pages.size() == pageIndex) {
+                if (nPages == pageIndex) {
                     pageIndex = 0;
                     poolIndex += 1;
                     if (poolIndex != pools.size()) {
                         currentPoolArray = &pools.at(poolIndex);
+                        nPages = ((ComponentPool<TransformComponent>*)(*currentPoolArray)[TransformComponentBitIndex])->pages.size();
                     }
                 }
                 setPgPtrs();
@@ -164,6 +167,7 @@ namespace ComponentRegistry {
 
         template<typename T>
         T* setPgPtr() {
+            
             constexpr unsigned int poolTypeIndex = indexFromClass<T>();
             ComponentPool<T>* pool = (ComponentPool<T>*)((*currentPoolArray)[poolTypeIndex]);
             return pool->pages[pageIndex];
@@ -215,7 +219,7 @@ namespace ComponentRegistry {
         
         Iterator<Args...> end() {
             //std::cout << "End called.\n";
-            auto it = Iterator<Args...> ({});
+            constexprgit status auto it = Iterator<Args...> ({});
             it.componentIndex = 0;
             it.pageIndex = 0;
             it.poolIndex = pools.size();
@@ -229,7 +233,11 @@ namespace ComponentRegistry {
         poolIndex(0),
         currentPoolArray(pools.size() == 0 ? nullptr: &(pools.at(pageIndex)))
         {
-            setPgPtrs();
+
+            if (currentPoolArray != nullptr) {
+                setPgPtrs();
+                nPages = ((ComponentPool<TransformComponent>*)(*currentPoolArray)[TransformComponentBitIndex])->pages.size();
+            }
             //std::cout << "dear god you made an iterator why, there are " << pools.size() << " pools, set currentPoolArray to " << currentPoolArray << "\n";
         }
 
@@ -238,8 +246,12 @@ namespace ComponentRegistry {
             componentIndex = original.componentIndex;
             pageIndex = original.pageIndex;
             poolIndex = original.poolIndex;
-            currentPoolArray = original.currentPoolArray;
-            currentPagePtrs = original.currentPagePtrs;
+            currentPoolArray = pools.size() == 0 ? nullptr: &(pools.at(pageIndex));
+            if (currentPoolArray != nullptr) {
+                setPgPtrs();
+                nPages = ((ComponentPool<TransformComponent>*)(*currentPoolArray)[TransformComponentBitIndex])->pages.size();
+            }
+            
 
             //std::cout << "We copied, there are now " << pools.size() << " pools when the original had " << original.pools.size() << " pools.\n";
         }
@@ -268,6 +280,7 @@ namespace ComponentRegistry {
         unsigned int componentIndex; // index into a pool of a componentPool
         unsigned int poolIndex; // index into pools
         unsigned int pageIndex; // within a componentPool, the index into the pools member
+        unsigned int nPages;
         std::array<void*, N_COMPONENT_TYPES>* currentPoolArray;
 
         template<typename T>
