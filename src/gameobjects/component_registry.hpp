@@ -152,9 +152,21 @@ namespace ComponentRegistry {
                         currentPoolArray = &pools.at(poolIndex);
                     }
                 }
+                setPgPtrs();
             }
             //std::printf("DID PREFIX, now %u %u %u\n", componentIndex, pageIndex, poolIndex);
             return *this;
+        }
+
+        void setPgPtrs() {
+            currentPagePtrs = {setPgPtr<Args>() ...};
+        }
+
+        template<typename T>
+        T* setPgPtr() {
+            constexpr unsigned int poolTypeIndex = indexFromClass<T>();
+            ComponentPool<T>* pool = (ComponentPool<T>*)((*currentPoolArray)[poolTypeIndex]);
+            return pool->pages[pageIndex];
         }
 
         // Iterator<Args...> operator++(int) { // postfix; int arg is dumb and stupid
@@ -217,6 +229,7 @@ namespace ComponentRegistry {
         poolIndex(0),
         currentPoolArray(pools.size() == 0 ? nullptr: &(pools.at(pageIndex)))
         {
+            setPgPtrs();
             //std::cout << "dear god you made an iterator why, there are " << pools.size() << " pools, set currentPoolArray to " << currentPoolArray << "\n";
         }
 
@@ -226,6 +239,8 @@ namespace ComponentRegistry {
             pageIndex = original.pageIndex;
             poolIndex = original.poolIndex;
             currentPoolArray = original.currentPoolArray;
+            currentPagePtrs = original.currentPagePtrs;
+
             //std::cout << "We copied, there are now " << pools.size() << " pools when the original had " << original.pools.size() << " pools.\n";
         }
         
@@ -260,11 +275,11 @@ namespace ComponentRegistry {
             //assert(currentPoolArray != nullptr);
             //std::cout << "Getting ref for type " << typeid(T).name() << ", currentPoolArray=" << currentPoolArray << ".\n";
             //currentPoolArray = &(pools.at(poolIndex));
-            constexpr unsigned int poolTypeIndex = indexFromClass<T>();
-            ComponentPool<T>* pool = (ComponentPool<T>*)((*currentPoolArray)[poolTypeIndex]);
+            
             //std::cout << "We at p = " << pool << "\n";
             //std::cout << pageIndex << " my guy \n";
-            return std::get<Index<T*, typeid(currentPagePtrs)>>(currentPagePtrs) + componentIndex;
+            constexpr unsigned int i = Index<T*, std::tuple<Args* ...>>().value;
+            return std::get<i>(currentPagePtrs) + componentIndex;
         }
     };
 
