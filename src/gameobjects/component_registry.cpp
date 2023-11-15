@@ -39,7 +39,8 @@ namespace ComponentRegistry {
                 [TransformComponentBitIndex] = params.requestedComponents[TransformComponentBitIndex] ? new ComponentPool<TransformComponent>() : nullptr,
                 [RenderComponentBitIndex] = params.requestedComponents[RenderComponentBitIndex] ? new ComponentPool<GraphicsEngine::RenderComponent>() : nullptr,
                 [ColliderComponentBitIndex] = params.requestedComponents[ColliderComponentBitIndex] ? new ComponentPool<SpatialAccelerationStructure::ColliderComponent>() : nullptr,
-                [RigidbodyComponentBitIndex] = params.requestedComponents[RigidbodyComponentBitIndex] ? new ComponentPool<RigidbodyComponent>() : nullptr
+                [RigidbodyComponentBitIndex] = params.requestedComponents[RigidbodyComponentBitIndex] ? new ComponentPool<RigidbodyComponent>() : nullptr,
+                [PointlightComponentBitIndex] = params.requestedComponents[PointlightComponentBitIndex] ? new ComponentPool<PointLightComponent>() : nullptr
             }};
             //std::cout << "RENDER COMP POOL PAGE AT " << ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets[params.requestedComponents][RenderComponentBitIndex]))->pools[0] << "\n";
         }
@@ -60,6 +61,9 @@ namespace ComponentRegistry {
                 break;
                 case RigidbodyComponentBitIndex:
                 components[i] = ((ComponentPool<RigidbodyComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+                break;
+                case PointlightComponentBitIndex:
+                components[i] = ((ComponentPool<PointLightComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
                 break;
                 default:
                 std::printf("you goofy goober you didn't make a case here for index %u\n", i);
@@ -90,12 +94,13 @@ GameObject::~GameObject() {
     if (renderComponent.ptr) {renderComponent->Destroy();}
     if (colliderComponent.ptr) {colliderComponent->Destroy();}
     if (rigidbodyComponent.ptr) {rigidbodyComponent->Destroy();}
-    // if (pointLightComponent.ptr) {pointLightComponent->Destroy();}
+     if (pointLightComponent.ptr) {pointLightComponent->Destroy();}
     //std::cout << "Returning to pool.\n";
     if (transformComponent.ptr) {transformComponent->pool->ReturnObject(transformComponent.ptr);}
     if (renderComponent.ptr) {renderComponent->pool->ReturnObject(renderComponent.ptr);}
     if (colliderComponent.ptr) {colliderComponent->pool->ReturnObject(colliderComponent.ptr);}
     if (rigidbodyComponent.ptr) {rigidbodyComponent->pool->ReturnObject(rigidbodyComponent.ptr);}
+    if (pointLightComponent.ptr) {pointLightComponent->pool->ReturnObject(pointLightComponent.ptr);}
 };
 
 GameObject::GameObject(const CreateGameObjectParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):
@@ -103,7 +108,8 @@ GameObject::GameObject(const CreateGameObjectParams& params, std::array<void*, C
     transformComponent((TransformComponent*)components[ComponentRegistry::TransformComponentBitIndex]),
     renderComponent((GraphicsEngine::RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex]),  
     rigidbodyComponent((RigidbodyComponent*)components[ComponentRegistry::RigidbodyComponentBitIndex]),
-    colliderComponent((SpatialAccelerationStructure::ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex])
+    colliderComponent((SpatialAccelerationStructure::ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex]),
+    pointLightComponent((PointLightComponent*)components[ComponentRegistry::PointlightComponentBitIndex])
 {
     assert(transformComponent.ptr != nullptr); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
     transformComponent->Init();
@@ -123,5 +129,6 @@ GameObject::GameObject(const CreateGameObjectParams& params, std::array<void*, C
         colliderComponent->Init(this, physMesh);
     };
     if (rigidbodyComponent.ptr) {rigidbodyComponent->Init();}
+    if (pointLightComponent.ptr) {pointLightComponent->Init();}
     name = "GameObject";
 };

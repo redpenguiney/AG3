@@ -17,14 +17,17 @@ uniform mat4 camera;
 uniform mat4 modelToLightSpace;
 
 out vec3 fragmentColor;
+out vec3 cameraToFragmentPosition;
 out vec3 fragmentNormal;
 out vec3 fragmentTexCoords;
-out vec4 lightSpaceCoords;
+// out vec4 lightSpaceCoords;
 
 void main()
 {
     // TODO: we need to rotate normals i think?
-    gl_Position = camera * model * vec4(vertexPos, 1.0);
+    gl_Position = model * vec4(vertexPos, 1.0);
+    cameraToFragmentPosition = gl_Position.xyz;
+    gl_Position = camera * gl_Position;
     fragmentColor = vertexColor.xyz;
     fragmentNormal = vertexNormal;
     fragmentTexCoords = vec3(textureXY, textureZ);

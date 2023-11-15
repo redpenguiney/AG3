@@ -11,6 +11,7 @@ class PointLightComponent: public BaseComponent<PointLightComponent> {
     PointLightComponent();
     ~PointLightComponent();
     void Destroy();
+    void Init();
 
     // get distance from light at which it isn't visible
     float Range();

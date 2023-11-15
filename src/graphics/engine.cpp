@@ -137,13 +137,13 @@ void GraphicsEngine::UpdateLights() {
         TransformComponent& transform = *std::get<1>(tuple);
 
         if (pointLight.live) {
-            std::printf("light color = %f %f %f %f\n", pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range());
-            glm::vec3 relCamPos = ((debugFreecamEnabled ? debugFreecamPos : camera.position) - transform.position());
+            glm::vec3 relCamPos = (transform.position() - (debugFreecamEnabled ? debugFreecamPos : camera.position));
+            std::printf("rel pos = %f %f %f %f\n", relCamPos.x, relCamPos.y, relCamPos.z, pointLight.Range());
             auto info = PointLightInfo {
                 .colorAndRange = glm::vec4(pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range()),
                 .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
             };
-            std::printf("byte offset %llu\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
+            //std::printf("byte offset %llu\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
             (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))) = info;
 
             lightCount++;
@@ -182,7 +182,7 @@ void GraphicsEngine::UpdateMeshpools() {
 }
 
 void GraphicsEngine::UpdateRenderComponents() {
-    auto start = Time();
+    //auto start = Time();
     auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
     // Get components of all gameobjects that have a transform and point light component
@@ -206,7 +206,7 @@ void GraphicsEngine::UpdateRenderComponents() {
     }
     
 
-    LogElapsed(start, "\nRendercomp update elapsed ");
+    //LogElapsed(start, "\nRendercomp update elapsed ");
 }
 
 glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {

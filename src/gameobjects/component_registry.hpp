@@ -109,6 +109,7 @@ class GameObject {
     ComponentHandle<GraphicsEngine::RenderComponent> renderComponent;
     ComponentHandle<RigidbodyComponent> rigidbodyComponent;
     ComponentHandle<SpatialAccelerationStructure::ColliderComponent> colliderComponent;
+    ComponentHandle<PointLightComponent> pointLightComponent;
 
     ~GameObject();
 

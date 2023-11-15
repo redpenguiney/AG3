@@ -1,3 +1,4 @@
+#include <cmath>
 #include<cstdlib>
 #include<cstdio>
 #include <memory>
@@ -39,9 +40,9 @@ int main() {
 
     
     int i = 0;
-    for (int x = 0; x < 10; x++) {
-        for (int y = 0; y < 100; y++) {
-            for (int z = 0; z < 100; z++) {
+    for (int x = 0; x < 1; x++) {
+        for (int y = 0; y < 1; y++) {
+            for (int z = 0; z < 1; z++) {
                 CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.textureId = t->textureId;
@@ -57,14 +58,17 @@ int main() {
         }
     }
 
-    {
-        // make light
-        // CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex});
-        // auto g = ComponentRegistry::NewGameObject(params);
-        // g->transformComponent->SetPos({0, 0, 0});
-        // g->pointLightComponent->SetRange(100);
-        // g->pointLightComponent->SetColor({1, 0, 0});
-    }
+    
+    // make light
+    CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    params.meshId = m->meshId;
+    params.textureId = t->textureId;
+    auto coolLight = ComponentRegistry::NewGameObject(params);
+    coolLight->renderComponent->SetTextureZ(-1);
+    coolLight->transformComponent->SetPos({0, 0, 0});
+    coolLight->pointLightComponent->SetRange(100);
+    coolLight->pointLightComponent->SetColor({1, 0.5, 0.5});
+    
     
     GE.debugFreecamEnabled = true;
     GE.window.SetMouseLocked(true);
@@ -74,6 +78,7 @@ int main() {
     printf("Starting main loop.\n");
 
     while (!GE.ShouldClose()) {
+        coolLight->transformComponent->SetPos({sin(1000) * 3, 2,  cos(1000) * 3});
 
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         //auto start = Time();
@@ -81,14 +86,14 @@ int main() {
         PE.Step(1);
 
         if (LMB_DOWN) {
-            // auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
-            // if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
-            //     std::cout << "Hit object " << castResult.hitObject->name << " \n";
-            //     castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.1;
-            // }
-            // else {
-            //     // thing->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-            // }
+            auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
+            if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
+                std::cout << "Hit object " << castResult.hitObject->name << " \n";
+                castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.01;
+            }
+            else {
+                std::cout << "LMB_DOWN but not hitting anything.\n";
+            }
 
         }
         
