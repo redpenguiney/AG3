@@ -5,7 +5,9 @@
 #include <memory>
 #include "engine.hpp"
 
-PhysicsEngine::PhysicsEngine() {}
+PhysicsEngine::PhysicsEngine() {
+    GRAVITY = {0, -9.807, 0};
+}
 PhysicsEngine::~PhysicsEngine() {}
 
 PhysicsEngine& PhysicsEngine::Get() {
@@ -14,8 +16,8 @@ PhysicsEngine& PhysicsEngine::Get() {
 }
 
 // Simulates physics of a single rigidbody.
-void DoPhysics(SpatialAccelerationStructure::ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody) {
-    //rigidbody.velocity += glm::dvec3 {0.0, -0.01, 0.0};
+void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody) {
+    rigidbody.velocity += PhysicsEngine::Get().GRAVITY * dt;
 }
 
 void PhysicsEngine::Step(const float timestep) {
@@ -31,7 +33,7 @@ void PhysicsEngine::Step(const float timestep) {
         SpatialAccelerationStructure::ColliderComponent& collider = *std::get<1>(tuple);
         RigidbodyComponent& rigidbody = *std::get<2>(tuple);
         if (collider.live && !rigidbody.kinematic) {
-            DoPhysics(collider, transform, rigidbody);
+            DoPhysics(timestep, collider, transform, rigidbody);
         }
     }
 
