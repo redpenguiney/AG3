@@ -154,10 +154,14 @@ namespace ComponentRegistry {
                         currentPoolArray = &pools.at(poolIndex);
                         nPages = ((ComponentPool<TransformComponent>*)(*currentPoolArray)[TransformComponentBitIndex])->pages.size();
                     }
+                    else {
+                        // std::cout << "Reached end\n";
+                        isEnd = true;
+                    }
                 }
                 setPgPtrs();
             }
-            //std::printf("DID PREFIX, now %u %u %u\n", componentIndex, pageIndex, poolIndex);
+            // std::printf("DID PREFIX, now %u %u %u\n", componentIndex, pageIndex, poolIndex);
             return *this;
         }
 
@@ -190,8 +194,8 @@ namespace ComponentRegistry {
         // }
 
         reference operator*() {
-            //std::cout << "* operator used\n";
-            //std::cout << "here page index is " << pageIndex << "\n";
+            // std::printf("DID operator*, now %u %u %u\n", componentIndex, pageIndex, poolIndex);
+            // std::cout << "here array is " << currentPoolArray << "\n";
             currentThingWeIteratingOn = {getRef<Args>() ...};
             
             return currentThingWeIteratingOn;
@@ -204,7 +208,7 @@ namespace ComponentRegistry {
         }
 
         friend bool operator==(const Iterator<Args...>& a, const Iterator<Args...>& b) {
-            return (a.componentIndex == b.componentIndex && a.pageIndex == b.pageIndex && a.poolIndex == b.poolIndex);
+            return (a.isEnd == b.isEnd);
         }
 
         friend bool operator!=(const Iterator<Args...>& a, const Iterator<Args...>& b) {
@@ -217,12 +221,9 @@ namespace ComponentRegistry {
             return *this;
         } 
         
-        Iterator<Args...> end() {
+        const Iterator<Args...>& end() {
             //std::cout << "End called.\n";
-            constexprgit status auto it = Iterator<Args...> ({});
-            it.componentIndex = 0;
-            it.pageIndex = 0;
-            it.poolIndex = pools.size();
+            static const Iterator<Args...> it {true};
             return it;
         }
 
@@ -231,14 +232,24 @@ namespace ComponentRegistry {
         componentIndex(0),
         pageIndex(0),
         poolIndex(0),
-        currentPoolArray(pools.size() == 0 ? nullptr: &(pools.at(pageIndex)))
+        currentPoolArray(pools.size() == 0 ? nullptr: &(pools.at(pageIndex))),
+        isEnd(false)
         {
 
             if (currentPoolArray != nullptr) {
                 setPgPtrs();
                 nPages = ((ComponentPool<TransformComponent>*)(*currentPoolArray)[TransformComponentBitIndex])->pages.size();
             }
+            else {
+                isEnd = true;
+            }
             //std::cout << "dear god you made an iterator why, there are " << pools.size() << " pools, set currentPoolArray to " << currentPoolArray << "\n";
+        }
+
+        Iterator(bool end)
+        {
+            assert(end);
+            isEnd = true;
         }
 
         Iterator(const Iterator<Args...> & original) {
@@ -247,6 +258,7 @@ namespace ComponentRegistry {
             pageIndex = original.pageIndex;
             poolIndex = original.poolIndex;
             currentPoolArray = pools.size() == 0 ? nullptr: &(pools.at(pageIndex));
+            isEnd = original.isEnd;
             if (currentPoolArray != nullptr) {
                 setPgPtrs();
                 nPages = ((ComponentPool<TransformComponent>*)(*currentPoolArray)[TransformComponentBitIndex])->pages.size();
@@ -281,6 +293,7 @@ namespace ComponentRegistry {
         unsigned int poolIndex; // index into pools
         unsigned int pageIndex; // within a componentPool, the index into the pools member
         unsigned int nPages;
+        bool isEnd; // we need to store a thingy for this annoyingly so we can return a constexpr for end
         std::array<void*, N_COMPONENT_TYPES>* currentPoolArray;
 
         template<typename T>
@@ -291,7 +304,7 @@ namespace ComponentRegistry {
             
             //std::cout << "We at p = " << pool << "\n";
             //std::cout << pageIndex << " my guy \n";
-            constexpr unsigned int i = Index<T*, std::tuple<Args* ...>>().value;
+            constexpr static const unsigned int i = Index<T*, std::tuple<Args* ...>>().value;
             return std::get<i>(currentPagePtrs) + componentIndex;
         }
     };
