@@ -24,6 +24,7 @@ Window::Window(int widthh, int heightt) {
 
     glfwMakeContextCurrent(glfwWindow);
     glfwSetKeyCallback(glfwWindow, KeyCallback);
+    glfwSetMouseButtonCallback(glfwWindow, MouseButtonCallback);
     glfwSetFramebufferSizeCallback(glfwWindow, ResizeCallback);
     glfwSwapInterval(1); // do vsync
     
@@ -87,6 +88,25 @@ void Window::KeyCallback(GLFWwindow* window, int key, int scancode, int action, 
         PRESSED_KEYS[key] = false;
     }
 } 
+
+void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_1) {
+        if (action == GLFW_RELEASE) {
+            LMB_DOWN = false;
+        }
+        else if (action == GLFW_PRESS) {
+            LMB_DOWN = true;
+        }
+    }
+    else if (button == GLFW_MOUSE_BUTTON_2) {
+        if (action == GLFW_RELEASE) {
+            RMB_DOWN = false;
+        }
+        else if (action == GLFW_PRESS) {
+            RMB_DOWN = true;
+        }
+    }
+}
 
 void Window::ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindowHeight) { // called on window resize
     // Tell OpenGL to draw to the whole screen

@@ -11,10 +11,9 @@
 #include <vector>
 
 void SpatialAccelerationStructure::Update() {
-    auto start = Time();
+    //auto start = Time();
     // Get components of all gameobjects that have a transform and collider component
     auto components = ComponentRegistry::GetSystemComponents<TransformComponent, ColliderComponent>();
-    std::cout << "Got system components.\n";
 
     for (auto & tuple: components) {
         auto& colliderComp = *std::get<1>(tuple);
@@ -29,7 +28,7 @@ void SpatialAccelerationStructure::Update() {
         }      
     }
 
-    LogElapsed(start, "\nSAS update elapsed ");
+    //LogElapsed(start, "\nSAS update elapsed ");
 }
 
 void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const AABB& collider) {

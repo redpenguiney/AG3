@@ -14,6 +14,7 @@ inline std::unordered_map<unsigned int, bool> PRESS_ENDED_KEYS;
 inline bool LMB_DOWN;
 inline bool RMB_DOWN;
 
+// TODO: RAW MOUSE option
 inline glm::dvec2 MOUSE_POS;
 inline glm::dvec2 MOUSE_DELTA; // how much mouse has moved since last frame
 
@@ -37,5 +38,5 @@ class Window {
     GLFWwindow* glfwWindow;
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindowHeight);
-
+    static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 };

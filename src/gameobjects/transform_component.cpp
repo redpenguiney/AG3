@@ -54,7 +54,7 @@ class TransformComponent: public BaseComponent<TransformComponent> {
     // TODO: might be slow idk, store it if you have to
     glm::dmat4x4 GetPhysicsModelMatrix() {
         glm::dmat4x4 mat = rotScaleMatrix;
-        mat[3] = glm::vec4(position_, 1);
+        mat[3] = glm::dvec4(position_, 1);
         return mat;
     }
 

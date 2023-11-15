@@ -6,8 +6,13 @@ PointLightComponent::PointLightComponent() {}
 PointLightComponent::~PointLightComponent() {}
 
 void PointLightComponent::Destroy() {
-    pool->ReturnObject(this);
+
 }
+
+void PointLightComponent::Init() {
+    lightColor = {0, 0, 0};
+    lightRange = 100;
+} 
 
 void PointLightComponent::SetColor(glm::vec3 color) {
     lightColor = color;
@@ -24,3 +29,4 @@ void PointLightComponent::SetRange(float range) {
 float PointLightComponent::Range() {
     return lightRange;
 }
+
