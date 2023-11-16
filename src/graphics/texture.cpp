@@ -148,6 +148,9 @@ Texture::Texture(TextureType textureType, std::vector<std::string>& paths, int m
     if (type != TEXTURE_CUBEMAP) {
         glTexImage3D(bindingLocation, mipmapLevels, GL_RGBA, width, height, imageDatas.size(), 0, GL_RGBA, GL_UNSIGNED_INT, nullptr);
     }
+    else {
+        assert(imageDatas.size() == 6);
+    }
 
     unsigned int i = 0;
     for (auto data: imageDatas) {
@@ -155,7 +158,7 @@ Texture::Texture(TextureType textureType, std::vector<std::string>& paths, int m
             glTexSubImage3D(bindingLocation, 0, 0, 0, i, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, data);
         }
         else if (type == TEXTURE_CUBEMAP) {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         }
         stbi_image_free(data);
         i++;

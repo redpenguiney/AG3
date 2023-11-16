@@ -24,14 +24,23 @@ layout(std430, binding = 1) buffer pointLightSSBO {
 };
 
 vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range) {
-    vec3 norm = normalize(fragmentNormal);
+    vec3 norm = normalize(fragmentNormal); // todo: normalize in main?
+    float distance = length(rel_pos - cameraToFragmentPosition);
     vec3 lightDir = normalize(rel_pos - cameraToFragmentPosition); 
     // float d = ;
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = diff * lightColor;
 
+    float specularStrength = 0.8;
+    vec3 viewDir = normalize(-cameraToFragmentPosition);
+    vec3 reflectDir = reflect(-lightDir, norm); 
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 256);
+    vec3 specular = specularStrength * spec * lightColor;  
+
     vec3 ambient = lightColor * 0.2;
-    return diffuse + ambient;
+
+    float strength = range/pow(distance, 2);
+    return strength * (specular + diffuse + ambient);
 };
 
 

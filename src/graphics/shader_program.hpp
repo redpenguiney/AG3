@@ -68,8 +68,10 @@ class ShaderProgram {
 
     // sets the uniform variable in this shader program with the given name to the given value
     void Uniform(std::string uniformName, glm::mat4x4 matrix, bool transposeMatrix = false);
+    void Uniform(std::string uniformName, glm::vec4 vec);
     void Uniform(std::string uniformName, glm::vec3 vec);
     void Uniform(std::string uniformName, float fval);
+    void Uniform(std::string uniformName, bool bval);
 
     void Use();
 

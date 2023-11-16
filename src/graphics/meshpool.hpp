@@ -73,8 +73,9 @@ class Meshpool {
     inline static const GLuint COLOR_ATTRIBUTE = 1; // color is rgba
     inline static const GLuint TEXTURE_XY_ATTRIBUTE = 2;
     inline static const GLuint TEXTURE_Z_ATTRIBUTE = 3;
-    inline static const GLuint NORMAL_ATTRIBUTE = 4;
-    inline static const GLuint MODEL_MATRIX_ATTRIBUTE = 5;
+    inline static const GLuint NORMAL_ATTRIBUTE = 4; // lighting needs to know normals
+    inline static const GLuint MODEL_MATRIX_ATTRIBUTE = 5; // one 4x4 model matrix per thing being drawn, multiplying vertex positions by this puts them in the right position via rotating, scaling, and translating
+    inline static const GLuint NORMAL_MATRIX_ATTRIBUTE = 9; // normal matrix is like model matrix, but is 3x3 and for normals since it would be bad if a normal got scaled/translated 
 
     void ExpandNonInstanced();
     void ExpandInstanced(GLuint multiplier);

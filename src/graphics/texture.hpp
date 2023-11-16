@@ -14,14 +14,29 @@ enum TextureType {
     TEXTURE_FONT = 0
 };
 
+enum TextureFormat {
+    RGBA = GL_RGBA8,
+    RGB = GL_RGB8,
+};
+
+struct TextureCreateParams {
+    std::string texturePath;
+    
+    TextureType textureType;
+};
+
 class Texture {
     public:
     // lets textureId be read only without a getter
     const unsigned int& textureId = glTextureId;
 
-    static std::shared_ptr<Texture> New(TextureType textureType, std::string path, int layerHeight = -1, int mipmapLevels = 4);
+    Texture(const TextureCreateParams& params);
 
-    static std::shared_ptr<Texture> New(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels = 4);
+
+    
+    // static std::shared_ptr<Texture> New(TextureType textureType, std::string path, int layerHeight = -1, int mipmapLevels = 4);
+
+    // static std::shared_ptr<Texture> New(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels = 4);
 
     static std::shared_ptr<Texture>& Get(unsigned int textureId);
 

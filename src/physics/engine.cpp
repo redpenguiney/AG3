@@ -6,7 +6,8 @@
 #include "engine.hpp"
 
 PhysicsEngine::PhysicsEngine() {
-    GRAVITY = {0, -9.807, 0};
+    GRAVITY = {0, 0, 0};
+    //GRAVITY = {0, -9.807, 0};
 }
 PhysicsEngine::~PhysicsEngine() {}
 

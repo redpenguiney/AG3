@@ -91,6 +91,38 @@ void ShaderProgram::Uniform(std::string uniformName, glm::mat4x4 matrix, bool tr
     glUniformMatrix4fv(uniform_locations.at(uniformName), 1, transposeMatrix, &matrix[0][0]);
 }
 
+void ShaderProgram::Uniform(std::string uniformName, glm::vec4 vec) {
+    if (uniform_locations.count(uniformName) == 0) {
+        uniform_locations[uniformName] = glGetUniformLocation(programId, uniformName.c_str());
+    };
+    Use();
+    glUniform4fv(uniform_locations.at(uniformName), 1, &vec.x);
+}
+
+void ShaderProgram::Uniform(std::string uniformName, glm::vec3 vec) {
+    if (uniform_locations.count(uniformName) == 0) {
+        uniform_locations[uniformName] = glGetUniformLocation(programId, uniformName.c_str());
+    };
+    Use();
+    glUniform3fv(uniform_locations.at(uniformName), 1, &vec.x);
+}
+
+void ShaderProgram::Uniform(std::string uniformName, float fval) {
+    if (uniform_locations.count(uniformName) == 0) {
+        uniform_locations[uniformName] = glGetUniformLocation(programId, uniformName.c_str());
+    };
+    Use();
+    glUniform1f(uniform_locations.at(uniformName), fval);
+}
+
+void ShaderProgram::Uniform(std::string uniformName, bool bval) {
+    if (uniform_locations.count(uniformName) == 0) {
+        uniform_locations[uniformName] = glGetUniformLocation(programId, uniformName.c_str());
+    };
+    Use();
+    glUniform1i(uniform_locations.at(uniformName), bval);
+}
+
 void ShaderProgram::Use() {
     if (LOADED_PROGRAM_ID != programId) {
         glUseProgram(programId);

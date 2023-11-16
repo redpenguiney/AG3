@@ -28,28 +28,28 @@ int main() {
 
     auto skyboxFaces = vector<std::string>(
     {
-        "../textures/sky/right.png",
-        "../textures/sky/left.png",
-        "../textures/sky/top.png",
         "../textures/sky/bottom.png",
-        "../textures/sky/back.png",
-        "../textures/sky/front.png"
+        "../textures/sky/bottom.png",
+        "../textures/sky/bottom.png",
+        "../textures/sky/bottom.png",
+        "../textures/sky/bottom.png",
+        "../textures/sky/bottom.png"
     });
     GE.skyboxTexture = Texture::New(TEXTURE_CUBEMAP, skyboxFaces);
     GE.debugFreecamPos = glm::vec3(4, 4, 4);
 
     
     int i = 0;
-    for (int x = 0; x < 1; x++) {
+    for (int x = -1; x < 20; x++) {
         for (int y = 0; y < 1; y++) {
-            for (int z = 0; z < 1; z++) {
+            for (int z = -1; z < 20; z++) {
                 CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.textureId = t->textureId;
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({x * 6, y * 3 - 0, z * 3});
-                //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
-                //g->transformComponent->SetScl(glm::dvec3(1, 2, 1));
+                g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
+                g->transformComponent->SetScl(glm::dvec3(3, 1, 3));
                 g->renderComponent->SetColor(glm::vec4(i % 2, (i + 1) % 2, (i + 1) % 2, 1.0));
                 g->renderComponent->SetTextureZ(0.0);
                 g->name = std::string("Gameobject #") + to_string(i);
@@ -65,9 +65,9 @@ int main() {
     params.textureId = t->textureId;
     auto coolLight = ComponentRegistry::NewGameObject(params);
     coolLight->renderComponent->SetTextureZ(-1);
-    coolLight->transformComponent->SetPos({0, 0, 0});
+    coolLight->transformComponent->SetPos({0, 5, 0});
     coolLight->pointLightComponent->SetRange(100);
-    coolLight->pointLightComponent->SetColor({1, 0.5, 0.5});
+    coolLight->pointLightComponent->SetColor({1, 1, 1});
     
     
     GE.debugFreecamEnabled = true;
@@ -78,7 +78,7 @@ int main() {
     printf("Starting main loop.\n");
 
     while (!GE.ShouldClose()) {
-        coolLight->transformComponent->SetPos({sin(1000) * 3, 2,  cos(1000) * 3});
+        //coolLight->transformComponent->SetPos({sin(1000) * 3, 2,  cos(1000) * 3});
 
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         //auto start = Time();
