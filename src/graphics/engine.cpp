@@ -19,7 +19,9 @@ struct PointLightInfo {
     glm::vec4 relPos; // w-coord is padding; openGL wants everything on a vec4 alignment
 };
 
-GraphicsEngine::GraphicsEngine(): pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)) {
+GraphicsEngine::GraphicsEngine(): 
+pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)) 
+{
     debugFreecamEnabled = false;
     debugFreecamPos = {0.0, 0.0, 0.0};
     debugFreecamPitch = 0.0;

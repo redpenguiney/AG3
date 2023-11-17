@@ -34,8 +34,12 @@ class GraphicsEngine {
     public:
     // the shader used to render the skybox. Can freely change this with no issues.
     std::shared_ptr<ShaderProgram> skyboxShaderProgram;
-    // skybox texture. Must be a cubemap texture.
-    std::shared_ptr<Texture> skyboxTexture;
+
+    // skybox material. Must be a cubemap.
+    std::shared_ptr<Material> skyboxMaterial;
+
+    // Which layer of the skyboxMaterial we should actually be using.
+    unsigned int skyboxMaterialLayer; 
 
     // freecam is just a thing for debugging
     bool debugFreecamEnabled = false;

@@ -35,7 +35,12 @@ int main() {
         "../textures/sky/bottom.png",
         "../textures/sky/bottom.png"
     });
-    GE.skyboxTexture = Texture::New(TextureCreateParams {.texturePaths = skyboxFaces, .textureType = TEXTURE_CUBEMAP});
+
+    {
+        auto [index, sky_m_ptr] = Material::New({TextureCreateParams {.texturePaths = skyboxFaces, .textureType = TEXTURE_CUBEMAP, .format = RGBA, .usage = Color}});
+        GE.skyboxMaterial = sky_m_ptr;
+        GE.skyboxMaterialLayer = index;
+    }
     GE.debugFreecamPos = glm::vec3(4, 4, 4);
 
     
