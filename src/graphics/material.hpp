@@ -27,7 +27,7 @@ class Material {
     ~Material();
     
     private:
-    Material(const std::shared_ptr<Texture>& colorMap, const std::shared_ptr<Texture>& normalMap, const std::shared_ptr<Texture>& specularMap);
+    Material(const std::vector<TextureCreateParams>& textureParams);
 
     std::optional<Texture> color;
     std::optional<Texture> normal; 

@@ -23,8 +23,8 @@ int main() {
     //GE.camera.position.y = 3;
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
-    auto [textureZ, material] = Material::New({TextureCreateParams {.texturePaths = {"../textures/grass.png"}, .textureType = TEXTURE_2D_ARRAY}});
-    std::printf("ITS %u %u\n", m->meshId, t->textureId);
+    auto [textureZ, material] = Material::New({TextureCreateParams {.texturePaths = {"../textures/grass.png"}, .textureType = TEXTURE_2D}});
+    std::printf("ITS %u %u\n", m->meshId, material->id);
 
     auto skyboxFaces = vector<std::string>(
     {
@@ -67,7 +67,7 @@ int main() {
     // make light
     CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
     params.meshId = m->meshId;
-    params.materialId = m->materialId;
+    params.materialId = material->id;
     auto coolLight = ComponentRegistry::NewGameObject(params);
     coolLight->renderComponent->SetTextureZ(-1);
     coolLight->transformComponent->SetPos({0, 5, 0});

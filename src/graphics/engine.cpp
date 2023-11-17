@@ -117,7 +117,7 @@ void GraphicsEngine::RenderScene() {
 void GraphicsEngine::DrawSkybox() {
     glDisable(GL_CULL_FACE);
     skyboxShaderProgram->Use();
-    skyboxTexture->Use();
+    skyboxMaterial->Use();
     skybox->Draw();
     
     glClear(GL_DEPTH_BUFFER_BIT); // make sure skybox isn't drawn over everything else
