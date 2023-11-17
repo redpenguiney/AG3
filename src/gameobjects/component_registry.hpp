@@ -55,13 +55,13 @@ template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<
 struct CreateGameObjectParams {
     unsigned int physMeshId; // 0 if you want automatically generated
     unsigned int meshId;
-    unsigned int textureId;
+    unsigned int materialId;
     unsigned int shaderId;
 
     CreateGameObjectParams(const std::vector<ComponentRegistry::ComponentBitIndex> componentList):
     physMeshId(0),
     meshId(0),
-    textureId(0),
+    materialId(0),
     shaderId(0)
     {
         // bitset defaults to all false so we good

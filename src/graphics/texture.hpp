@@ -10,7 +10,7 @@
 enum TextureType {
     TEXTURE_2D = GL_TEXTURE_2D,
     TEXTURE_2D_ARRAY = GL_TEXTURE_2D_ARRAY,
-    TEXTURE_CUBEMAP = GL_TEXTURE_CUBE_MAP, 
+    TEXTURE_CUBEMAP = GL_TEXTURE_CUBE_MAP, // cubemap is for skybox
     TEXTURE_FONT = 0
 };
 
@@ -20,7 +20,7 @@ enum TextureFormat {
 };
 
 struct TextureCreateParams {
-    std::string texturePath;
+    std::vector<std::string> texturePaths; // Note: unless creating cubemap, size must = 1.
     
     TextureType textureType;
 };

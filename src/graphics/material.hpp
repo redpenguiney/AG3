@@ -16,7 +16,7 @@ class Material {
     static void Destroy(const unsigned int id);
 
     // makes all things be drawn with these textures
-    void Bind();
+    void Use();
 
     // textureParams must at minimum contain a TextureCreateParams for color.
     // If possible, will not to create a new material, but simply add the requested textures to an existing compatible material.

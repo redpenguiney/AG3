@@ -37,7 +37,7 @@ GraphicsEngine::GraphicsEngine(): pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER,
 
 GraphicsEngine::~GraphicsEngine() {
     for (auto & [shaderId, map1] : meshpools) {
-        for (auto & [textureId, map2] : map1) {
+        for (auto & [materialId, map2] : map1) {
             for (auto & [poolId, pool] : map2) {
                 delete pool;
             } 
@@ -97,8 +97,8 @@ void GraphicsEngine::RenderScene() {
         pointLightDataBuffer.Bind();
         pointLightDataBuffer.BindBase(1);
         pointLightDataBuffer.Bind();
-        for (auto & [textureId, map2] : map1) {
-            Texture::Get(textureId)->Use();
+        for (auto & [materialId, map2] : map1) {
+            Material::Get(materialId)->Use();
             for (auto & [poolId, pool] : map2) {
                 pool->Draw();
             } 
@@ -158,17 +158,17 @@ void GraphicsEngine::UpdateLights() {
 void GraphicsEngine::SetColor(MeshLocation& location, glm::vec4 rgba) {
     
     assert(location.initialized);
-    meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetColor(location.poolSlot, location.poolInstance, rgba);
+    meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetColor(location.poolSlot, location.poolInstance, rgba);
 }
 
 void GraphicsEngine::SetModelMatrix(MeshLocation& location, glm::mat4x4 model) {
     assert(location.initialized);
-    meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
+    meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
 }
 
 void GraphicsEngine::SetTextureZ(MeshLocation& location, float textureZ) {
     assert(location.initialized);
-    meshpools[location.shaderProgramId][location.textureId][location.poolId]->SetTextureZ(location.poolSlot, location.poolInstance, textureZ);
+    meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetTextureZ(location.poolSlot, location.poolInstance, textureZ);
 }
 
 void GraphicsEngine::UpdateMeshpools() {
@@ -290,19 +290,19 @@ void GraphicsEngine::AddCachedMeshes() {
     meshesToAdd.clear();
 }
 
-void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int textureId, unsigned int meshId, MeshLocation* meshLocation) {
+void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, MeshLocation* meshLocation) {
     meshLocation->shaderProgramId = shaderId;
-    meshLocation->textureId = textureId;
-    meshesToAdd[shaderId][textureId][meshId].push_back(meshLocation);
+    meshLocation->materialId = materialId;
+    meshesToAdd[shaderId][materialId][meshId].push_back(meshLocation);
 }
 
 unsigned int GraphicsEngine::GetDefaultShaderId() {
     return defaultShaderProgramId;
 }
 
-void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id) {
+void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int materialId, unsigned int shader_id) {
     assert(live);
-    assert(mesh_id != 0 && texture_id != 0);
+    assert(mesh_id != 0 && materialId != 0);
 
     colorChanged = (Mesh::Get(mesh_id)->instancedColor)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
     textureZChanged = (Mesh::Get(mesh_id)->instancedTextureZ)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
@@ -310,13 +310,13 @@ void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int te
     textureZ = -1.0;
     meshId = mesh_id;
 
-    meshLocation.textureId = texture_id;
+    meshLocation.materialId = materialId;
     meshLocation.shaderProgramId = shader_id;
     meshLocation.initialized = false;
 
     // std::cout << "Initialized RenderComponent with mesh locatino at " << &meshLocation << " and pool at " << pool << "\n.";
 
-    Get().AddObject(shader_id, texture_id, mesh_id, &meshLocation); 
+    Get().AddObject(shader_id, materialId, mesh_id, &meshLocation); 
 
 };
 
@@ -325,7 +325,7 @@ void GraphicsEngine::RenderComponent::Destroy() {
 
     // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from GraphicsEngine::meshesToAdd
     // meshLocation will still have its shaderProgramId and textureId set tho immediately by AddObject
-    unsigned int shaderId = meshLocation.shaderProgramId, textureId = meshLocation.textureId;
+    unsigned int shaderId = meshLocation.shaderProgramId, textureId = meshLocation.materialId;
     if (!meshLocation.initialized) { 
         auto & vec = Get().meshesToAdd.at(shaderId).at(textureId).at(meshId);
         int index = 0;

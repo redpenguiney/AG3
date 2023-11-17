@@ -14,14 +14,14 @@
 #include "camera.hpp"
 #include "../gameobjects/transform_component.cpp"
 #include "../utility/utility.hpp"
-#include "texture.hpp"
+#include "material.hpp"
 #include "renderable_mesh.hpp"
 
 struct MeshLocation {
     unsigned int poolId; // uuid of the meshpool 
     unsigned int poolSlot;
     unsigned int poolInstance;
-    unsigned int textureId;
+    unsigned int materialId;
     unsigned int shaderProgramId;
     bool initialized;
     MeshLocation() {
@@ -73,7 +73,7 @@ class GraphicsEngine {
         unsigned int meshId;
 
         // called to initialize when given to a gameobject
-        void Init(unsigned int mesh_id, unsigned int texture_id, unsigned int shader_id = Get().defaultShaderProgramId);
+        void Init(unsigned int mesh_id, unsigned int materialId, unsigned int shader_id = Get().defaultShaderProgramId);
 
         // call before returning to pool
         void Destroy();
@@ -103,6 +103,7 @@ class GraphicsEngine {
     };
 
     unsigned int GetDefaultShaderId();
+    std::shared_ptr<Material> GetDefaultMaterial(); // TODO
 
     private:
     // SSBO that stores all points lights so that the GPU can use them.
@@ -124,7 +125,7 @@ class GraphicsEngine {
     // meshpools are highly optimized objects used for very fast drawing of meshes
     // to avoid memory fragmentation all meshes within it are padded to be of the same size, so to save memory there is a pool for small meshes, medium ones, etc.
     // pools also have to be divided by which shader program and texture/texture array they use
-    // this is a map<shaderId, map<textureId, map<poolId, Meshpool*>>>
+    // this is a map<shaderId, map<materialId, map<poolId, Meshpool*>>>
     std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, Meshpool*>>> meshpools;
     unsigned long long lastPoolId = 0; 
 
@@ -157,6 +158,6 @@ class GraphicsEngine {
     // Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.
     // Contents of MeshLocation are undefined until addCachedMeshes() is called, except for textureId, shaderProgramId, and initialized.
     // Before addChachedMeshes is called, meshLocation->initialized == false and after == true
-    void AddObject(unsigned int shaderId, unsigned int textureId, unsigned int meshId, MeshLocation* meshLocation);
+    void AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, MeshLocation* meshLocation);
 };
 

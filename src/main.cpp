@@ -7,7 +7,7 @@
 
 #include "graphics/engine.hpp"
 #include "graphics/shader_program.hpp"
-#include "graphics/texture.hpp"
+#include "graphics/material.hpp"
 #include "gameobjects/component_registry.hpp"
 #include "physics/raycast.hpp"
 #include "physics/engine.hpp"
@@ -23,7 +23,7 @@ int main() {
     //GE.camera.position.y = 3;
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
-    auto t = Texture::New(TEXTURE_2D_ARRAY, "../textures/grass.png");
+    auto [textureZ, material] = Material::New({TextureCreateParams {.texturePaths = {"../textures/grass.png"}, .textureType = TEXTURE_2D_ARRAY}});
     std::printf("ITS %u %u\n", m->meshId, t->textureId);
 
     auto skyboxFaces = vector<std::string>(
@@ -35,7 +35,7 @@ int main() {
         "../textures/sky/bottom.png",
         "../textures/sky/bottom.png"
     });
-    GE.skyboxTexture = Texture::New(TEXTURE_CUBEMAP, skyboxFaces);
+    GE.skyboxTexture = Texture::New(TextureCreateParams {.texturePaths = skyboxFaces, .textureType = TEXTURE_CUBEMAP});
     GE.debugFreecamPos = glm::vec3(4, 4, 4);
 
     
@@ -45,13 +45,13 @@ int main() {
             for (int z = -1; z < 20; z++) {
                 CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
-                params.textureId = t->textureId;
+                params.materialId = material->id;
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({x * 6, y * 3 - 0, z * 3});
                 g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
                 g->transformComponent->SetScl(glm::dvec3(3, 1, 3));
                 g->renderComponent->SetColor(glm::vec4(i % 2, (i + 1) % 2, (i + 1) % 2, 1.0));
-                g->renderComponent->SetTextureZ(0.0);
+                g->renderComponent->SetTextureZ(textureZ);
                 g->name = std::string("Gameobject #") + to_string(i);
                 i++;
             } 
@@ -62,7 +62,7 @@ int main() {
     // make light
     CreateGameObjectParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
     params.meshId = m->meshId;
-    params.textureId = t->textureId;
+    params.materialId = m->materialId;
     auto coolLight = ComponentRegistry::NewGameObject(params);
     coolLight->renderComponent->SetTextureZ(-1);
     coolLight->transformComponent->SetPos({0, 5, 0});
