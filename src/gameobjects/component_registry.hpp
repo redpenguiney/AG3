@@ -16,7 +16,7 @@
 #include "rigidbody_component.hpp"
 #include <optional>
 
-struct CreateGameObjectParams;
+struct GameobjectCreateParams;
 
 namespace ComponentRegistry {
     enum ComponentBitIndex {
@@ -31,7 +31,7 @@ namespace ComponentRegistry {
     static inline const unsigned int N_COMPONENT_TYPES = 8; 
 
     // Returns a new game object with the given components.
-    std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params);
+    std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params);
 }
 
 template<typename T>
@@ -52,13 +52,13 @@ template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<
     return ComponentRegistry::PointlightComponentBitIndex;
 }
 
-struct CreateGameObjectParams {
+struct GameobjectCreateParams {
     unsigned int physMeshId; // 0 if you want automatically generated
     unsigned int meshId;
     unsigned int materialId;
     unsigned int shaderId;
 
-    CreateGameObjectParams(const std::vector<ComponentRegistry::ComponentBitIndex> componentList):
+    GameobjectCreateParams(const std::vector<ComponentRegistry::ComponentBitIndex> componentList):
     physMeshId(0),
     meshId(0),
     materialId(0),
@@ -71,7 +71,7 @@ struct CreateGameObjectParams {
     }
 
     private:
-    friend std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const CreateGameObjectParams& params);
+    friend std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCreateParams& params);
     std::bitset<ComponentRegistry::N_COMPONENT_TYPES> requestedComponents;
 };
 
@@ -120,7 +120,7 @@ class GameObject {
 
     // private because ComponentRegistry makes it and also because it needs to return a shared_ptr.
     friend class std::shared_ptr<GameObject>;
-    GameObject(const CreateGameObjectParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components); // components is not type safe because component registry weird, index is ComponentBitIndex, value is nullptr or ptr to componeny
+    GameObject(const GameobjectCreateParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components); // components is not type safe because component registry weird, index is ComponentBitIndex, value is nullptr or ptr to componeny
     
 };
 
@@ -148,7 +148,7 @@ namespace ComponentRegistry {
                 //std::cout << "uh oh2 " << pageIndex << "\n"; 
                 componentIndex = 0;
                 pageIndex += 1;
-                if (nPages == pageIndex) {
+                if (nPages == pageIndex) { 
                     pageIndex = 0;
                     poolIndex += 1;
                     if (poolIndex != pools.size()) {
@@ -231,10 +231,11 @@ namespace ComponentRegistry {
         Iterator(std::vector<std::array<void*, N_COMPONENT_TYPES>> pools): 
         pools(pools),
         componentIndex(0),
-        pageIndex(0),
         poolIndex(0),
-        currentPoolArray(pools.size() == 0 ? nullptr: &(pools.at(pageIndex))),
-        isEnd(false)
+        pageIndex(0),
+        isEnd(false),
+        currentPoolArray(pools.size() == 0 ? nullptr: &(pools.at(pageIndex)))
+        
         {
 
             if (currentPoolArray != nullptr) {
@@ -256,8 +257,8 @@ namespace ComponentRegistry {
         Iterator(const Iterator<Args...> & original) {
             pools = original.pools;
             componentIndex = original.componentIndex;
-            pageIndex = original.pageIndex;
             poolIndex = original.poolIndex;
+            pageIndex = original.pageIndex;     
             currentPoolArray = pools.size() == 0 ? nullptr: &(pools.at(pageIndex));
             isEnd = original.isEnd;
             if (currentPoolArray != nullptr) {
@@ -367,7 +368,7 @@ namespace ComponentRegistry {
         return Iterator<Args...>(poolsToReturn);
     }
     
-    std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params);
+    std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params);
     
 
     // Call before destroying graphics engine, SAS, etc. at end of program, as gameobject destructors need to access those things.

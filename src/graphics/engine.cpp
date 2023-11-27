@@ -4,7 +4,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <pstl/glue_execution_defs.h>
 #include <tuple>
+#include <execution>
 #include "../gameobjects/pointlight_component.hpp"
 #include "../gameobjects/component_registry.hpp"
 
@@ -27,7 +29,7 @@ pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024
     debugFreecamPitch = 0.0;
     debugFreecamYaw = 0.0;
 
-    
+    skyboxMaterial = nullptr;
 
     defaultShaderProgramId = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl")->shaderProgramId;
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
@@ -70,6 +72,7 @@ void GraphicsEngine::RenderScene() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
+    glEnable(GL_FRAMEBUFFER_SRGB); // gamma correction; google it. TODO: when we start using postprocessing/framebuffers, turn this off except for final image output
 
     if (PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
         window.Close();
@@ -95,12 +98,15 @@ void GraphicsEngine::RenderScene() {
 
     // Draw world stuff.
     for (auto & [shaderId, map1] : meshpools) {
-        ShaderProgram::Get(shaderId)->Use();
+        auto& shader = ShaderProgram::Get(shaderId);
+        shader->Use();
         pointLightDataBuffer.Bind();
         pointLightDataBuffer.BindBase(1);
         pointLightDataBuffer.Bind();
         for (auto & [materialId, map2] : map1) {
-            Material::Get(materialId)->Use();
+            auto& material = Material::Get(materialId);
+            material->Use();
+            shader->Uniform("normalMappingEnabled", material->HasNormalMap());
             for (auto & [poolId, pool] : map2) {
                 pool->Draw();
             } 
@@ -115,6 +121,7 @@ void GraphicsEngine::RenderScene() {
 }
 
 void GraphicsEngine::DrawSkybox() {
+    if (skyboxShaderProgram == nullptr || skyboxMaterial == nullptr) {return;} // make sure there is a skybox
     glDisable(GL_CULL_FACE);
     skyboxShaderProgram->Use();
     skyboxMaterial->Use();
@@ -140,7 +147,7 @@ void GraphicsEngine::UpdateLights() {
 
         if (pointLight.live) {
             glm::vec3 relCamPos = (transform.position() - (debugFreecamEnabled ? debugFreecamPos : camera.position));
-            std::printf("rel pos = %f %f %f %f\n", relCamPos.x, relCamPos.y, relCamPos.z, pointLight.Range());
+            // std::printf("rel pos = %f %f %f %f\n", relCamPos.x, relCamPos.y, relCamPos.z, pointLight.Range());
             auto info = PointLightInfo {
                 .colorAndRange = glm::vec4(pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range()),
                 .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
@@ -157,18 +164,23 @@ void GraphicsEngine::UpdateLights() {
     *(GLuint*)(pointLightDataBuffer.Data()) = lightCount;
 }
 
-void GraphicsEngine::SetColor(MeshLocation& location, glm::vec4 rgba) {
+void GraphicsEngine::SetColor(MeshLocation& location, const glm::vec4& rgba) {
     
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetColor(location.poolSlot, location.poolInstance, rgba);
 }
 
-void GraphicsEngine::SetModelMatrix(MeshLocation& location, glm::mat4x4 model) {
+void GraphicsEngine::SetModelMatrix(MeshLocation& location, const glm::mat4x4& model) {
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
 }
 
-void GraphicsEngine::SetTextureZ(MeshLocation& location, float textureZ) {
+void GraphicsEngine::SetNormalMatrix(MeshLocation& location, const glm::mat3x3& normal) {
+    assert(location.initialized);
+    meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetNormalMatrix(location.poolSlot, location.poolInstance, normal);
+}
+
+void GraphicsEngine::SetTextureZ(MeshLocation& location, const float textureZ) {
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetTextureZ(location.poolSlot, location.poolInstance, textureZ);
 }
@@ -183,15 +195,36 @@ void GraphicsEngine::UpdateMeshpools() {
     }
 }
 
+// w/ simple for loop: 8ms
+// w/ parallelized std::for_each: about 9ms??? unclear if it was actually parallel
+
+// TODO: idk if there's any practical way around this but data locality is probably messed up by jumping around inside the meshpool vbos
 void GraphicsEngine::UpdateRenderComponents() {
-    //auto start = Time();
+    auto start = Time();
     auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
     // Get components of all gameobjects that have a transform and point light component
     auto components = ComponentRegistry::GetSystemComponents<RenderComponent, TransformComponent>();
     
-
-    for (auto & tuple: components) {
+    // for (auto & tuple: components) {
+    //     auto & renderComp = *std::get<0>(tuple);
+    //     auto & transformComp = *std::get<1>(tuple);
+    //     if (renderComp.live) {
+    //         //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
+    //         // if (renderComp.componentPoolId != i) {
+    //         //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
+    //         //     abort();
+    //         // }
+    //         // TODO: we only need to call SetNormalMatrix() when the object is rotated
+    //         SetNormalMatrix(renderComp.meshLocation, transformComp.GetNormalMatrix()); 
+    //         SetModelMatrix(renderComp.meshLocation, transformComp.GetGraphicsModelMatrix(cameraPos));
+            
+    //         if (renderComp.textureZChanged > 0) {renderComp.textureZChanged -= 1; SetTextureZ(renderComp.meshLocation, renderComp.textureZ);}
+    //         if (renderComp.colorChanged > 0) {renderComp.colorChanged -= 1; SetColor(renderComp.meshLocation, renderComp.color);}
+    //     }
+    // }
+    
+    std::for_each(std::execution::par, components.begin(), components.end(), [this, &cameraPos](std::tuple<RenderComponent*, TransformComponent*>& tuple) {
         auto & renderComp = *std::get<0>(tuple);
         auto & transformComp = *std::get<1>(tuple);
         if (renderComp.live) {
@@ -200,15 +233,16 @@ void GraphicsEngine::UpdateRenderComponents() {
             //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
             //     abort();
             // }
+            // TODO: we only need to call SetNormalMatrix() when the object is rotated
+            SetNormalMatrix(renderComp.meshLocation, transformComp.GetNormalMatrix()); 
             SetModelMatrix(renderComp.meshLocation, transformComp.GetGraphicsModelMatrix(cameraPos));
             
             if (renderComp.textureZChanged > 0) {renderComp.textureZChanged -= 1; SetTextureZ(renderComp.meshLocation, renderComp.textureZ);}
             if (renderComp.colorChanged > 0) {renderComp.colorChanged -= 1; SetColor(renderComp.meshLocation, renderComp.color);}
         }
-    }
-    
+    });
 
-    //LogElapsed(start, "\nRendercomp update elapsed ");
+    LogElapsed(start, "Rendercomp update elapsed ");
 }
 
 glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
@@ -348,14 +382,14 @@ GraphicsEngine::RenderComponent::RenderComponent() {
 
 }
 
-void GraphicsEngine::RenderComponent::SetColor(glm::vec4 rgba) {
+void GraphicsEngine::RenderComponent::SetColor(const glm::vec4& rgba) {
     assert(colorChanged != -1); // color must be instanced
     colorChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
     color = rgba;
 }
 
 // set to -1.0 for no texture
-void GraphicsEngine::RenderComponent::SetTextureZ(float z) {
+void GraphicsEngine::RenderComponent::SetTextureZ(const float z) {
     assert(textureZChanged != -1); // textureZ must be instanced
     textureZChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
     textureZ = z;

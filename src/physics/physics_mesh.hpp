@@ -5,7 +5,7 @@
 
 class Mesh;
 
-// A mesh used for collisions, since the meshes uses for rendering are too high fidelity to be performant oftentimes or are concave and require additional processing.
+// A mesh used for collisions, since the meshes used for rendering are oftentimes too high fidelity to be performant, and/or are concave and thus require additional processing to be compatible with functions/algorithms that work only on convex shapes.
 class PhysicsMesh {
     public:
     static std::shared_ptr<PhysicsMesh>& Get(unsigned int id);

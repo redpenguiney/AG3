@@ -10,7 +10,7 @@
 
 // constructor takes mesh reference to set variables, doesn't actually add the given mesh or anything
 Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh): 
-    instanceSize(sizeof(glm::mat4x4) + ((mesh->instancedColor) ? sizeof(glm::vec4) : 0) + (mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // instances will be bigger if the mesh also wants color/texturez to be instanced
+    instanceSize(sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + ((mesh->instancedColor) ? sizeof(glm::vec4) : 0) + (mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // instances will be bigger if the mesh also wants color/texturez to be instanced
     vertexSize(mesh->vertexSize), 
     meshVerticesSize(((((int)std::pow(2, 1 + (int)std::log2(mesh->vertices.size() * sizeof(GLfloat)))) + vertexSize - 1)/vertexSize) * vertexSize), // makes meshVerticesSize a power of two rounded to the nearest multiple of vertexSize (must be multiple of vertexSize for OpenGL base vertex argument to work)
     meshIndicesSize(meshVerticesSize),
@@ -164,16 +164,14 @@ void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instance
     //LogElapsed(t);
 }
 
-// Makes the given instance the given color.
-// Will abort if mesh uses per-vertex color instead of per-instance color.
-void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4 rgba) {
+void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4& rgba) {
     // make sure this instance slot hasn't been deleted
     if (slotInstanceSpaces.count(slot)) {
         assert(!slotInstanceSpaces[slot].count(instanceId));
     }
 
     assert(instanceColor == true);
-    glm::vec4* colorLocation = (glm::vec4*)(sizeof(glm::mat4x4) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
+    glm::vec4* colorLocation = (glm::vec4*)(sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
     // make sure we don't segfault 
     assert((char*)colorLocation + sizeof(glm::vec4) <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
@@ -182,8 +180,6 @@ void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, 
     *colorLocation = rgba;
 }
 
-// Makes the given instance the given textureZ.
-// Will abort if mesh uses per-vertex color instead of per-instance color.
 void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ) {
     // make sure this instance slot hasn't been deleted
     if (slotInstanceSpaces.count(slot)) {
@@ -191,7 +187,7 @@ void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceI
     }
 
     assert(instanceTextureZ == true);
-    float* textureZLocation = (float*)(sizeof(glm::mat4x4) + ((instanceColor) ? sizeof(glm::vec4) : 0) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
+    float* textureZLocation = (float*)(sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + ((instanceColor) ? sizeof(glm::vec4) : 0) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
     // make sure we don't segfault 
     assert((char*)textureZLocation + sizeof(float) <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
@@ -200,8 +196,7 @@ void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceI
     *textureZLocation = textureZ;
 }
 
-// Makes the given instance use the given model matrix.
-void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4 matrix) {
+void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4& matrix) {
     // make sure this instance slot hasn't been deleted
     if (slotInstanceSpaces.count(slot)) {
         assert(!slotInstanceSpaces[slot].count(instanceId));
@@ -216,11 +211,26 @@ void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instan
     *modelMatrixLocation = matrix;
 }
 
+void Meshpool::SetNormalMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat3x3& normal) {
+    // make sure this instance slot hasn't been deleted
+    if (slotInstanceSpaces.count(slot)) {
+        assert(!slotInstanceSpaces[slot].count(instanceId));
+    }
+    
+
+    glm::mat3x3* normalMatrixLocation = (glm::mat3x3*)(sizeof(glm::mat4x4) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
+
+    // make sure we don't segfault 
+    assert((char*)normalMatrixLocation <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
+    assert((char*)normalMatrixLocation >= instancedVertexBuffer.Data());
+    *normalMatrixLocation = normal;
+}
+
 void Meshpool::Draw() {
     glBindVertexArray(vao);
     indexBuffer.Bind();
     indirectDrawBuffer.Bind();
-    double start1 = Time();
+    //double start1 = Time();
    // glMultiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, 0, drawCount, 0); TODO: GET INDIRECT DRAWING TO WORK
     for (auto & command: drawCommands) {
         if (command.count == 0) {continue;}
@@ -258,7 +268,7 @@ void Meshpool::ExpandNonInstanced() {
     GLuint newVao;
     glGenVertexArrays(1, &newVao);
 
-    // Associate data with the vao and describe format of instanced data
+    // Associate data with the vao and describe format of non-instanced data
     glBindVertexArray(newVao);
 
     // vertex pos
@@ -276,17 +286,22 @@ void Meshpool::ExpandNonInstanced() {
     glVertexAttribPointer(NORMAL_ATTRIBUTE, 3, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2)));
     glVertexAttribDivisor(NORMAL_ATTRIBUTE, 0); // don't instance
 
+    // atangent vector
+    glEnableVertexAttribArray(ATANGENT_ATTRIBUTE);
+    glVertexAttribPointer(ATANGENT_ATTRIBUTE, 3, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3)));
+    glVertexAttribDivisor(ATANGENT_ATTRIBUTE, 0); // don't instance
+
     // color (rgba)
     if (!instanceColor) {
         glEnableVertexAttribArray(COLOR_ATTRIBUTE);
-        glVertexAttribPointer(COLOR_ATTRIBUTE, 4, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3)));
+        glVertexAttribPointer(COLOR_ATTRIBUTE, 4, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3) + sizeof(glm::vec3)));
         glVertexAttribDivisor(COLOR_ATTRIBUTE, 0); // don't instance
     }
 
     // textureZ
     if (!instanceTextureZ) {
         glEnableVertexAttribArray(TEXTURE_Z_ATTRIBUTE);
-        glVertexAttribPointer(TEXTURE_Z_ATTRIBUTE, 1, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3) + ((!instanceColor) ? sizeof(glm::vec4) : 0)));
+        glVertexAttribPointer(TEXTURE_Z_ATTRIBUTE, 1, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3) + sizeof(glm::vec3) + ((!instanceColor) ? sizeof(glm::vec4) : 0)));
         glVertexAttribDivisor(TEXTURE_Z_ATTRIBUTE, 0); // don't instance
     }
 
@@ -330,22 +345,36 @@ void Meshpool::ExpandInstanced(GLuint multiplier) {
     glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+2, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 2));
     glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+3, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 3));
 
-    glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE, 1); // do instance
+    glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE, 1); // tell openGL that this is an instanced vertex attribute (meaning per instance, not per vertex)
     glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE+1, 1);
     glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE+2, 1);
     glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE+3, 1);
 
+    // normal matrix
+    // just 3x3 so only 3 attributes
+    glEnableVertexAttribArray(NORMAL_MATRIX_ATTRIBUTE);
+    glEnableVertexAttribArray(NORMAL_MATRIX_ATTRIBUTE+1);
+    glEnableVertexAttribArray(NORMAL_MATRIX_ATTRIBUTE+2);
+
+    glVertexAttribPointer(NORMAL_MATRIX_ATTRIBUTE, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4)));
+    glVertexAttribPointer(NORMAL_MATRIX_ATTRIBUTE+1, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4) + sizeof(glm::vec3) * 1));
+    glVertexAttribPointer(NORMAL_MATRIX_ATTRIBUTE+2, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4) + sizeof(glm::vec3) * 2));
+
+    glVertexAttribDivisor(NORMAL_MATRIX_ATTRIBUTE, 1); // tell openGL that this is an instanced vertex attribute (meaning per instance, not per vertex)
+    glVertexAttribDivisor(NORMAL_MATRIX_ATTRIBUTE+1, 1);
+    glVertexAttribDivisor(NORMAL_MATRIX_ATTRIBUTE+2, 1);
+
     // color (rgba)
     if (instanceColor) {
         glEnableVertexAttribArray(COLOR_ATTRIBUTE);
-        glVertexAttribPointer(COLOR_ATTRIBUTE, 4, GL_FLOAT, false, instanceSize, (void*)sizeof(glm::mat4x4));
+        glVertexAttribPointer(COLOR_ATTRIBUTE, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4) + sizeof(glm::mat3x3)));
         glVertexAttribDivisor(COLOR_ATTRIBUTE, 1); // don't instance
     }
 
     // textureZ
     if (instanceTextureZ) {
         glEnableVertexAttribArray(TEXTURE_Z_ATTRIBUTE);
-        glVertexAttribPointer(TEXTURE_Z_ATTRIBUTE, 2, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4) + ((instanceColor) ? sizeof(glm::vec4) : 0)));
+        glVertexAttribPointer(TEXTURE_Z_ATTRIBUTE, 2, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + ((instanceColor) ? sizeof(glm::vec4) : 0)));
         glVertexAttribDivisor(TEXTURE_Z_ATTRIBUTE, 1); // don't instance
     }
 }

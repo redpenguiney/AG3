@@ -32,7 +32,7 @@ protected_make_shared( Args&&... args )
 
 namespace ComponentRegistry { 
 
-    std::shared_ptr<GameObject> NewGameObject(const CreateGameObjectParams& params) {
+    std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params) {
         // make sure there are the needed component pools for this kind of gameobject
         if (!componentBuckets.count(params.requestedComponents)) {
             componentBuckets[params.requestedComponents] = std::array<void*, N_COMPONENT_TYPES> {{
@@ -103,7 +103,7 @@ GameObject::~GameObject() {
     if (pointLightComponent.ptr) {pointLightComponent->pool->ReturnObject(pointLightComponent.ptr);}
 };
 
-GameObject::GameObject(const CreateGameObjectParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):
+GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):
     // a way to make this less verbose and more type safe would be nice
     transformComponent((TransformComponent*)components[ComponentRegistry::TransformComponentBitIndex]),
     renderComponent((GraphicsEngine::RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex]),  
@@ -113,7 +113,7 @@ GameObject::GameObject(const CreateGameObjectParams& params, std::array<void*, C
 {
     assert(transformComponent.ptr != nullptr); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
     transformComponent->Init();
-    if (renderComponent.ptr) {renderComponent->Init(params.meshId, params.textureId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().GetDefaultShaderId());}
+    if (renderComponent.ptr) {renderComponent->Init(params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().GetDefaultShaderId());}
     if (colliderComponent.ptr) {
         std::shared_ptr<PhysicsMesh> physMesh;
         if (params.physMeshId == 0) {

@@ -104,7 +104,7 @@ template<typename T>
 void ComponentPool<T>::AddPool() {
     unsigned int index = pages.size();
     T* firstPool = new T[COMPONENTS_PER_PAGE];
-    std::cout << "Created new pool page at " << firstPool << " of type " << typeid(T).name() << "\n";
+    //std::cout << "Created new pool page at " << firstPool << " of type " << typeid(T).name() << "\n";
     firstAvailable.push_back(firstPool);
 
     for (unsigned int i = 0; i < COMPONENTS_PER_PAGE - 1; i++) {

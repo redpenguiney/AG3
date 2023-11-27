@@ -2,6 +2,7 @@
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLM/ext.hpp"
 #include "../../external_headers/freetype/ft2build.h"
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -35,13 +36,13 @@ GLenum TextureBindingLocationFromType(TextureType type) {
 unsigned int NChannelsFromFormat(TextureFormat format ) {
     switch (format) {
     case RGBA:
-    return 4;
+    return STBI_rgb_alpha; // same as 4
     break;
     case RGB:
-    return 3;
+    return STBI_rgb; // same as 3
     break;
     case Grayscale:
-    return 1;
+    return STBI_grey; // same as 1
     default:
     std::cout << "forgot something\n";
     abort();
@@ -51,29 +52,32 @@ unsigned int NChannelsFromFormat(TextureFormat format ) {
 }
 
 // Create texture.
-Texture::Texture(const TextureCreateParams& params, const GLuint textureIndex):
+Texture::Texture(const TextureCreateParams& params, const GLuint textureIndex, TextureType textureType):
 format(params.format),
-bindingLocation(TextureBindingLocationFromType(params.textureType)),
+bindingLocation(TextureBindingLocationFromType(textureType)),
 glTextureIndex(textureIndex),
-type(params.textureType)
+type(textureType)
 {
     // skyboxes need 6 textures, everything else obviously only needs 1
-    if (params.textureType == TEXTURE_CUBEMAP) {
+    if (textureType == TEXTURE_CUBEMAP) {
         assert(params.texturePaths.size() == 6);
     }
     else {
         assert(params.texturePaths.size() == 1);
     }
 
+    // Get all the image data
     std::vector<unsigned char*> imageDatas;
     
+    // std::cout << "Requiring " << NChannelsFromFormat(params.format) << " channels.\n";
     unsigned int lastWidth = 0, lastHeight = 0;
     for (auto & path: params.texturePaths) {
         // use stbi_image.h to load file
         imageDatas.push_back(stbi_load(path.c_str(), &width, &height, &nChannels, NChannelsFromFormat(params.format)));
-        if (stbi_failure_reason()) { // error check
+        nChannels = std::max(nChannels, (int)NChannelsFromFormat(params.format)); // apparently nChannels is set to the amount that the original image had, even if we asked for (and recieved) extra channels, so this makes sure it has the right value
+        if (imageDatas.back() == nullptr) { // error check
             std::printf("STBI failed to load %s because %s", path.c_str(), stbi_failure_reason());
-            abort(); // TODO: set image data to pointer to an error texture when this happens instead of aborti
+            abort(); // TODO: set image data to pointer to an error texture when this happens instead of aborting
         }
         if ((lastWidth != 0 && lastWidth != width) || (lastHeight != 0 && lastHeight != height)) {
             std::cout << "All textures given must be same size.\n";
@@ -83,21 +87,30 @@ type(params.textureType)
             std::cout << "Cubemaps have to be square.\n";
             abort();
         }
+        // TODO: we should also assert that all files have same number of color/alpha channels
 
         lastWidth = width;
         lastHeight = height;
     }
-
+    std::cout << "Got " << nChannels << " channels.\n";
+    std::printf("Width %u Height %u \n", width, height);
+    // std::cout << "Texture data: ";
+    // for (unsigned int i = 0; i < width * height; i++) {
+    //     std:: cout << (unsigned int)(imageDatas.back()[i]) << ", ";
+    // }
+    std::cout << "\n";
+    // Determine what format the image data was in; RGB? RGBA? etc (nChannels is how many components the loaded mage had)
     unsigned int sourceFormat;
     switch (nChannels) {
     case 4:
-    sourceFormat = RGBA;
+    sourceFormat = GL_RGBA;
     break;
     case 3:
-    sourceFormat = RGB;
+    sourceFormat = GL_RGB;
     break;
     case 1:
-    sourceFormat = Grayscale;
+    sourceFormat = GL_RED;
+    break;
     default:
     std::cout << "uh what the \n";
     abort();
@@ -106,11 +119,15 @@ type(params.textureType)
 
     // generate OpenGL texture object and put image data in it
     glGenTextures(1, &glTextureId);
-    Use();
+    // Use();
+    glBindTexture(bindingLocation, glTextureId);
     if (type == TEXTURE_2D) {
         depth = 1;
-
-        glTexImage3D(bindingLocation, 0, params.format, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.back());
+        //glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // TODO: this may be neccesary in certain situations??? further investigation neededd
+        glTexImage3D(bindingLocation, 0, params.format, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.back()); // put data in opengl
+    }
+    else {
+        std::cout << " you forgot cubemap texture constructor my guy"; abort();
     }
     // else if (type == TEXTURE_2D_ARRAY) {
     //     if (layerHeight == -1) {layerHeight = height;}
@@ -136,14 +153,15 @@ Texture::~Texture() {
 }
 
 void Texture::Use() {
-    glActiveTexture(glTextureIndex);
+    glActiveTexture(GL_TEXTURE0 + glTextureIndex);
+    //glBindTextureUnit(GL_TEXTURE0 + glTextureIndex, textureId); // TODOD: opengl 4.5 only
     glBindTexture(bindingLocation, glTextureId);
 }
 
 // Sets all of the OpenGL texture parameters.
 void Texture::ConfigTexture() {
     Use();
-    glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT means tile the texture
+    glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT means tile the texture; TODO: add params for this stuff
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(bindingLocation, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

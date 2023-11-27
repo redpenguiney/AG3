@@ -84,8 +84,8 @@ class GraphicsEngine {
 
         // We have both GraphicsEngine::SetColor() and RenderComponent::SetColor() because people may want to set color immediately, but GraphicsEngine::SetColor()
         //      needs the meshLocation to be initialized and because we cache mesh creation that doesn't happen until RenderScene() is called.
-        void SetColor(glm::vec4 rgba);
-        void SetTextureZ(float textureZ);
+        void SetColor(const glm::vec4& rgba);
+        void SetTextureZ(const float textureZ);
 
         private:
 
@@ -152,11 +152,12 @@ class GraphicsEngine {
     void AddCachedMeshes();
     void UpdateMeshpools();
 
-    void SetColor(MeshLocation& location, glm::vec4 rgba);
-    void SetModelMatrix(MeshLocation& location, glm::mat4x4 model);
+    void SetColor(MeshLocation& location, const glm::vec4& rgba);
+    void SetModelMatrix(MeshLocation& location, const glm::mat4x4& model);
+    void SetNormalMatrix(MeshLocation& location, const glm::mat3x3& normal);
 
     // set to -1.0 for no texture
-    void SetTextureZ(MeshLocation& location, float textureZ);
+    void SetTextureZ(MeshLocation& location, const float textureZ);
 
     // Returns a drawId used to modify the mesh later on.
     // Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.

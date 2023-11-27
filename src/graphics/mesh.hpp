@@ -28,7 +28,17 @@ class Mesh {
     const unsigned int vertexSize; // the size, in bytes, of a single vertex. 
 
     static std::shared_ptr<Mesh>& Get(unsigned int meshId);
+
+    // verts must be organized into (XYZ, TextureXY, NormalXYZ, TangentXYZ, RGBA if !instanceColor, TextureZ if !instanceTextureZ).
+    // leave expectedCount at 1024 unless it's something like a cube, in which case maybe set it to like 100k (you can create more objects than this number, just for instancing)
     static std::shared_ptr<Mesh> FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor=true, bool instanceTextureZ=true, unsigned int expectedCount=1024);
+
+    // only accepts OBJ files.
+    // File should just contain one object. 
+    // TODO: materials
+    // TODO: MTL support should be easy
+    // meshTransparency will be the initial alpha value of every vertex color, because obj files only support RGB (and also they don't REALLY support RGA).
+    // leave expectedCount at 1024 unless it's something like a cube, in which case maybe set it to like 100k (you can create more objects than this number, just for instancing)
     static std::shared_ptr<Mesh> FromFile(const std::string& path, bool instanceTextureZ=true, bool instanceColor=true, float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024);
     static void Unload(int meshId);
 

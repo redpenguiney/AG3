@@ -22,9 +22,21 @@ class Meshpool {
 
     std::vector<std::pair<unsigned int, unsigned int>> AddObject(const unsigned int meshId, unsigned int count);
     void RemoveObject(const unsigned int slot, const unsigned int instanceId); 
-    void SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4 model);
-    void SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4 rgba);
+
+    // Makes the given instance use the given normal matrix.
+    void SetNormalMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat3x3& normal);
+
+    // Makes the given instance use the given model matrix.
+    void SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4& model);
+
+    // Makes the given instance the given textureZ.
+    // Will abort if mesh uses per-vertex textureZ instead of per-instance textureZ.
     void SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ);
+
+    // Makes the given instance the given color.
+    // Will abort if mesh uses per-vertex color instead of per-instance color.
+    void SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4& rgba);
+    
     //std::tuple<GLfloat*, const unsigned int> ModifyVertices(const unsigned int meshId);
     void Draw();
     void Update();
@@ -74,8 +86,10 @@ class Meshpool {
     inline static const GLuint TEXTURE_XY_ATTRIBUTE = 2;
     inline static const GLuint TEXTURE_Z_ATTRIBUTE = 3;
     inline static const GLuint NORMAL_ATTRIBUTE = 4; // lighting needs to know normals
-    inline static const GLuint MODEL_MATRIX_ATTRIBUTE = 5; // one 4x4 model matrix per thing being drawn, multiplying vertex positions by this puts them in the right position via rotating, scaling, and translating
-    inline static const GLuint NORMAL_MATRIX_ATTRIBUTE = 9; // normal matrix is like model matrix, but is 3x3 and for normals since it would be bad if a normal got scaled/translated 
+    inline static const GLuint ATANGENT_ATTRIBUTE = 5; // atangent vector is perpendicular to normal and faces either towards U of texture or V of texture coords, used for normal/parallax mapping
+    inline static const GLuint MODEL_MATRIX_ATTRIBUTE = 6; // one 4x4 model matrix per thing being drawn, multiplying vertex positions by this puts them in the right position via rotating, scaling, and translating
+    inline static const GLuint NORMAL_MATRIX_ATTRIBUTE = 10; // normal matrix is like model matrix, but is 3x3 and for normals since it would be bad if a normal got scaled/translated 
+
 
     void ExpandNonInstanced();
     void ExpandInstanced(GLuint multiplier);

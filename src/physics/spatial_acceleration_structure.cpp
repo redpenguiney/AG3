@@ -365,3 +365,7 @@ void SpatialAccelerationStructure::ColliderComponent::RecalculateAABB(const Tran
         abort();
     }
 }
+
+const AABB& SpatialAccelerationStructure::ColliderComponent::GetAABB() {
+    return aabb;
+}

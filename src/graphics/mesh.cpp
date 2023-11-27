@@ -3,9 +3,10 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
 #include <fstream>
 #include <sstream>
-
+#include "../../external_headers/GLM/gtc/type_ptr.hpp"
 #define TINYOBJLOADER_IMPLEMENTATION // what kind of library makes you have to ask it to actually implement the functions???
 #include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
 #include "let_me_hash_a_tuple.cpp"
@@ -18,8 +19,6 @@ std::shared_ptr<Mesh>& Mesh::Get(unsigned int meshId) {
     return LOADED_MESHES[meshId];
 }
 
-// verts must be organized into (XYZ, TextureXY, NormalXYZ, RGBA if !instanceColor, TextureZ if !instanceTextureZ).
-// leave expectedCount at 1024 unless it's something like a cube, in which case set it to like 1 million (you can create more objects than this number, it just might lag a little)
 std::shared_ptr<Mesh> Mesh::FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor, bool instanceTextureZ, unsigned int expectedCount) {
     unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
     auto ptr = std::shared_ptr<Mesh>(new Mesh(verts, indies, instanceColor, instanceTextureZ, expectedCount));
@@ -27,11 +26,6 @@ std::shared_ptr<Mesh> Mesh::FromVertices(std::vector<GLfloat> &verts, std::vecto
     return ptr;
 }
 
-// only accepts OBJ files.
-// File should just contain one object. 
-// TODO: materials
-// TODO: MTL support should be easy
-// meshTransparency will be the initial alpha value of every vertex color, because obj files only support RGB (and also they don't REALLY support RGA)
 std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextureZ, bool instanceColor, float textureZ, unsigned int meshTransparency, unsigned int expectedCount) {
     // Load file
     auto config = tinyobj::ObjReaderConfig();
@@ -43,7 +37,7 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
         abort();
     }
 
-    const unsigned int nFloatsPerVertex = 3 + 3 + 2 + (instanceTextureZ ? 0 : 1) + (instanceColor ? 0 : 4);
+    const unsigned int nFloatsPerVertex = 3 + 3 + 2 + 3 + (instanceTextureZ ? 0 : 1) + (instanceColor ? 0 : 4);
 
     auto shape = OBJ_LOADER.GetShapes().at(0);
     //auto material = OBJ_LOADER.GetMaterials().at(0);
@@ -90,13 +84,14 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
         i++;
     }
 
-    // ngl im just doing what https://stackoverflow.com/questions/36447021/obtain-indices-from-obj says here
+    // take all the seperate colors, positions, etc. and put them in a single interleaved vertices thing with one indices
     std::unordered_map<std::tuple<GLuint, GLuint, GLuint>, GLuint, hash_tuple::hash<std::tuple<GLuint, GLuint, GLuint>>> objIndicesToGlIndices; // tuple is (posIndex, texXyIndex, normalIndex)
     std::vector<GLuint> indices;
     std::vector<GLfloat> vertices;
     for (auto & index : shape.mesh.indices) {
         auto indexTuple = std::make_tuple(index.vertex_index, index.texcoord_index, index.normal_index);
-        //std::printf("\nindex tuple %d %d %d, %d vertices", index.vertex_index, index.texcoord_index, index.normal_index, vertices.size());
+
+        // if we have this exact vertex already, just add another index for it, otherwise append a new vertex
         if (objIndicesToGlIndices.count(indexTuple) == 0) {
 
             objIndicesToGlIndices[indexTuple] = vertices.size()/nFloatsPerVertex;
@@ -113,6 +108,11 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
             vertices.push_back(normals[index.normal_index * 3 + 1]);
             vertices.push_back(normals[index.normal_index * 3 + 2]);
 
+            // tangent vectors are calculated on next step
+            vertices.push_back(0);
+            vertices.push_back(0);
+            vertices.push_back(0);
+
             if (!instanceColor) {
                 vertices.push_back(colors[index.vertex_index * 3]);
                 vertices.push_back(colors[index.vertex_index * 3 + 1]);
@@ -127,6 +127,47 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
         else {
             indices.push_back(objIndicesToGlIndices[indexTuple]);
         }
+    }
+
+    // calculate tangent vectors
+    std::vector<GLfloat> tangents;
+    const unsigned int sizeOfVertex = sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!instanceColor) ? sizeof(glm::vec4) : 0) + ((!instanceTextureZ) ? sizeof(GLfloat) : 0);
+    //std::cout << "There are " << vertices.size() << " vertices.\n";
+    
+    for (unsigned int triangleIndex = 0; triangleIndex < indices.size()/3; triangleIndex++) {
+        glm::vec3 points[3];
+        glm::vec3 texCoords[3];
+        glm::vec3 normals[3];
+        for (unsigned int i = 0; i < 3; i++) {
+            auto indexIntoIndices = triangleIndex * 3 + i;
+            //std::cout << " i = " << indexIntoIndices << "nfloats = " << nFloatsPerVertex << " actual index = " << indices.at(indexIntoIndices) <<  " \n";
+            auto vertexIndex = indices.at(indexIntoIndices);
+            //std::cout << "thing in indices  was " << vertexIndex << " \n"; 
+            points[i] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex));
+            texCoords[i] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + 3));
+            normals[i] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + 5));
+        }
+         
+        glm::vec3 edge1 = points[1] - points[0];
+        glm::vec3 edge2 = points[2] - points[0];
+        glm::vec2 deltaUV1 = texCoords[1] - texCoords[0];
+        glm::vec2 deltaUV2 = texCoords[2] - texCoords[0]; 
+  
+        float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+
+        auto atangentX = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+        auto atangentY = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+        auto atangentZ = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+        for (unsigned int i = 0; i < 3; i++) {
+            auto indexIntoIndices = triangleIndex * 3 + i;
+            auto vertexIndex = indices.at(indexIntoIndices);
+            vertices.at(nFloatsPerVertex * vertexIndex + 8) = atangentX;
+            vertices.at(nFloatsPerVertex * vertexIndex + 9) = atangentY;
+            vertices.at(nFloatsPerVertex * vertexIndex + 10) = atangentZ;
+        }
+        
     }
     
     unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
@@ -151,7 +192,7 @@ instancedColor(instanceColor),
 instancedTextureZ(instanceTextureZ),
 instanceCount(expectedCount),
 originalSize(),
-vertexSize(sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!instancedColor) ? sizeof(glm::vec4) : 0) + ((!instancedTextureZ) ? sizeof(GLfloat) : 0)) // this is just sizeof(vertexPos) + sizeof(vertexNormals) + sizeof(textureXY) + sizeof(color if not instanced) + sizeof(textureZ if not instanced) 
+vertexSize(sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!instancedColor) ? sizeof(glm::vec4) : 0) + ((!instancedTextureZ) ? sizeof(GLfloat) : 0)) // this is just sizeof(vertexPos) + sizeof(vertexNormals) + sizeof(textureXY) + sizeof(color if not instanced) + sizeof(textureZ if not instanced) 
 {}
 
 

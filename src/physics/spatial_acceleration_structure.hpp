@@ -119,6 +119,8 @@ class SpatialAccelerationStructure { // (SAS)
         // pointer to accurate collider for object
         std::shared_ptr<PhysicsMesh> physicsMesh;
 
+        const AABB& GetAABB();
+
         private:
 
         AABB aabb;
