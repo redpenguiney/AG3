@@ -95,13 +95,13 @@ int main() {
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         auto start = Time();
         SpatialAccelerationStructure::Get().Update();
-        PE.Step(1);
+        PE.Step(1.0/60.0);
 
         if (LMB_DOWN) {
             auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
             if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
                 std::cout << "Hit object " << castResult.hitObject->name << " \n";
-                castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.01;
+                castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.02;
             }
             else {
                 std::cout << "LMB_DOWN but not hitting anything.\n";

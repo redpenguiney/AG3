@@ -5,6 +5,7 @@
 #include <optional>
 #include <vector>
 #include <iostream>
+#include "../../external_headers/glm/gtx/string_cast.hpp"
 
 // the GJK support function. returns farthest vertex along a directional vector
 glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, const TransformComponent& transform, const SpatialAccelerationStructure::ColliderComponent& collider) {
@@ -28,18 +29,29 @@ glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
         }
     }
 
+    std::cout << "Support: farthest vertex in direction " << glm::to_string(directionInWorldSpace) << " is " << glm::to_string(farthestVertex) << "\n";
+
     // put returned point in world space
     const auto& modelToWorld = transform.GetPhysicsModelMatrix();
+    std::cout << "In world space that's " << glm::to_string(glm::dvec4(farthestVertex.x, farthestVertex.y, farthestVertex.z, 1) * modelToWorld) << "\n";
     return glm::dvec3(glm::dvec4(farthestVertex.x, farthestVertex.y, farthestVertex.z, 1) * modelToWorld);
 }
 
 // helper function for GJK, look inside GJK() for explanation of purpose
 void LineCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection) {
+    auto & a = simplex[0];
+    auto & b = simplex[1];
+
+    auto ab = b - a;
+    auto ao = -a; // a to origin
+
     // https://www.youtube.com/watch?app=desktop&v=MDusDn8oTSE 5:43 has a nice picture to illustrate this
     // in this case, the 2 points of the simplex describe a plane that contains the origin if the vector between the 2 points is within 90 degrees of the vector from one of the points to to the origin
-    if (glm::dot(simplex[1] - simplex[0], -simplex[0]) >= 0) {
+    if (glm::dot(ab, ao) >= 0) {
         // make search direction go towards origin again
-        searchDirection = glm::cross(glm::cross(simplex[1] - simplex[0], -simplex[0]), simplex[1] - simplex[0]);
+        
+        std::cout << "Passed line case.\n";
+        searchDirection = glm::cross(glm::cross(ab, ao), ab);
     }
     else { // if the condition failed, the 1st point is between 2nd point and the origin and thus the 2nd point won't help determine whether simplex contains the origin
         simplex.erase(simplex.begin()); 
@@ -150,17 +162,27 @@ std::optional<CollisionInfo> GJK(
 
         // get new point for simplex
         auto newSimplexPoint = findFarthestVertexOnObject(searchDirection, transform1, collider1) - findFarthestVertexOnObject(-searchDirection, transform2, collider2);
-        std::printf("Found point %f %f %f by going in direction %f %f %f\n", newSimplexPoint.x, newSimplexPoint.y, newSimplexPoint.z, searchDirection.x, searchDirection.y, searchDirection.z);
+        std::printf("Going in direction %f %f %f\n", searchDirection.x, searchDirection.y, searchDirection.z);
+        std::cout << "Simplex points:\n";
+        for (auto & p: simplex) {
+            std::cout << "\t" << glm::to_string(p) << "\n";
+        }
+
 
         // this is the farthest point in this direction, so if it didn't get past the origin, then origin is gonna be outside the minoski difference meaning no collision.
         if (glm::dot(newSimplexPoint, searchDirection) <= 0) {
             std::cout << "GJK failed with " << simplex.size() << " vertices.\n";
+            while (true) {}
             return std::nullopt;
         }
 
         // add point to simplex
         // we gotta insert at beginning because simplex order matters
         simplex.insert(simplex.begin(), newSimplexPoint);
+        std::cout << "Simplex points now:\n";
+        for (auto & p: simplex) {
+            std::cout << "\t" << glm::to_string(p) << "\n";
+        }
 
         // the code for this next part depends on # of points in the current simplex (and is also not understood by me), but its basically:
         // 1. see if origin intersects simplex
