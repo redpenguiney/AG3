@@ -52,14 +52,14 @@ int main() {
 
     
     int i = 0;
-    for (int x = -1; x < 100; x++) {
-        for (int y = -20; y < 1; y++) {
-            for (int z = -1; z < 100; z++) {
+    for (int x = -1; x < 10; x++) {
+        for (int y = -1; y < 1; y++) {
+            for (int z = -1; z < 10; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({x * 6, y * 3 - 0, z * 3});
+                g->transformComponent->SetPos({x * 10, y * 10 - 0, z * 10});
                 //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
                 g->transformComponent->SetScl(glm::dvec3(2, 1, 1));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));

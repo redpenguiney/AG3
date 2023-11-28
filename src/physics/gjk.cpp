@@ -1,5 +1,6 @@
 #include "gjk.hpp"
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <optional>
 #include <vector>
@@ -41,7 +42,7 @@ void LineCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection) {
         searchDirection = glm::cross(glm::cross(simplex[1] - simplex[0], -simplex[0]), simplex[1] - simplex[0]);
     }
     else { // if the condition failed, the 1st point is between 2nd point and the origin and thus the 2nd point won't help determine whether simplex contains the origin
-        simplex.pop_back(); 
+        simplex.erase(simplex.begin()); 
     }
 }
 
@@ -137,12 +138,11 @@ std::optional<CollisionInfo> GJK(
     glm::dvec3 searchDirection = {1, 0, 0}; // arbitrary starting direction
 
     // add starting point to simplex
-    // we gotta insert at beginning because simplex order matters
         // Subtracting findFarthestVertex(direction) from findFarthestVertex(-direction) gives a point on the Minoski difference of the two objects.
         // If the minowski difference of the 2 objects contains the origin, there is a point where the two positions subtracted from each other = 0, meaning the two objects are colliding.
         // Again, check the link above if you don't get it.
         // The simplex is just (in 3d) 4 points in the minoski difference that will be enough to determine whether the objects are colliding.
-    simplex.insert(simplex.begin(), findFarthestVertexOnObject(searchDirection, transform1, collider1) - findFarthestVertexOnObject(-searchDirection, transform2, collider2));
+    simplex.push_back(findFarthestVertexOnObject(searchDirection, transform1, collider1) - findFarthestVertexOnObject(-searchDirection, transform2, collider2));
     // make new search direction go from simplex towards origin
     searchDirection = -simplex.back();
 
@@ -150,13 +150,16 @@ std::optional<CollisionInfo> GJK(
 
         // get new point for simplex
         auto newSimplexPoint = findFarthestVertexOnObject(searchDirection, transform1, collider1) - findFarthestVertexOnObject(-searchDirection, transform2, collider2);
+        std::printf("Found point %f %f %f by going in direction %f %f %f\n", newSimplexPoint.x, newSimplexPoint.y, newSimplexPoint.z, searchDirection.x, searchDirection.y, searchDirection.z);
 
         // this is the farthest point in this direction, so if it didn't get past the origin, then origin is gonna be outside the minoski difference meaning no collision.
         if (glm::dot(newSimplexPoint, searchDirection) <= 0) {
+            std::cout << "GJK failed with " << simplex.size() << " vertices.\n";
             return std::nullopt;
         }
 
         // add point to simplex
+        // we gotta insert at beginning because simplex order matters
         simplex.insert(simplex.begin(), newSimplexPoint);
 
         // the code for this next part depends on # of points in the current simplex (and is also not understood by me), but its basically:
@@ -166,12 +169,15 @@ std::optional<CollisionInfo> GJK(
         // 4. if it doesn't, we have an unneccesary point in the simplex, reduce the simplex to closest/most relevant stuff to origin
         switch (simplex.size()) {
             case 2: 
+            std::cout << "Executing line case.\n";
             LineCase(simplex, searchDirection); 
             break;
             case 3:
+            std::cout << "Executing triangle case.\n";
             TriangleCase(simplex, searchDirection);
             break;
             case 4:
+            std::cout << "Executing tetrahedron case.\n";
             if (TetrahedronCase(simplex, searchDirection)) { // this function is not void like the others, returns true if collision confirmed
                 goto collisionFound;
             }

@@ -200,7 +200,7 @@ void GraphicsEngine::UpdateMeshpools() {
 
 // TODO: idk if there's any practical way around this but data locality is probably messed up by jumping around inside the meshpool vbos
 void GraphicsEngine::UpdateRenderComponents() {
-    auto start = Time();
+    // auto start = Time();
     auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
     // Get components of all gameobjects that have a transform and point light component
@@ -242,7 +242,7 @@ void GraphicsEngine::UpdateRenderComponents() {
         }
     });
 
-    LogElapsed(start, "Rendercomp update elapsed ");
+    // LogElapsed(start, "Rendercomp update elapsed ");
 }
 
 glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {

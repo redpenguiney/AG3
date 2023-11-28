@@ -2,6 +2,8 @@
 #include "../gameobjects/rigidbody_component.hpp"
 #include "spatial_acceleration_structure.hpp"
 #include "../gameobjects/component_registry.hpp"
+#include <cassert>
+#include <cstdio>
 #include <memory>
 #include <vector>
 #include "engine.hpp"
@@ -23,17 +25,21 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
     rigidbody.accumulatedForce += PhysicsEngine::Get().GRAVITY * dt * (double)rigidbody.mass;
 
     // TODO: should REALLY use tight fitting AABB here
-    std::vector<SpatialAccelerationStructure::ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(collider.GetAABB());
+    auto aabbToTest = collider.GetAABB();
+    std::vector<SpatialAccelerationStructure::ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest);
+    // assert(potentialColliding.size() == 0);
 
     // TODO: potential perf gains by using tight fitting AABB/OBB here after broadphase SAS query?
     
     // we don't do anything to the other gameobjects we hit; if they have a rigidbody, they will independently take care of that in their call to DoPhysics()
     // TODO: this does mean redundant narrowphase collision checks, we should store results of narrowphase checks to avoid that
     for (auto & otherColliderPtr: potentialColliding) {
+        if (otherColliderPtr == &collider) {continue;}
         auto collisionTestResult = GJK(transform, collider, *otherColliderPtr->GetGameObject()->transformComponent.ptr, *otherColliderPtr);
         if (collisionTestResult) {
             std::cout << "COLLISION!!!\n";
         }
+        
     }
 }
 
