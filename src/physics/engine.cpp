@@ -38,6 +38,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
         auto collisionTestResult = GJK(transform, collider, *otherColliderPtr->GetGameObject()->transformComponent.ptr, *otherColliderPtr);
         if (collisionTestResult) {
             std::cout << "COLLISION!!!\n";
+            while (true) {}
         }
         
     }

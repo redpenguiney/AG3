@@ -13,8 +13,8 @@ glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     // this way, to find the farthest vertex on a 10000-vertex mesh we don't need to do 10000 vertex transformations
     // TODO: this is still O(n vertices) complexity
 
-    auto worldToModel = glm::inverse(transform.GetNormalMatrix());
-    auto direction = glm::normalize(directionInWorldSpace * worldToModel);
+    auto worldToModel = glm::inverse(transform.GetPhysicsModelMatrix());
+    auto direction = glm::vec3(glm::normalize(worldToModel * glm::vec4(directionInWorldSpace.x, directionInWorldSpace.y, directionInWorldSpace.z, 1)));
 
     float farthestDistance = -INFINITY;
     glm::vec3 farthestVertex;
@@ -23,18 +23,20 @@ glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     for (unsigned int i = 0; i < collider.physicsMesh->meshes.at(0).vertices.size()/3; i++) {
         const glm::vec3& vertex = glm::make_vec3(&collider.physicsMesh->meshes.at(0).vertices.at(i * 3));
         auto dp = glm::dot(vertex, direction); // TODO: do we normalize vertex before taking dot product? i don't think so???
-        if (dp > farthestDistance) {
+        if (dp >= farthestDistance) {
             farthestDistance = dp;
             farthestVertex = vertex;
         }
     }
 
+    // std::cout << "Model matrix is " << glm::to_string(transform.GetPhysicsModelMatrix()) << "\n";
     std::cout << "Support: farthest vertex in direction " << glm::to_string(directionInWorldSpace) << " is " << glm::to_string(farthestVertex) << "\n";
 
     // put returned point in world space
     const auto& modelToWorld = transform.GetPhysicsModelMatrix();
-    std::cout << "In world space that's " << glm::to_string(glm::dvec4(farthestVertex.x, farthestVertex.y, farthestVertex.z, 1) * modelToWorld) << "\n";
-    return glm::dvec3(glm::dvec4(farthestVertex.x, farthestVertex.y, farthestVertex.z, 1) * modelToWorld);
+    auto farthestVertexInWorldSpace = glm::dvec3(modelToWorld * glm::dvec4(farthestVertex.x, farthestVertex.y, farthestVertex.z, 1));
+    std::cout << "\tIn world space that's " << glm::to_string(farthestVertexInWorldSpace) << "\n";
+    return farthestVertexInWorldSpace;
 }
 
 // helper function for GJK, look inside GJK() for explanation of purpose
@@ -50,11 +52,13 @@ void LineCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection) {
     if (glm::dot(ab, ao) >= 0) {
         // make search direction go towards origin again
         
-        std::cout << "Passed line case.\n";
+        std::cout << "\tPassed line case.\n";
         searchDirection = glm::cross(glm::cross(ab, ao), ab);
     }
     else { // if the condition failed, the 1st point is between 2nd point and the origin and thus the 2nd point won't help determine whether simplex contains the origin
+        std::cout << "\tFailed line case.\n";
         simplex.erase(simplex.begin()); 
+        searchDirection = ao;
     }
 }
 
@@ -82,6 +86,7 @@ void TriangleCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection)
     else {
         if (glm::dot(glm::cross(ab, abc), ao) >= 0) {
             simplex = {a, b}; // TODO: ???
+            std::cout << "\t Failed triangle case.\n";
             LineCase(simplex, searchDirection);
         }
         else {
@@ -94,7 +99,7 @@ void TriangleCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection)
             }
         }
     }
-
+    searchDirection = glm::normalize(searchDirection);
 }
 
 bool TetrahedronCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection) {
@@ -156,7 +161,7 @@ std::optional<CollisionInfo> GJK(
         // The simplex is just (in 3d) 4 points in the minoski difference that will be enough to determine whether the objects are colliding.
     simplex.push_back(findFarthestVertexOnObject(searchDirection, transform1, collider1) - findFarthestVertexOnObject(-searchDirection, transform2, collider2));
     // make new search direction go from simplex towards origin
-    searchDirection = -simplex.back();
+    searchDirection = glm::normalize(-simplex.back());
 
     while (true) {
 
@@ -167,12 +172,12 @@ std::optional<CollisionInfo> GJK(
         for (auto & p: simplex) {
             std::cout << "\t" << glm::to_string(p) << "\n";
         }
-
+        std::cout << "\t" << glm::to_string(newSimplexPoint) << "\n";
 
         // this is the farthest point in this direction, so if it didn't get past the origin, then origin is gonna be outside the minoski difference meaning no collision.
         if (glm::dot(newSimplexPoint, searchDirection) <= 0) {
             std::cout << "GJK failed with " << simplex.size() << " vertices.\n";
-            while (true) {}
+            // while (true) {}
             return std::nullopt;
         }
 

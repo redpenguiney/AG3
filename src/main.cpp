@@ -60,7 +60,7 @@ int main() {
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({x * 10, y * 10 - 0, z * 10});
-                //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
+                // g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
                 g->transformComponent->SetScl(glm::dvec3(2, 1, 1));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
