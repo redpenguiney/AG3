@@ -52,16 +52,16 @@ int main() {
 
     
     int i = 0;
-    for (int x = -1; x < 10; x++) {
-        for (int y = -1; y < 1; y++) {
-            for (int z = -1; z < 10; z++) {
+    for (int x = -5; x < 2; x++) {
+        for (int y = -5; y < 2; y++) {
+            for (int z = -5; z < 2; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({x * 10, y * 10 - 0, z * 10});
+                g->transformComponent->SetPos({20 + x * 8, y * 8 - 3, 18 - z * 8});
                 // g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
-                g->transformComponent->SetScl(glm::dvec3(2, 1, 1));
+                g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
                 g->name = std::string("Gameobject #") + to_string(i);
@@ -72,14 +72,22 @@ int main() {
 
     
     // make light
-    GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
     params.meshId = m->meshId;
     params.materialId = grassMaterial->id;
     auto coolLight = ComponentRegistry::NewGameObject(params);
     coolLight->renderComponent->SetTextureZ(-1);
     coolLight->transformComponent->SetPos({0, 10, 0});
     coolLight->pointLightComponent->SetRange(200);
-    coolLight->pointLightComponent->SetColor({1, 1, 1});
+    coolLight->pointLightComponent->SetColor({1, 1, 1});}
+    {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    params.meshId = m->meshId;
+    params.materialId = grassMaterial->id;
+    auto coolLight = ComponentRegistry::NewGameObject(params);
+    coolLight->renderComponent->SetTextureZ(-1);
+    coolLight->transformComponent->SetPos({30, 10, 30});
+    coolLight->pointLightComponent->SetRange(200);
+    coolLight->pointLightComponent->SetColor({1, 1, 1});}
     
     
     GE.debugFreecamEnabled = true;
@@ -89,7 +97,8 @@ int main() {
 
     //printf("Starting main loop.\n");
 
-    while (!GE.ShouldClose()) {
+    while (!GE.ShouldClose()) 
+    {
         //coolLight->transformComponent->SetPos({sin(1000) * 3, 2,  cos(1000) * 3});
 
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);

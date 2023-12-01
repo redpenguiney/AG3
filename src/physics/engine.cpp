@@ -35,12 +35,14 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
     // TODO: this does mean redundant narrowphase collision checks, we should store results of narrowphase checks to avoid that
     for (auto & otherColliderPtr: potentialColliding) {
         if (otherColliderPtr == &collider) {continue;}
-        auto collisionTestResult = GJK(transform, collider, *otherColliderPtr->GetGameObject()->transformComponent.ptr, *otherColliderPtr);
+        auto collisionTestResult = IsColliding(transform, collider, *otherColliderPtr->GetGameObject()->transformComponent.ptr, *otherColliderPtr);
         if (collisionTestResult) {
             std::cout << "COLLISION!!!\n";
-            while (true) {}
+            rigidbody.velocity -= rigidbody.velocity * collisionTestResult->collisionNormal * 2.0;
         }
-        
+        else {
+            std::cout << "aw.\n";
+        }
     }
 }
 

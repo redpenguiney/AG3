@@ -9,13 +9,13 @@
 #include <vector>
 
 struct CollisionInfo {
-    glm::vec3 collisionNormal;
+    glm::dvec3 collisionNormal;
     std::vector<glm::dvec3> hitPoints;
     double penetrationDepth;
 };
 
-// GJK collision algorithm. Determines whether the given thingies are colliding, and if they are, the return value will contain the collision info.
-std::optional<CollisionInfo> GJK(
+// GJK+EPA collision algorithms. Determines whether the given thingies are colliding, and if they are, the return value will contain the collision info.
+std::optional<CollisionInfo> IsColliding(
     const TransformComponent& transform1,
     const SpatialAccelerationStructure::ColliderComponent& collider1,
     const TransformComponent& transform2,

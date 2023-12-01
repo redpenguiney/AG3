@@ -55,8 +55,8 @@ void main()
     vec3 normal = normalize(TBNmatrix * (texture(normalMap, fragmentTexCoords).rgb * 2.0 - 1.0)); // todo: matrix multiplication in fragment shader is really bad
 
     vec3 light = vec3(0, 0, 0);
-    for (uint i = 0; i < 1; i++) {
-        light = CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, normal);
+    for (uint i = 0; i < pointLightCount; i++) {
+        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, normal);
     }
 
     vec4 tx;
