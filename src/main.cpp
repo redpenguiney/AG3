@@ -59,9 +59,9 @@ int main() {
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({20 + x * 8, y * 8 - 3, 18 - z * 8});
+                g->transformComponent->SetPos({x * 8, y * 8, z * 8});
                 // g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
-                g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
+                //g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
                 g->name = std::string("Gameobject #") + to_string(i);
@@ -102,18 +102,18 @@ int main() {
         //coolLight->transformComponent->SetPos({sin(1000) * 3, 2,  cos(1000) * 3});
 
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
-        auto start = Time();
+        //auto start = Time();
         SpatialAccelerationStructure::Get().Update();
         PE.Step(1.0/60.0);
 
         if (LMB_DOWN) {
             auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
             if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
-                std::cout << "Hit object " << castResult.hitObject->name << " \n";
+                //std::cout << "Hit object " << castResult.hitObject->name << " \n";
                 castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.02;
             }
             else {
-                std::cout << "LMB_DOWN but not hitting anything.\n";
+                //std::cout << "LMB_DOWN but not hitting anything.\n";
             }
 
         }

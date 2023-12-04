@@ -147,10 +147,10 @@ void SpatialAccelerationStructure::SasNode::Split() {
 
     // iterate backwards through indicesToRemove to preserve index correctness
     if (indicesToRemove.size() > 0) {
-        for (unsigned int i = indicesToRemove.size() - 1; i > 0; i--) {
+        for (unsigned int j = indicesToRemove.size() - 1; j > 0; j--) {
             //std::cout << objects.size() << " objects, i = "<< i << " index " << indicesToRemove[i] << "\n";
-            assert(indicesToRemove[i] < objects.size());
-            objects.erase(objects.begin() + indicesToRemove[i]);
+            assert(indicesToRemove[j] < objects.size());
+            objects.erase(objects.begin() + indicesToRemove[j]);
         }
     }
 }

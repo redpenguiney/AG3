@@ -31,7 +31,6 @@ out mat3 TBNmatrix; //TBN matrix is need to make normal mapping work when an obj
 
 void main()
 {
-    // TODO: we need to rotate normals i think?
     gl_Position = modelMatrix * vec4(vertexPos, 1.0);
     cameraToFragmentPosition = gl_Position.xyz;
     gl_Position = camera * gl_Position;

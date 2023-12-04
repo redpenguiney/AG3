@@ -1,11 +1,13 @@
 #include "gjk.hpp"
+#include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <optional>
 #include <vector>
 #include <iostream>
-#include "../../external_headers/glm/gtx/string_cast.hpp"
+#include "../../external_headers/GLM/gtx/string_cast.hpp"
 
 // the GJK support function. returns farthest vertex along a directional vector
 glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, const TransformComponent& transform, const SpatialAccelerationStructure::ColliderComponent& collider) {
@@ -13,10 +15,11 @@ glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     // this way, to find the farthest vertex on a 10000-vertex mesh we don't need to do 10000 vertex transformations
     // TODO: this is still O(n vertices) complexity
 
+    //std::cout << "Normal matrix is " << glm::to_string(transform.GetNormalMatrix()) << "\n";
     auto worldToModel = glm::inverse(transform.GetNormalMatrix());
     auto directionInModelSpace = glm::vec3(glm::normalize(worldToModel * glm::vec4(directionInWorldSpace.x, directionInWorldSpace.y, directionInWorldSpace.z, 1)));
 
-    float farthestDistance = -INFINITY;
+    float farthestDistance = -FLT_MAX;
     glm::vec3 farthestVertex;
 
     //TODO: concave support
@@ -29,13 +32,13 @@ glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
         }
     }
 
-    // std::cout << "Model matrix is " << glm::to_string(transform.GetPhysicsModelMatrix()) << "\n";
+    //std::cout << "Model matrix is " << glm::to_string(transform.GetPhysicsModelMatrix()) << "\n";
     //std::cout << "Support: farthest vertex in direction " << glm::to_string(directionInModelSpace) << " is " << glm::to_string(farthestVertex) << "\n";
 
     // put returned point in world space
     const auto& modelToWorld = transform.GetPhysicsModelMatrix();
     auto farthestVertexInWorldSpace = glm::dvec3(modelToWorld * glm::dvec4(farthestVertex.x, farthestVertex.y, farthestVertex.z, 1));
-    //std::cout << "\tIn world space that's " << glm::to_string(farthestVertexInWorldSpace) << "\n";
+    std::cout << "\tIn world space that's " << glm::to_string(farthestVertexInWorldSpace) << "\n";
     return farthestVertexInWorldSpace;
 }
 
@@ -155,7 +158,54 @@ glm::dvec3 NewSimplexPoint(
     - findFarthestVertexOnObject(-searchDirection, transform1, collider1);
 }
 
+// Used by EPA to test if the reverse of an edge already exists in the list and if so, remove it.
+// I don't really know why it needs that tho.
+void AddIfUniqueEdge(std::vector<std::pair<unsigned int, unsigned int>>& edges, const std::vector<unsigned int>& faces, unsigned int a, unsigned int b) {
+	auto reverse = std::find(           
+		edges.begin(),                           
+		edges.end(),                             
+		std::make_pair(faces[b], faces[a]) 
+	);
+ 
+	if (reverse != edges.end()) {
+		edges.erase(reverse);
+	}
+ 
+	else {
+		edges.emplace_back(faces[a], faces[b]);
+	}
+}
 
+// Used by EPA to get (take a guess) face normals.
+// Returns vector of pair {normal, distance to face} and index of the closest normal.
+std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNormals(const std::vector<glm::dvec3>& polytope, const std::vector<unsigned int>& faces) {
+	std::vector<std::pair<glm::dvec3, double>> normals;
+	size_t minTriangle = 0;
+	double  minDistance = FLT_MAX;
+
+	for (size_t i = 0; i < faces.size(); i += 3) {
+		glm::dvec3 a = polytope[faces[i    ]];
+		glm::dvec3 b = polytope[faces[i + 1]];
+		glm::dvec3 c = polytope[faces[i + 2]];
+
+		glm::dvec3 normal = glm::normalize(glm::cross(b - a, c - a));
+		double distance = dot(normal, a);
+
+		if (distance < 0) {
+			normal   *= -1;
+			distance *= -1;
+		}
+
+		normals.push_back({normal, distance});
+
+		if (distance < minDistance) {
+			minTriangle = i / 3;
+			minDistance = distance;
+		}
+	}
+
+	return { normals, minTriangle };
+}
  
 // this article actually does a really good job of explaining the GJK algorithm.
 // https://cse442-17f.github.io/Gilbert-Johnson-Keerthi-Distance-Algorithm/
@@ -172,6 +222,7 @@ std::optional<CollisionInfo> IsColliding(
 
     // Search direction is in WORLD space.
     glm::dvec3 searchDirection = glm::normalize(glm::dvec3 {1, 1, 1}); // arbitrary starting direction
+    std::printf("Initial search direction %f %f %f\n", searchDirection.x, searchDirection.y, searchDirection.z);
 
     // add starting point to simplex
         // Subtracting findFarthestVertex(direction) from findFarthestVertex(-direction) gives a point on the Minoski difference of the two objects.
@@ -186,16 +237,12 @@ std::optional<CollisionInfo> IsColliding(
 
         // get new point for simplex
         auto newSimplexPoint = NewSimplexPoint(searchDirection, transform1, collider1, transform2, collider2);
-        //std::printf("Going in direction %f %f %f\n", searchDirection.x, searchDirection.y, searchDirection.z);
-        //std::cout << "Simplex points:\n";
-        //std::cout << "\t" << glm::to_string(newSimplexPoint) << "\n";
-        //for (auto & p: simplex) {
-        //    std::cout << "\t" << glm::to_string(p) << "\n";
-        //} 
+        std::printf("Going in direction %f %f %f\n", searchDirection.x, searchDirection.y, searchDirection.z);
+        
 
         // this is the farthest point in this direction, so if it didn't get past the origin, then origin is gonna be outside the minoski difference meaning no collision.
         if (glm::dot(newSimplexPoint, searchDirection) <= 0) {
-            //std::cout << "GJK failed with " << simplex.size() << " vertices.\n";
+            std::cout << "GJK failed with " << simplex.size() << " vertices.\n";
             // while (true) {}
             return std::nullopt;
         }
@@ -235,13 +282,114 @@ std::optional<CollisionInfo> IsColliding(
 
     collisionFound:; // goto uses this when collision found because c++ still doesn't let you label loops
 
-    /////////////////////////////////////////////
+    // ///////////////////////////////////////////
+
     // Now that we know there's a collision, get collision normals, hit points, penetration depth, etc. using EPA algorithm
  
-    // find closest edge on the simplex to
-    unsigned int minIndex = 0;
-    double mindistance = INFINITY;
-    glm::dvec3 minNormal;
+    // Simplex is no longer a simplex and is just a convex polytope (3d polygon) made from (more than 4) points on the Minkoski difference.
+    auto & polytope = simplex;
 
-    return CollisionInfo();
+    // To find the normal, we must progressively expand the simplex, which neccesitates knowing the faces of the simplex so that we can calculate proper normals
+    std::vector<unsigned int> faces = {
+		0, 1, 2,
+		0, 3, 1,
+		0, 2, 3,
+		1, 3, 2
+	};
+
+    // list: vec4(normal, distance), index: min distance
+	auto [normals, minFace] = GetFaceNormals(polytope, faces);
+
+    // find closest face on the simplex to origin (point of collision)
+    // unsigned int minIndex = 0;
+    double minDistance = FLT_MAX;
+    glm::dvec3 minNormal;
+    
+    while (minDistance == FLT_MAX) {
+        std::cout << "At start of loop, == infinity is " << (minDistance == FLT_MAX) << "\n";
+        std::cout << minDistance << " is min\n";
+
+		minNormal = normals[minFace].first;
+        minDistance = normals[minDistance].second;
+ 
+		glm::dvec3 newPolytopePoint = NewSimplexPoint(minNormal, transform1, collider1, transform2, collider2);
+		double sDistance = glm::dot(minNormal, newPolytopePoint);
+ 
+        std::cout << "Direction " << glm::to_string(minNormal) << "\n";
+
+        std::cout << "Polytope points:\n";
+        std::cout << "\t" << glm::to_string(newPolytopePoint) << "\n";
+        for (auto & p: polytope) {
+           std::cout << "\t" << glm::to_string(p) << "\n";
+        } 
+        assert(polytope.size() < 16);
+
+        std::cout << "min is " << minDistance << " vs s is " << sDistance << " so the difference is " << sDistance - minDistance << "\n";
+		if (abs(sDistance - minDistance) > 0.001f) {
+            std::cout << "WE ARE GOING AGAIN BOIIIIS\n";
+			minDistance = FLT_MAX;
+        }
+
+        // After adding vertex to polytope, we need to edit the faces so they correct again
+        std::vector<std::pair<unsigned int, unsigned int>> uniqueEdges;
+
+        for (unsigned int i = 0; i < normals.size(); i++) {
+            if (glm::dot(newPolytopePoint, normals[i].first) >= 0) {
+                unsigned int f = i * 3;
+
+                AddIfUniqueEdge(uniqueEdges, faces, f,     f + 1);
+                AddIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
+                AddIfUniqueEdge(uniqueEdges, faces, f + 2, f    );
+
+                // erase without preserving order
+                faces[f + 2] = faces.back(); faces.pop_back();
+                faces[f + 1] = faces.back(); faces.pop_back();
+                faces[f    ] = faces.back(); faces.pop_back();
+
+                normals[i] = normals.back(); 
+                normals.pop_back();
+
+                i--;
+            }
+        }
+
+        std::vector<unsigned int> newFaces;
+        for (auto [edgeIndex1, edgeIndex2] : uniqueEdges) {
+            newFaces.push_back(edgeIndex1);
+            newFaces.push_back(edgeIndex2);
+            newFaces.push_back(polytope.size());
+        }
+            
+        polytope.push_back(newPolytopePoint);
+
+        auto [newNormals, newMinFace] = GetFaceNormals(polytope, newFaces);
+
+        double oldMinDistance = FLT_MAX;
+        for (unsigned int i = 0; i < normals.size(); i++) {
+            if (normals[i].second < oldMinDistance) {
+                oldMinDistance = normals[i].second;
+                minFace = i;
+            }
+        }
+
+        if (newNormals[newMinFace].second < oldMinDistance) {
+            minFace = newMinFace + normals.size();
+        }
+
+        faces  .insert(faces  .end(), newFaces  .begin(), newFaces  .end());
+        normals.insert(normals.end(), newNormals.begin(), newNormals.end());
+
+        std::cout << minDistance << " is min\n";
+        if (minDistance != FLT_MAX) {
+            std::cout << "Cave Johnson, we're done here.\n";
+        }
+    }
+
+    assert((minNormal != glm::dvec3(0,0,0)));
+
+    return CollisionInfo({
+        .collisionNormal = minNormal,
+        .hitPoints = {},
+        .penetrationDepth = minDistance + 0.0001f // TODO 
+    });
 }

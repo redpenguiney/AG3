@@ -8,6 +8,8 @@
 #include <vector>
 #include "engine.hpp"
 #include "gjk.hpp"
+#include "../../external_headers/GLM/gtx/string_cast.hpp"
+
 
 PhysicsEngine::PhysicsEngine() {
     GRAVITY = {0, 0, 0};
@@ -37,7 +39,9 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
         if (otherColliderPtr == &collider) {continue;}
         auto collisionTestResult = IsColliding(transform, collider, *otherColliderPtr->GetGameObject()->transformComponent.ptr, *otherColliderPtr);
         if (collisionTestResult) {
-            std::cout << "COLLISION!!!\n";
+            std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << "\n"; 
+
+            // todo its very not much ok to do this
             rigidbody.velocity -= rigidbody.velocity * collisionTestResult->collisionNormal * 2.0;
         }
         else {

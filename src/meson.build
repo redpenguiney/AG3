@@ -3,4 +3,4 @@ glew_dep = declare_dependency(link_args: ['-lglew64'])
 glfw_dep = declare_dependency(link_args: ['-l64glfw3'])
 gl_dep = declare_dependency(link_args: ['-lopengl32'])
 
-srclib = static_library('srclib', sources, dependencies: [glew_dep, glfw_dep, gl_dep], cpp_args: ['-O3'])
+srclib = static_library('srclib', sources, dependencies: [glew_dep, glfw_dep, gl_dep], cpp_args: ['-O3', '-Wshadow'])

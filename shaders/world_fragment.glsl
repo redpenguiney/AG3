@@ -29,7 +29,57 @@ layout(std430, binding = 1) buffer pointLightSSBO {
     pointLight pointLights[];
 };
 
-vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, vec3 normal) {
+// parallax mapping
+vec2 CalculateTexCoords(vec3 texCoords) { 
+    vec3 viewDir = cameraToFragmentPosition;
+
+    // number of depth layers
+    const float minLayers = 8;
+    const float maxLayers = 32;
+    
+    // TODO: make uniform
+    const float heightScale = 4;
+
+    float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDir)));  
+    // calculate the size of each layer
+    float layerDepth = 1.0 / numLayers;
+    // depth of current layer
+    float currentLayerDepth = 0.0;
+    // the amount to shift the texture coordinates per layer (from vector P)
+    vec2 P = viewDir.xy / viewDir.z * heightScale; 
+    vec2 deltaTexCoords = P / numLayers;
+  
+    // get initial values
+    vec2  currentTexCoords = texCoords.xy;
+    float texZ = texCoords.z;
+    float currentDepthMapValue = texture(displacementMap, vec3(currentTexCoords, texZ)).r;
+      
+    while(currentLayerDepth < currentDepthMapValue)
+    {
+        // shift texture coordinates along direction of P
+        currentTexCoords -= deltaTexCoords;
+        // get depthmap value at current texture coordinates
+        currentDepthMapValue = texture(displacementMap, vec3(currentTexCoords, texZ)).r;  
+        // get depth of next layer
+        currentLayerDepth += layerDepth;  
+    }
+    
+    // get texture coordinates before collision (reverse operations)
+    vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+
+    // get depth after and before collision for linear interpolation
+    float afterDepth  = currentDepthMapValue - currentLayerDepth;
+    float beforeDepth = texture(displacementMap, vec3(prevTexCoords, texZ)).r - currentLayerDepth + layerDepth;
+ 
+    // interpolation of texture coordinates
+    float weight = afterDepth / (afterDepth - beforeDepth);
+    vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
+
+    return finalTexCoords;
+}
+
+
+vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, vec3 normal, vec3 realTexCoords) {
     
     float distance = length(rel_pos - cameraToFragmentPosition);
     vec3 lightDir = normalize(rel_pos - cameraToFragmentPosition); 
@@ -46,25 +96,31 @@ vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, vec3 no
     vec3 ambient = lightColor * 0.1;
 
     float strength = range/pow(distance, 2);
-    return strength * (ambient + diffuse + (specular * texture(specularMap, fragmentTexCoords).x));
+    return strength * (ambient + diffuse + (specular * texture(specularMap, realTexCoords).x));
 };
 
 // TODO; to avoid color banding add dithering 
 void main()
 {
-    vec3 normal = normalize(TBNmatrix * (texture(normalMap, fragmentTexCoords).rgb * 2.0 - 1.0)); // todo: matrix multiplication in fragment shader is really bad
+    // vec3 realTexCoords = vec3(CalculateTexCoords(fragmentTexCoords), fragmentTexCoords.z);       
+    // if(realTexCoords.x > 1.0 || realTexCoords.y > 1.0 || realTexCoords.x < 0.0 || realTexCoords.y < 0.0) {
+    //     discard;
+    // }
+
+    vec3 realTexCoords = fragmentTexCoords;
+    vec3 normal = normalize(TBNmatrix * (texture(normalMap, realTexCoords).rgb * 2.0 - 1.0)); // todo: matrix multiplication in fragment shader is really bad
 
     vec3 light = vec3(0, 0, 0);
     for (uint i = 0; i < pointLightCount; i++) {
-        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, normal);
+        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, normal, realTexCoords);
     }
 
     vec4 tx;
-    if (fragmentTexCoords.z == -1.0) {
+    if (realTexCoords.z == -1.0) {
         tx = vec4(1.0, 1.0, 1.0, 1.0);
     }
     else {
-        tx = texture(colorMap, fragmentTexCoords);
+        tx = texture(colorMap, realTexCoords);
     }
     if (tx.a < 0.1) {
         discard;

@@ -1,3 +1,9 @@
+// This file stores all components in a way that keeps them both organized and cache-friendly.
+// Basically entites with the same set of components have their components stored together.
+// Pointers to components are never invalidated thanks to component pool fyi.
+
+// TODO: interleaved component pools?
+
 #pragma once
 #include <array>
 #include <bitset>
@@ -124,9 +130,6 @@ class GameObject {
     
 };
 
-// This file stores all components in a way that keeps them both organized and cache-friendly.
-// Basically entites with the same set of components have their components stored together.
-// Pointers to components are never invalidated thanks to component pool fyi.
 namespace ComponentRegistry {
     // To hide all the non-type safe stuff, we need an iterator that just lets people iterate through the components of all gameobjects that have certain components (i.e give me all pairs of transform + render)
     template <typename ... Args>
@@ -228,8 +231,8 @@ namespace ComponentRegistry {
             return it;
         }
 
-        Iterator(std::vector<std::array<void*, N_COMPONENT_TYPES>> pools): 
-        pools(pools),
+        Iterator(std::vector<std::array<void*, N_COMPONENT_TYPES>> arg_pools): 
+        pools(arg_pools),
         componentIndex(0),
         poolIndex(0),
         pageIndex(0),

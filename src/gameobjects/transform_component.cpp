@@ -4,6 +4,8 @@
 #include "../../external_headers/GLM/gtx/quaternion.hpp"
 #include <cstdio>
 
+// TODO: header
+
 // TODO: use doubles in matrices for physics???
 class TransformComponent: public BaseComponent<TransformComponent> {
     public:
@@ -18,6 +20,7 @@ class TransformComponent: public BaseComponent<TransformComponent> {
         scale_ = {1, 1, 1};
         position_ = {0, 0, 0};
         rotScaleMatrix = glm::identity<glm::mat4x4>();
+        normalMatrix = glm::identity<glm::mat3x3>();
     }
 
     // Called when this component is returned to a pool.

@@ -115,10 +115,10 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
     }
     else { // else go through them to decide which triangle was hit first and return that one
         // closest hit point is first hit triangle
-        double closestDistance = INFINITY;
+        double closestDistance = FLT_MAX;
         RaycastResult bestResult;
         for (auto & result: hitTriangles) {
-            std::cout << "Considering object at " << result.hitObject << " named " << result.hitObject->name << "\n";
+            //std::cout << "Considering object at " << result.hitObject << " named " << result.hitObject->name << "\n";
             double distance = abs((result.hitPoint - origin).x) + abs((result.hitPoint - origin).y) + abs((result.hitPoint - origin).z);
             if (distance < closestDistance) {
                 closestDistance = distance;
