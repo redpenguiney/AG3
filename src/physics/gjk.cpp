@@ -334,7 +334,7 @@ std::optional<CollisionInfo> IsColliding(
         std::vector<std::pair<unsigned int, unsigned int>> uniqueEdges;
 
         for (unsigned int i = 0; i < normals.size(); i++) {
-            if (glm::dot(newPolytopePoint, normals[i].first) >= 0) {
+            if (glm::dot(normals[i].first, newPolytopePoint) > glm::dot(normals[i].first, polytope[faces[i*3]])) {
                 unsigned int f = i * 3;
 
                 AddIfUniqueEdge(uniqueEdges, faces, f,     f + 1);
@@ -362,7 +362,7 @@ std::optional<CollisionInfo> IsColliding(
             
         polytope.push_back(newPolytopePoint);
 
-        auto [newNormals, newMinFace] = GetFaceNormals(polytope, newFaces);
+        auto [newNormals, =] = GetFaceNormals(polytope, newFaces);
 
         double oldMinDistance = FLT_MAX;
         for (unsigned int i = 0; i < normals.size(); i++) {
