@@ -38,7 +38,7 @@ glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     // put returned point in world space
     const auto& modelToWorld = transform.GetPhysicsModelMatrix();
     auto farthestVertexInWorldSpace = glm::dvec3(modelToWorld * glm::dvec4(farthestVertex.x, farthestVertex.y, farthestVertex.z, 1));
-    std::cout << "\tIn world space that's " << glm::to_string(farthestVertexInWorldSpace) << "\n";
+    //std::cout << "\tIn world space that's " << glm::to_string(farthestVertexInWorldSpace) << "\n";
     return farthestVertexInWorldSpace;
 }
 
@@ -222,7 +222,7 @@ std::optional<CollisionInfo> IsColliding(
 
     // Search direction is in WORLD space.
     glm::dvec3 searchDirection = glm::normalize(glm::dvec3 {1, 1, 1}); // arbitrary starting direction
-    std::printf("Initial search direction %f %f %f\n", searchDirection.x, searchDirection.y, searchDirection.z);
+    //std::printf("Initial search direction %f %f %f\n", searchDirection.x, searchDirection.y, searchDirection.z);
 
     // add starting point to simplex
         // Subtracting findFarthestVertex(direction) from findFarthestVertex(-direction) gives a point on the Minoski difference of the two objects.
@@ -237,7 +237,7 @@ std::optional<CollisionInfo> IsColliding(
 
         // get new point for simplex
         auto newSimplexPoint = NewSimplexPoint(searchDirection, transform1, collider1, transform2, collider2);
-        std::printf("Going in direction %f %f %f\n", searchDirection.x, searchDirection.y, searchDirection.z);
+        //std::printf("Going in direction %f %f %f\n", searchDirection.x, searchDirection.y, searchDirection.z);
         
 
         // this is the farthest point in this direction, so if it didn't get past the origin, then origin is gonna be outside the minoski difference meaning no collision.
@@ -281,6 +281,7 @@ std::optional<CollisionInfo> IsColliding(
     }
 
     collisionFound:; // goto uses this when collision found because c++ still doesn't let you label loops
+    std::cout << "Collision identified. Doing EPA.\n";
 
     // ///////////////////////////////////////////
 
@@ -362,7 +363,9 @@ std::optional<CollisionInfo> IsColliding(
             
         polytope.push_back(newPolytopePoint);
 
-        auto [newNormals, =] = GetFaceNormals(polytope, newFaces);
+        auto [newNormals, newMinFace] = GetFaceNormals(polytope, newFaces);
+        std::cout << "min face new is " << newMinFace << "\n";
+        std::cout << "size " << faces.size() << " and " << uniqueEdges.size() << "\n";
 
         double oldMinDistance = FLT_MAX;
         for (unsigned int i = 0; i < normals.size(); i++) {
@@ -372,7 +375,7 @@ std::optional<CollisionInfo> IsColliding(
             }
         }
 
-        if (newNormals[newMinFace].second < oldMinDistance) {
+        if (newNormals.at(newMinFace).second < oldMinDistance) {
             minFace = newMinFace + normals.size();
         }
 
