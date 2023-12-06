@@ -71,8 +71,9 @@ bool GraphicsEngine::ShouldClose() {
 void GraphicsEngine::RenderScene() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
     // TODO: remove
-    SpatialAccelerationStructure::Get().DebugVisualize();
+    //SpatialAccelerationStructure::Get().DebugVisualize();
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
     glEnable(GL_FRAMEBUFFER_SRGB); // gamma correction; google it. TODO: when we start using postprocessing/framebuffers, turn this off except for final image output

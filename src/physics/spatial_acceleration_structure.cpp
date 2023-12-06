@@ -1,6 +1,7 @@
 #include "spatial_acceleration_structure.hpp"
 #include "../gameobjects/component_registry.hpp"
 #include <array>
+#include "../../external_headers/GLM/gtx/string_cast.hpp"
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -120,7 +121,7 @@ void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode con
     
     for (auto & object: node.objects) {
         glm::vec3 position = object->aabb.Center();
-        glm::mat4x4 model = glm::translate(glm::identity<glm::mat4x4>(), position);
+        glm::mat4x4 model = glm::translate(glm::scale(glm::identity<glm::mat4x4>(), glm::vec3(object->aabb.max - object->aabb.min)), position);
         instancedVertexAttributes.resize(instancedVertexAttributes.size() + 16);
         memcpy(instancedVertexAttributes.data() + instancedVertexAttributes.size() - 16, &model, sizeof(glm::mat4x4));
         instancedVertexAttributes.push_back(1);
@@ -144,6 +145,8 @@ void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode con
 void SpatialAccelerationStructure::DebugVisualize() {
     static auto crummyDebugShader =  ShaderProgram::New("../shaders/debug_simple_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
     crummyDebugShader->Use();
+
+    std::cout << "Root goes from " << glm::to_string(root.aabb.min) << " to " << glm::to_string(root.aabb.max) << "\n";
 
     const static auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true);
     const static auto& vertices = m->vertices; // remember, its xyz, uv, normal, tangent tho we only bothering with xyz
