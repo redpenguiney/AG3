@@ -63,7 +63,7 @@ struct AABB {
     }
 
     // returns average of min an max
-    glm::dvec3 Center() {
+    glm::dvec3 Center() const {
         return (min + max) * 0.5;
     }
 };
@@ -152,7 +152,13 @@ class SpatialAccelerationStructure { // (SAS)
     // Adds a collider to the SAS.
     void AddCollider(ColliderComponent* collider, const TransformComponent& transform);
 
+    // some lame unabstracted opengl code that visualizes the SAS, for the purposes of debugging the SAS.
+    void DebugVisualize();
+
     private:
+
+    // Helper function for DebugVisualize(), disregard.
+    void DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances);
 
     // recursive helper functions for Query(), ignore (member func because SasNode is private)
     void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider);

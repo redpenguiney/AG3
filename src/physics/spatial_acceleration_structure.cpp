@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <cwchar>
 #include <memory>
 #include <tuple>
 #include <vector>
@@ -108,8 +109,112 @@ std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAcceleratio
     return collidingComponents;
 }
 
+void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances) {
+    if (node.children != nullptr) {
+        for (auto & child: *node.children) {
+            if (child != nullptr) {
+                DebugVisualizeAddVertexAttributes(*child, instancedVertexAttributes, numInstances);
+            }
+        }
+    }
+    
+    for (auto & object: node.objects) {
+        glm::vec3 position = object->aabb.Center();
+        glm::mat4x4 model = glm::translate(glm::identity<glm::mat4x4>(), position);
+        instancedVertexAttributes.resize(instancedVertexAttributes.size() + 16);
+        memcpy(instancedVertexAttributes.data() + instancedVertexAttributes.size() - 16, &model, sizeof(glm::mat4x4));
+        instancedVertexAttributes.push_back(1);
+        instancedVertexAttributes.push_back(1);
+        instancedVertexAttributes.push_back(0);
+        instancedVertexAttributes.push_back(1);
+        numInstances++;
+    }
+
+    glm::vec3 position = node.aabb.Center();
+    glm::mat4x4 model = glm::translate(glm::scale(glm::identity<glm::mat4x4>(), glm::vec3(node.aabb.max - node.aabb.min)), position);
+    instancedVertexAttributes.resize(instancedVertexAttributes.size() + 16);
+    memcpy(instancedVertexAttributes.data() + instancedVertexAttributes.size() - 16, &model, sizeof(glm::mat4x4));
+    instancedVertexAttributes.push_back(0);
+    instancedVertexAttributes.push_back(1);
+    instancedVertexAttributes.push_back(1);
+    instancedVertexAttributes.push_back(1);
+    numInstances++;
+}
+
+void SpatialAccelerationStructure::DebugVisualize() {
+    static auto crummyDebugShader =  ShaderProgram::New("../shaders/debug_simple_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
+    crummyDebugShader->Use();
+
+    const static auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true);
+    const static auto& vertices = m->vertices; // remember, its xyz, uv, normal, tangent tho we only bothering with xyz
+    const static auto& indices = m->indices;
+
+    
+    std::vector<float> instancedVertexAttributes; // per object data. format is 4x4 model mat, rgba, 4x4 model mat, rgba...
+    unsigned int numInstances; // number of wireframes we're drawing
+    DebugVisualizeAddVertexAttributes(root, instancedVertexAttributes, numInstances);
+
+    GLuint vao, vbo, ibo, ivbo;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ivbo);
+    glGenBuffers(1, &ibo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STREAM_DRAW);    
+    glBindBuffer(GL_ARRAY_BUFFER, ivbo);
+    glBufferData(GL_ARRAY_BUFFER, instancedVertexAttributes.size() * sizeof(GLfloat), instancedVertexAttributes.data(), GL_STREAM_DRAW);    
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint), indices.data(), GL_STREAM_DRAW);  
+
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+    glEnableVertexAttribArray(0); // position
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, m->vertexSize, (void*)0);
+
+    glVertexAttribDivisor(0, 0); // tell openGL that vertex position is per-vertex
+
+
+    glBindBuffer(GL_ARRAY_BUFFER, ivbo);
+
+    glEnableVertexAttribArray(2); // model matrix (needs 4 vec4 attributes)
+    glEnableVertexAttribArray(2+1);
+    glEnableVertexAttribArray(2+2);
+    glEnableVertexAttribArray(2+3);
+    glEnableVertexAttribArray(1); // color
+
+    glVertexAttribPointer(2, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)0);
+    glVertexAttribPointer(2+1, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)(sizeof(glm::vec4) * 1));
+    glVertexAttribPointer(2+2, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)(sizeof(glm::vec4) * 2));
+    glVertexAttribPointer(2+3, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)(sizeof(glm::vec4) * 3));
+    glVertexAttribPointer(1, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)sizeof(glm::mat4x4));
+
+    glVertexAttribDivisor(2, 1); // tell openGL that these are instanced vertex attributes (meaning per object, not per vertex)
+    glVertexAttribDivisor(2+1, 1);
+    glVertexAttribDivisor(2+2, 1);
+    glVertexAttribDivisor(2+3, 1);
+    glVertexAttribDivisor(1, 1);
+
+    
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr, numInstances);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glDeleteBuffers(1, &vbo);  
+    glDeleteBuffers(1, &ivbo);  
+    glDeleteBuffers(1, &ibo);  
+    
+    glDeleteVertexArrays(1, &vao);
+}
+
 
 void SpatialAccelerationStructure::SasNode::Split() {
+    std::cout << "splitting.\n";
+
     assert(objects.size() >= NODE_SPLIT_THRESHOLD);
     assert(!split);
     glm::dvec3 meanPosition = {0, 0, 0};

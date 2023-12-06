@@ -70,6 +70,9 @@ bool GraphicsEngine::ShouldClose() {
 
 void GraphicsEngine::RenderScene() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
+    glDisable(GL_DEPTH_TEST);
+    // TODO: remove
+    SpatialAccelerationStructure::Get().DebugVisualize();
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
     glEnable(GL_FRAMEBUFFER_SRGB); // gamma correction; google it. TODO: when we start using postprocessing/framebuffers, turn this off except for final image output
@@ -92,8 +95,9 @@ void GraphicsEngine::RenderScene() {
 
     // Update shaders with the camera's new rotation/projection
     glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
+    glm::mat4x4 cameraMatrixNoFloatingOrigin = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamPos : (glm::vec3) -camera.position);
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
-    ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix);
+    ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin);
 
 
     // Draw world stuff.

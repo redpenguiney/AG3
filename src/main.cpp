@@ -72,7 +72,7 @@ int main() {
 
     
     // make light
-    {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
     params.meshId = m->meshId;
     params.materialId = grassMaterial->id;
     auto coolLight = ComponentRegistry::NewGameObject(params);
@@ -80,7 +80,7 @@ int main() {
     coolLight->transformComponent->SetPos({0, 10, 0});
     coolLight->pointLightComponent->SetRange(200);
     coolLight->pointLightComponent->SetColor({1, 1, 1});}
-    {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
     params.meshId = m->meshId;
     params.materialId = grassMaterial->id;
     auto coolLight = ComponentRegistry::NewGameObject(params);
@@ -94,6 +94,7 @@ int main() {
     GE.window.SetMouseLocked(true);
     
     glPointSize(4.0); // debug thing, ignore
+    glLineWidth(4.0);
 
     //printf("Starting main loop.\n");
 
@@ -104,6 +105,7 @@ int main() {
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         //auto start = Time();
         SpatialAccelerationStructure::Get().Update();
+        
         PE.Step(1.0/60.0);
 
         if (LMB_DOWN) {

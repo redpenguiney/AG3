@@ -42,10 +42,10 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << "\n"; 
 
             // todo its very not much ok to do this
-            rigidbody.velocity -= rigidbody.velocity * collisionTestResult->collisionNormal * 2.0;
+            rigidbody.velocity = {0, 0, 0};
         }
         else {
-            std::cout << "aw.\n";
+            //std::cout << "aw.\n";
         }
     }
 }

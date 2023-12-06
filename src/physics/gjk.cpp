@@ -169,12 +169,10 @@ void AddIfUniqueEdge(std::vector<std::pair<unsigned int, unsigned int>>& edges, 
  
 	if (reverse != edges.end()) {
 		edges.erase(reverse);
-        std::cout << "Removed duplicate edge.\n";
 	}
  
 	else {
 		edges.emplace_back(faces[a], faces[b]);
-        std::cout << "No duplicate, added.\n";
 	}
 }
 
@@ -244,7 +242,7 @@ std::optional<CollisionInfo> IsColliding(
 
         // this is the farthest point in this direction, so if it didn't get past the origin, then origin is gonna be outside the minoski difference meaning no collision.
         if (glm::dot(newSimplexPoint, searchDirection) <= 0) {
-            std::cout << "GJK failed with " << simplex.size() << " vertices.\n";
+            //std::cout << "GJK failed with " << simplex.size() << " vertices.\n";
             // while (true) {}
             return std::nullopt;
         }
@@ -283,7 +281,7 @@ std::optional<CollisionInfo> IsColliding(
     }
 
     collisionFound:; // goto uses this when collision found because c++ still doesn't let you label loops
-    std::cout << "Collision identified. Doing EPA.\n";
+    //std::cout << "Collision identified. Doing EPA.\n";
 
     // ///////////////////////////////////////////
 
@@ -300,96 +298,69 @@ std::optional<CollisionInfo> IsColliding(
 		1, 3, 2
 	};
 
-    // list: vec4(normal, distance), index: min distance
+    // vector<pair of normal + distance>, minFace = index to face with min distance
 	auto [normals, minFace] = GetFaceNormals(polytope, faces);
 
-    // find closest face on the simplex to origin (point of collision)
-    // unsigned int minIndex = 0;
-    double minDistance = FLT_MAX;
     glm::dvec3 minNormal;
-    
-    while (minDistance == FLT_MAX) {
-        std::cout << "At start of loop, == infinity is " << (minDistance == FLT_MAX) << "\n";
-        std::cout << minDistance << " is min\n";
-
-		minNormal = normals[minFace].first;
-        minDistance = normals[minDistance].second;
+	float minDistance = FLT_MAX;
+	
+	while (minDistance == FLT_MAX) {
+		minNormal   = normals[minFace].first;
+		minDistance = normals[minFace].second;
  
-		glm::dvec3 newPolytopePoint = NewSimplexPoint(minNormal, transform1, collider1, transform2, collider2);
-		double sDistance = glm::dot(minNormal, newPolytopePoint);
+		glm::dvec3 support = NewSimplexPoint(minNormal, transform1, collider1, transform2, collider2);
+		double sDistance = glm::dot(minNormal, support);
  
-        std::cout << "Direction " << glm::to_string(minNormal) << "\n";
-
-        std::cout << "Polytope points:\n";
-        std::cout << "\t" << glm::to_string(newPolytopePoint) << "\n";
-        for (auto & p: polytope) {
-           std::cout << "\t" << glm::to_string(p) << "\n";
-        } 
-        assert(polytope.size() < 16);
-
-        std::cout << "min is " << minDistance << " vs s is " << sDistance << " so the difference is " << sDistance - minDistance << "\n";
 		if (abs(sDistance - minDistance) > 0.001f) {
-            std::cout << "WE ARE GOING AGAIN BOIIIIS\n";
 			minDistance = FLT_MAX;
-        }
+            std::vector<std::pair<unsigned int, unsigned int>> uniqueEdges;
 
-        // After adding vertex to polytope, we need to edit the faces so they correct again
-        std::vector<std::pair<unsigned int, unsigned int>> uniqueEdges;
-        assert(normals.size() * 3 == faces.size());
-        for (unsigned int i = 0; i < normals.size(); i++) {
-            std::cout << "Comparing face normal " << glm::to_string(normals[i].first) << " to point " << glm::to_string(newPolytopePoint) << ".\n";
-            if (glm::dot(normals[i].first, newPolytopePoint) > glm::dot(normals[i].first, polytope[faces[i*3]])) {
-                unsigned int f = i * 3;
+			for (unsigned int i = 0; i < normals.size(); i++) {
+				if (glm::dot(normals[i].first, support) >= 0) {
+					unsigned int f = i * 3;
 
-                AddIfUniqueEdge(uniqueEdges, faces, f,     f + 1);
-                AddIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
-                AddIfUniqueEdge(uniqueEdges, faces, f + 2, f    );
+					AddIfUniqueEdge(uniqueEdges, faces, f,     f + 1);
+					AddIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
+					AddIfUniqueEdge(uniqueEdges, faces, f + 2, f    );
 
-                // erase without preserving order
-                faces[f + 2] = faces.back(); faces.pop_back();
-                faces[f + 1] = faces.back(); faces.pop_back();
-                faces[f    ] = faces.back(); faces.pop_back();
+					faces[f + 2] = faces.back(); faces.pop_back();
+					faces[f + 1] = faces.back(); faces.pop_back();
+					faces[f    ] = faces.back(); faces.pop_back();
 
-                normals[i] = normals.back(); 
-                normals.pop_back();
+					normals[i] = normals.back(); // pop-erase
+					normals.pop_back();
 
-                i--;
-            }
-        }
+					i--;
+				}
+			}
 
-        std::vector<unsigned int> newFaces;
-        for (auto [edgeIndex1, edgeIndex2] : uniqueEdges) {
-            newFaces.push_back(edgeIndex1);
-            newFaces.push_back(edgeIndex2);
-            newFaces.push_back(polytope.size());
-        }
-            
-        polytope.push_back(newPolytopePoint);
+            std::vector<unsigned int> newFaces;
+			for (auto [edgeIndex1, edgeIndex2] : uniqueEdges) {
+				newFaces.push_back(edgeIndex1);
+				newFaces.push_back(edgeIndex2);
+				newFaces.push_back(polytope.size());
+			}
+			 
+			polytope.push_back(support);
 
-        auto [newNormals, newMinFace] = GetFaceNormals(polytope, newFaces);
-        std::cout << "min face new is " << newMinFace << "\n";
-        std::cout << "size " << faces.size() << " and " << uniqueEdges.size() << "\n";
+			auto [newNormals, newMinFace] = GetFaceNormals(polytope, newFaces);
 
-        double oldMinDistance = FLT_MAX;
-        for (unsigned int i = 0; i < normals.size(); i++) {
-            if (normals[i].second < oldMinDistance) {
-                oldMinDistance = normals[i].second;
-                minFace = i;
-            }
-        }
-
-        if (newNormals.at(newMinFace).second < oldMinDistance) {
-            minFace = newMinFace + normals.size();
-        }
-
-        faces  .insert(faces  .end(), newFaces  .begin(), newFaces  .end());
-        normals.insert(normals.end(), newNormals.begin(), newNormals.end());
-
-        std::cout << minDistance << " is min\n";
-        if (minDistance != FLT_MAX) {
-            std::cout << "Cave Johnson, we're done here.\n";
-        }
-    }
+            float oldMinDistance = FLT_MAX;
+			for (unsigned int i = 0; i < normals.size(); i++) {
+				if (normals[i].second < oldMinDistance) {
+					oldMinDistance = normals[i].second;
+					minFace = i;
+				}
+			}
+ 
+			if (newNormals[newMinFace].second < oldMinDistance) {
+				minFace = newMinFace + normals.size();
+			}
+ 
+			faces  .insert(faces  .end(), newFaces  .begin(), newFaces  .end());
+			normals.insert(normals.end(), newNormals.begin(), newNormals.end());
+		}
+	}
 
     assert((minNormal != glm::dvec3(0,0,0)));
 

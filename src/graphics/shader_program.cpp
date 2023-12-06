@@ -53,17 +53,17 @@ Shader::~Shader() {
     glDeleteShader(shaderId);
 }
 
-void ShaderProgram::SetCameraUniforms(glm::mat4x4 cameraProjMatrix) {  
+void ShaderProgram::SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 cameraProjMatrixNoFloatingOrigin) {  
     for (auto & [shaderId, shaderProgram] : LOADED_PROGRAMS) {
         (void)shaderId;
         if (shaderProgram->useCameraMatrix) { // make sure the shader program actually wants our camera/projection matrix
-            shaderProgram->Uniform("camera", cameraProjMatrix, false);
+            shaderProgram->Uniform("camera", (shaderProgram->useFloatingOrigin) ? cameraProjMatrix : cameraProjMatrixNoFloatingOrigin, false);
         }  
     }
 }
 
-std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool useCameraUniform, const bool useLightClusters) {
-    auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexPath, fragmentPath, additionalIncludedFiles, useCameraUniform, useLightClusters));
+std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool useCameraUniform, const bool useLightClusters) {
+    auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexPath, fragmentPath, additionalIncludedFiles, floatingOrigin, useCameraUniform, useLightClusters));
     LOADED_PROGRAMS.emplace(ptr->programId, ptr);
     return ptr;
 }
@@ -130,8 +130,9 @@ void ShaderProgram::Use() {
     }
 }
 
-ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool useCameraUniform, const bool useLightClusters): 
+ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool useCameraUniform, const bool useLightClusters): 
 useCameraMatrix(useCameraUniform),
+useFloatingOrigin(floatingOrigin),
 useClusteredLighting(useLightClusters),
 vertex(vertexPath, GL_VERTEX_SHADER, additionalIncludedFiles),
 fragment(fragmentPath, GL_FRAGMENT_SHADER, additionalIncludedFiles)
