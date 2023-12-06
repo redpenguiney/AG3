@@ -169,10 +169,12 @@ void AddIfUniqueEdge(std::vector<std::pair<unsigned int, unsigned int>>& edges, 
  
 	if (reverse != edges.end()) {
 		edges.erase(reverse);
+        std::cout << "Removed duplicate edge.\n";
 	}
  
 	else {
 		edges.emplace_back(faces[a], faces[b]);
+        std::cout << "No duplicate, added.\n";
 	}
 }
 
@@ -333,8 +335,9 @@ std::optional<CollisionInfo> IsColliding(
 
         // After adding vertex to polytope, we need to edit the faces so they correct again
         std::vector<std::pair<unsigned int, unsigned int>> uniqueEdges;
-
+        assert(normals.size() * 3 == faces.size());
         for (unsigned int i = 0; i < normals.size(); i++) {
+            std::cout << "Comparing face normal " << glm::to_string(normals[i].first) << " to point " << glm::to_string(newPolytopePoint) << ".\n";
             if (glm::dot(normals[i].first, newPolytopePoint) > glm::dot(normals[i].first, polytope[faces[i*3]])) {
                 unsigned int f = i * 3;
 
