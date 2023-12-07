@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cstdio>
 #include <memory>
+#include <utility>
 #include <vector>
 #include "engine.hpp"
 #include "gjk.hpp"
@@ -23,7 +24,7 @@ PhysicsEngine& PhysicsEngine::Get() {
 }
 
 // Simulates physics of a single rigidbody.
-void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody) {
+void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::vector<std::pair<TransformComponent*, glm::dvec3>>& seperations) {
     rigidbody.accumulatedForce += PhysicsEngine::Get().GRAVITY * dt * (double)rigidbody.mass;
 
     // TODO: should REALLY use tight fitting AABB here
@@ -41,8 +42,11 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
         if (collisionTestResult) {
             std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << "\n"; 
 
-            // todo its very not much ok to do this
-            rigidbody.velocity = {0, 0, 0};
+            //seperations.emplace_back(std::make_pair(&transform, collisionTestResult->collisionNormal * collisionTestResult->penetrationDepth));
+
+            auto relVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity - rigidbody.velocity : -rigidbody.velocity);
+            auto desiredChangeInVelocity = 2.0 * collisionTestResult->collisionNormal * (glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
+            rigidbody.accumulatedForce = desiredChangeInVelocity * (double)rigidbody.mass;
         }
         else {
             //std::cout << "aw.\n";
@@ -75,15 +79,22 @@ void PhysicsEngine::Step(const float timestep) {
         }
     }
 
-    // second pass, do collisions and what not for non-kinematic objects
+    // second pass, do collisions and constraints for non-kinematic objects
     // the second pass should under no circumstances change any property of the gameobjects, except for the accumulatedForce of the object being moved, so that the order of operations doesn't matter and so that physics can be parallelized.
+    
+    // for each pair, the transform component will be shifted over by the vector
+    std::vector<std::pair<TransformComponent*, glm::dvec3>> separations; // to separate colliding objects, since we can't change position in this pass, DoPhysics() adds desired translations to this std::vector, and 3rd pass actually sets position 
     for (auto & tuple: components) {
         TransformComponent& transform = *std::get<0>(tuple);
         SpatialAccelerationStructure::ColliderComponent& collider = *std::get<1>(tuple);
         RigidbodyComponent& rigidbody = *std::get<2>(tuple);
         if (collider.live && !rigidbody.kinematic) {
-            DoPhysics(timestep, collider, transform, rigidbody);
+            DoPhysics(timestep, collider, transform, rigidbody, separations);
         }
     }
 
+    // third pass, seperate colliding objects since we couldn't change positions in 2nd pass
+    for (auto & [comp, offset]: separations) {
+        comp->SetPos(comp->position() + offset);
+    }
 }

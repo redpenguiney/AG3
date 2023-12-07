@@ -121,7 +121,7 @@ void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode con
     
     for (auto & object: node.objects) {
         glm::vec3 position = object->aabb.Center();
-        glm::mat4x4 model = glm::translate(glm::scale(glm::identity<glm::mat4x4>(), glm::vec3(object->aabb.max - object->aabb.min)), position);
+        glm::mat4x4 model = glm::scale(glm::translate(glm::identity<glm::mat4x4>(), position), glm::vec3(object->aabb.max - object->aabb.min)) ;
         instancedVertexAttributes.resize(instancedVertexAttributes.size() + 16);
         memcpy(instancedVertexAttributes.data() + instancedVertexAttributes.size() - 16, &model, sizeof(glm::mat4x4));
         instancedVertexAttributes.push_back(1);
@@ -131,22 +131,23 @@ void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode con
         numInstances++;
     }
 
-    glm::vec3 position = node.aabb.Center();
-    glm::mat4x4 model = glm::translate(glm::scale(glm::identity<glm::mat4x4>(), glm::vec3(node.aabb.max - node.aabb.min)), position);
-    instancedVertexAttributes.resize(instancedVertexAttributes.size() + 16);
-    memcpy(instancedVertexAttributes.data() + instancedVertexAttributes.size() - 16, &model, sizeof(glm::mat4x4));
-    instancedVertexAttributes.push_back(0);
-    instancedVertexAttributes.push_back(1);
-    instancedVertexAttributes.push_back(1);
-    instancedVertexAttributes.push_back(1);
-    numInstances++;
+    //if (&node != &root) {
+        glm::vec3 position = node.aabb.Center();
+        glm::mat4x4 model = glm::scale(glm::translate(glm::identity<glm::mat4x4>(), position), glm::vec3(node.aabb.max - node.aabb.min)) ;
+        instancedVertexAttributes.resize(instancedVertexAttributes.size() + 16);
+        memcpy(instancedVertexAttributes.data() + instancedVertexAttributes.size() - 16, &model, sizeof(glm::mat4x4));
+        instancedVertexAttributes.push_back(0);
+        instancedVertexAttributes.push_back(1);
+        instancedVertexAttributes.push_back(1);
+        instancedVertexAttributes.push_back(1);
+        numInstances++;
+    //}
 }
+    
 
 void SpatialAccelerationStructure::DebugVisualize() {
     static auto crummyDebugShader =  ShaderProgram::New("../shaders/debug_simple_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
     crummyDebugShader->Use();
-
-    std::cout << "Root goes from " << glm::to_string(root.aabb.min) << " to " << glm::to_string(root.aabb.max) << "\n";
 
     const static auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true);
     const static auto& vertices = m->vertices; // remember, its xyz, uv, normal, tangent tho we only bothering with xyz
@@ -154,7 +155,7 @@ void SpatialAccelerationStructure::DebugVisualize() {
 
     
     std::vector<float> instancedVertexAttributes; // per object data. format is 4x4 model mat, rgba, 4x4 model mat, rgba...
-    unsigned int numInstances; // number of wireframes we're drawing
+    unsigned int numInstances = 0; // number of wireframes we're drawing
     DebugVisualizeAddVertexAttributes(root, instancedVertexAttributes, numInstances);
 
     GLuint vao, vbo, ibo, ivbo;
@@ -398,9 +399,9 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
         }
     }
 
-    // if the node still fits don't do anything
+    // if the node still fits don't do anything except make sure that the node's aabb fully envelops the object's aabb
     if (oldNode == smallestNodeThatEnvelopes) {
-        return;
+        oldNode->aabb.Grow(newAabb);
     }
 
     // remove collider from old node
@@ -424,6 +425,8 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
         else {
             newNodeForCollider = newNodeForCollider->children->at(childIndex);
         }
+
+        newNodeForCollider->aabb.Grow(newAabb); // make sure node fully envelops aabb of object
     }
 }
 

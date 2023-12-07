@@ -94,7 +94,7 @@ int main() {
     GE.window.SetMouseLocked(true);
     
     glPointSize(4.0); // debug thing, ignore
-    glLineWidth(4.0);
+    glLineWidth(1.5);
 
     //printf("Starting main loop.\n");
 
