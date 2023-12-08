@@ -45,7 +45,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             //seperations.emplace_back(std::make_pair(&transform, collisionTestResult->collisionNormal * collisionTestResult->penetrationDepth));
 
             auto relVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity - rigidbody.velocity : -rigidbody.velocity);
-            auto desiredChangeInVelocity = 2.0 * collisionTestResult->collisionNormal * (glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
+            auto desiredChangeInVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr ? 1.0 : 2.0) * collisionTestResult->collisionNormal * (glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
             rigidbody.accumulatedForce = desiredChangeInVelocity * (double)rigidbody.mass;
         }
         else {
@@ -84,6 +84,7 @@ void PhysicsEngine::Step(const float timestep) {
     
     // for each pair, the transform component will be shifted over by the vector
     std::vector<std::pair<TransformComponent*, glm::dvec3>> separations; // to separate colliding objects, since we can't change position in this pass, DoPhysics() adds desired translations to this std::vector, and 3rd pass actually sets position 
+    
     for (auto & tuple: components) {
         TransformComponent& transform = *std::get<0>(tuple);
         SpatialAccelerationStructure::ColliderComponent& collider = *std::get<1>(tuple);

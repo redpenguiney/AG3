@@ -24,6 +24,18 @@ int main() {
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
     auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {.texturePaths = {"../textures/grass.png"}, .format = RGB, .usage = ColorMap}, TextureCreateParams {.texturePaths = {"../textures/crate_specular.png"}, .format = Grayscale, .usage = SpecularMap}}, TEXTURE_2D);
+    
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = grassMaterial->id;
+        auto floor = ComponentRegistry::NewGameObject(params);
+        floor->transformComponent->SetPos({0, -50, 0});
+        floor->transformComponent->SetScl({25, 1, 25});
+        floor->renderComponent->SetColor({0, 1, 0, 1});
+        floor->renderComponent->SetTextureZ(grassTextureZ);
+    }
+
     //std::printf("ITS %u %u\n", m->meshId, grassMaterial->id);
     auto [brickTextureZ, brickMaterial] = Material::New({
         TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/color.jpg"}, .format = RGBA, .usage = ColorMap}, 
@@ -60,7 +72,7 @@ int main() {
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({x * 8, y * 8, z * 8});
-                // g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
+                g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
                 //g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
