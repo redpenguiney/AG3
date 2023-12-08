@@ -70,7 +70,7 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
         auto& mesh = comp->physicsMesh;
         auto obj = comp->GetGameObject();
         assert(obj != nullptr);
-        std::cout << "Could be colliding with " << obj->name << ".\n";
+        //std::cout << "Could be colliding with " << obj->name << ".\n";
         auto modelMatrix = obj->transformComponent->GetPhysicsModelMatrix();
 
         for (auto & convexMesh: mesh->meshes) {

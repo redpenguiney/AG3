@@ -13,7 +13,7 @@
 
 
 PhysicsEngine::PhysicsEngine() {
-    GRAVITY = {0, 0, 0};
+     GRAVITY = {0, -0.0, 0};
     //GRAVITY = {0, -9.807, 0};
 }
 PhysicsEngine::~PhysicsEngine() {}
@@ -40,12 +40,13 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
         if (otherColliderPtr == &collider) {continue;}
         auto collisionTestResult = IsColliding(transform, collider, *otherColliderPtr->GetGameObject()->transformComponent.ptr, *otherColliderPtr);
         if (collisionTestResult) {
-            std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << "\n"; 
+            //std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << "\n"; 
 
-            //seperations.emplace_back(std::make_pair(&transform, collisionTestResult->collisionNormal * collisionTestResult->penetrationDepth));
 
+            seperations.emplace_back(std::make_pair(&transform, collisionTestResult->collisionNormal * (otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr ? 0.5 * collisionTestResult->penetrationDepth : collisionTestResult->penetrationDepth)));
+            auto elasticity = 0.9;//otherColliderPtr->elasticity * collider.elasticity;
             auto relVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity - rigidbody.velocity : -rigidbody.velocity);
-            auto desiredChangeInVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr ? 1.0 : 2.0) * collisionTestResult->collisionNormal * (glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
+            auto desiredChangeInVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr ? elasticity : 2.0 * elasticity) * collisionTestResult->collisionNormal * (glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
             rigidbody.accumulatedForce = desiredChangeInVelocity * (double)rigidbody.mass;
         }
         else {

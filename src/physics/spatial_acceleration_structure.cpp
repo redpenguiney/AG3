@@ -110,11 +110,11 @@ std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAcceleratio
     return collidingComponents;
 }
 
-void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances) {
+void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances, unsigned int depth) {
     if (node.children != nullptr) {
         for (auto & child: *node.children) {
             if (child != nullptr) {
-                DebugVisualizeAddVertexAttributes(*child, instancedVertexAttributes, numInstances);
+                DebugVisualizeAddVertexAttributes(*child, instancedVertexAttributes, numInstances, depth + 1);
             }
         }
     }
@@ -124,10 +124,30 @@ void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode con
         glm::mat4x4 model = glm::scale(glm::translate(glm::identity<glm::mat4x4>(), position), glm::vec3(object->aabb.max - object->aabb.min)) ;
         instancedVertexAttributes.resize(instancedVertexAttributes.size() + 16);
         memcpy(instancedVertexAttributes.data() + instancedVertexAttributes.size() - 16, &model, sizeof(glm::mat4x4));
-        instancedVertexAttributes.push_back(1);
-        instancedVertexAttributes.push_back(1);
-        instancedVertexAttributes.push_back(0);
-        instancedVertexAttributes.push_back(1);
+        if (depth == 0) {
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+        }
+        else if (depth == 1) {
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(0);
+            instancedVertexAttributes.push_back(0);
+            instancedVertexAttributes.push_back(1);
+        }
+        else if (depth == 2) {
+            instancedVertexAttributes.push_back(0);
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+        }
+        else {
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(0);
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+        }
         numInstances++;
     }
 
@@ -136,10 +156,31 @@ void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode con
         glm::mat4x4 model = glm::scale(glm::translate(glm::identity<glm::mat4x4>(), position), glm::vec3(node.aabb.max - node.aabb.min)) ;
         instancedVertexAttributes.resize(instancedVertexAttributes.size() + 16);
         memcpy(instancedVertexAttributes.data() + instancedVertexAttributes.size() - 16, &model, sizeof(glm::mat4x4));
-        instancedVertexAttributes.push_back(0);
-        instancedVertexAttributes.push_back(1);
-        instancedVertexAttributes.push_back(1);
-        instancedVertexAttributes.push_back(1);
+        if (depth == 0) {
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+        }
+        else if (depth == 1) {
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(0);
+            instancedVertexAttributes.push_back(0);
+            instancedVertexAttributes.push_back(1);
+        }
+        else if (depth == 2) {
+            instancedVertexAttributes.push_back(0);
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+        }
+        else {
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(0);
+            instancedVertexAttributes.push_back(1);
+            instancedVertexAttributes.push_back(1);
+        }
+        
         numInstances++;
     //}
 }
@@ -215,18 +256,21 @@ void SpatialAccelerationStructure::DebugVisualize() {
     glDeleteVertexArrays(1, &vao);
 }
 
-
+// URGENT TODO: make sure not all objects put in same child node
 void SpatialAccelerationStructure::SasNode::Split() {
-    std::cout << "splitting.\n";
+    // std::cout << "splitting.\n";
 
     assert(objects.size() >= NODE_SPLIT_THRESHOLD);
     assert(!split);
+
+    // calculate split point
     glm::dvec3 meanPosition = {0, 0, 0};
     for (auto & obj : objects) {
         meanPosition += obj->aabb.Center()/(double)objects.size();
     }
     splitPoint = meanPosition;
 
+    // create child nodes
     children = new std::array<SasNode*, 27> {nullptr};
     for (int x = -1; x < 2; x++) {
         for (int y = -1; y < 2; y++) {
@@ -238,18 +282,20 @@ void SpatialAccelerationStructure::SasNode::Split() {
         }
     }
 
+    // determine which child nodes get which objects
     std::vector<unsigned int> indicesToRemove;
     unsigned int i = 0;
     for (auto & obj: objects) { 
-        auto index = SasInsertHeuristic(*this, obj->aabb);
-        if (index != -1) {
+        auto node = SasInsertHeuristic(*this, obj->aabb);
+        if (node != nullptr) {
             //std::cout << "aoisjfoijesa " << children << " index " << index << "\n";
-            (*children).at(index)->objects.push_back(obj);   
+            node->objects.push_back(obj);   
             indicesToRemove.push_back(i);
         }
         i++;
     }
     
+    // determine child node AABBs
     for (auto & node: *children) {
         node->CalculateAABB();
     }
@@ -303,8 +349,9 @@ SpatialAccelerationStructure::SasNode::SasNode() {
 }
 
 
-int SpatialAccelerationStructure::SasInsertHeuristic(const SpatialAccelerationStructure::SasNode& node, const AABB& aabb) {
-    if (node.children == nullptr) {return -1;}
+SpatialAccelerationStructure::SasNode* SpatialAccelerationStructure::SasInsertHeuristic(SpatialAccelerationStructure::SasNode& node, const AABB& aabb) {
+    if (node.children == nullptr) {return nullptr;}
+    if (node.aabb.Volume() < aabb.Volume() * 8) {return &node;}
     auto splitPoint = node.splitPoint;
     unsigned int x = 1, y = 1, z = 1;
     if (aabb.min.x > splitPoint.x) {
@@ -326,7 +373,7 @@ int SpatialAccelerationStructure::SasInsertHeuristic(const SpatialAccelerationSt
         z -= 1;
     }
 
-    return x * 9 + y * 3 + z;
+    return (*node.children)[x * 9 + y * 3 + z];
 }  
 
 void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider, const TransformComponent& transform) {
@@ -335,12 +382,12 @@ void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider, cons
     // Recursively pick best child node starting from root until we reach leaf node
     SasNode* currentNode = &root;
     while (true) {
-        int childIndex = SasInsertHeuristic(*currentNode, collider->aabb);
-        if (childIndex == -1) {
+        auto childNode = SasInsertHeuristic(*currentNode, collider->aabb);
+        if (childNode == nullptr) {
             break;
         }
         else {
-            currentNode = currentNode->children->at(childIndex);
+            currentNode = childNode;
         }
     }
 
@@ -402,6 +449,7 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
     // if the node still fits don't do anything except make sure that the node's aabb fully envelops the object's aabb
     if (oldNode == smallestNodeThatEnvelopes) {
         oldNode->aabb.Grow(newAabb);
+        return;
     }
 
     // remove collider from old node
@@ -415,18 +463,28 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
     // Then, we use the insert heuristic to go down child nodes until we find the best leaf node for the collider
     SasNode* newNodeForCollider = smallestNodeThatEnvelopes;
     while (true) {
-        int childIndex = SasInsertHeuristic(*newNodeForCollider, newAabb);
+        auto childNode = SasInsertHeuristic(*newNodeForCollider, newAabb);
         // TODO: we might need to grow this 
-        if (childIndex == -1) { // then we're at a leaf node, add the collider to it
+        if (childNode == nullptr) { // then we're at a leaf node, add the collider to it
             collider.node = newNodeForCollider;
             newNodeForCollider->objects.push_back(&collider);
             return;
         }
         else {
-            newNodeForCollider = newNodeForCollider->children->at(childIndex);
+            newNodeForCollider = childNode;
         }
 
-        newNodeForCollider->aabb.Grow(newAabb); // make sure node fully envelops aabb of object
+    }
+
+    // Expand node and its ancestors to make sure they fully contain collider
+    while (true) {
+        newNodeForCollider->aabb.Grow(collider.aabb);
+        if (newNodeForCollider->parent == nullptr) {
+            return;
+        }
+        else {
+            newNodeForCollider = newNodeForCollider->parent;
+        }
     }
 }
 
@@ -443,7 +501,9 @@ void SpatialAccelerationStructure::ColliderComponent::Init(GameObject* gameobj, 
     node = nullptr;
     gameobject = gameobj;
     physicsMesh = physMesh;
+    elasticity = 1;
     SpatialAccelerationStructure::Get().AddCollider(this, *gameobject->transformComponent);
+
 }
 
 void SpatialAccelerationStructure::ColliderComponent::Destroy() {

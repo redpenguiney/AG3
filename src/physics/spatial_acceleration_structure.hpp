@@ -11,6 +11,7 @@
 
 class GameObject;
 
+// For the broadphase of collisions, we use AABBs since it is easier to determine when they are colliding
 struct AABB {
     glm::dvec3 min;
     glm::dvec3 max;
@@ -62,10 +63,16 @@ struct AABB {
         return tmax > std::max(tmin, 0.0);
     }
 
-    // returns average of min an max
+    // returns average of min and max
     glm::dvec3 Center() const {
         return (min + max) * 0.5;
     }
+
+    // returns AABB's volume
+    double Volume() const {
+        auto m = max - min;
+        return m.x * m.y * m.z;
+    }   
 };
 
 
@@ -98,6 +105,9 @@ class SpatialAccelerationStructure { // (SAS)
     class ColliderComponent: public BaseComponent<ColliderComponent> {
         public:
         BroadPhaseAABBType aabbType;
+
+        // how bouncy something is, should probably be between 0 and 1 but knock urself out
+        float elasticity; 
 
         // Called when collider is gotten from pool
         void Init(GameObject* gameobject, std::shared_ptr<PhysicsMesh>& physMesh);
@@ -158,7 +168,7 @@ class SpatialAccelerationStructure { // (SAS)
     private:
 
     // Helper function for DebugVisualize(), disregard.
-    void DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances);
+    void DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances, unsigned int depth=0);
 
     // recursive helper functions for Query(), ignore (member func because SasNode is private)
     void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider);
@@ -171,7 +181,7 @@ class SpatialAccelerationStructure { // (SAS)
     static const inline double AABB_FAT_FACTOR = 1;
     
     // Once there are more objects in a node than this threshold, the node splits
-    static const inline unsigned int NODE_SPLIT_THRESHOLD = 60;
+    static const inline unsigned int NODE_SPLIT_THRESHOLD = 50;
     
     SpatialAccelerationStructure();
     ~SpatialAccelerationStructure();
@@ -198,9 +208,9 @@ class SpatialAccelerationStructure { // (SAS)
 
     };
 
-    // Returns index of best child node to insert object into, given the parent node and object's AABB.
-    // Returns -1 if no child node.    
-    static int SasInsertHeuristic(const SasNode& node, const AABB& aabb);
+    // Returns best child node to insert object into, given the parent node and object's AABB.
+    // Returns nullptr if no child node.    
+    static SasNode* SasInsertHeuristic(SasNode& node, const AABB& aabb);
 
     SasNode root;
 };

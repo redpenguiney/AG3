@@ -51,7 +51,7 @@ class GraphicsEngine {
 
     // Be advised. If you're tryna get camera position/orientation while using debugfreecam, you might want to use debugFreecamPitch/Yaw/Pos instead
     Camera camera;
-    Window window = Window(500, 500); // handles windowing, interfaces with GLFW in general
+    Window window = Window(720, 720); // handles windowing, interfaces with GLFW in general
 
     static GraphicsEngine& Get();
 

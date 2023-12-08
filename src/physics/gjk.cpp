@@ -20,7 +20,7 @@ glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     auto directionInModelSpace = glm::vec3(glm::normalize(worldToModel * glm::vec4(directionInWorldSpace.x, directionInWorldSpace.y, directionInWorldSpace.z, 1)));
 
     float farthestDistance = -FLT_MAX;
-    glm::vec3 farthestVertex;
+    glm::vec3 farthestVertex = {0, 0, 0};
 
     //TODO: concave support
     for (unsigned int i = 0; i < collider.physicsMesh->meshes.at(0).vertices.size()/3; i++) {
