@@ -23,7 +23,7 @@ void SpatialAccelerationStructure::Update() {
         if (colliderComp.live) {
             if (transformComp.moved) {
                 transformComp.moved = false;
-                // std::cout << "Updating collider " << colliderComp << " at i=" << i <<", j=" << j << ".\n";
+                // std::cout << "Updating collider " << &colliderComp << "\n";
                 UpdateCollider(colliderComp, transformComp);
                 
             } 
@@ -339,6 +339,10 @@ void SpatialAccelerationStructure::SasNode::CalculateAABB() {
         }
     }
 
+
+    // if (parent) { // if node gets bigger/smaller its parent should adjust accordingly
+    //     parent->CalculateAABB(); 
+    // }
 }
 
 SpatialAccelerationStructure::SasNode::SasNode() {
@@ -448,7 +452,20 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
 
     // if the node still fits don't do anything except make sure that the node's aabb fully envelops the object's aabb
     if (oldNode == smallestNodeThatEnvelopes) {
+        std::cout << "a\n";
         oldNode->aabb.Grow(newAabb);
+        auto p = oldNode;
+        while (true) {
+            std::cout << "parent " << p->parent << "\n";
+            if (p->parent) {
+                std::cout << "asijfijijs\n";
+                p = p->parent;
+                p->aabb.Grow(oldNode->aabb);
+            }
+            else {
+                break;
+            }
+        }
         return;
     }
 
@@ -456,6 +473,17 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
     for (unsigned int i = 0; i < oldNode->objects.size(); i++) { // TODO: O(n) time here could actually be an issue
         if (oldNode->objects[i] == &collider) {
             oldNode->objects.erase(oldNode->objects.begin() + i);
+            oldNode->CalculateAABB();
+            auto p = oldNode;
+            while (true) {
+                if (p->parent) {
+                    p = p->parent;
+                    p->CalculateAABB();
+                }
+                else {
+                    break;
+                }
+            }
             break;
         }
     }
@@ -476,7 +504,7 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
 
     }
 
-    // Expand node and its ancestors to make sure they fully contain collider
+    // Expand node and its ancestors to make sure they fully contain collider (faster than doing recursive RecalculateAABB())
     while (true) {
         newNodeForCollider->aabb.Grow(collider.aabb);
         if (newNodeForCollider->parent == nullptr) {

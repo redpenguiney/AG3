@@ -64,7 +64,7 @@ int main() {
 
     
     int i = 0;
-    for (int x = -5; x < 20; x++) {
+    for (int x = -5; x < 2; x++) {
         for (int y = -5; y < 2; y++) {
             for (int z = -5; z < 20; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});

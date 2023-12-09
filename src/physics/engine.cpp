@@ -69,6 +69,7 @@ void PhysicsEngine::Step(const float timestep) {
         RigidbodyComponent& rigidbody = *std::get<2>(tuple);
         if (collider.live) {
             // f = ma, so a = f/m
+            
             rigidbody.velocity += rigidbody.accumulatedForce/rigidbody.mass;
             rigidbody.accumulatedForce = {0, 0, 0};
 
@@ -76,7 +77,10 @@ void PhysicsEngine::Step(const float timestep) {
             rigidbody.angularVelocity += rigidbody.accumulatedTorque/rigidbody.momentOfInertia;
             rigidbody.accumulatedTorque = {0, 0, 0};
 
-            transform.SetPos(transform.position() + rigidbody.velocity);
+            if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {
+                transform.SetPos(transform.position() + rigidbody.velocity);
+            }
+           
         }
     }
 
