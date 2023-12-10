@@ -550,10 +550,11 @@ void SpatialAccelerationStructure::ColliderComponent::RecalculateAABB(const Tran
         glm::dvec3 min = {-std::sqrt(0.75), -std::sqrt(0.75), -std::sqrt(0.75)};
         glm::dvec3 max = {std::sqrt(0.75), std::sqrt(0.75), std::sqrt(0.75)};
         
+        // TODO: maybe fat factor should be added instead of multiplied?
         min *= AABB_FAT_FACTOR;
-        min *= colliderTransform.scale();
+        min *= glm::compMax(colliderTransform.scale());
         max *= AABB_FAT_FACTOR;
-        max *= colliderTransform.scale();
+        max *= glm::compMax(colliderTransform.scale());
 
         min += colliderTransform.position();
         max += colliderTransform.position();
