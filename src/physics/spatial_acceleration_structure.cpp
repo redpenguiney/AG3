@@ -256,9 +256,9 @@ void SpatialAccelerationStructure::DebugVisualize() {
     glDeleteVertexArrays(1, &vao);
 }
 
-// URGENT TODO: make sure not all objects put in same child node
+// URGENT TODO: make sure not all objects put in same child node recursively
 void SpatialAccelerationStructure::SasNode::Split() {
-    // std::cout << "splitting.\n";
+    std::cout << "splitting.\n";
 
     assert(objects.size() >= NODE_SPLIT_THRESHOLD);
     assert(!split);
@@ -287,9 +287,10 @@ void SpatialAccelerationStructure::SasNode::Split() {
     unsigned int i = 0;
     for (auto & obj: objects) { 
         auto node = SasInsertHeuristic(*this, obj->aabb);
-        if (node != nullptr) {
+        if (node != nullptr && node != this) {
             //std::cout << "aoisjfoijesa " << children << " index " << index << "\n";
             node->objects.push_back(obj);   
+            obj->node = node;
             indicesToRemove.push_back(i);
         }
         i++;
@@ -297,7 +298,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
     
     // determine child node AABBs
     for (auto & node: *children) {
-        node->CalculateAABB();
+        node->RecalculateAABB();
     }
 
     // iterate backwards through indicesToRemove to preserve index correctness
@@ -310,7 +311,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
     }
 }
 
-void SpatialAccelerationStructure::SasNode::CalculateAABB() {
+void SpatialAccelerationStructure::SasNode::RecalculateAABB() {
     // first find a single object or child node that has an aabb, and use that as a starting point
     if (objects.size() > 0) {
         aabb = objects[0]->aabb;
@@ -377,6 +378,7 @@ SpatialAccelerationStructure::SasNode* SpatialAccelerationStructure::SasInsertHe
         z -= 1;
     }
 
+    assert(&node != (*node.children)[x * 9 + y * 3 + z]);
     return (*node.children)[x * 9 + y * 3 + z];
 }  
 
@@ -431,72 +433,41 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
     // Go up the tree from the collider's current node to find the first node that fully envelopes the collider.
     // (if collider's current node still envelops the collider, this will do nothing)
     
-    SasNode* oldNode = collider.node;
-    SasNode* smallestNodeThatEnvelopes = collider.node;
+    std::cout << " root node at " << &root << "\n";
+    SasNode* const oldNode = collider.node;
+    SasNode* newNodeForCollider = collider.node;
     while (true) {
-        if (!smallestNodeThatEnvelopes->aabb.TestEnvelopes(newAabb)) {
+        std::cout << " current node is " << newNodeForCollider << ", parent is " << newNodeForCollider->parent << "\n";
+        if (!newNodeForCollider->aabb.TestEnvelopes(newAabb)) {
+            std::cout << "current node doesn't fit\n";
             // If we reach the root and it doesn't fit, it will grow the root node's aabb to contain the collider.
-            if (smallestNodeThatEnvelopes->parent == nullptr) {
-                smallestNodeThatEnvelopes->aabb.Grow(newAabb);
+            if (newNodeForCollider->parent == nullptr) {
+                std::cout << "...smallest enveloping node is root\n";
+                newNodeForCollider->aabb.Grow(newAabb);
                 break; //obvi not gonna be any more parent nodes after this
             }
             else {
-                smallestNodeThatEnvelopes = smallestNodeThatEnvelopes->parent;
+                newNodeForCollider = newNodeForCollider->parent;
             }
         }
         else {
+            std::cout << " we win\n";
             // we found a node that contains the collider
             break;
         }
+
     }
 
-    // if the node still fits don't do anything except make sure that the node's aabb fully envelops the object's aabb
-    if (oldNode == smallestNodeThatEnvelopes) {
-        std::cout << "a\n";
-        oldNode->aabb.Grow(newAabb);
-        auto p = oldNode;
-        while (true) {
-            std::cout << "parent " << p->parent << "\n";
-            if (p->parent) {
-                std::cout << "asijfijijs\n";
-                p = p->parent;
-                p->aabb.Grow(oldNode->aabb);
-            }
-            else {
-                break;
-            }
-        }
-        return;
-    }
-
-    // remove collider from old node
-    for (unsigned int i = 0; i < oldNode->objects.size(); i++) { // TODO: O(n) time here could actually be an issue
-        if (oldNode->objects[i] == &collider) {
-            oldNode->objects.erase(oldNode->objects.begin() + i);
-            oldNode->CalculateAABB();
-            auto p = oldNode;
-            while (true) {
-                if (p->parent) {
-                    p = p->parent;
-                    p->CalculateAABB();
-                }
-                else {
-                    break;
-                }
-            }
-            break;
-        }
-    }
-
+    std::cout << "find children.\n";
     // Then, we use the insert heuristic to go down child nodes until we find the best leaf node for the collider
-    SasNode* newNodeForCollider = smallestNodeThatEnvelopes;
     while (true) {
         auto childNode = SasInsertHeuristic(*newNodeForCollider, newAabb);
+        std::cout << "child is " << childNode << "\n.";
         // TODO: we might need to grow this 
         if (childNode == nullptr) { // then we're at a leaf node, add the collider to it
             collider.node = newNodeForCollider;
-            newNodeForCollider->objects.push_back(&collider);
-            return;
+
+            break;
         }
         else {
             newNodeForCollider = childNode;
@@ -504,16 +475,52 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
 
     }
 
+    std::cout << "expanding nodeds.\n";
     // Expand node and its ancestors to make sure they fully contain collider (faster than doing recursive RecalculateAABB())
     while (true) {
-        newNodeForCollider->aabb.Grow(collider.aabb);
+        newNodeForCollider->aabb.Grow(newAabb);
         if (newNodeForCollider->parent == nullptr) {
-            return;
+            break;
         }
         else {
             newNodeForCollider = newNodeForCollider->parent;
         }
     }
+
+    
+    // if the object is in the same node after all that, we don't need to update parents/children
+    if (oldNode == newNodeForCollider) {
+        std::cout << "done.\n";
+        return;
+    }
+    else {
+        std::cout << "not done.\n";
+        // add collider to new node
+        newNodeForCollider->objects.push_back(&collider);
+
+        // remove collider from old node
+        for (unsigned int i = 0; i < oldNode->objects.size(); i++) { // TODO: O(n) time here could actually be an issue
+            if (oldNode->objects[i] == &collider) {
+                oldNode->objects.erase(oldNode->objects.begin() + i);
+            }
+        }
+
+        // with that collider removed, old node (and by extension its parents) might be able to be made tighter
+        oldNode->RecalculateAABB();
+        auto p = oldNode;
+        while (true) {
+            if (p->parent) {
+                p = p->parent;
+                p->RecalculateAABB();
+            }
+            else {
+                return;
+            }
+        }
+        return;
+    }
+
+    
 }
 
 SpatialAccelerationStructure::SpatialAccelerationStructure() {

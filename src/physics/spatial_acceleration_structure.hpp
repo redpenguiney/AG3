@@ -181,7 +181,7 @@ class SpatialAccelerationStructure { // (SAS)
     static const inline double AABB_FAT_FACTOR = 1;
     
     // Once there are more objects in a node than this threshold, the node splits
-    static const inline unsigned int NODE_SPLIT_THRESHOLD = 50;
+    static const inline unsigned int NODE_SPLIT_THRESHOLD = 20;
     
     SpatialAccelerationStructure();
     ~SpatialAccelerationStructure();
@@ -201,7 +201,8 @@ class SpatialAccelerationStructure { // (SAS)
 
         SasNode();
 
-        void CalculateAABB();
+        // recalculate AABB of node from its contents
+        void RecalculateAABB();
 
         // sets splitPoint, calculated by mean position of objects inside, creates children nodes, and moves objects into children nodes
         void Split();

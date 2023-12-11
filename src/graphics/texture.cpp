@@ -44,7 +44,7 @@ unsigned int NChannelsFromFormat(TextureFormat format ) {
     case Grayscale:
     return STBI_grey; // same as 1
     default:
-    std::cout << "forgot something\n";
+    std::cout << "forgot something2\n";
     abort();
     break;
     }
@@ -92,13 +92,11 @@ type(textureType)
         lastWidth = width;
         lastHeight = height;
     }
-    std::cout << "Got " << nChannels << " channels.\n";
-    std::printf("Width %u Height %u \n", width, height);
     // std::cout << "Texture data: ";
     // for (unsigned int i = 0; i < width * height; i++) {
     //     std:: cout << (unsigned int)(imageDatas.back()[i]) << ", ";
     // }
-    std::cout << "\n";
+    // std::cout << "\n";
     // Determine what format the image data was in; RGB? RGBA? etc (nChannels is how many components the loaded mage had)
     unsigned int sourceFormat;
     switch (nChannels) {

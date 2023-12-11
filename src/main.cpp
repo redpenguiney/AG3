@@ -25,16 +25,16 @@ int main() {
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
     auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {.texturePaths = {"../textures/grass.png"}, .format = RGB, .usage = ColorMap}, TextureCreateParams {.texturePaths = {"../textures/crate_specular.png"}, .format = Grayscale, .usage = SpecularMap}}, TEXTURE_2D);
     
-    {
-        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-        params.meshId = m->meshId;
-        params.materialId = grassMaterial->id;
-        auto floor = ComponentRegistry::NewGameObject(params);
-        floor->transformComponent->SetPos({0, -50, 0});
-        floor->transformComponent->SetScl({2500, 1, 2000});
-        floor->renderComponent->SetColor({0, 1, 0, 1});
-        floor->renderComponent->SetTextureZ(grassTextureZ);
-    }
+    // {
+    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+    //     params.meshId = m->meshId;
+    //     params.materialId = grassMaterial->id;
+    //     auto floor = ComponentRegistry::NewGameObject(params);
+    //     floor->transformComponent->SetPos({0, -50, 0});
+    //     floor->transformComponent->SetScl({2500, 1, 2000});
+    //     floor->renderComponent->SetColor({0, 1, 0, 1});
+    //     floor->renderComponent->SetTextureZ(grassTextureZ);
+    // }
 
     //std::printf("ITS %u %u\n", m->meshId, grassMaterial->id);
     auto [brickTextureZ, brickMaterial] = Material::New({
@@ -64,9 +64,9 @@ int main() {
 
     
     int i = 0;
-    for (int x = -5; x < 2; x++) {
-        for (int y = -5; y < 2; y++) {
-            for (int z = -5; z < 20; z++) {
+    for (int x = 0; x < 5; x++) {
+        for (int y = 0; y < 5; y++) {
+            for (int z = 0; z < 5; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
@@ -120,18 +120,20 @@ int main() {
         SpatialAccelerationStructure::Get().Update();
         
         //for (unsigned int i = 0; i < 10; i++) {
-            PE.Step(1.0/60.0);
+            //PE.Step(1.0/60.0);
         //}
 
         if (LMB_DOWN) {
             auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
             if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
                 //std::cout << "Hit object " << castResult.hitObject->name << " \n";
-                castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.02;
+                //castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.02;
+                castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position() + castResult.hitNormal * 0.02);
             }
             else {
                 //std::cout << "LMB_DOWN but not hitting anything.\n";
             }
+            _sleep(1);
 
         }
         
