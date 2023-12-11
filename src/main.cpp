@@ -133,7 +133,6 @@ int main() {
             else {
                 //std::cout << "LMB_DOWN but not hitting anything.\n";
             }
-            _sleep(1);
 
         }
         

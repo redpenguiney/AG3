@@ -261,6 +261,8 @@ void SpatialAccelerationStructure::SasNode::Split() {
     std::cout << "splitting.\n";
 
     assert(objects.size() >= NODE_SPLIT_THRESHOLD);
+    unsigned int countbefore = objects.size();
+    std::cout << "Before split, node has " << objects.size() << " objects\n";
     assert(!split);
 
     // calculate split point
@@ -295,12 +297,13 @@ void SpatialAccelerationStructure::SasNode::Split() {
         }
         i++;
     }
-    
+
     // determine child node AABBs
     for (auto & node: *children) {
         node->RecalculateAABB();
     }
 
+    std::cout << indicesToRemove.size() << " is the size\n";
     // iterate backwards through indicesToRemove to preserve index correctness
     if (indicesToRemove.size() > 0) {
         for (unsigned int j = indicesToRemove.size() - 1; j > 0; j--) {
@@ -309,6 +312,15 @@ void SpatialAccelerationStructure::SasNode::Split() {
             objects.erase(objects.begin() + indicesToRemove[j]);
         }
     }
+
+    unsigned int countafter = objects.size();
+    for (auto & node: *children) {
+        countafter += node->objects.size();
+        std::cout << "\tThis node has " << node->objects.size() << "\n";
+    }
+    std::cout << "After split, node has " << countafter << " objects\n";
+
+    assert(countbefore == countafter);
 }
 
 void SpatialAccelerationStructure::SasNode::RecalculateAABB() {
@@ -344,6 +356,8 @@ void SpatialAccelerationStructure::SasNode::RecalculateAABB() {
     // if (parent) { // if node gets bigger/smaller its parent should adjust accordingly
     //     parent->CalculateAABB(); 
     // }
+
+    
 }
 
 SpatialAccelerationStructure::SasNode::SasNode() {
