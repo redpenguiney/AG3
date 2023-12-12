@@ -52,6 +52,10 @@ Window::~Window() {
 void Window::Update() {
     PRESS_BEGAN_KEYS.clear(); // TODO: might have problems with this, idk how key callback really works
     PRESS_ENDED_KEYS.clear();
+    LMB_BEGAN = false;
+    LMB_ENDED = false;
+    RMB_BEGAN = false;
+    RMB_ENDED = false;
 
     glfwSwapBuffers(glfwWindow);
     glfwPollEvents();
@@ -93,17 +97,22 @@ void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int
     if (button == GLFW_MOUSE_BUTTON_1) {
         if (action == GLFW_RELEASE) {
             LMB_DOWN = false;
+            LMB_ENDED = true;
         }
         else if (action == GLFW_PRESS) {
             LMB_DOWN = true;
+            LMB_BEGAN = true;
+
         }
     }
     else if (button == GLFW_MOUSE_BUTTON_2) {
         if (action == GLFW_RELEASE) {
             RMB_DOWN = false;
+            RMB_ENDED = true;
         }
         else if (action == GLFW_PRESS) {
             RMB_DOWN = true;
+            RMB_BEGAN = true;
         }
     }
 }

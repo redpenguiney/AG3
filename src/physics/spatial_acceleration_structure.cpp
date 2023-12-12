@@ -262,6 +262,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
 
     assert(objects.size() >= NODE_SPLIT_THRESHOLD);
     unsigned int countbefore = objects.size();
+
     std::cout << "Before split, node has " << objects.size() << " objects\n";
     assert(!split);
 
@@ -280,9 +281,12 @@ void SpatialAccelerationStructure::SasNode::Split() {
                 auto node = new SasNode();
                 node->parent = this;
                 (*children).at((x + 1) * 9 + (y + 1) * 3 + z + 1) = node;
+                assert(node->objects.size() == 0);
             }
         }
     }
+
+    
 
     // determine which child nodes get which objects
     std::vector<unsigned int> indicesToRemove;
@@ -306,10 +310,10 @@ void SpatialAccelerationStructure::SasNode::Split() {
     std::cout << indicesToRemove.size() << " is the size\n";
     // iterate backwards through indicesToRemove to preserve index correctness
     if (indicesToRemove.size() > 0) {
-        for (unsigned int j = indicesToRemove.size() - 1; j > 0; j--) {
+        for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); ++it ) {
             //std::cout << objects.size() << " objects, i = "<< i << " index " << indicesToRemove[i] << "\n";
-            assert(indicesToRemove[j] < objects.size());
-            objects.erase(objects.begin() + indicesToRemove[j]);
+            assert(indicesToRemove[*it] < objects.size());
+            objects.erase(objects.begin() + indicesToRemove[*it]);
         }
     }
 
@@ -472,11 +476,12 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
 
     }
 
+    std::cout << "smallest enveloping ancestor is "  << newNodeForCollider << "\n";
     std::cout << "find children.\n";
     // Then, we use the insert heuristic to go down child nodes until we find the best leaf node for the collider
     while (true) {
         auto childNode = SasInsertHeuristic(*newNodeForCollider, newAabb);
-        std::cout << "child is " << childNode << "\n.";
+        std::cout << "\tchild is " << childNode << "\n.";
         // TODO: we might need to grow this 
         if (childNode == nullptr) { // then we're at a leaf node, add the collider to it
             collider.node = newNodeForCollider;
@@ -489,17 +494,21 @@ void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::
 
     }
 
-    std::cout << "expanding nodeds.\n";
+    std::cout << "selected child "  << newNodeForCollider << "\n";
+
+    std::cout << "expanding nodes.\n";
     // Expand node and its ancestors to make sure they fully contain collider (faster than doing recursive RecalculateAABB())
+    auto p1 = newNodeForCollider;
     while (true) {
-        newNodeForCollider->aabb.Grow(newAabb);
-        if (newNodeForCollider->parent == nullptr) {
+        p1->aabb.Grow(newAabb);
+        if (p1->parent == nullptr) {
             break;
         }
         else {
-            newNodeForCollider = newNodeForCollider->parent;
+            p1 = p1->parent;
         }
     }
+
 
     
     // if the object is in the same node after all that, we don't need to update parents/children

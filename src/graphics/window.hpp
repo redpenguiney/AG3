@@ -13,6 +13,10 @@ inline std::unordered_map<unsigned int, bool> PRESS_ENDED_KEYS;
 
 inline bool LMB_DOWN;
 inline bool RMB_DOWN;
+inline bool LMB_BEGAN;
+inline bool RMB_BEGAN;
+inline bool LMB_ENDED;
+inline bool RMB_ENDED;
 
 // TODO: RAW MOUSE option
 inline glm::dvec2 MOUSE_POS;
