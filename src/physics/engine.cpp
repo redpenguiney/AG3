@@ -13,8 +13,8 @@
 
 
 PhysicsEngine::PhysicsEngine() {
-     GRAVITY = {0, -0.0, 0};
-    //GRAVITY = {0, -9.807, 0};
+    //GRAVITY = {0, -0.1, 0};
+    GRAVITY = {0, -9.807, 0};
 }
 PhysicsEngine::~PhysicsEngine() {}
 
@@ -41,7 +41,17 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
         auto collisionTestResult = IsColliding(transform, collider, *otherColliderPtr->GetGameObject()->transformComponent.ptr, *otherColliderPtr);
         if (collisionTestResult) {
             //std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << "\n"; 
-
+            // {
+            //     static auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
+            //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+            //     params.meshId = m->meshId;
+            //     auto g = ComponentRegistry::NewGameObject(params);
+            //     g->transformComponent->SetPos(collisionTestResult->hitPoints.back());
+            //     g->transformComponent->SetScl({0.1, 0.1, 0.1});
+            //     g->renderComponent->SetColor({0.5, 0.5, 0.5, 1});
+            //     g->renderComponent->SetTextureZ(-1);
+            // }
+            
 
             seperations.emplace_back(std::make_pair(&transform, collisionTestResult->collisionNormal * (otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr ? 0.5 * collisionTestResult->penetrationDepth : collisionTestResult->penetrationDepth)));
             auto elasticity = 0.9;//otherColliderPtr->elasticity * collider.elasticity;
@@ -55,7 +65,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
     }
 }
 
-void PhysicsEngine::Step(const float timestep) {
+void PhysicsEngine::Step(const double timestep) {
 
     
 
@@ -78,7 +88,7 @@ void PhysicsEngine::Step(const float timestep) {
             rigidbody.accumulatedTorque = {0, 0, 0};
 
             if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {
-                transform.SetPos(transform.position() + rigidbody.velocity);
+                transform.SetPos(transform.position() + rigidbody.velocity * timestep);
             }
            
         }

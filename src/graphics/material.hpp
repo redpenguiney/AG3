@@ -31,8 +31,11 @@ class Material {
     // TODO: figure out what happens when you call this while the texture is being used.
     static void Destroy(const unsigned int id);
 
-    // makes all things be drawn with these textures
+    // makes all things be drawn with these textures (until Use()/Unbind() is called on another material)
     void Use();
+
+    // makes all things not be drawn with any material (until Use() is called on a material)
+    static void Unbind();
 
     // textureParams must at minimum contain a TextureCreateParams for color.
     // If possible, will not to create a new material, but simply add the requested textures to an existing compatible material.

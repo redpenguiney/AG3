@@ -13,6 +13,7 @@ const unsigned int INSTANCED_VERTEX_BUFFERING_FACTOR = 3;
 
 // TODO: INDBO shouldn't be persistent, and arguably neither should the vertices/indices.
 // TODO: INDBO should just be written to directly instead of writing to drawCommands and then doing memcpy.
+// TODO: MODIFY VERTICES
 
 // Contains an arbitrary number of arbitary meshes and is used to render them very quickly.
 class Meshpool {

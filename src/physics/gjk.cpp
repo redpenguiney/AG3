@@ -366,7 +366,7 @@ std::optional<CollisionInfo> IsColliding(
 
     return CollisionInfo({
         .collisionNormal = minNormal,
-        .hitPoints = {},
-        .penetrationDepth = minDistance + 0.0001f // TODO 
+        .hitPoints = {{0, 0, 0}},
+        .penetrationDepth = minDistance // TODO: add 0.0001f?
     });
 }

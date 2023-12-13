@@ -59,10 +59,10 @@ template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<
 }
 
 struct GameobjectCreateParams {
-    unsigned int physMeshId; // 0 if you want automatically generated
-    unsigned int meshId;
-    unsigned int materialId;
-    unsigned int shaderId;
+    unsigned int physMeshId; // set to 0 (default) if you want automatically generated (requires meshId in that case); ignore if no collider
+    unsigned int meshId; // ignore if not rendering
+    unsigned int materialId; // defaults to 0 for no material. ignore if not rendering
+    unsigned int shaderId; // defaults to 0 for default shader. ignore if not rendering
 
     GameobjectCreateParams(const std::vector<ComponentRegistry::ComponentBitIndex> componentList):
     physMeshId(0),

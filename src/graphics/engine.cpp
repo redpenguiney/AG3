@@ -73,7 +73,7 @@ void GraphicsEngine::RenderScene() {
     //glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     // TODO: remove
-    SpatialAccelerationStructure::Get().DebugVisualize();
+    //SpatialAccelerationStructure::Get().DebugVisualize();
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
     glEnable(GL_FRAMEBUFFER_SRGB); // gamma correction; google it. TODO: when we start using postprocessing/framebuffers, turn this off except for final image output
@@ -109,9 +109,16 @@ void GraphicsEngine::RenderScene() {
         pointLightDataBuffer.BindBase(1);
         pointLightDataBuffer.Bind();
         for (auto & [materialId, map2] : map1) {
-            auto& material = Material::Get(materialId);
-            material->Use();
-            shader->Uniform("normalMappingEnabled", material->HasNormalMap());
+            if (materialId == 0) { // 0 means no material
+                Material::Unbind();
+            }
+            else {
+                auto& material = Material::Get(materialId);
+                material->Use();
+                shader->Uniform("normalMappingEnabled", material->HasNormalMap());
+                shader->Uniform("parallaxMappingEnabled", material->HasDisplacementMap());
+            }
+            
             for (auto & [poolId, pool] : map2) {
                 pool->Draw();
             } 
@@ -169,23 +176,22 @@ void GraphicsEngine::UpdateLights() {
     *(GLuint*)(pointLightDataBuffer.Data()) = lightCount;
 }
 
-void GraphicsEngine::SetColor(MeshLocation& location, const glm::vec4& rgba) {
-    
+void GraphicsEngine::SetColor(const MeshLocation& location, const glm::vec4& rgba) {
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetColor(location.poolSlot, location.poolInstance, rgba);
 }
 
-void GraphicsEngine::SetModelMatrix(MeshLocation& location, const glm::mat4x4& model) {
+void GraphicsEngine::SetModelMatrix(const MeshLocation& location, const glm::mat4x4& model) {
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
 }
 
-void GraphicsEngine::SetNormalMatrix(MeshLocation& location, const glm::mat3x3& normal) {
+void GraphicsEngine::SetNormalMatrix(const MeshLocation& location, const glm::mat3x3& normal) {
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetNormalMatrix(location.poolSlot, location.poolInstance, normal);
 }
 
-void GraphicsEngine::SetTextureZ(MeshLocation& location, const float textureZ) {
+void GraphicsEngine::SetTextureZ(const MeshLocation& location, const float textureZ) {
     assert(location.initialized);
     meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetTextureZ(location.poolSlot, location.poolInstance, textureZ);
 }
@@ -344,7 +350,7 @@ unsigned int GraphicsEngine::GetDefaultShaderId() {
 
 void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int materialId, unsigned int shader_id) {
     assert(live);
-    assert(mesh_id != 0 && materialId != 0);
+    assert(mesh_id != 0);
 
     colorChanged = (Mesh::Get(mesh_id)->instancedColor)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
     textureZChanged = (Mesh::Get(mesh_id)->instancedTextureZ)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;

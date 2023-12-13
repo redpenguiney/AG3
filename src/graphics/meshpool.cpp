@@ -36,7 +36,7 @@ Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh):
 
 // Adds count identical meshes to pool, and returns a vector of pairs of (slot, instanceOffset) used to access the object.
 std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const unsigned int meshId, unsigned int count) {
-    std::printf("Be advised: adding %u of %u\n", count, meshId);
+    // std::printf("Be advised: adding %u of %u\n", count, meshId);
     std::vector<std::pair<unsigned int, unsigned int>> objLocations;
     unsigned int meshInstanceCapacity = Mesh::Get(meshId)->instanceCount;
     auto& contents = slotContents[meshId];
@@ -185,7 +185,7 @@ void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceI
     if (slotInstanceSpaces.count(slot)) {
         assert(!slotInstanceSpaces[slot].count(instanceId));
     }
-
+    
     assert(instanceTextureZ == true);
     float* textureZLocation = (float*)(sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + ((instanceColor) ? sizeof(glm::vec4) : 0) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
@@ -397,7 +397,7 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceReservedCounts[slot - 1];
     drawCommands[slot].instanceCount = instanceCount;
 
-    std::printf("Once again we're printing this stuff; %u %u   %u %u %u %u %u\n", meshVerticesSize, vertexSize, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
+    // std::printf("Once again we're printing this stuff; %u %u   %u %u %u %u %u\n", meshVerticesSize, vertexSize, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
 
     // idk what to call this
     slotToInstanceLocations[slot] = drawCommands[slot].baseInstance;

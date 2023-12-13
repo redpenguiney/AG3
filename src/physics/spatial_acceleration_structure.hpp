@@ -181,7 +181,7 @@ class SpatialAccelerationStructure { // (SAS)
     static const inline double AABB_FAT_FACTOR = 1;
     
     // Once there are more objects in a node than this threshold, the node splits
-    static const inline unsigned int NODE_SPLIT_THRESHOLD = 20;
+    static const inline unsigned int NODE_SPLIT_THRESHOLD = 50;
     
     SpatialAccelerationStructure();
     ~SpatialAccelerationStructure();

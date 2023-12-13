@@ -75,6 +75,30 @@ void Material::Use() {
     if (displacementMap) displacementMap->Use();
 }
 
+// TODO: this feels bad.
+void Material::Unbind() {
+    glActiveTexture(GL_TEXTURE0 + COLORMAP_TEXTURE_INDEX);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    glBindTexture(GL_TEXTURE_3D, 0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    glActiveTexture(GL_TEXTURE0 + NORMALMAP_TEXTURE_INDEX);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    glBindTexture(GL_TEXTURE_3D, 0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    glActiveTexture(GL_TEXTURE0 + DISPLACEMENTMAP_TEXTURE_INDEX);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    glBindTexture(GL_TEXTURE_3D, 0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    glActiveTexture(GL_TEXTURE0 + SPECULARMAP_TEXTURE_INDEX);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    glBindTexture(GL_TEXTURE_3D, 0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+}
+
 bool Material::HasNormalMap() {
     return normalMap.has_value();
 }

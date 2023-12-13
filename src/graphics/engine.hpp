@@ -83,7 +83,7 @@ class GraphicsEngine {
         void Destroy();
 
         // We have both GraphicsEngine::SetColor() and RenderComponent::SetColor() because people may want to set color immediately, but GraphicsEngine::SetColor()
-        //      needs the meshLocation to be initialized and because we cache mesh creation that doesn't happen until RenderScene() is called.
+        //      expects the meshLocation to be initialized and because we cache mesh creation that doesn't happen until RenderScene() is called.
         void SetColor(const glm::vec4& rgba);
         void SetTextureZ(const float textureZ);
 
@@ -130,6 +130,7 @@ class GraphicsEngine {
     // to avoid memory fragmentation all meshes within it are padded to be of the same size, so to save memory there is a pool for small meshes, medium ones, etc.
     // pools also have to be divided by which shader program and texture/texture array they use
     // this is a map<shaderId, map<materialId, map<poolId, Meshpool*>>>
+    // materialId can also == 0 for no material.
     std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, Meshpool*>>> meshpools;
     unsigned long long lastPoolId = 0; 
 
@@ -152,12 +153,12 @@ class GraphicsEngine {
     void AddCachedMeshes();
     void UpdateMeshpools();
 
-    void SetColor(MeshLocation& location, const glm::vec4& rgba);
-    void SetModelMatrix(MeshLocation& location, const glm::mat4x4& model);
-    void SetNormalMatrix(MeshLocation& location, const glm::mat3x3& normal);
+    void SetColor(const MeshLocation& location, const glm::vec4& rgba);
+    void SetModelMatrix(const MeshLocation& location, const glm::mat4x4& model);
+    void SetNormalMatrix(const MeshLocation& location, const glm::mat3x3& normal);
 
     // set to -1.0 for no texture
-    void SetTextureZ(MeshLocation& location, const float textureZ);
+    void SetTextureZ(const MeshLocation& location, const float textureZ);
 
     // Returns a drawId used to modify the mesh later on.
     // Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.

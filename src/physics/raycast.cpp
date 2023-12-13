@@ -55,11 +55,11 @@ glm::dvec3 GetTriangleNormal(glm::dvec3 triVertex0, glm::dvec3 triVertex1, glm::
 // TODO: max distance for perf?
 RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
     auto possible_colliding = SpatialAccelerationStructure::Get().Query(origin, direction);
-    std::printf("Ray might be hitting ");
-    for (auto & collider: possible_colliding) {
-        std::cout << collider->GetGameObject()->name << " ";
-    }
-    std::printf("\n");
+    // std::printf("Ray might be hitting ");
+    // for (auto & collider: possible_colliding) {
+    //     std::cout << collider->GetGameObject()->name << " ";
+    // }
+    // std::printf("\n");
     //std::printf("muy guy %f %f %f\n", direction.x, direction.y, direction.z);
 
     // for every convex piece of every object's mesh, there are two hit triangles, and one of them is discarded through backface culling.

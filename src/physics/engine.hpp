@@ -14,7 +14,7 @@ class PhysicsEngine {
     
 
     // Moves the physics simulation forward by timestep.
-    void Step(const float timestep);
+    void Step(const double timestep);
 
     private:
 
