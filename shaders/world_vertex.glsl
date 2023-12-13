@@ -24,6 +24,7 @@ uniform bool normalMappingEnabled;
 
 out vec3 fragmentColor;
 out vec3 cameraToFragmentPosition;
+out vec3 cameraToFragmentInTangentSpace;
 out vec3 fragmentNormal;
 out vec3 fragmentTexCoords;
 out mat3 TBNmatrix; //TBN matrix is need to make normal mapping work when an object is rotated
@@ -42,5 +43,6 @@ void main()
     vec3 T = normalize(vec3(modelMatrix * vec4(aTangent,   0.0)));
     vec3 B = cross(fragmentNormal, T);
     TBNmatrix = mat3(T, B, fragmentNormal);
+    cameraToFragmentInTangentSpace = TBNmatrix * cameraToFragmentPosition;
 }          
 

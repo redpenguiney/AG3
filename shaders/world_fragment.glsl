@@ -4,6 +4,7 @@ in vec3 fragmentColor;
 in vec3 fragmentNormal;
 in vec3 fragmentTexCoords;
 in vec3 cameraToFragmentPosition;
+in vec3 cameraToFragmentInTangentSpace;
 in mat3 TBNmatrix;
 // in vec4 lightSpaceCoords;
 
@@ -32,10 +33,10 @@ layout(std430, binding = 1) buffer pointLightSSBO {
 
 // parallax mapping
 vec2 CalculateTexCoords(vec3 texCoords) { 
-    vec3 viewDir = normalize(cameraToFragmentPosition);
+    vec3 viewDir = normalize(-cameraToFragmentInTangentSpace);
 
     float height =  texture(displacementMap, texCoords).r;    
-    vec2 p = viewDir.xy / viewDir.z * (height * 0.2);
+    vec2 p = viewDir.xy / viewDir.z * (height * 0.5);
     return texCoords.xy - p;   
 
     // // number of depth layers
@@ -111,7 +112,7 @@ void main()
     if (parallaxMappingEnabled) {
         realTexCoords = vec3(CalculateTexCoords(fragmentTexCoords).xy, fragmentTexCoords.z);       
         if(realTexCoords.x > 1.0 || realTexCoords.y > 1.0 || realTexCoords.x < 0.0 || realTexCoords.y < 0.0) {
-            discard;
+           // discard;
         }
     }
     else {    
@@ -121,10 +122,10 @@ void main()
     vec3 normal = fragmentNormal;
     if (normalMappingEnabled) {normal = normalize(TBNmatrix * (texture(normalMap, realTexCoords).rgb * 2.0 - 1.0));} // todo: matrix multiplication in fragment shader is really bad
 
-    vec3 light = vec3(0, 0, 0);
-    for (uint i = 0; i < pointLightCount; i++) {
-        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, normal, realTexCoords);
-    }
+    vec3 light = vec3(1, 1, 1);
+    //for (uint i = 0; i < pointLightCount; i++) {
+    //    light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, normal, realTexCoords);
+    //}
 
     vec4 tx;
     if (realTexCoords.z < 0) {
