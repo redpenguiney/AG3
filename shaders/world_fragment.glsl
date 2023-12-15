@@ -33,11 +33,11 @@ layout(std430, binding = 1) buffer pointLightSSBO {
 
 // parallax mapping
 vec2 CalculateTexCoords(vec3 texCoords) { 
-    vec3 viewDir = normalize(-cameraToFragmentInTangentSpace);
+    vec3 viewDir = -normalize(cameraToFragmentInTangentSpace);
 
     float height =  texture(displacementMap, texCoords).r;    
     vec2 p = viewDir.xy / viewDir.z * (height * 0.5);
-    return texCoords.xy - p;   
+    return p;   
 
     // // number of depth layers
     // const float minLayers = 8;

@@ -43,6 +43,6 @@ void main()
     vec3 T = normalize(vec3(modelMatrix * vec4(aTangent,   0.0)));
     vec3 B = cross(fragmentNormal, T);
     TBNmatrix = mat3(T, B, fragmentNormal);
-    cameraToFragmentInTangentSpace = TBNmatrix * cameraToFragmentPosition;
+    cameraToFragmentInTangentSpace = TBNmatrix * (cameraToFragmentPosition);
 }          
 

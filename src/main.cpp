@@ -120,7 +120,7 @@ int main() {
         SpatialAccelerationStructure::Get().Update();
         
         for (unsigned int i = 0; i < 10; i++) {
-            //PE.Step(1.0/600.0);
+            // PE.Step(1.0/600.0);
         }
 
         if (LMB_DOWN) {
