@@ -30,8 +30,8 @@ int main() {
         params.meshId = m->meshId;
         params.materialId = grassMaterial->id;
         auto floor = ComponentRegistry::NewGameObject(params);
-        floor->transformComponent->SetPos({0, -50, 0});
-        floor->transformComponent->SetScl({2500, 1, 2000});
+        floor->transformComponent->SetPos({0, -10, 0});
+        floor->transformComponent->SetScl({250, 1, 200});
         floor->renderComponent->SetColor({0, 1, 0, 1});
         floor->renderComponent->SetTextureZ(grassTextureZ);
     }
@@ -64,16 +64,17 @@ int main() {
 
     
     int i = 0;
-    for (int x = 0; x < 5; x++) {
-        for (int y = 0; y < 5; y++) {
-            for (int z = 0; z < 5; z++) {
+    for (int x = 0; x < 1; x++) {
+        for (int y = 0; y < 1; y++) {
+            for (int z = 0; z < 1; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({x * 8, y * 8, z * 8});
                 g->colliderComponent->elasticity = 0.5;
-                //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 0)));
+                //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 1)));
+                g->rigidbodyComponent->angularVelocity = {0, 1, 0};
                 //g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
@@ -90,7 +91,7 @@ int main() {
     params.materialId = 0;
     auto coolLight = ComponentRegistry::NewGameObject(params);
     coolLight->renderComponent->SetTextureZ(-1);
-    coolLight->transformComponent->SetPos({0, 10, 0});
+    coolLight->transformComponent->SetPos({0, 10, 10});
     coolLight->pointLightComponent->SetRange(200);
     coolLight->pointLightComponent->SetColor({1, 1, 1});}
     {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
@@ -109,7 +110,7 @@ int main() {
     glPointSize(4.0); // debug thing, ignore
     glLineWidth(1.0);
 
-    //printf("Starting main loop.\n");
+    printf("Starting main loop.\n");
 
     while (!GE.ShouldClose()) 
     {
@@ -117,12 +118,16 @@ int main() {
 
         //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
         //auto start = Time();
+
+        printf("Updating SAS.\n");
         SpatialAccelerationStructure::Get().Update();
         
-        for (unsigned int i = 0; i < 10; i++) {
-            // PE.Step(1.0/600.0);
+        printf("Stepping PE.\n");
+        for (unsigned int i = 0; i < 1; i++) {
+            PE.Step(1.0/60.0);
         }
 
+        printf("Doing a little raycasting.\n");
         if (LMB_DOWN) {
             auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
             if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
@@ -136,6 +141,7 @@ int main() {
 
         }
         
+        printf("Rendering scene.\n");
         GE.RenderScene();
         //LogElapsed(start, "Frame elapsed");
     }

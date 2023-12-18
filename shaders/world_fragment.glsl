@@ -36,8 +36,8 @@ vec2 CalculateTexCoords(vec3 texCoords) {
     vec3 viewDir = -normalize(cameraToFragmentInTangentSpace);
 
     float height =  texture(displacementMap, texCoords).r;    
-    vec2 p = viewDir.xy / viewDir.z * (height * 0.5);
-    return p;   
+    vec2 p = viewDir.xy / viewDir.z * (height * 0.1);
+    return texCoords.xy + p;   
 
     // // number of depth layers
     // const float minLayers = 8;
@@ -111,9 +111,9 @@ void main()
     vec3 realTexCoords;
     if (parallaxMappingEnabled) {
         realTexCoords = vec3(CalculateTexCoords(fragmentTexCoords).xy, fragmentTexCoords.z);       
-        if(realTexCoords.x > 1.0 || realTexCoords.y > 1.0 || realTexCoords.x < 0.0 || realTexCoords.y < 0.0) {
-           // discard;
-        }
+        // if(realTexCoords.x > 1.0 || realTexCoords.y > 1.0 || realTexCoords.x < 0.0 || realTexCoords.y < 0.0) {
+        //    discard;
+        // }
     }
     else {    
         realTexCoords = fragmentTexCoords;

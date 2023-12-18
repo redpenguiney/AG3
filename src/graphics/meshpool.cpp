@@ -221,6 +221,8 @@ void Meshpool::SetNormalMatrix(const unsigned int slot, const unsigned int insta
     glm::mat3x3* normalMatrixLocation = (glm::mat3x3*)(sizeof(glm::mat4x4) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
 
     // make sure we don't segfault 
+    assert(instanceId < instanceCapacity);
+    assert(slot < meshCapacity);
     assert((char*)normalMatrixLocation <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
     assert((char*)normalMatrixLocation >= instancedVertexBuffer.Data());
     *normalMatrixLocation = normal;

@@ -45,6 +45,10 @@ class TransformComponent: public BaseComponent<TransformComponent> {
         UpdateRotScaleMatrix();
     }
 
+    const glm::mat4x4& GetRotSclPhysicsMatrix() const {
+        return rotScaleMatrix;
+    }
+
     // cameraPosition used for floating origin
     // TODO: option to not do floating origin
     const glm::mat4x4& GetGraphicsModelMatrix(const glm::dvec3 & cameraPosition) {

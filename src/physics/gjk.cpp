@@ -1,5 +1,6 @@
 #include "gjk.hpp"
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -43,12 +44,12 @@ glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
 }
 
 // helper function for GJK, look inside GJK() for explanation of purpose
-void LineCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection) {
+void LineCase(std::vector<std::array<glm::dvec3, 3>>& simplex, glm::dvec3& searchDirection) {
     auto & a = simplex[0];
     auto & b = simplex[1];
 
-    auto ab = b - a;
-    auto ao = -a; // a to origin
+    auto ab = b[0] - a[0];
+    auto ao = -a[0]; // a to origin
 
     // https://www.youtube.com/watch?app=desktop&v=MDusDn8oTSE 5:43 has a nice picture to illustrate this
     // in this case, the 2 points of the simplex describe a plane that contains the origin if the vector between the 2 points is within 90 degrees of the vector from one of the points to to the origin
@@ -66,14 +67,14 @@ void LineCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection) {
 }
 
 // helper function for GJK, look inside GJK() for explanation of purpose
-void TriangleCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection) { 
+void TriangleCase(std::vector<std::array<glm::dvec3, 3>>& simplex, glm::dvec3& searchDirection) { 
     auto& a = simplex[0];
     auto& b = simplex[1];
     auto& c = simplex[2];
 
-    auto ab = b - a;
-    auto ac = c - a;
-    auto ao = -a; // (a to origin)
+    auto ab = b[0] - a[0];
+    auto ac = c[0] - a[0];
+    auto ao = -a[0]; // (a to origin)
 
     auto abc  = glm::cross(ab, ac); // normal of the plane defined by the 3 points of the simplex
 
@@ -110,16 +111,16 @@ void TriangleCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection)
     searchDirection = glm::normalize(searchDirection);
 }
 
-bool TetrahedronCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirection) {
+bool TetrahedronCase(std::vector<std::array<glm::dvec3, 3>>& simplex, glm::dvec3& searchDirection) {
     auto& a = simplex[0];
     auto& b = simplex[1];
     auto& c = simplex[2];
     auto& d = simplex[3];
 
-    auto ab = b - a;
-    auto ac = c - a;
-    auto ad = d - a;
-    auto ao = -a;
+    auto ab = b[0] - a[0];
+    auto ac = c[0] - a[0];
+    auto ad = d[0] - a[0];
+    auto ao = -a[0];
 
     // These are the normals of the 3 triangles in the tetrahedron. (the 4th triangle normal, bcd, is not needed because the triangle case checked it)
     auto abc = glm::cross(ab, ac);
@@ -147,15 +148,18 @@ bool TetrahedronCase(std::vector<glm::dvec3>& simplex, glm::dvec3& searchDirecti
     return true;
 }
 
-glm::dvec3 NewSimplexPoint(
+// returns the actual minkoski point, followed by the support points in world (?) space
+// the actual support points in world space are needed to get contact points from EPA
+std::array<glm::dvec3, 3> NewSimplexPoint(
     const glm::dvec3& searchDirection,
     const TransformComponent& transform1,
     const SpatialAccelerationStructure::ColliderComponent& collider1,
     const TransformComponent& transform2,
     const SpatialAccelerationStructure::ColliderComponent& collider2
 ) {
-    return findFarthestVertexOnObject(searchDirection, transform2, collider2) 
-    - findFarthestVertexOnObject(-searchDirection, transform1, collider1);
+    auto a = findFarthestVertexOnObject(searchDirection, transform2, collider2);
+    auto b = findFarthestVertexOnObject(-searchDirection, transform1, collider1);
+    return {a-b, a, b};
 }
 
 // Used by EPA to test if the reverse of an edge already exists in the list and if so, remove it.
@@ -178,18 +182,18 @@ void AddIfUniqueEdge(std::vector<std::pair<unsigned int, unsigned int>>& edges, 
 
 // Used by EPA to get (take a guess) face normals.
 // Returns vector of pair {normal, distance to face} and index of the closest normal.
-std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNormals(const std::vector<glm::dvec3>& polytope, const std::vector<unsigned int>& faces) {
+std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNormals(std::vector<std::array<glm::dvec3, 3>>& polytope, const std::vector<unsigned int>& faces) {
 	std::vector<std::pair<glm::dvec3, double>> normals;
 	size_t minTriangle = 0;
 	double  minDistance = FLT_MAX;
 
 	for (size_t i = 0; i < faces.size(); i += 3) {
-		glm::dvec3 a = polytope[faces[i    ]];
-		glm::dvec3 b = polytope[faces[i + 1]];
-		glm::dvec3 c = polytope[faces[i + 2]];
+		auto& a = polytope[faces[i    ]];
+		auto& b = polytope[faces[i + 1]];
+		auto& c = polytope[faces[i + 2]];
 
-		glm::dvec3 normal = glm::normalize(glm::cross(b - a, c - a));
-		double distance = dot(normal, a);
+		glm::dvec3 normal = glm::normalize(glm::cross(b[0] - a[0], c[0] - a[0]));
+		double distance = dot(normal, a[0]);
 
 		if (distance < 0) {
 			normal   *= -1;
@@ -218,7 +222,8 @@ std::optional<CollisionInfo> IsColliding(
     const SpatialAccelerationStructure::ColliderComponent& collider2
 ) 
 {
-    std::vector<glm::dvec3> simplex;
+    // first dvec3 in each array is actual simplex point on the minkoskwi difference, the other 2 are the collider points whose difference is that point, we need those for contact points
+    std::vector<std::array<glm::dvec3, 3>> simplex;
 
     // Search direction is in WORLD space.
     glm::dvec3 searchDirection = glm::normalize(glm::dvec3 {1, 1, 1}); // arbitrary starting direction
@@ -231,7 +236,7 @@ std::optional<CollisionInfo> IsColliding(
         // The simplex is just (in 3d) 4 points in the minoski difference that will be enough to determine whether the objects are colliding.
     simplex.push_back(NewSimplexPoint(searchDirection, transform1, collider1, transform2, collider2));
     // make new search direction go from simplex towards origin
-    searchDirection = glm::normalize(-simplex.back());
+    searchDirection = glm::normalize(-simplex.back()[0]);
 
     while (true) {
 
@@ -241,7 +246,7 @@ std::optional<CollisionInfo> IsColliding(
         
 
         // this is the farthest point in this direction, so if it didn't get past the origin, then origin is gonna be outside the minoski difference meaning no collision.
-        if (glm::dot(newSimplexPoint, searchDirection) <= 0) {
+        if (glm::dot(newSimplexPoint[0], searchDirection) <= 0) {
             //std::cout << "GJK failed with " << simplex.size() << " vertices.\n";
             // while (true) {}
             return std::nullopt;
@@ -302,21 +307,21 @@ std::optional<CollisionInfo> IsColliding(
 	auto [normals, minFace] = GetFaceNormals(polytope, faces);
 
     glm::dvec3 minNormal;
-	float minDistance = FLT_MAX;
+	double minDistance = FLT_MAX;
 	
 	while (minDistance == FLT_MAX) {
 		minNormal   = normals[minFace].first;
 		minDistance = normals[minFace].second;
  
-		glm::dvec3 support = NewSimplexPoint(minNormal, transform1, collider1, transform2, collider2);
-		double sDistance = glm::dot(minNormal, support);
+		auto support = NewSimplexPoint(minNormal, transform1, collider1, transform2, collider2);
+		double sDistance = glm::dot(minNormal, support[0]);
  
 		if (abs(sDistance - minDistance) > 0.001f) {
 			minDistance = FLT_MAX;
             std::vector<std::pair<unsigned int, unsigned int>> uniqueEdges;
 
 			for (unsigned int i = 0; i < normals.size(); i++) {
-				if (glm::dot(normals[i].first, support) >= 0) {
+				if (glm::dot(normals[i].first, support[0]) >= 0) {
 					unsigned int f = i * 3;
 
 					AddIfUniqueEdge(uniqueEdges, faces, f,     f + 1);
@@ -345,7 +350,7 @@ std::optional<CollisionInfo> IsColliding(
 
 			auto [newNormals, newMinFace] = GetFaceNormals(polytope, newFaces);
 
-            float oldMinDistance = FLT_MAX;
+            double oldMinDistance = FLT_MAX;
 			for (unsigned int i = 0; i < normals.size(); i++) {
 				if (normals[i].second < oldMinDistance) {
 					oldMinDistance = normals[i].second;
@@ -363,10 +368,44 @@ std::optional<CollisionInfo> IsColliding(
 	}
 
     assert((minNormal != glm::dvec3(0,0,0)));
+    assert(minDistance != 0); // TODO: PROBABLY REMOVE
+
+    // find collision point
+    // get verts of closest triangle to origin
+    auto& a = polytope[faces[minFace]];
+    auto& b = polytope[faces[minFace] + 1];
+    auto& c = polytope[faces[minFace] + 2];
+
+    // project the origin onto triangle in barycentric coordinates
+    auto ab = b[0] - a[0];
+    auto ac = c[0] - a[0];
+    auto ao = -a[0];
+
+    double d00 = glm::dot(ab, ab);
+    double d01 = glm::dot(ab, ac);
+    double d11 = glm::dot(ac, ac);
+    double d20 = glm::dot(ao, ab);
+    double d21 = glm::dot(ao, ac);
+    double denom = d00 * d11 - d01 * d01;
+    double v = (d11 * d20 - d01 * d21) / denom;
+    double w = (d00 * d21 - d01 * d20) / denom;
+    double u = 1.0f - v - w;
+    auto point = (a[2] * u) + (b[2] * v) + (c[2] * w);
+
+    // double gamma = glm::dot(glm::cross(ab, w), minNormal) / glm::dot(minNormal, minNormal);
+    // double beta = glm::dot(glm::cross(w, ac), minNormal) / glm::dot(minNormal, minNormal);
+    // double alpha = 1 - gamma - beta;
+
+    
+
+    std::printf("Barycentric coords are %f %f %f \n", v, w, u);
+    std::printf("Considering support points %f %f %f, %f %f %f, and %f %f %f \n", a[2].x, a[2].y, a[2].z, b[2].x, b[2].y, b[2].z, c[2].x, c[2].y, c[2].z);
+
+    //auto point = (a[2] * gamma) + (b[2] * beta) + (c[2] * alpha);
 
     return CollisionInfo({
         .collisionNormal = minNormal,
-        .hitPoints = {{0, 0, 0}},
+        .hitPoints = {point},
         .penetrationDepth = minDistance // TODO: add 0.0001f?
     });
 }

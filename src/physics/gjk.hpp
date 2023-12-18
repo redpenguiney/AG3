@@ -11,7 +11,11 @@
 
 struct CollisionInfo {
     glm::dvec3 collisionNormal;
+
+    // Contact points are in world space
     std::vector<glm::dvec3> hitPoints;
+
+
     double penetrationDepth;
 };
 
