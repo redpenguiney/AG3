@@ -129,7 +129,7 @@ void GraphicsEngine::RenderScene() {
     DrawSkybox();
     UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
     
-    window.Update(); // this flips the buffer so it goes at the end; TODO maybe poll events at start of frame instead
+    glFlush(); // Tell OpenGL we're done drawing.
 }
 
 void GraphicsEngine::DrawSkybox() {

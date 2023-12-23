@@ -33,9 +33,20 @@ class Window {
     Window(int widthh, int heightt);
     ~Window();
 
+    // Processes user input
     void Update();
+
+    // If VSync is enabled, will yield until the frame can be displayed.
+    // If VSync is disabled, I have no idea what happens (TODO)
+    void FlipBuffers();
+
+    // Returns true if the user is trying to close the window or Close() was called.
     bool ShouldClose();
+
+    // Doesn't immediately close it, but will make all subsequent calls to ShouldClose() return true (meaning the program will exit at end of this frame)
     void Close();
+
+    
     void SetMouseLocked(bool locked);
 
     private:
