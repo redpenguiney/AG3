@@ -172,11 +172,14 @@ void AddIfUniqueEdge(std::vector<std::pair<unsigned int, unsigned int>>& edges, 
 	);
  
 	if (reverse != edges.end()) {
+        //std::cout << "eraser\n";
 		edges.erase(reverse);
 	}
  
 	else {
+        //std::cout << "emplacing, size was previously " << edges.size() << "\n";
 		edges.emplace_back(faces[a], faces[b]);
+        //std::cout << "now its " << edges.size() << "\n";
 	}
 }
 
@@ -184,6 +187,7 @@ void AddIfUniqueEdge(std::vector<std::pair<unsigned int, unsigned int>>& edges, 
 // Returns vector of pair {normal, distance to face} and index of the closest normal.
 std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNormals(std::vector<std::array<glm::dvec3, 3>>& polytope, const std::vector<unsigned int>& faces) {
 	std::vector<std::pair<glm::dvec3, double>> normals;
+    assert(faces.size() > 0);
 	size_t minTriangle = 0;
 	double  minDistance = FLT_MAX;
 
@@ -308,25 +312,39 @@ std::optional<CollisionInfo> IsColliding(
 
     glm::dvec3 minNormal;
 	double minDistance = FLT_MAX;
-	
+    unsigned short nIterations = 0;
 	while (minDistance == FLT_MAX) {
+        std::cout << "iteration " << nIterations << "\n";
+        nIterations+=1;
+
 		minNormal   = normals[minFace].first;
 		minDistance = normals[minFace].second;
  
 		auto support = NewSimplexPoint(minNormal, transform1, collider1, transform2, collider2);
 		double sDistance = glm::dot(minNormal, support[0]);
  
+        std::cout << "Polytope: ";
+        for (auto & p: polytope) {
+            std::cout << glm::to_string(p[0]) << ", ";
+        }
+        std::cout << "\n";
+
 		if (abs(sDistance - minDistance) > 0.001f) {
 			minDistance = FLT_MAX;
             std::vector<std::pair<unsigned int, unsigned int>> uniqueEdges;
+            std::cout << "before loop size is " << uniqueEdges.size() << "\n";
 
+            assert(normals.size() > 0);
 			for (unsigned int i = 0; i < normals.size(); i++) {
+                std::cout << "starter " << uniqueEdges.size() << "\n";
 				if (glm::dot(normals[i].first, support[0]) >= 0) {
 					unsigned int f = i * 3;
 
+                    std::cout << "adding if unique\n";
 					AddIfUniqueEdge(uniqueEdges, faces, f,     f + 1);
 					AddIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
 					AddIfUniqueEdge(uniqueEdges, faces, f + 2, f    );
+                    std::cout << "after those adds there are " << uniqueEdges.size() << "\n";
 
 					faces[f + 2] = faces.back(); faces.pop_back();
 					faces[f + 1] = faces.back(); faces.pop_back();
@@ -337,17 +355,21 @@ std::optional<CollisionInfo> IsColliding(
 
 					i--;
 				}
+                std::cout << "that just happened, size " << uniqueEdges.size() << "\n";
 			}
-
+            std::cout << "after everything there are still " << uniqueEdges.size() << "\n";
+            assert(uniqueEdges.size() > 0);
             std::vector<unsigned int> newFaces;
 			for (auto [edgeIndex1, edgeIndex2] : uniqueEdges) {
 				newFaces.push_back(edgeIndex1);
 				newFaces.push_back(edgeIndex2);
 				newFaces.push_back(polytope.size());
 			}
+            
 			 
 			polytope.push_back(support);
 
+            assert(newFaces.size() > 0);
 			auto [newNormals, newMinFace] = GetFaceNormals(polytope, newFaces);
 
             double oldMinDistance = FLT_MAX;
@@ -358,7 +380,7 @@ std::optional<CollisionInfo> IsColliding(
 				}
 			}
  
-			if (newNormals[newMinFace].second < oldMinDistance) {
+			if (newNormals.at(newMinFace).second < oldMinDistance) {
 				minFace = newMinFace + normals.size();
 			}
  
