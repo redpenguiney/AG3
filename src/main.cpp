@@ -74,7 +74,7 @@ int main() {
                 g->transformComponent->SetPos({x * 8, y * 8, z * 8});
                 g->colliderComponent->elasticity = 0.5;
                 //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 1)));
-                g->rigidbodyComponent->angularVelocity = {0, 1, 0};
+                // g->rigidbodyComponent->angularVelocity = {0, 1, 0};
                 //g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
@@ -100,7 +100,7 @@ int main() {
     auto coolLight = ComponentRegistry::NewGameObject(params);
     coolLight->renderComponent->SetTextureZ(-1);
     coolLight->transformComponent->SetPos({30, 10, 30});
-    coolLight->pointLightComponent->SetRange(200);
+    coolLight->pointLightComponent->SetRange(100);
     coolLight->pointLightComponent->SetColor({1, 1, 1});}
     
     
@@ -112,20 +112,37 @@ int main() {
 
     printf("Starting main loop.\n");
 
+    // The mainloop uses a fixed physics timestep, but renders as much as possible
+    // TODO: right now rendering extrapolates positions for rigidbodies, we could possibly do interpolation??? would require storing old positions tho so idk
+    // TODO: options for other mainloops
+    // TODO: max framerate option in leiu of vsync
+    const double SIMULATION_TIMESTEP = 1.0/60.0; // number of seconds simulation is stepped by every frame
+
+    const unsigned int N_PHYSICS_ITERATIONS = 1; // bigger number = higher quality physics simulation, although do we ever want this? what about just increase sim timestep?
+    double previousTime = Time();
+    double physicsLag = 0.0; // how many milliseconds behind the simulation is. Before rendering, we check if lag is > SIMULATION_TIMESTEP in ms and if so, simulate stuff.
+
     while (!GE.ShouldClose()) 
     {
-        //coolLight->transformComponent->SetPos({sin(1000) * 3, 2,  cos(1000) * 3});
-
-        //GE.camera.position -= glm::dvec3(0.0001, -0.0001, 0.0);
-        //auto start = Time();
-
-        printf("Updating SAS.\n");
-        SpatialAccelerationStructure::Get().Update();
+        double currentTime = Time();
+        double elapsedTime = currentTime - previousTime;
+        previousTime = currentTime; 
+        physicsLag += elapsedTime; // time has passed and thus the simulation is behind
         
-        printf("Stepping PE.\n");
-        for (unsigned int i = 0; i < 1; i++) {
-            PE.Step(1.0/60.0);
+        printf("Processing events.\n");
+        GE.window.Update(); // event processing
+
+        if (physicsLag >= SIMULATION_TIMESTEP * 1000) { // make sure stepping simulation won't put it ahead of realtime
+            printf("Updating SAS.\n");
+
+            SpatialAccelerationStructure::Get().Update();
+            
+            printf("Stepping PE.\n");
+            for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
+                //PE.Step(SIMULATION_TIMESTEP/N_PHYSICS_ITERATIONS/2.0);
+            }
         }
+        physicsLag -= SIMULATION_TIMESTEP * 1000;
 
         printf("Doing a little raycasting.\n");
         if (LMB_DOWN) {
@@ -143,7 +160,15 @@ int main() {
         
         printf("Rendering scene.\n");
         GE.RenderScene();
-        //LogElapsed(start, "Frame elapsed");
+
+        // TODO: unsure about placement of flip buffers? 
+        // i think this yields until GPU done drawing and image on screen
+        // could/should we do something to try and do physics or something while GPU Working? or are we already? 
+        printf("Flipping buffers.\n");
+        GE.window.FlipBuffers();
+
+        LogElapsed(currentTime, "Frame elapsed");
+
     }
     printf("Beginning exit process.\n");
 

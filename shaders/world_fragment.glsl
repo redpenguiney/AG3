@@ -111,9 +111,9 @@ void main()
     vec3 realTexCoords;
     if (parallaxMappingEnabled) {
         realTexCoords = vec3(CalculateTexCoords(fragmentTexCoords).xy, fragmentTexCoords.z);       
-        // if(realTexCoords.x > 1.0 || realTexCoords.y > 1.0 || realTexCoords.x < 0.0 || realTexCoords.y < 0.0) {
-        //    discard;
-        // }
+        if(realTexCoords.x > 1.0 || realTexCoords.y > 1.0 || realTexCoords.x < 0.0 || realTexCoords.y < 0.0) {
+            discard;
+        }
     }
     else {    
         realTexCoords = fragmentTexCoords;
@@ -122,17 +122,17 @@ void main()
     vec3 normal = fragmentNormal;
     if (normalMappingEnabled) {normal = normalize(TBNmatrix * (texture(normalMap, realTexCoords).rgb * 2.0 - 1.0));} // todo: matrix multiplication in fragment shader is really bad
 
-    vec3 light = vec3(1, 1, 1);
-    //for (uint i = 0; i < pointLightCount; i++) {
-    //    light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, normal, realTexCoords);
-    //}
+    vec3 light = vec3(0, 0, 0);
+    for (uint i = 0; i < pointLightCount; i++) {
+        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, normal, realTexCoords);
+    }
 
     vec4 tx;
     if (realTexCoords.z < 0) {
         tx = vec4(1.0, 1.0, 1.0, 1.0);
     }
     else {
-        tx = texture(colorMap, realTexCoords);
+        tx = texture(displacementMap, fragmentTexCoords).xxxx;
     }
     if (tx.a < 0.1) {
         discard;

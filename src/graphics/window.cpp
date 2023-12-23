@@ -57,12 +57,15 @@ void Window::Update() {
     RMB_BEGAN = false;
     RMB_ENDED = false;
 
-    glfwSwapBuffers(glfwWindow);
     glfwPollEvents();
     glm::dvec2 pos;
     glfwGetCursorPos(glfwWindow, &pos.x, &pos.y);
     MOUSE_DELTA = pos - MOUSE_POS;
     MOUSE_POS = pos;
+}
+
+void Window::FlipBuffers() {
+    glfwSwapBuffers(glfwWindow);
 }
 
 // returns true if the user is trying to close the application, or if Window::Close() was explicitly called (like by a quit game button)
