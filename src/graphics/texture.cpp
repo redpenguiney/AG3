@@ -69,10 +69,11 @@ type(textureType)
     // Get all the image data
     std::vector<unsigned char*> imageDatas;
     
-    // std::cout << "Requiring " << NChannelsFromFormat(params.format) << " channels.\n";
+    std::cout << "Requiring " << NChannelsFromFormat(params.format) << " channels.\n";
     unsigned int lastWidth = 0, lastHeight = 0;
     for (auto & path: params.texturePaths) {
         // use stbi_image.h to load file
+        std::cout << "Loading \"" << path << "\".\n";
         imageDatas.push_back(stbi_load(path.c_str(), &width, &height, &nChannels, NChannelsFromFormat(params.format)));
         nChannels = std::max(nChannels, (int)NChannelsFromFormat(params.format)); // apparently nChannels is set to the amount that the original image had, even if we asked for (and recieved) extra channels, so this makes sure it has the right value
         if (imageDatas.back() == nullptr) { // error check
@@ -92,22 +93,19 @@ type(textureType)
         lastWidth = width;
         lastHeight = height;
     }
-    // std::cout << "Texture data: ";
-    // for (unsigned int i = 0; i < width * height; i++) {
-    //     std:: cout << (unsigned int)(imageDatas.back()[i]) << ", ";
-    // }
-    // std::cout << "\n";
+
     // Determine what format the image data was in; RGB? RGBA? etc (nChannels is how many components the loaded mage had)
+    // TODO: bug related to # of channels in source image being too high 
     unsigned int sourceFormat;
     switch (nChannels) {
     case 4:
-    sourceFormat = GL_RGBA;
+    sourceFormat = GL_RGBA; std::cout << "picked rgba\n";
     break;
     case 3:
-    sourceFormat = GL_RGB;
+    sourceFormat = GL_RGB; std::cout << "picked rgb\n";
     break;
     case 1:
-    sourceFormat = GL_RED;
+    sourceFormat = GL_RED; std::cout << "picked grayscale\n";
     break;
     default:
     std::cout << "uh what the \n";
@@ -117,12 +115,22 @@ type(textureType)
 
     // generate OpenGL texture object and put image data in it
     glGenTextures(1, &glTextureId);
+
+    // std::cout << "Texture data: ";
+    // for (unsigned int i = 0; i < width * height; i++) {
+    //     std:: cout << (unsigned int)(imageDatas.back()[i]) << ", ";
+    // }
+    // std::cout << "\n";
+
     // Use();
     glBindTexture(bindingLocation, glTextureId);
     if (type == TEXTURE_2D) {
+        std::cout << "here we go!\n";
         depth = 1;
-        //glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // TODO: this may be neccesary in certain situations??? further investigation neededd
+        std::printf("Ok so its %u %u %u %u %u\n", glTextureId, params.format, width, height, depth);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // TODO: this may be neccesary in certain situations??? further investigation neededd
         glTexImage3D(bindingLocation, 0, params.format, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.back()); // put data in opengl
+        std::cout << "die\n";
     }
     else {
         std::cout << " you forgot cubemap texture constructor my guy"; abort();
@@ -134,6 +142,7 @@ type(textureType)
     //     glTexImage3D(bindingLocation, 0, GL_RGBA8, width, height, depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
     // }
 
+    std::cout << "freeing.\n";
     // free the data loaded by stbi
     for (auto & data: imageDatas) {
         stbi_image_free(data);

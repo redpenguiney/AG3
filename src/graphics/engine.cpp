@@ -69,6 +69,7 @@ bool GraphicsEngine::ShouldClose() {
 }
 
 void GraphicsEngine::RenderScene() {
+    std::cout << "\tDoing random gl calls.\n";
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
     //glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
@@ -78,29 +79,25 @@ void GraphicsEngine::RenderScene() {
     glEnable(GL_CULL_FACE); // backface culling
     glEnable(GL_FRAMEBUFFER_SRGB); // gamma correction; google it. TODO: when we start using postprocessing/framebuffers, turn this off except for final image output
 
-    if (PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
-        window.Close();
-    }
-    if (PRESS_BEGAN_KEYS[GLFW_KEY_TAB]) {
-        window.SetMouseLocked(!window.mouseLocked);
-    }
-
     
 
     // Update various things
+    std::cout << "\tAdding cached meshes.\n";
     AddCachedMeshes();
+    std::cout << "\tUpdating RCs.\n";
     UpdateRenderComponents();      
-    
+    std::cout << "\tUpdating lights.\n";
     UpdateLights();
     //CalculateLightingClusters();
 
+    std::cout << "\tSetting camera uniforms.\n";
     // Update shaders with the camera's new rotation/projection
     glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
     glm::mat4x4 cameraMatrixNoFloatingOrigin = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamPos : (glm::vec3) -camera.position);
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin);
 
-
+    std::cout << "\tDrawing.\n";
     // Draw world stuff.
     for (auto & [shaderId, map1] : meshpools) {
         auto& shader = ShaderProgram::Get(shaderId);
@@ -125,10 +122,12 @@ void GraphicsEngine::RenderScene() {
         } 
     }
 
+    std::cout << "\tDrawing skybox.\n";
     // Draw skybox afterwards to encourage early z-test
     DrawSkybox();
+    std::cout << "\tUpdating meshpools.\n";
     UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
-    
+    std::cout << "\tFlushing the toilet.\n";
     glFlush(); // Tell OpenGL we're done drawing.
 }
 

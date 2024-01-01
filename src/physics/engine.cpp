@@ -42,13 +42,13 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
         if (otherColliderPtr == &collider) {continue;} // collider shouldn't collide with itself lol
         auto collisionTestResult = IsColliding(transform, collider, *otherColliderPtr->GetGameObject()->transformComponent.ptr, *otherColliderPtr);
         if (collisionTestResult) {
-            static unsigned int DEBUG_IGNORE_1;
-            std::cout << "it " << DEBUG_IGNORE_1 << "\n";
-            if (DEBUG_IGNORE_1 != 0) {
-                std::cout << "returning because it " << DEBUG_IGNORE_1 << "\n";
-                return;
-            }
-            DEBUG_IGNORE_1++;
+            // static unsigned int DEBUG_IGNORE_1;
+            // std::cout << "it " << DEBUG_IGNORE_1 << "\n";
+            // if (DEBUG_IGNORE_1 != 0) {
+            //     std::cout << "returning because it " << DEBUG_IGNORE_1 << "\n";
+            //     return;
+            // }
+            // DEBUG_IGNORE_1++;
             std::cout << "Object is at " << glm::to_string(transform.position()) << "\n";
             std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << " rel position " << glm::to_string(collisionTestResult->hitPoints.back()) << " distance " << collisionTestResult->penetrationDepth << "\n"; 
             

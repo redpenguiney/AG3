@@ -41,9 +41,8 @@ int main() {
         TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/color.jpg"}, .format = RGBA, .usage = ColorMap}, 
         TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/roughness.jpg"}, .format = Grayscale, .usage = SpecularMap}, 
         TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/normal_gl.jpg"}, .format = RGB, .usage = NormalMap}, 
-        TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
+        // TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
         }, TEXTURE_2D);
-
 
     auto skyboxFaces = vector<std::string>( // TODO: need to make clear what order skybox faces go in
     { 
@@ -60,7 +59,7 @@ int main() {
         // GE.skyboxMaterial = sky_m_ptr;
         // GE.skyboxMaterialLayer = index;
     }
-    GE.debugFreecamPos = glm::vec3(4, 4, 4);
+    GE.debugFreecamPos = glm::vec3(0, 0, 4);
 
     
     int i = 0;
@@ -139,12 +138,12 @@ int main() {
             
             printf("Stepping PE.\n");
             for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
-                //PE.Step(SIMULATION_TIMESTEP/N_PHYSICS_ITERATIONS/2.0);
+                PE.Step(SIMULATION_TIMESTEP/N_PHYSICS_ITERATIONS/2.0);
             }
         }
         physicsLag -= SIMULATION_TIMESTEP * 1000;
 
-        printf("Doing a little raycasting.\n");
+        //printf("Doing a little raycasting.\n");
         if (LMB_DOWN) {
             auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
             if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
@@ -156,6 +155,13 @@ int main() {
                 //std::cout << "LMB_DOWN but not hitting anything.\n";
             }
 
+        }
+
+        if (PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
+            GE.window.Close();
+        }
+        if (PRESS_BEGAN_KEYS[GLFW_KEY_TAB]) {
+            GE.window.SetMouseLocked(!GE.window.mouseLocked);
         }
         
         printf("Rendering scene.\n");
