@@ -2,7 +2,10 @@
 #include "../graphics/mesh.hpp"
 #include <cassert>
 #include <iostream>
+#include <tuple>
+#include <unordered_set>
 #include <vector>
+#include "../utility/let_me_hash_a_tuple.cpp"
 
 std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, float simplifyThreshold, bool convexDecomposition) {
     if (MESHES_TO_PHYS_MESHES.count(mesh->meshId)) { // TODO: once we have simplifyThreshold and convexDecomposition, we need to make sure that matches up too
@@ -20,15 +23,26 @@ std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, float
 // TODO: convex decomposition
 
 std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_ptr<Mesh>& mesh) {
+    // Graphics meshes contain extraneous data (normals, colors, etc.) that isn't relevant to physics, so this function needs to get rid of that.
     std::vector<float> verts;
-    
+   
+    // Graphics meshes also contain duplicate vertices (i.e. same position but different normals, etc.) at seams, so we keep track of what positions we've added to 
+    // DID NOT WORK
+    // std::unordered_set<std::tuple<float, float, float>, hash_tuple::hash<std::tuple<float, float, float>>> uniqueVertices; 
     for (auto & i: mesh->indices) {
+        
         auto vertexIndex = i * mesh->vertexSize/sizeof(GLfloat);
+        // auto t = std::make_tuple(mesh->vertices[vertexIndex], mesh->vertices[vertexIndex + 1], mesh->vertices[vertexIndex + 2]);
+        // if (uniqueVertices.count(t)) {
+        //     continue;
+        // }
+        // else {
+        //     uniqueVertices.emplace(t);
+        // }
         verts.push_back(mesh->vertices[vertexIndex]);
         verts.push_back(mesh->vertices[vertexIndex + 1]);
         verts.push_back(mesh->vertices[vertexIndex + 2]);
     }
-
     // std::cout << "Created physics mesh.\n Vertices: ";
     // for (auto & v: verts) {
     //     std::cout << v << " ";

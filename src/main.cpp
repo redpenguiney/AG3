@@ -1,6 +1,7 @@
 #include <cmath>
 #include<cstdlib>
 #include<cstdio>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -30,8 +31,10 @@ int main() {
         params.meshId = m->meshId;
         params.materialId = grassMaterial->id;
         auto floor = ComponentRegistry::NewGameObject(params);
-        floor->transformComponent->SetPos({0, -10, 0});
-        floor->transformComponent->SetScl({250, 1, 200});
+        floor->transformComponent->SetPos({0, 0, 0});
+        floor->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        floor->colliderComponent->elasticity = 0.5;
+        floor->transformComponent->SetScl({4, 1, 4});
         floor->renderComponent->SetColor({0, 1, 0, 1});
         floor->renderComponent->SetTextureZ(grassTextureZ);
     }
@@ -59,29 +62,29 @@ int main() {
         // GE.skyboxMaterial = sky_m_ptr;
         // GE.skyboxMaterialLayer = index;
     }
-    GE.debugFreecamPos = glm::vec3(0, 0, 4);
+    GE.debugFreecamPos = glm::vec3(0, 3, 8);
 
     
     int i = 0;
-    for (int x = 0; x < 1; x++) {
-        for (int y = 0; y < 1; y++) {
-            for (int z = 0; z < 1; z++) {
+    // for (int x = 0; x < 1; x++) {
+    //     for (int y = 0; y < 1; y++) {
+    //         for (int z = 0; z < 1; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({x * 8, y * 8, z * 8});
-                g->colliderComponent->elasticity = 0.5;
-                //g->transformComponent->SetRot(glm::quat(glm::vec3(1, 1, 1)));
-                // g->rigidbodyComponent->angularVelocity = {0, 1, 0};
+                g->transformComponent->SetPos({0, 10, 0});
+                g->colliderComponent->elasticity = 1.0;
+                g->transformComponent->SetRot(glm::quat(glm::vec3(0.0, 0.0, 1.0)));
+                // g->rigidbodyComponent->angularVelocity = {0.1, 0.1, 0.1};
                 //g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
                 g->name = std::string("Gameobject #") + to_string(i);
                 i++;
-            } 
-        }
-    }
+    //         } 
+    //     }
+    // }
 
     
     // make light
@@ -107,7 +110,7 @@ int main() {
     GE.window.SetMouseLocked(true);
     
     glPointSize(4.0); // debug thing, ignore
-    glLineWidth(1.0);
+    glLineWidth(2.0);
 
     printf("Starting main loop.\n");
 
@@ -123,22 +126,23 @@ int main() {
 
     while (!GE.ShouldClose()) 
     {
+        // std::printf("ok %f %f \n", GE.debugFreecamPitch, GE.debugFreecamYaw);
         double currentTime = Time();
         double elapsedTime = currentTime - previousTime;
         previousTime = currentTime; 
         physicsLag += elapsedTime; // time has passed and thus the simulation is behind
         
-        printf("Processing events.\n");
+        // printf("Processing events.\n");
         GE.window.Update(); // event processing
 
         if (physicsLag >= SIMULATION_TIMESTEP * 1000) { // make sure stepping simulation won't put it ahead of realtime
-            printf("Updating SAS.\n");
+            // printf("Updating SAS.\n");
 
             SpatialAccelerationStructure::Get().Update();
             
-            printf("Stepping PE.\n");
+            // printf("Stepping PE.\n");
             for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
-                PE.Step(SIMULATION_TIMESTEP/N_PHYSICS_ITERATIONS/2.0);
+                PE.Step(SIMULATION_TIMESTEP/N_PHYSICS_ITERATIONS);
             }
         }
         physicsLag -= SIMULATION_TIMESTEP * 1000;
@@ -164,16 +168,23 @@ int main() {
             GE.window.SetMouseLocked(!GE.window.mouseLocked);
         }
         
-        printf("Rendering scene.\n");
+        // printf("Rendering scene.\n");
         GE.RenderScene();
 
         // TODO: unsure about placement of flip buffers? 
         // i think this yields until GPU done drawing and image on screen
         // could/should we do something to try and do physics or something while GPU Working? or are we already? 
-        printf("Flipping buffers.\n");
+        // printf("Flipping buffers.\n");
         GE.window.FlipBuffers();
 
-        LogElapsed(currentTime, "Frame elapsed");
+        // if (g->transformComponent->position().y <= 1.0) {
+        //     while (true) {}
+        // }
+
+        // std::printf("ok %f %f \n", GE.debugFreecamPitch, GE.debugFreecamYaw);
+        // GE.window.Close();
+
+        // LogElapsed(currentTime, "Frame elapsed");
 
     }
     printf("Beginning exit process.\n");
