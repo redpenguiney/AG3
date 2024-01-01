@@ -132,7 +132,7 @@ void main()
         tx = vec4(1.0, 1.0, 1.0, 1.0);
     }
     else {
-        tx = texture(displacementMap, fragmentTexCoords).xxxx;
+        tx = texture(colorMap, fragmentTexCoords);
     }
     if (tx.a < 0.1) {
         discard;

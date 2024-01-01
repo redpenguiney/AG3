@@ -35,7 +35,12 @@ Window::Window(int widthh, int heightt) {
         abort();
     }
 
+    // TODO: remove
     glfwSetWindowPos(glfwWindow, 540, 180);
+
+    // initialize mouse position
+    glfwGetCursorPos(glfwWindow, &MOUSE_POS.x, &MOUSE_POS.y);
+    // std::printf("Init mouse at %f %f\n", MOUSE_POS.x, MOUSE_POS.y);
 
     printf("Window creation successful.\n");
 
@@ -60,6 +65,8 @@ void Window::Update() {
     glfwPollEvents();
     glm::dvec2 pos;
     glfwGetCursorPos(glfwWindow, &pos.x, &pos.y);
+    // std::printf("Old mouse pos was %f %f\n", MOUSE_POS.x, MOUSE_POS.y);
+    // std::printf("Now it at %f %f\n", pos.x, pos.y);
     MOUSE_DELTA = pos - MOUSE_POS;
     MOUSE_POS = pos;
 }

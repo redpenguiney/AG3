@@ -9,7 +9,7 @@
 #include "../../external_headers/GLM/gtc/type_ptr.hpp"
 #define TINYOBJLOADER_IMPLEMENTATION // what kind of library makes you have to ask it to actually implement the functions???
 #include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
-#include "let_me_hash_a_tuple.cpp"
+#include "../utility/let_me_hash_a_tuple.cpp"
 
 
 
@@ -138,14 +138,14 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
         glm::vec3 points[3];
         glm::vec3 texCoords[3];
         glm::vec3 normals[3];
-        for (unsigned int i = 0; i < 3; i++) {
-            auto indexIntoIndices = triangleIndex * 3 + i;
+        for (unsigned int j = 0; j < 3; j++) {
+            auto indexIntoIndices = triangleIndex * 3 + j;
             //std::cout << " i = " << indexIntoIndices << "nfloats = " << nFloatsPerVertex << " actual index = " << indices.at(indexIntoIndices) <<  " \n";
             auto vertexIndex = indices.at(indexIntoIndices);
             //std::cout << "thing in indices  was " << vertexIndex << " \n"; 
-            points[i] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex));
-            texCoords[i] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + 3));
-            normals[i] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + 5));
+            points[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex));
+            texCoords[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + 3));
+            normals[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + 5));
         }
          
         glm::vec3 edge1 = points[1] - points[0];
@@ -177,7 +177,7 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
 }
 
 // unloads the mesh with the given meshId, freeing its memory.
-// you CAN unload a mesh while objects are using it without any issues - a copy of that mesh is still in a meshpool.
+// you CAN unload a mesh while objects are using it without any issues - a copy of that mesh is still on the gpu.
 // you only need to call this function if you are (like for procedural terrain) dynamically loading new meshes
 void Mesh::Unload(int meshId) {
     assert(LOADED_MESHES.count(meshId) != 0 && "Mesh::Unload() was given an invalid meshId.");
@@ -193,6 +193,8 @@ instancedTextureZ(instanceTextureZ),
 instanceCount(expectedCount),
 originalSize(),
 vertexSize(sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!instancedColor) ? sizeof(glm::vec4) : 0) + ((!instancedTextureZ) ? sizeof(GLfloat) : 0)) // this is just sizeof(vertexPos) + sizeof(vertexNormals) + sizeof(textureXY) + sizeof(color if not instanced) + sizeof(textureZ if not instanced) 
-{}
+{
+    // std::cout << "Created mesh with id " << meshId << "\n";
+}
 
 

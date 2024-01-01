@@ -68,11 +68,85 @@ bool GraphicsEngine::ShouldClose() {
     return window.ShouldClose();
 }
 
+void GraphicsEngine::DebugAxis() {
+    static auto crummyDebugShader =  ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
+    crummyDebugShader->Use();
+
+    // xyz, rgb
+    const static std::vector<float> vertices = {0.0,  0.0,  0.0, 1.0, 0.0, 0.0,
+                                   0.2,  0.0,  0.0,    1.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0,      0.0, 1.0, 0.0,
+                                  0.0, 0.2, 0.0,  0.0, 1.0, 0.0,
+                                  0.0, 0.0, 0.0,   0.0, 0.0, 1.0,
+                                  0.0, 0.0, 0.2, 0.0, 0.0, 1.0};
+    
+    glm::vec3 cpos = debugFreecamEnabled ? debugFreecamPos: camera.position;
+    glm::mat4x4 instancedVertexAttributes = {1, 0, 0, 0, 
+                                                    0, 1, 0, 0,
+                                                    0, 0, 1, 0,
+                                                    cpos.x, cpos.y, cpos.z, 1}; // per object data. format is 4x4 model mat 
+    // instancedVertexAttributes = (camera.GetProj((float)window.width/(float)window.height));
+    glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
+    instancedVertexAttributes = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamPos : (glm::vec3) -camera.position);
+    GLuint vao, vbo, ivbo;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ivbo);
+
+    // auto frCam = glm::inverse((debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera());
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STREAM_DRAW);    
+    glBindBuffer(GL_ARRAY_BUFFER, ivbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4x4), &cameraMatrix, GL_STREAM_DRAW);    
+ 
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+    glEnableVertexAttribArray(0); // position
+    glEnableVertexAttribArray(1); // color
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(glm::vec3) * 2, (void*)0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(glm::vec3) * 2, (void*)sizeof(glm::vec3));
+
+    glVertexAttribDivisor(0, 0); // tell openGL that vertex position and color are per-vertex
+    glVertexAttribDivisor(1, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, ivbo);
+
+    glEnableVertexAttribArray(2); // model matrix (needs 4 vec4 attributes)
+    glEnableVertexAttribArray(2+1);
+    glEnableVertexAttribArray(2+2);
+    glEnableVertexAttribArray(2+3);
+    
+
+    glVertexAttribPointer(2, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)0);
+    glVertexAttribPointer(2+1, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)(sizeof(glm::vec4) * 1));
+    glVertexAttribPointer(2+2, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)(sizeof(glm::vec4) * 2));
+    glVertexAttribPointer(2+3, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)(sizeof(glm::vec4) * 3));
+    
+
+    glVertexAttribDivisor(2, 1); // tell openGL that these are instanced vertex attributes (meaning per object, not per vertex)
+    glVertexAttribDivisor(2+1, 1);
+    glVertexAttribDivisor(2+2, 1);
+    glVertexAttribDivisor(2+3, 1);
+    
+
+    
+    glDrawArraysInstanced(GL_LINES, 0, 6, 1);
+
+    glDeleteBuffers(1, &vbo);  
+    glDeleteBuffers(1, &ivbo);  
+    
+    glDeleteVertexArrays(1, &vao);
+}
+
 void GraphicsEngine::RenderScene() {
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
     //glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
     // TODO: remove
+    DebugAxis();
     //SpatialAccelerationStructure::Get().DebugVisualize();
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
@@ -85,22 +159,25 @@ void GraphicsEngine::RenderScene() {
         window.SetMouseLocked(!window.mouseLocked);
     }
 
-    
+    // std::cout << "\tAdding cached meshes.\n";
 
     // Update various things
     AddCachedMeshes();
+    // std::cout << "\tUpdating RCs.\n";
     UpdateRenderComponents();      
     
+    // std::cout << "\tUpdating lights.\n";
     UpdateLights();
     //CalculateLightingClusters();
 
+    // std::cout << "\tSetting uniforms.\n";
     // Update shaders with the camera's new rotation/projection
     glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
     glm::mat4x4 cameraMatrixNoFloatingOrigin = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamPos : (glm::vec3) -camera.position);
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin);
 
-
+    // std::cout << "\tDrawing.\n";
     // Draw world stuff.
     for (auto & [shaderId, map1] : meshpools) {
         auto& shader = ShaderProgram::Get(shaderId);
@@ -125,10 +202,14 @@ void GraphicsEngine::RenderScene() {
         } 
     }
 
+    // std::cout << "\tDrawing skybox.\n";
     // Draw skybox afterwards to encourage early z-test
     DrawSkybox();
+
+    // std::cout << "\tUpdating meshpools.\n";
     UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
     
+    // std::cout << "\tFlushing toilet.\n";
     glFlush(); // Tell OpenGL we're done drawing.
 }
 
@@ -295,9 +376,14 @@ glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
 }
 
 void GraphicsEngine::AddCachedMeshes() {
+    if (meshesToAdd.size() > 0) {
+        std::cout << "There are " << meshesToAdd.size() << " to add.\n";
+    }
+    
     for (auto & [shaderId, map1] : meshesToAdd) {
         for (auto & [textureId, map2] : map1) {
             for (auto & [meshId, meshLocations] : map2) {
+                std::cout << "\tInfo: " << meshId << " " << textureId << " " << shaderId << " size " << meshLocations.size() << "\n";
 
                 std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
                 const unsigned int verticesNBytes = m->vertices.size() * sizeof(GLfloat);
@@ -319,13 +405,16 @@ void GraphicsEngine::AddCachedMeshes() {
                 }
 
                 if (bestPoolId == -1) { // if we didn't find a suitable pool just make one
+                    std::cout << "\tmust create pool for new mesh.\n";
                     bestPoolId = lastPoolId++;
                     meshpools[shaderId][textureId][bestPoolId] = new Meshpool(m);
                 }
+                std::cout << "\tmesh pool id is " << bestPoolId << "\n"; 
 
-                auto objectPositions = meshpools[shaderId][textureId][bestPoolId]->AddObject(meshId, meshLocations.size());
+                auto objectPositions = meshpools.at(shaderId).at(textureId).at(bestPoolId)->AddObject(meshId, meshLocations.size());
+                std::cout << "\tAdded.\n";
                 for (unsigned int i = 0; i < meshLocations.size(); i++) {
-                    meshLocations[i]->poolId = bestPoolId;
+                    meshLocations.at(i)->poolId = bestPoolId;
                     meshLocations[i]->poolSlot = objectPositions[i].first;
                     meshLocations[i]->poolInstance = objectPositions[i].second;
                     meshLocations[i]->initialized = true;
@@ -335,6 +424,7 @@ void GraphicsEngine::AddCachedMeshes() {
         }
     }
     // TODO: instead of clearing the entire thing do something else
+    // TODO: why did i write the above comment? clearing is fine???
     meshesToAdd.clear();
 }
 

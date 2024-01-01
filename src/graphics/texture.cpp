@@ -115,6 +115,7 @@ type(textureType)
     break;
     }
 
+    // TODO: there was a crash when loading a 3-channel jpeg to create a grayscale texture
     // generate OpenGL texture object and put image data in it
     glGenTextures(1, &glTextureId);
     // Use();

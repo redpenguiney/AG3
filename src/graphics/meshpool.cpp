@@ -36,16 +36,19 @@ Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh):
 
 // Adds count identical meshes to pool, and returns a vector of pairs of (slot, instanceOffset) used to access the object.
 std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const unsigned int meshId, unsigned int count) {
-    // std::printf("Be advised: adding %u of %u\n", count, meshId);
+    std::printf("\tBe advised: adding %u of %u\n", count, meshId);
     std::vector<std::pair<unsigned int, unsigned int>> objLocations;
     unsigned int meshInstanceCapacity = Mesh::Get(meshId)->instanceCount;
+
+    // if no value for this key, will be automatically created as an empty vector
     auto& contents = slotContents[meshId];
     
     // if any slots for this mesh have room for more instances, try to fill them up first
     for (unsigned int slot : contents) {
-
+        std::cout << "\tChecking slot " << slot << ".\n";
         // Check if RemoveObject() created any spaces to put new instances in
         if (slotInstanceSpaces.count(slot)) {
+            std::cout << "\tSlot instance spaces has room.\n";
             unsigned int len = slotInstanceSpaces[slot].size();
             for (unsigned int i = 0; i < std::min(len, count); i++) {
                 auto instance = *(slotInstanceSpaces[slot].begin());
@@ -69,6 +72,7 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
         // Otherwise append instances to the end of the slot
         unsigned int storedCount = drawCommands[slot].instanceCount;
         if (storedCount < meshInstanceCapacity) { // if this slot has room
+            std::cout << "\tSlot has room at end.\n";
             const unsigned int space = meshInstanceCapacity - storedCount;
 
             // add positions to objLocations
@@ -89,29 +93,37 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
 
     // failing that, create slots and fill them until count is 0
     while (count > 0) {
+        std::cout << "\tInsufficient room after all that, creating slot.\n";
         if (availableMeshSlots.size() == 0) { // expand the meshpool if there isn't room for the new mesh
+            std::cout << "\tExpanding...\n";
             ExpandNonInstanced();
+            std::cout << "\tExpanded.\n";
         }
-
+        std::cout << "\tChecking for slots with matching instance capacity.\n";
         // first try to get slot with matching instance capacity, failing that do a whole new slot
         unsigned int slot;
         if (availableMeshSlots.count(meshInstanceCapacity)) {
+            std::cout << "\tFound one.\n";
             slot = availableMeshSlots[meshInstanceCapacity].front();
             availableMeshSlots[meshInstanceCapacity].pop_front();
         }
         else {
+            std::cout << "\tDid not find one, reserving slot for this mesh.\n";
             slot = availableMeshSlots[0].front();
             availableMeshSlots[0].pop_front();
         }
 
+        std::cout << "\tSlot obtained.\n";
         unsigned int start = drawCommands[slot].instanceCount;
         FillSlot(meshId, slot, std::min(count, meshInstanceCapacity));
+        std::cout << "\tFilled slot.\n";
         drawCount += 1;
 
         // add positions to objLocations
         for (unsigned int i = start; i < start + std::min(count, meshInstanceCapacity); i++) {
             objLocations.push_back(std::make_pair(slot, i));
         }
+        std::cout << "\tSet objLocations.\n";
 
         //drawCommands[slot].instanceCount = std::min(count, instanceCapacity);
         count -= std::min(count, meshInstanceCapacity);
@@ -388,9 +400,13 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     auto vertices = &mesh->vertices;
     auto indices = &mesh->indices;
 
+    std::cout << "\tWe gonna copy!\n";
     // literally just memcpy into the buffers
-    memcpy(vertexBuffer.Data() + (slot * meshVerticesSize), vertices->data(), vertices->size() * vertexSize);
+    std::cout << "\tOk so dst " << (void*)vertexBuffer.Data() << " slot " << slot << " mVS " << meshVerticesSize << " src " << vertices->data() << " count " << vertices->size() << " size " << vertexSize << "\n";
+    memcpy(vertexBuffer.Data() + (slot * meshVerticesSize), vertices->data(), vertices->size() * sizeof(GLfloat) /*vertexSize*/);
+    std::cout << "\tvertices done\n";
     memcpy(indexBuffer.Data() + (slot * meshIndicesSize), indices->data(), indices->size() * sizeof(GLuint));
+    std::cout << "\t...but what did it cost?\n";
 
     // also update drawCommands before doing the indirect draw buffer
     drawCommands[slot].count = indices->size();
@@ -399,7 +415,7 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceReservedCounts[slot - 1];
     drawCommands[slot].instanceCount = instanceCount;
 
-    // std::printf("Once again we're printing this stuff; %u %u   %u %u %u %u %u\n", meshVerticesSize, vertexSize, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
+    std::printf("\tOnce again we're printing this stuff; %u %u   %u %u %u %u %u\n", meshVerticesSize, vertexSize, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
 
     // idk what to call this
     slotToInstanceLocations[slot] = drawCommands[slot].baseInstance;
