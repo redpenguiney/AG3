@@ -28,7 +28,7 @@ void RigidbodyComponent::Impulse(glm::vec3 position, glm::vec3 force) {
     float positionToYAxis = glm::length(glm::vec2(position.x, position.z));
     float positionToZAxis = glm::length(glm::vec2(position.x, position.y));
     std::cout << "Axis distances are " << glm::to_string(glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis))) << ".\n";
-    accumulatedTorque += glm::cross(position, force);  //glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis)) * force;
+    //accumulatedTorque += glm::cross(position, force);  //glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis)) * force;
     std::cout << "Torque is " << glm::to_string(accumulatedTorque) << ".\n";
     accumulatedForce += force;
 }

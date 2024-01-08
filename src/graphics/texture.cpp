@@ -70,7 +70,7 @@ type(textureType)
     std::vector<unsigned char*> imageDatas;
     
     std::cout << "Requiring " << NChannelsFromFormat(params.format) << " channels.\n";
-    unsigned int lastWidth = 0, lastHeight = 0;
+    int lastWidth = 0, lastHeight = 0;
     for (auto & path: params.texturePaths) {
         // use stbi_image.h to load file
         std::cout << "Loading \"" << path << "\".\n";

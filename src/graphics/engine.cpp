@@ -142,7 +142,7 @@ void GraphicsEngine::DebugAxis() {
 }
 
 void GraphicsEngine::RenderScene() {
-    std::cout << "\tDoing random gl calls.\n";
+    // std::cout << "\tDoing random gl calls.\n";
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
     //glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
@@ -156,7 +156,7 @@ void GraphicsEngine::RenderScene() {
     // std::cout << "\tAdding cached meshes.\n";
 
     // Update various things
-    std::cout << "\tAdding cached meshes.\n";
+    // std::cout << "\tAdding cached meshes.\n";
     AddCachedMeshes();
     // std::cout << "\tUpdating RCs.\n";
     UpdateRenderComponents();      

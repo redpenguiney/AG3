@@ -5,7 +5,7 @@
 #include <cassert>
 #include <cstdio>
 #include <memory>
-#include <utility>
+#include "../utility/utility.hpp"
 #include <vector>
 #include "engine.hpp"
 #include "gjk.hpp"
@@ -27,7 +27,7 @@ PhysicsEngine& PhysicsEngine::Get() {
 
 // Simulates physics of a single rigidbody.
 void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::vector<std::pair<TransformComponent*, glm::dvec3>>& seperations) {
-    rigidbody.accumulatedForce += PhysicsEngine::Get().GRAVITY * dt * (double)rigidbody.mass;
+    // rigidbody.accumulatedForce += PhysicsEngine::Get().GRAVITY * dt * (double)rigidbody.mass;
 
     // TODO: should REALLY use tight fitting AABB here
     auto aabbToTest = collider.GetAABB();
@@ -40,7 +40,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
     // TODO: this does mean redundant narrowphase collision checks, we should store results of narrowphase checks to avoid that
     for (auto & otherColliderPtr: potentialColliding) {
         if (otherColliderPtr == &collider) {continue;} // collider shouldn't collide with itself lol
-        auto collisionTestResult = IsColliding(*otherColliderPtr->GetGameObject()->transformComponent.ptr, *otherColliderPtr, transform, collider);
+        auto collisionTestResult = IsColliding(*otherColliderPtr->GetGameObject()->transformComponent.GetPtr(), *otherColliderPtr, transform, collider);
         if (collisionTestResult) {
             // while (true) {}
             // static unsigned int DEBUG_IGNORE_1;
@@ -52,23 +52,8 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             // DEBUG_IGNORE_1++;
             std::cout << "Object is at " << glm::to_string(transform.position()) << "\n";
             std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << " world position " << glm::to_string(collisionTestResult->hitPoints.back()) << " distance " << collisionTestResult->penetrationDepth << "\n"; 
-            
-            auto seperationVector = collisionTestResult->collisionNormal * (otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr ? 0.5 * collisionTestResult->penetrationDepth : collisionTestResult->penetrationDepth);
-            {
-                static auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
-                GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
-                params.meshId = m->meshId;
-                auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos(collisionTestResult->hitPoints.back() + seperationVector);
-                g->transformComponent->SetScl({0.1, 0.1, 0.1});
-                g->renderComponent->SetColor({0.9, 0.0, 0.0, 1});
-                g->renderComponent->SetTextureZ(-1);
-                auto g2 = ComponentRegistry::NewGameObject(params);
-                g2->transformComponent->SetPos(transform.position() + seperationVector);
-                g2->transformComponent->SetScl({0.1, 0.1, 0.1});
-                g2->renderComponent->SetColor({0.0, 0.9, 0.9, 1});
-                g2->renderComponent->SetTextureZ(-1);
-            }
+            auto seperationVector = collisionTestResult->collisionNormal * (otherColliderPtr->GetGameObject()->rigidbodyComponent ? 0.5 * collisionTestResult->penetrationDepth : collisionTestResult->penetrationDepth);
+            DebugPlacePointOnPosition({transform.position() + seperationVector}, {1, 0.2, 0.2, 1.0});
             
 
             // find center of contact region and apply the torque from there
@@ -77,20 +62,21 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                 averageContactPoint += p;
             }
             averageContactPoint /= collisionTestResult->hitPoints.size();
+            DebugPlacePointOnPosition({averageContactPoint}, {0.2, 0.2, 1.0, 1.0});
 
             // velocity of the actual point that hit should be used, not the overall velocity of the object
             // glm::vec3 contactPointInObjectSpace = glm::dvec3(glm::inverse(transform.GetPhysicsModelMatrix()) * glm::dvec4(averageContactPoint, 1)); // TODO: might need to use whole inverted matrix
             glm::vec3 contactPointInObjectSpace = averageContactPoint - transform.position();
 
-            glm::dvec3 velocityAtContactPoint = rigidbody.velocity + rigidbody.VelocityAtPoint(contactPointInObjectSpace);
-            glm::vec3 contactPointInOtherObjectSpace = averageContactPoint - otherColliderPtr->GetGameObject()->transformComponent->position(); // TODO: might need to use whole inverted matrix
-            // glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr == nullptr ? glm::dvec3(0, 0, 0) : otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity;
-            glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr == nullptr ? glm::dvec3(0, 0, 0) : (otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity + otherColliderPtr->GetGameObject()->rigidbodyComponent->VelocityAtPoint(contactPointInOtherObjectSpace));
+            glm::dvec3 velocityAtContactPoint = rigidbody.velocity;// + rigidbody.VelocityAtPoint(contactPointInObjectSpace);
+            // glm::vec3 contactPointInOtherObjectSpace = averageContactPoint - otherColliderPtr->GetGameObject()->transformComponent->position(); // TODO: might need to use whole inverted matrix
+            glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity :  glm::dvec3(0, 0, 0);
+            // glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ?  (otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity + otherColliderPtr->GetGameObject()->rigidbodyComponent->VelocityAtPoint(contactPointInOtherObjectSpace)) : glm::dvec3(0, 0, 0);
 
             seperations.emplace_back(std::make_pair(&transform, seperationVector));
             auto elasticity = otherColliderPtr->elasticity * collider.elasticity;
             auto relVelocity = (velocityAtOtherContactPoint - velocityAtContactPoint);
-            auto desiredChangeInVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent.ptr ? elasticity : 1.0 + elasticity) * collisionTestResult->collisionNormal * relVelocity; //(glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
+            auto desiredChangeInVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent ? elasticity : 1.0 + elasticity) * collisionTestResult->collisionNormal * relVelocity * (glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
             // rigidbody.accumulatedForce = desiredChangeInVelocity * (double)rigidbody.mass;
 
             // torque = cross(radius, force)

@@ -86,21 +86,24 @@ namespace ComponentRegistry {
     }
 };
 
-GameObject::~GameObject() {
+void GameObject::Destroy() {
+    if (!ComponentRegistry::GAMEOBJECTS.contains(this)) {
+        std::cout << "Error: Destroy() was called on the same gameobject twice. Please don't.\n";
+        abort();
+    }
+    ComponentRegistry::GAMEOBJECTS.erase(this);
+    transformComponent.Clear();
+    renderComponent.Clear();
+    colliderComponent.Clear();
+    rigidbodyComponent.Clear();
+    pointLightComponent.Clear();
+}
 
+GameObject::~GameObject() {
+    
     //std::cout << "Destroying.\n";
-    // ComponentRegistry::gameObjects.erase(this); The only way the destructor could have been called if someone already erased that.
-    if (transformComponent.ptr) {transformComponent->Destroy();}
-    if (renderComponent.ptr) {renderComponent->Destroy();}
-    if (colliderComponent.ptr) {colliderComponent->Destroy();}
-    if (rigidbodyComponent.ptr) {rigidbodyComponent->Destroy();}
-     if (pointLightComponent.ptr) {pointLightComponent->Destroy();}
-    //std::cout << "Returning to pool.\n";
-    if (transformComponent.ptr) {transformComponent->pool->ReturnObject(transformComponent.ptr);}
-    if (renderComponent.ptr) {renderComponent->pool->ReturnObject(renderComponent.ptr);}
-    if (colliderComponent.ptr) {colliderComponent->pool->ReturnObject(colliderComponent.ptr);}
-    if (rigidbodyComponent.ptr) {rigidbodyComponent->pool->ReturnObject(rigidbodyComponent.ptr);}
-    if (pointLightComponent.ptr) {pointLightComponent->pool->ReturnObject(pointLightComponent.ptr);}
+   // Destroy(); The only way the destructor could have been called if someone already called this so why bother.
+    
 };
 
 GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):
@@ -111,10 +114,10 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     colliderComponent((SpatialAccelerationStructure::ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex]),
     pointLightComponent((PointLightComponent*)components[ComponentRegistry::PointlightComponentBitIndex])
 {
-    assert(transformComponent.ptr != nullptr); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
+    assert(transformComponent); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
     transformComponent->Init();
-    if (renderComponent.ptr) {renderComponent->Init(params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().GetDefaultShaderId());}
-    if (colliderComponent.ptr) {
+    if (renderComponent) {renderComponent->Init(params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().GetDefaultShaderId());}
+    if (colliderComponent) {
         std::shared_ptr<PhysicsMesh> physMesh;
         if (params.physMeshId == 0) {
             if (params.meshId == 0) {
@@ -128,7 +131,7 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
         }
         colliderComponent->Init(this, physMesh);
     };
-    if (rigidbodyComponent.ptr) {rigidbodyComponent->Init();}
-    if (pointLightComponent.ptr) {pointLightComponent->Init();}
+    if (rigidbodyComponent) {rigidbodyComponent->Init();}
+    if (pointLightComponent) {pointLightComponent->Init();}
     name = "GameObject";
 };

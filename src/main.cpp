@@ -13,6 +13,7 @@
 #include "physics/raycast.hpp"
 #include "physics/engine.hpp"
 #include "gameobjects/rigidbody_component.hpp"
+#include "gameobjects/lifetime.hpp"
 
 using namespace std;
 
@@ -25,19 +26,6 @@ int main() {
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
     auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {.texturePaths = {"../textures/grass.png"}, .format = RGB, .usage = ColorMap}, TextureCreateParams {.texturePaths = {"../textures/crate_specular.png"}, .format = Grayscale, .usage = SpecularMap}}, TEXTURE_2D);
-    
-    {
-        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-        params.meshId = m->meshId;
-        params.materialId = grassMaterial->id;
-        auto floor = ComponentRegistry::NewGameObject(params);
-        floor->transformComponent->SetPos({0, 0, 0});
-        floor->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-        floor->colliderComponent->elasticity = 0.5;
-        floor->transformComponent->SetScl({4, 1, 4});
-        floor->renderComponent->SetColor({0, 1, 0, 1});
-        floor->renderComponent->SetTextureZ(grassTextureZ);
-    }
 
     //std::printf("ITS %u %u\n", m->meshId, grassMaterial->id);
     auto [brickTextureZ, brickMaterial] = Material::New({
@@ -46,6 +34,39 @@ int main() {
         TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/normal_gl.jpg"}, .format = RGB, .usage = NormalMap}, 
         // TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
         }, TEXTURE_2D);
+
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = grassMaterial->id;
+        auto floor = ComponentRegistry::NewGameObject(params);
+        floor->transformComponent->SetPos({0, 0, 1});
+        floor->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        floor->colliderComponent->elasticity = 1.0;
+        floor->transformComponent->SetScl({9, 1, 9});
+        floor->renderComponent->SetColor({0, 1, 0, 1});
+        floor->renderComponent->SetTextureZ(grassTextureZ);
+    }
+
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = brickMaterial->id;
+        auto wall1 = ComponentRegistry::NewGameObject(params);
+        wall1->transformComponent->SetPos({0, 4, 4});
+        wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall1->colliderComponent->elasticity = 1.0;
+        wall1->transformComponent->SetScl({8, 8, 1});
+        wall1->renderComponent->SetColor({1, 1, 1, 1});
+        wall1->renderComponent->SetTextureZ(brickTextureZ);
+        auto wall2 = ComponentRegistry::NewGameObject(params);
+        wall2->transformComponent->SetPos({0, 4, -4});
+        wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall2->colliderComponent->elasticity = 1.0;
+        wall2->transformComponent->SetScl({8, 8, 1});
+        wall2->renderComponent->SetColor({1, 1, 1, 1});
+        wall2->renderComponent->SetTextureZ(brickTextureZ);
+    }
 
     auto skyboxFaces = vector<std::string>( // TODO: need to make clear what order skybox faces go in
     { 
@@ -65,7 +86,7 @@ int main() {
     GE.debugFreecamPos = glm::vec3(0, 3, 8);
 
     
-    int i = 0;
+    // int i = 0;
     // for (int x = 0; x < 1; x++) {
     //     for (int y = 0; y < 1; y++) {
     //         for (int z = 0; z < 1; z++) {
@@ -75,13 +96,13 @@ int main() {
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({0, 10, 0});
                 g->colliderComponent->elasticity = 1.0;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(0.0, 0.0, 1.0)));
-                // g->rigidbodyComponent->angularVelocity = {0.1, 0.1, 0.1};
+                g->transformComponent->SetRot(glm::quat(glm::vec3(0.0, 0.0, 0.0)));
+                g->rigidbodyComponent->angularVelocity = {1.0, 0.0, 0.0};
                 //g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
-                g->name = std::string("Gameobject #") + to_string(i);
-                i++;
+                g->name = std::string("Gameobject #"); //+ to_string(i);
+                // i++;
     //         } 
     //     }
     // }
@@ -122,7 +143,9 @@ int main() {
 
     const unsigned int N_PHYSICS_ITERATIONS = 1; // bigger number = higher quality physics simulation, although do we ever want this? what about just increase sim timestep?
     double previousTime = Time();
-    double physicsLag = 0.0; // how many milliseconds behind the simulation is. Before rendering, we check if lag is > SIMULATION_TIMESTEP in ms and if so, simulate stuff.
+    double physicsLag = 0.0; // how many seconds behind the simulation is. Before rendering, we check if lag is > SIMULATION_TIMESTEP in ms and if so, simulate stuff.
+
+    bool physicsPaused = false;
 
     while (!GE.ShouldClose()) 
     {
@@ -135,22 +158,26 @@ int main() {
         // printf("Processing events.\n");
         GE.window.Update(); // event processing
 
-        if (physicsLag >= SIMULATION_TIMESTEP * 1000) { // make sure stepping simulation won't put it ahead of realtime
+        if (physicsLag >= SIMULATION_TIMESTEP) { // make sure stepping simulation won't put it ahead of realtime
             // printf("Updating SAS.\n");
 
             SpatialAccelerationStructure::Get().Update();
-            
-            // printf("Stepping PE.\n");
-            for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
-                PE.Step(SIMULATION_TIMESTEP/N_PHYSICS_ITERATIONS);
+
+            if (!physicsPaused) {
+                // printf("Stepping PE.\n");
+                for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
+                    PE.Step(SIMULATION_TIMESTEP/N_PHYSICS_ITERATIONS);
+                }
             }
+            
+            physicsLag -= SIMULATION_TIMESTEP;
         }
-        physicsLag -= SIMULATION_TIMESTEP * 1000;
+        
 
         //printf("Doing a little raycasting.\n");
         if (LMB_DOWN) {
             auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
-            if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent.ptr != nullptr) {
+            if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
                 //std::cout << "Hit object " << castResult.hitObject->name << " \n";
                 castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.1;
                 //castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position() + castResult.hitNormal * 0.02);
@@ -161,6 +188,9 @@ int main() {
 
         }
 
+        if (PRESS_BEGAN_KEYS[GLFW_KEY_SPACE]) {
+            physicsPaused = !physicsPaused;
+        }
         if (PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
             GE.window.Close();
         }
@@ -170,6 +200,9 @@ int main() {
         
         // printf("Rendering scene.\n");
         GE.RenderScene();
+
+
+        UpdateLifetimes();
 
         // TODO: unsure about placement of flip buffers? 
         // i think this yields until GPU done drawing and image on screen

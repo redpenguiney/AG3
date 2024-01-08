@@ -3,6 +3,8 @@
 // Pointers to components are never invalidated thanks to component pool fyi.
 
 // TODO: interleaved component pools?
+// TODO: We can't really destroy gameobjects???
+
 
 #pragma once
 #include <array>
@@ -81,7 +83,7 @@ struct GameobjectCreateParams {
     std::bitset<ComponentRegistry::N_COMPONENT_TYPES> requestedComponents;
 };
 
-// Just a little pointer wrapper for gameobjects that throws an error when trying to dereference a nullptr to a component (gameobjects have a nullptr to any components they don't have)
+// Just a little pointer wrapper for gameobjects that throws an error when trying to dereference a nullptr to a component (gameobjects have a nullptr to any components they don't have, and when Destroy() is called all components are set to nullptr)
 // Still the gameobject's job to get and return objects to/from the pool since the pool used depends on the exact set of components the gameobject uses.
 template<typename T>
 class ComponentHandle {
@@ -89,7 +91,20 @@ class ComponentHandle {
     ComponentHandle(T* const comp_ptr);
     T& operator*() const;
     T* operator->() const;
-    T* const ptr;
+
+    // Returns true if not nullptr
+    explicit operator bool() const;
+
+    // might return nullptr, be careful.
+    // only exists so you can pass a reference to a component to a function
+    T* const GetPtr() const;
+
+    // If ptr != nullptr/it hasn't already been cleared, calls Destroy() on the component, returns it to the pool, and sets ptr to nullptr.
+    // Gameobjects do this for all their components when Destroy() is called on them.
+    void Clear();
+
+    private:
+    T* ptr;
 };
 
 // templates can't go in cpps
@@ -98,10 +113,26 @@ template<typename T>
 ComponentHandle<T>::ComponentHandle(T* const comp_ptr) : ptr(comp_ptr) {}
 
 template<typename T>
+ComponentHandle<T>::operator bool() const {
+    return ptr != nullptr;
+}
+
+template<typename T>
 T& ComponentHandle<T>::operator*() const {assert(ptr != nullptr); return *ptr;}
 
 template<typename T>
 T* ComponentHandle<T>::operator->() const {assert(ptr != nullptr); return ptr;};
+
+template<typename T>
+T* const ComponentHandle<T>::GetPtr() const {return ptr;}
+
+template<typename T>
+void ComponentHandle<T>::Clear() {
+    if (ptr) {
+        ptr->Destroy();
+        ptr->pool->ReturnObject(ptr);
+    }
+}
 
 class RigidbodyComponent;
 
@@ -118,6 +149,11 @@ class GameObject {
     ComponentHandle<PointLightComponent> pointLightComponent;
 
     ~GameObject();
+
+    // Destroys all components of the gameobject, sets all component handles to nullptr.
+    // ComponentHandle will catch if you try to access the components after this is called and throw an error.
+    // Will error if you try to destroy the same gameobject twice.
+    void Destroy();
 
     protected:
     
