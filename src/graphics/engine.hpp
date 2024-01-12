@@ -64,9 +64,6 @@ class GraphicsEngine {
     // returns true if the user is trying to close the application, or if glfwSetWindowShouldClose was explicitly called (like by a quit game button)
     bool ShouldClose();
 
-    // just a little thing to visualize axis
-    void DebugAxis();
-
     // Draws everything
     void RenderScene();
 
@@ -128,6 +125,9 @@ class GraphicsEngine {
     RenderableMesh* skybox; 
 
     unsigned int defaultShaderProgramId;
+
+    // just a little thing to visualize axis
+    void DebugAxis();
 
     // meshpools are highly optimized objects used for very fast drawing of meshes
     // to avoid memory fragmentation all meshes within it are padded to be of the same size, so to save memory there is a pool for small meshes, medium ones, etc.

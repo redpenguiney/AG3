@@ -1,6 +1,6 @@
 #version 430
 
-in vec3 fragmentColor;
+in vec4 fragmentColor;
 in vec3 fragmentNormal;
 in vec3 fragmentTexCoords;
 in vec3 cameraToFragmentPosition;
@@ -137,7 +137,7 @@ void main()
     if (tx.a < 0.1) {
         discard;
     };
-    vec4 color = tx * vec4(light * fragmentColor, 1);
+    vec4 color = tx * fragmentColor * vec4(light, 1);
     Output = color;
 
 };

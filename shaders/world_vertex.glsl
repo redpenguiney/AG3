@@ -22,7 +22,7 @@ uniform mat4 modelToLightSpace;
 
 uniform bool normalMappingEnabled;
 
-out vec3 fragmentColor;
+out vec4 fragmentColor;
 out vec3 cameraToFragmentPosition;
 out vec3 cameraToFragmentInTangentSpace;
 out vec3 fragmentNormal;
@@ -35,7 +35,7 @@ void main()
     gl_Position = modelMatrix * vec4(vertexPos, 1.0);
     cameraToFragmentPosition = gl_Position.xyz;
     gl_Position = camera * gl_Position;
-    fragmentColor = vertexColor.xyz;
+    fragmentColor = vertexColor;
     fragmentNormal = normalize(normalMatrix * vertexNormal);
     fragmentTexCoords = vec3(textureXY, textureZ);
     //lightSpaceCoords = modelToLightSpace * model * vec4(vertexPos, 1.0);

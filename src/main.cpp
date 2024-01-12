@@ -17,7 +17,7 @@
 
 using namespace std;
 
-int main() {
+int main(int numArgs, char *argPtrs[]) {
     std::printf("Main function reached.\n");
 
     auto & GE = GraphicsEngine::Get();
@@ -40,11 +40,11 @@ int main() {
         params.meshId = m->meshId;
         params.materialId = grassMaterial->id;
         auto floor = ComponentRegistry::NewGameObject(params);
-        floor->transformComponent->SetPos({0, 0, 1});
+        floor->transformComponent->SetPos({0, 0, 0});
         floor->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
         floor->colliderComponent->elasticity = 1.0;
         floor->transformComponent->SetScl({9, 1, 9});
-        floor->renderComponent->SetColor({0, 1, 0, 1});
+        floor->renderComponent->SetColor({0, 1, 0, 0.5});
         floor->renderComponent->SetTextureZ(grassTextureZ);
     }
 
@@ -52,19 +52,19 @@ int main() {
         GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
         params.meshId = m->meshId;
         params.materialId = brickMaterial->id;
-        auto wall1 = ComponentRegistry::NewGameObject(params);
-        wall1->transformComponent->SetPos({0, 4, 4});
-        wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-        wall1->colliderComponent->elasticity = 1.0;
-        wall1->transformComponent->SetScl({8, 8, 1});
-        wall1->renderComponent->SetColor({1, 1, 1, 1});
-        wall1->renderComponent->SetTextureZ(brickTextureZ);
+        // auto wall1 = ComponentRegistry::NewGameObject(params);
+        // wall1->transformComponent->SetPos({4, 4, 0});
+        // wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        // wall1->colliderComponent->elasticity = 1.0;
+        // wall1->transformComponent->SetScl({1, 8, 8});
+        // wall1->renderComponent->SetColor({1, 1, 1, 1});
+        // wall1->renderComponent->SetTextureZ(brickTextureZ);
         auto wall2 = ComponentRegistry::NewGameObject(params);
-        wall2->transformComponent->SetPos({0, 4, -4});
+        wall2->transformComponent->SetPos({-4, 4, 0});
         wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
         wall2->colliderComponent->elasticity = 1.0;
-        wall2->transformComponent->SetScl({8, 8, 1});
-        wall2->renderComponent->SetColor({1, 1, 1, 1});
+        wall2->transformComponent->SetScl({1, 8, 8});
+        wall2->renderComponent->SetColor({1, 1, 1, 0.5});
         wall2->renderComponent->SetTextureZ(brickTextureZ);
     }
 
@@ -84,28 +84,28 @@ int main() {
         // GE.skyboxMaterialLayer = index;
     }
     GE.debugFreecamPos = glm::vec3(0, 3, 8);
-
     
-    // int i = 0;
-    // for (int x = 0; x < 1; x++) {
-    //     for (int y = 0; y < 1; y++) {
-    //         for (int z = 0; z < 1; z++) {
+    
+    int i = 0;
+    for (int x = 0; x < 4; x++) {
+        for (int y = 0; y < 4; y++) {
+            for (int z = 0; z < 4; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({0, 10, 0});
+                g->transformComponent->SetPos({x * 3, 5 + y * 3, z * 3});
                 g->colliderComponent->elasticity = 1.0;
                 g->transformComponent->SetRot(glm::quat(glm::vec3(0.0, 0.0, 0.0)));
-                g->rigidbodyComponent->angularVelocity = {1.0, 0.0, 0.0};
+                // g->rigidbodyComponent->angularVelocity = {1.0, 0.0, 0.0};
                 //g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
-                g->name = std::string("Gameobject #"); //+ to_string(i);
-                // i++;
-    //         } 
-    //     }
-    // }
+                g->name = std::string("Gameobject #") + to_string(i);
+                i++;
+            } 
+        }
+    }
 
     
     // make light
@@ -179,7 +179,7 @@ int main() {
             auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
             if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
                 //std::cout << "Hit object " << castResult.hitObject->name << " \n";
-                castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.1;
+                castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
                 //castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position() + castResult.hitNormal * 0.02);
             }
             else {

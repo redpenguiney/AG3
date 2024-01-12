@@ -181,7 +181,7 @@ std::array<glm::dvec3, 3> NewSimplexPoint(
 // Used by EPA to test if the reverse of an edge already exists in the list and if so, remove it, otherwise add the unreversed edge.
 // I don't really know why it needs that tho.
 void AddIfUniqueEdge(std::vector<std::pair<unsigned int, unsigned int>>& edges, const std::vector<unsigned int>& faces, unsigned int a, unsigned int b) {
-    std::cout << "Adding if unique edge, are currently " << edges.size() << "\n";
+    // std::cout << "Adding if unique edge, are currently " << edges.size() << "\n";
 	auto reverse = std::find(           
 		edges.begin(),                           
 		edges.end(),                             
@@ -189,14 +189,14 @@ void AddIfUniqueEdge(std::vector<std::pair<unsigned int, unsigned int>>& edges, 
 	);
  
 	if (reverse != edges.end()) {
-        std::cout << "eraser\n";
+        // std::cout << "eraser\n";
 		edges.erase(reverse);
 	}
  
 	else {
-        std::cout << "emplacing, size was previously " << edges.size() << "\n";
+        // std::cout << "emplacing, size was previously " << edges.size() << "\n";
 		edges.emplace_back(faces[a], faces[b]);
-        std::cout << "now its " << edges.size() << "\n";
+        // std::cout << "now its " << edges.size() << "\n";
 	}
 }
 
@@ -211,7 +211,7 @@ std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNorma
 	size_t minTriangle = 0;
 	double  minDistance = FLT_MAX;
 
-    std::cout << "There are " << faces.size() << " face indices.\n";
+    // std::cout << "There are " << faces.size() << " face indices.\n";
 	for (size_t i = 0; i < faces.size(); i += 3) {
 		auto& a = polytope[faces[i    ]];
 		auto& b = polytope[faces[i + 1]];
@@ -225,19 +225,24 @@ std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNorma
 			distance *= -1;
 		}
 
-        std::cout << "Pushing back to normals.\n";
+        // std::cout << "Pushing back to normals.\n";
 		normals.emplace_back(std::make_pair(normal, distance));
 
 		if (distance < minDistance) {
 			minTriangle = i / 3;
 			minDistance = distance;
-            std::cout << "Min distance " << minDistance << " created by dot of " << glm::to_string(normal) << " and support " << glm::to_string(a[0]) << "\n";
+            // std::cout << "Min distance " << minDistance << " created by dot of " << glm::to_string(normal) << " and support " << glm::to_string(a[0]) << "\n";
 		}
 	}
 
     assert(normals.size() > 0);
 	return { normals, minTriangle };
 }
+
+// jk idk how that would work
+// when a line-face collision occurs, barycentric coordinates cannot be used to find the contact point the way they can be for face-face or point-face collisions.
+// Instead, we brute-force find the vertices (in world space) of the line by checking for each line segment if it is parallel to the hit face.
+    // (we know its parallel if the face's normal is perpendicular to the line's direction, which is when their dot product is 0)
  
 //  EPA algorithm, used to get collision normals/contact points, explained here: https://winter.dev/articles/epa-algorithm
 // TODO: concave support
@@ -269,7 +274,7 @@ CollisionInfo EPA(
     unsigned short nIterations = 0;
 	while (minDistance == FLT_MAX) {
         // assert(nIterations < 64);
-        std::cout << "iteration " << nIterations << "\n";
+        // std::cout << "iteration " << nIterations << "\n";
         nIterations+=1;
 
 		minNormal   = normals.at(minFace).first;
@@ -283,16 +288,16 @@ CollisionInfo EPA(
 		auto support = NewSimplexPoint(minNormal, transform1, collider1, transform2, collider2);
 		double sDistance = glm::dot(minNormal, support[0]);
  
-        std::cout << "Polytope: ";
+        // std::cout << "Polytope: ";
         for (auto & p: polytope) {
             std::cout << glm::to_string(p[0]) << ", ";
         }
-        std::cout << "\n";
-        std::cout << "Min normal is " << glm::to_string(minNormal) << "\n";
+        // std::cout << "\n";
+        // std::cout << "Min normal is " << glm::to_string(minNormal) << "\n";
         
-        std::cout << "S distance " << sDistance << " created by dot of " << glm::to_string(minNormal) << " and support " << glm::to_string(support[0]) << "\n";
+        // std::cout << "S distance " << sDistance << " created by dot of " << glm::to_string(minNormal) << " and support " << glm::to_string(support[0]) << "\n";
 
-        std::cout << "Distance is " << sDistance << " - " << minDistance << ".\n";
+        // std::cout << "Distance is " << sDistance << " - " << minDistance << ".\n";
 		if (abs( sDistance - minDistance) > 0.001f) {
 			minDistance = FLT_MAX;
             std::vector<std::pair<unsigned int, unsigned int>> uniqueEdges;
@@ -316,7 +321,7 @@ CollisionInfo EPA(
 					faces[f + 1] = faces.back(); faces.pop_back();
 					faces[f    ] = faces.back(); faces.pop_back();
 
-                    std::cout << "uh oh bois we deleting a normal.\n";
+                    // std::cout << "uh oh bois we deleting a normal.\n";
 					normals[i] = normals.back(); // pop-erase
 					normals.pop_back();
 
@@ -351,11 +356,11 @@ CollisionInfo EPA(
                 minFace = newMinFace + normals.size();
             }
 
-            std::cout << "Extending normals.\n";
-            std::cout << "Was size " << normals.size() << ".\n";
+            // std::cout << "Extending normals.\n";
+            // std::cout << "Was size " << normals.size() << ".\n";
             faces  .insert(faces  .end(), newFaces  .begin(), newFaces  .end());
             normals.insert(normals.end(), newNormals.begin(), newNormals.end());
-            std::cout << "Now its size " << normals.size() << ".\n";
+            // std::cout << "Now its size " << normals.size() << ".\n";
 			
             
 		}
@@ -382,17 +387,17 @@ CollisionInfo EPA(
     DebugPlacePointOnPosition({b[2]}, {1.0, 0.7, 0.0, 1.0});
     DebugPlacePointOnPosition({c[2]}, {1.0, 1.0, 0.0, 1.0});
 
-    std::printf("Min face vertices are %f %f %f and %f %f %f, and %f %f %f \n", a[0].x, a[0].y, a[0].z, b[0].x, b[0].y, b[0].z, c[0].x, c[0].y, c[0].z);
-    std::printf("Min face vertices for support 1 are %f %f %f and %f %f %f, and %f %f %f \n", a[1].x, a[1].y, a[1].z, b[1].x, b[1].y, b[1].z, c[1].x, c[1].y, c[1].z);
-    std::printf("Min face vertices for support 2 are %f %f %f and %f %f %f, and %f %f %f \n", a[2].x, a[2].y, a[2].z, b[2].x, b[2].y, b[2].z, c[2].x, c[2].y, c[2].z);
-    std::cout << "\tHmm, minNormal is " << glm::to_string(minNormal) << " but the minFace's normal we got is " << glm::to_string(glm::normalize(glm::cross(b[0] - a[0], c[0] - a[0]))) << ".\n";
+    // std::printf("Min face vertices are %f %f %f and %f %f %f, and %f %f %f \n", a[0].x, a[0].y, a[0].z, b[0].x, b[0].y, b[0].z, c[0].x, c[0].y, c[0].z);
+    // std::printf("Min face vertices for support 1 are %f %f %f and %f %f %f, and %f %f %f \n", a[1].x, a[1].y, a[1].z, b[1].x, b[1].y, b[1].z, c[1].x, c[1].y, c[1].z);
+    // std::printf("Min face vertices for support 2 are %f %f %f and %f %f %f, and %f %f %f \n", a[2].x, a[2].y, a[2].z, b[2].x, b[2].y, b[2].z, c[2].x, c[2].y, c[2].z);
+    // std::cout << "\tHmm, minNormal is " << glm::to_string(minNormal) << " but the minFace's normal we got is " << glm::to_string(glm::normalize(glm::cross(b[0] - a[0], c[0] - a[0]))) << ".\n";
 
     // Project origin onto plane abc to get point of contact in minkoski space
     auto planeToOrigin = -a[0];
     auto distance = glm::dot(planeToOrigin, minNormal);
     auto projectedPoint = -minNormal * distance;
     // auto projectedPoint = glm::normalize(-minNormal * glm::dot(-a[0], minNormal));
-    std::cout << "Projected point " << glm::to_string(projectedPoint) << "\n";
+    // std::cout << "Projected point " << glm::to_string(projectedPoint) << "\n";
 
     
     // put that point of contact in barycentric coordinates (meaning its a mix of the triangle vertices), so that we can get out of minkoski space and into world space
@@ -406,22 +411,22 @@ CollisionInfo EPA(
     // in the case of edge-face collision, we can't use barycentric coordinates to find the contact point because we have a degenerate triangle (the edge is a degenerate triangle) 
     
     
-    if (glm::length2(glm::cross(b[2] - a[2], c[2] - a[2])) == 0) {
-        // TODO: this assumes that a and c are always the identical points, which is literally wrong
-        //assert(a[2] != b[2]);
-        // std::cout << "Executing EPA degenerate contact point case.\n";
-        // std::cout << "\tCross is  = " << glm::to_string(glm::cross(b[2] - a[2], b[2] - projectedPoint)) << "\n";
-        // // std::cout << "\tLerp between " << glm::to_string(a[2]) << " and " << glm::to_string(b[2]) << "\n";
-        // std::cout << "\tLerp between In minkoski space " << glm::to_string(a[0]) << " and " << glm::to_string(b[0]) << "\n";
-        // std::cout << "\tAB = " << glm::to_string(ab) << "\n";
-        // std::cout << "\tAB for actual world space = " << glm::to_string(b[2] - a[2]) << "\n";
-        // std::cout << "\tP = " << glm::to_string(projectedPoint) << "\n";
-        // auto lerpAmount = glm::length(projectedPoint - a[0])/glm::length(ab);
-        // std::cout << "\tlerp amount = " << /*glm::to_string*/(lerpAmount) << "\n";
-        pointForObj2 = a[2] + 0.5 * (b[2] - a[2]);
-    }
-    else {
-        std::cout << "AB = " << glm::to_string(ab) << ", AC = " << glm::to_string(ac) << ", AO = " << glm::to_string(ao) << ".\n";
+    // if (glm::length2(glm::cross(b[2] - a[2], c[2] - a[2])) == 0) {
+    //     // TODO: this assumes that a and c are always the identical points, which is literally wrong
+    //     //assert(a[2] != b[2]);
+    //     // std::cout << "Executing EPA degenerate contact point case.\n";
+    //     // std::cout << "\tCross is  = " << glm::to_string(glm::cross(b[2] - a[2], b[2] - projectedPoint)) << "\n";
+    //     // // std::cout << "\tLerp between " << glm::to_string(a[2]) << " and " << glm::to_string(b[2]) << "\n";
+    //     // std::cout << "\tLerp between In minkoski space " << glm::to_string(a[0]) << " and " << glm::to_string(b[0]) << "\n";
+    //     // std::cout << "\tAB = " << glm::to_string(ab) << "\n";
+    //     // std::cout << "\tAB for actual world space = " << glm::to_string(b[2] - a[2]) << "\n";
+    //     // std::cout << "\tP = " << glm::to_string(projectedPoint) << "\n";
+    //     // auto lerpAmount = glm::length(projectedPoint - a[0])/glm::length(ab);
+    //     // std::cout << "\tlerp amount = " << /*glm::to_string*/(lerpAmount) << "\n";
+    //     pointForObj2 = a[2] + 0.5 * (b[2] - a[2]);
+    // }
+    // else {
+        // std::cout << "AB = " << glm::to_string(ab) << ", AC = " << glm::to_string(ac) << ", AO = " << glm::to_string(ao) << ".\n";
     
         double d00 = glm::dot(ab, ab);
         double d01 = glm::dot(ab, ac);
@@ -443,7 +448,7 @@ CollisionInfo EPA(
         // std::printf("Considering support points %f %f %f and %f %f %f, and %f %f %f \n", a[2].x, a[2].y, a[2].z, b[2].x, b[2].y, b[2].z, c[2].x, c[2].y, c[2].z);
 
         //auto point = (a[2] * gamma) + (b[2] * beta) + (c[2] * alpha);
-    }
+    // }
 
     return CollisionInfo({
         .collisionNormal = minNormal,

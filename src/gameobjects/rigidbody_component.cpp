@@ -18,8 +18,9 @@ void RigidbodyComponent::Destroy() {
     
 }
 
+// fyi position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)
 void RigidbodyComponent::Impulse(glm::vec3 position, glm::vec3 force) {
-    // fyi position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)
+    
     // thanks to madeleine for her assistance here and elsewhere with physics
 
     std::cout << "Applying force " << glm::to_string(force) << " at " << glm::to_string(position) << ".\n";
@@ -27,14 +28,16 @@ void RigidbodyComponent::Impulse(glm::vec3 position, glm::vec3 force) {
     float positionToXAxis = glm::length(glm::vec2(position.y, position.z));
     float positionToYAxis = glm::length(glm::vec2(position.x, position.z));
     float positionToZAxis = glm::length(glm::vec2(position.x, position.y));
-    std::cout << "Axis distances are " << glm::to_string(glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis))) << ".\n";
-    //accumulatedTorque += glm::cross(position, force);  //glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis)) * force;
+    // std::cout << "Axis distances are " << glm::to_string(glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis))) << ".\n";
+    // accumulatedTorque += glm::cross(position, force);  //glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis)) * force;
     std::cout << "Torque is " << glm::to_string(accumulatedTorque) << ".\n";
     accumulatedForce += force;
 }
 
+// fyi position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)
+// almost certainly correctly implemented at this point
 glm::dvec3 RigidbodyComponent::VelocityAtPoint(glm::vec3 position) {
-    // fyi position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)
+    
 
     float positionToXAxis = glm::length(glm::vec2(position.y, position.z));
     float positionToYAxis = glm::length(glm::vec2(position.x, position.z));

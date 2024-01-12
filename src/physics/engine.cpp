@@ -29,6 +29,7 @@ PhysicsEngine& PhysicsEngine::Get() {
 void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::vector<std::pair<TransformComponent*, glm::dvec3>>& seperations) {
     // rigidbody.accumulatedForce += PhysicsEngine::Get().GRAVITY * dt * (double)rigidbody.mass;
 
+    
     // TODO: should REALLY use tight fitting AABB here
     auto aabbToTest = collider.GetAABB();
     std::vector<SpatialAccelerationStructure::ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest);
@@ -37,7 +38,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
     // TODO: potential perf gains by using tight fitting AABB/OBB here after broadphase SAS query?
     
     // we don't do anything to the other gameobjects we hit; if they have a rigidbody, they will independently take care of that in their call to DoPhysics()
-    // TODO: this does mean redundant narrowphase collision checks, we should store results of narrowphase checks to avoid that
+    // TODO: this does mean redundant narrowphase collision checks, we should cache results of narrowphase checks to avoid that
     for (auto & otherColliderPtr: potentialColliding) {
         if (otherColliderPtr == &collider) {continue;} // collider shouldn't collide with itself lol
         auto collisionTestResult = IsColliding(*otherColliderPtr->GetGameObject()->transformComponent.GetPtr(), *otherColliderPtr, transform, collider);
@@ -68,21 +69,22 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             // glm::vec3 contactPointInObjectSpace = glm::dvec3(glm::inverse(transform.GetPhysicsModelMatrix()) * glm::dvec4(averageContactPoint, 1)); // TODO: might need to use whole inverted matrix
             glm::vec3 contactPointInObjectSpace = averageContactPoint - transform.position();
 
-            glm::dvec3 velocityAtContactPoint = rigidbody.velocity;// + rigidbody.VelocityAtPoint(contactPointInObjectSpace);
-            // glm::vec3 contactPointInOtherObjectSpace = averageContactPoint - otherColliderPtr->GetGameObject()->transformComponent->position(); // TODO: might need to use whole inverted matrix
-            glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity :  glm::dvec3(0, 0, 0);
-            // glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ?  (otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity + otherColliderPtr->GetGameObject()->rigidbodyComponent->VelocityAtPoint(contactPointInOtherObjectSpace)) : glm::dvec3(0, 0, 0);
+            glm::dvec3 velocityAtContactPoint = rigidbody.velocity + rigidbody.VelocityAtPoint(contactPointInObjectSpace);
+            glm::vec3 contactPointInOtherObjectSpace = averageContactPoint - otherColliderPtr->GetGameObject()->transformComponent->position(); // TODO: might need to use whole inverted matrix
+            // glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity :  glm::dvec3(0, 0, 0);
+            glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ?  (otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity + otherColliderPtr->GetGameObject()->rigidbodyComponent->VelocityAtPoint(contactPointInOtherObjectSpace)) : glm::dvec3(0, 0, 0);
 
             seperations.emplace_back(std::make_pair(&transform, seperationVector));
             auto elasticity = otherColliderPtr->elasticity * collider.elasticity;
-            auto relVelocity = (velocityAtOtherContactPoint - velocityAtContactPoint);
-            auto desiredChangeInVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent ? elasticity : 1.0 + elasticity) * collisionTestResult->collisionNormal * relVelocity * (glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
+            std::cout << "Elasticity = " << (otherColliderPtr->GetGameObject()->rigidbodyComponent ? elasticity : 1.0 + elasticity) << ".\n";
+            auto relVelocity = glm::abs(velocityAtOtherContactPoint - velocityAtContactPoint); // TODO: abs might create weird behaviour idk
+            auto desiredChangeInVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent ? elasticity : 1.0 + elasticity) * collisionTestResult->collisionNormal * relVelocity; //* (glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
             // rigidbody.accumulatedForce = desiredChangeInVelocity * (double)rigidbody.mass;
 
             // torque = cross(radius, force)
             // std::cout << "angular velocity is " << glm::to_string(rigidbody.angularVelocity) << " so velocity at point is " << glm::to_string((glm::dvec3)(glm::cross(rigidbody.angularVelocity, contactPointInObjectSpace) * contactPointInObjectSpace)) << ".\n";
             // std::cout << " Contact point in object space is " << glm::to_string(contactPointInObjectSpace) << " \n";
-            // std::cout << " Delta-v is " << glm::to_string(desiredChangeInVelocity) << " \n";
+            std::cout << " Delta-v is " << glm::to_string(desiredChangeInVelocity) << " \n";
             // std::cout << "adding torque " << glm::to_string(glm::cross((glm::dvec3)contactPointInObjectSpace, desiredChangeInVelocity * (double)rigidbody.mass)) << " \n"; 
             // rigidbody.accumulatedTorque += glm::cross((glm::dvec3)contactPointInObjectSpace, desiredChangeInVelocity * (double)rigidbody.mass);
             rigidbody.Impulse(contactPointInObjectSpace, (glm::vec3)desiredChangeInVelocity * rigidbody.mass);
