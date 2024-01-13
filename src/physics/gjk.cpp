@@ -239,12 +239,35 @@ std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNorma
 	return { normals, minTriangle };
 }
 
-// jk idk how that would work
-// when a line-face collision occurs, barycentric coordinates cannot be used to find the contact point the way they can be for face-face or point-face collisions.
-// Instead, we brute-force find the vertices (in world space) of the line by checking for each line segment if it is parallel to the hit face.
-    // (we know its parallel if the face's normal is perpendicular to the line's direction, which is when their dot product is 0)
- 
-//  EPA algorithm, used to get collision normals/contact points, explained here: https://winter.dev/articles/epa-algorithm
+// Used by SAT algorithm in FindContactPoint().
+// Does SAT for one collider's faces.
+void SatFaces(
+    const TransformComponent& transform1,
+    const SpatialAccelerationStructure::ColliderComponent& collider1,
+    const TransformComponent& transform2,
+    const SpatialAccelerationStructure::ColliderComponent& collider2
+) 
+{
+
+}
+
+
+// Returns the contact point of a collision in world space, since EPA gives pretty mid contact points for face-face, face-edge, or edge-edge cases, causing weird rotational artifacts.
+// When GJK determines a collision and EPA finds the normal, we then use SAT to find the best contact point.
+// Technically SAT could replace both GJK and EPA, but its time complexity is pretty bad
+glm::dvec3 FindContactPoint(
+    glm::vec3 collisionNormal,
+    const TransformComponent& transform1,
+    const SpatialAccelerationStructure::ColliderComponent& collider1,
+    const TransformComponent& transform2,
+    const SpatialAccelerationStructure::ColliderComponent& collider2
+) 
+{
+    // Face tests:
+    
+}   
+
+//  EPA algorithm, used to get collision normals/penetration depth, explained here: https://winter.dev/articles/epa-algorithm
 // TODO: concave support
 CollisionInfo EPA(
     std::vector<std::array<glm::dvec3, 3>>& simplex, // first dvec3 in each array is actual simplex point on the minkoskwi difference, the other 2 are the collider points whose difference is that point, we need those for contact points
@@ -379,13 +402,13 @@ CollisionInfo EPA(
     // DebugPlacePointOnPosition({b[0]}, {1.0, 0.7, 1.0, 1.0});
     // DebugPlacePointOnPosition({c[0]}, {1.0, 1.0, 1.0, 1.0});
 
-    DebugPlacePointOnPosition({a[1]}, {0.2, 1.0, 0.2, 1.0});
-    DebugPlacePointOnPosition({b[1]}, {0.2, 1.0, 0.2, 1.0});
-    DebugPlacePointOnPosition({c[1]}, {0.2, 1.0, 0.2, 1.0});
+    // DebugPlacePointOnPosition({a[1]}, {0.2, 1.0, 0.2, 1.0});
+    // DebugPlacePointOnPosition({b[1]}, {0.2, 1.0, 0.2, 1.0});
+    // DebugPlacePointOnPosition({c[1]}, {0.2, 1.0, 0.2, 1.0});
 
-    DebugPlacePointOnPosition({a[2]}, {1.0, 0.4, 0.0, 1.0});
-    DebugPlacePointOnPosition({b[2]}, {1.0, 0.7, 0.0, 1.0});
-    DebugPlacePointOnPosition({c[2]}, {1.0, 1.0, 0.0, 1.0});
+    // DebugPlacePointOnPosition({a[2]}, {1.0, 0.4, 0.0, 1.0});
+    // DebugPlacePointOnPosition({b[2]}, {1.0, 0.7, 0.0, 1.0});
+    // DebugPlacePointOnPosition({c[2]}, {1.0, 1.0, 0.0, 1.0});
 
     // std::printf("Min face vertices are %f %f %f and %f %f %f, and %f %f %f \n", a[0].x, a[0].y, a[0].z, b[0].x, b[0].y, b[0].z, c[0].x, c[0].y, c[0].z);
     // std::printf("Min face vertices for support 1 are %f %f %f and %f %f %f, and %f %f %f \n", a[1].x, a[1].y, a[1].z, b[1].x, b[1].y, b[1].z, c[1].x, c[1].y, c[1].z);
@@ -398,8 +421,8 @@ CollisionInfo EPA(
     auto projectedPoint = -minNormal * distance;
     // auto projectedPoint = glm::normalize(-minNormal * glm::dot(-a[0], minNormal));
     // std::cout << "Projected point " << glm::to_string(projectedPoint) << "\n";
-
     
+
     // put that point of contact in barycentric coordinates (meaning its a mix of the triangle vertices), so that we can get out of minkoski space and into world space
     auto ab = b[0] - a[0];
     auto ac = c[0] - a[0];
