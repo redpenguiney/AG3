@@ -450,11 +450,11 @@ CollisionInfo EPA(
         //auto point = (a[2] * gamma) + (b[2] * beta) + (c[2] * alpha);
     // }
 
-    return CollisionInfo({
-        .collisionNormal = minNormal,
-        .hitPoints = {pointForObj2},
-        .penetrationDepth = minDistance // TODO: add 0.0001f?
-    });
+    // return CollisionInfo({
+    //     .collisionNormal = minNormal,
+    //     .hitPoints = {pointForObj2},
+    //     .penetrationDepth = minDistance // TODO: add 0.0001f?
+    // });
 }
  
 // this article actually does a really good job of explaining the GJK algorithm.
@@ -526,7 +526,7 @@ std::optional<CollisionInfo> IsColliding(
             case 4:
             // std::cout << "Executing tetrahedron case.\n";
             if (TetrahedronCase(simplex, searchDirection)) { // this function is not void like the others, returns true if collision confirmed
-                return EPA(simplex, transform1, collider1, transform2, collider2);
+                // return EPA(simplex, transform1, collider1, transform2, collider2);
             }
             break;
             default:

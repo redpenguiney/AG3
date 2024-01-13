@@ -12,11 +12,11 @@
 struct CollisionInfo {
     glm::dvec3 collisionNormal;
 
-    // Contact points are in world space
-    std::vector<glm::dvec3> hitPoints;
+    // Contact points are in world space, will all be coplanar.
+    // Pairs are <position, penetrationDepth>
+    std::vector<std::pair<glm::dvec3, double>> hitPoints;
 
 
-    double penetrationDepth;
 };
 
 // GJK+EPA collision algorithms. Determines whether the given thingies are colliding, and if they are, the return value will contain the collision info.

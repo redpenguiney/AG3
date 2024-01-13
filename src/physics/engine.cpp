@@ -43,26 +43,25 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
         if (otherColliderPtr == &collider) {continue;} // collider shouldn't collide with itself lol
         auto collisionTestResult = IsColliding(*otherColliderPtr->GetGameObject()->transformComponent.GetPtr(), *otherColliderPtr, transform, collider);
         if (collisionTestResult) {
-            // while (true) {}
-            // static unsigned int DEBUG_IGNORE_1;
-            // std::cout << "it " << DEBUG_IGNORE_1 << "\n";
-            // if (DEBUG_IGNORE_1 != 0) {
-            //     std::cout << "returning because it " << DEBUG_IGNORE_1 << "\n";
-            //     return;
-            // }
-            // DEBUG_IGNORE_1++;
-            std::cout << "Object is at " << glm::to_string(transform.position()) << "\n";
-            std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << " world position " << glm::to_string(collisionTestResult->hitPoints.back()) << " distance " << collisionTestResult->penetrationDepth << "\n"; 
-            auto seperationVector = collisionTestResult->collisionNormal * (otherColliderPtr->GetGameObject()->rigidbodyComponent ? 0.5 * collisionTestResult->penetrationDepth : collisionTestResult->penetrationDepth);
-            DebugPlacePointOnPosition({transform.position() + seperationVector}, {1, 0.2, 0.2, 1.0});
-            
 
             // find center of contact region and apply the torque from there
             glm::dvec3 averageContactPoint = {0, 0, 0}; // in object space
+            double averagePenetration = 0;
             for (auto & p: collisionTestResult->hitPoints) {
-                averageContactPoint += p;
+                averageContactPoint += p.first;
+                averagePenetration += p.second;
             }
             averageContactPoint /= collisionTestResult->hitPoints.size();
+            averagePenetration /= collisionTestResult->hitPoints.size();
+
+            std::cout << "Object is at " << glm::to_string(transform.position()) << "\n";
+            std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << " world position " << glm::to_string(collisionTestResult->hitPoints.back()) << " distance " << averagePenetration << "\n"; 
+            
+            auto seperationVector = collisionTestResult->collisionNormal * (otherColliderPtr->GetGameObject()->rigidbodyComponent ? 0.5 * averagePenetration : averagePenetration);
+            DebugPlacePointOnPosition({transform.position() + seperationVector}, {1, 0.2, 0.2, 1.0});
+            
+
+            
             DebugPlacePointOnPosition({averageContactPoint}, {0.2, 0.2, 1.0, 1.0});
 
             // velocity of the actual point that hit should be used, not the overall velocity of the object
