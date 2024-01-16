@@ -33,14 +33,12 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
         auto modelMatrix = obj->transformComponent->GetPhysicsModelMatrix();
 
         for (auto & convexMesh: mesh->meshes) {
-            const unsigned int triCount = convexMesh.vertices.size()/9;
-            //std::printf("There are %u triangles to test.\n", triCount);
+            for (auto & triangle: convexMesh.triangles) {
 
-            for (unsigned int i = 0; i < triCount; i++) {
+                // need to put vertices in world space to raycast against
                 glm::dvec3 trianglePoints[3];
                 for (unsigned int j = 0; j < 3; j++) {
-                    auto vertexIndex = (i * 9) + (j * 3);
-                    trianglePoints[j] = (modelMatrix * glm::dvec4(glm::vec4(convexMesh.vertices[vertexIndex], convexMesh.vertices[vertexIndex + 1], convexMesh.vertices[vertexIndex + 2], 1))).xyz();
+                    trianglePoints[j] = (modelMatrix * glm::dvec4(triangle[j], 1)).xyz();
                 }
 
                 auto normal = GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]);

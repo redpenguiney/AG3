@@ -55,7 +55,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             averagePenetration /= collisionTestResult->hitPoints.size();
 
             std::cout << "Object is at " << glm::to_string(transform.position()) << "\n";
-            std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << " world position " << glm::to_string(collisionTestResult->hitPoints.back()) << " distance " << averagePenetration << "\n"; 
+            std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << " world position " << glm::to_string(collisionTestResult->hitPoints.back().first) << " distance " << averagePenetration << "\n"; 
             
             auto seperationVector = collisionTestResult->collisionNormal * (otherColliderPtr->GetGameObject()->rigidbodyComponent ? 0.5 * averagePenetration : averagePenetration);
             DebugPlacePointOnPosition({transform.position() + seperationVector}, {1, 0.2, 0.2, 1.0});

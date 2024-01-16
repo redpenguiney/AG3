@@ -7,13 +7,14 @@
 #include <cstdlib>
 #include "../utility/utility.hpp"
 #include <optional>
+#include <utility>
 #include <vector>
 #include <iostream>
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
 #include "../gameobjects/component_registry.hpp"
 
-// the GJK support function. returns farthest vertex along a directional vector
-glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, const TransformComponent& transform, const SpatialAccelerationStructure::ColliderComponent& collider) {
+// the GJK support function. returns farthest vertex (in world space) along a directional vector 
+glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, const TransformComponent& transform, const SpatialAccelerationStructure::ColliderComponent& collider) {
     // the physics mesh's vertices are obviously in model space, so we must put search direction in model space.
     // this way, to find the farthest vertex on a 10000-vertex mesh we don't need to do 10000 vertex transformations
     // TODO: this is still O(n vertices) complexity
@@ -38,13 +39,14 @@ glm::dvec3 findFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     // return farthestVertex;
 
     //TODO: concave support
-    for (unsigned int i = 0; i < collider.physicsMesh->meshes.at(0).vertices.size()/3; i++) {
-        const glm::vec3& vertex = glm::make_vec3(&collider.physicsMesh->meshes.at(0).vertices.at(i * 3));
-        auto dp = glm::dot(vertex, (directionInModelSpace)); // TODO: do we normalize vertex before taking dot product? i don't think so???
-        if (dp >= farthestDistance) {
-            farthestDistance = dp;
-            farthestVertex = vertex;
-        }
+    for (auto & face: collider.physicsMesh->meshes.at(0).faces) {
+        for (auto & vertex: face.second) {
+            auto dp = glm::dot(vertex, (directionInModelSpace)); // TODO: do we normalize vertex before taking dot product? i don't think so???
+            if (dp >= farthestDistance) {
+                farthestDistance = dp;
+                farthestVertex = vertex;
+            }
+        } 
     }
 
     //// std::cout << "Model matrix is " << glm::to_string(transform.GetPhysicsModelMatrix()) << "\n";
@@ -172,8 +174,8 @@ std::array<glm::dvec3, 3> NewSimplexPoint(
     const SpatialAccelerationStructure::ColliderComponent& collider2
 ) {
 
-    auto a = findFarthestVertexOnObject(searchDirection, transform1, collider1);
-    auto b = findFarthestVertexOnObject(-searchDirection, transform2, collider2);
+    auto a = FindFarthestVertexOnObject(searchDirection, transform1, collider1);
+    auto b = FindFarthestVertexOnObject(-searchDirection, transform2, collider2);
     // std::cout << "SUPPORT: Farthest point in " << glm::to_string(searchDirection) << " is " << glm::to_string(a - b) << ".\n";
     return {a-b, a, b};
 }
@@ -239,32 +241,244 @@ std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNorma
 	return { normals, minTriangle };
 }
 
-// Used by SAT algorithm in FindContactPoint().
-// Does SAT for one collider's faces.
-void SatFaces(
-    const TransformComponent& transform1,
-    const SpatialAccelerationStructure::ColliderComponent& collider1,
-    const TransformComponent& transform2,
-    const SpatialAccelerationStructure::ColliderComponent& collider2
-) 
-{
+// // Used by SAT algorithm in FindContactPoint().
+// // Does SAT for one collider's faces.
+// void SatFaces(
+//     const TransformComponent& transform1,
+//     const SpatialAccelerationStructure::ColliderComponent& collider1,
+//     const TransformComponent& transform2,
+//     const SpatialAccelerationStructure::ColliderComponent& collider2
+// ) 
+// {
 
+// }
+
+// used by FindContact()
+double SignedDistanceToPlane(glm::dvec3 planeNormal, glm::dvec3 point, glm::dvec3 pointOnPlane) {
+    return glm::dot(point - pointOnPlane, planeNormal);
+}
+
+// Returns the contact points for a face-face collision.
+// Each pair in the return value is <hitPoint, penetrationDepth>.
+// referenceNormal is normal of refereneceFace IN WORLD SPACE.
+// referenceFace is (IN MODEL SPACE) the face that had the least penetration, and referenceTransform is the transform of the collider that contains referenceFace.
+//
+std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
+    const glm::vec3 referenceNormal,
+    const std::vector<glm::vec3>* referenceFace, 
+    const TransformComponent& referenceTransform, 
+    const TransformComponent& otherTransform,
+    const SpatialAccelerationStructure::ColliderComponent& otherCollider
+) {
+    // find the face on otherCollider with a normal closest to -normal.
+    const std::vector<glm::vec3>* incidentFace = nullptr;
+    float smallestDot = FLT_MAX;
+    for (auto & face: otherCollider.physicsMesh->meshes.at(0).faces) {
+        auto dot = glm::dot(face.first, referenceNormal);
+        if (dot < smallestDot) {
+            incidentFace = &face.second;
+            smallestDot = dot;
+        }
+    }
+    assert(incidentFace != nullptr); // mostly to shut up compiler 
+
+    // Get reference face and incident face in world space
+    std::vector<glm::dvec3> referenceFaceInWorldSpace;
+    for (auto & v: *referenceFace) {
+        referenceFaceInWorldSpace.push_back(referenceTransform.GetPhysicsModelMatrix() * glm::dvec4(v, 1.0));
+    }
+
+    std::vector<glm::dvec3> incidentFaceInWorldSpace;
+    for (auto & v: *incidentFace) {
+        incidentFaceInWorldSpace.push_back(otherTransform.GetPhysicsModelMatrix() * glm::dvec4(v, 1.0));
+    }
+
+    
+
+    // Get side planes for reference face.
+    // Pairs are <normal, pointOnPlane>
+    std::vector<std::pair<glm::dvec3, glm::dvec3>> sidePlanes;
+    for (unsigned int i = 0; i < referenceFaceInWorldSpace.size(); i++) {
+        // get edge
+        auto v1 = referenceFaceInWorldSpace[i];
+        auto v2 = referenceFaceInWorldSpace[i + 1 == referenceFaceInWorldSpace.size() ? 0 : i + 1];
+
+        // get side plane normal by taking cross product of edge and reference face normal
+        glm::vec3 planeNormal = glm::cross(glm::vec3(v2 - v1), referenceNormal);
+
+        // flip normal if needed so normal faces away from the face
+        if (glm::dot(planeNormal, glm::vec3(v1 - referenceTransform.position())) < 0) {
+            planeNormal *= -1;
+        }
+        sidePlanes.emplace_back(planeNormal, v1);
+    }
+
+    // Clip the incident face against those side planes of the reference face, using the Sutherland-Hodgman algorithm 
+    // (https://en.wikipedia.org/wiki/Sutherland%E2%80%93Hodgman_algorithm)
+    // This will get the contact area.
+    std::vector<glm::dvec3> contactList = incidentFaceInWorldSpace;
+    for (auto & clippingPlane: sidePlanes) {
+
+        std::vector<glm::dvec3> input = contactList;
+        contactList.clear();
+
+        for (unsigned int i = 0; i < input.size(); i++) {
+            // get edge
+            auto v1 = incidentFaceInWorldSpace[i];
+            auto v2 = incidentFaceInWorldSpace[i + 1 == incidentFaceInWorldSpace.size() ? 0 : i + 1];
+
+            // find intersection of edge v1v2 and the clippingPlane
+            glm::dvec3 intersectionPoint;
+            glm::dvec3 edgeDir = glm::dvec3(v2 - v1); // TODO: normalize needed?
+            if (glm::dot(clippingPlane.first, edgeDir) != 0) {
+                
+                double t = (glm::dot(clippingPlane.first, clippingPlane.second) - glm::dot(clippingPlane.first, v1)) / glm::dot(clippingPlane.first, glm::normalize(edgeDir));
+                intersectionPoint = v1 + (glm::normalize(edgeDir) * t);
+            }
+                
+            // do the clipping
+            if (SignedDistanceToPlane(clippingPlane.first, v1, clippingPlane.second) < 0) {
+                if (SignedDistanceToPlane(clippingPlane.first, v2, clippingPlane.second) > 0) {
+                    contactList.push_back(intersectionPoint);
+                }
+                contactList.push_back(v1);
+            }  
+            else if (SignedDistanceToPlane(clippingPlane.first, v2, clippingPlane.second) < 0) {
+                contactList.push_back(intersectionPoint);
+            }
+        } 
+    }
+
+    // Lastly, verify for each contact point that it's actually inside the reference face and if it is, move contact points onto the reference face (idk why lel).
+    std::vector<std::pair<glm::dvec3, double>> contactPoints; 
+    for (auto & p: contactList) {
+        double distanceToPlane = glm::dot((glm::dvec3)referenceNormal, p - referenceFaceInWorldSpace.at(0));
+        if (distanceToPlane < 0) { // if contact point is inside the object
+            contactPoints.push_back({p + ((glm::dvec3)referenceNormal * distanceToPlane), distanceToPlane});
+        }
+    }
+
+    return contactPoints;
 }
 
 
-// Returns the contact point of a collision in world space, since EPA gives pretty mid contact points for face-face, face-edge, or edge-edge cases, causing weird rotational artifacts.
-// When GJK determines a collision and EPA finds the normal, we then use SAT to find the best contact point.
-// Technically SAT could replace both GJK and EPA, but its time complexity is pretty bad
-glm::dvec3 FindContactPoint(
-    glm::vec3 collisionNormal,
+// Calculates info about the collision, since EPA gives pretty mid contact points for face-face, face-edge, or edge-edge cases, causing weird rotational artifacts.
+// When GJK determines a collision, we then use SAT to find the contact information.
+// TODO: optimizations, concave support, non-vertex based support
+// Contact points are in world space, will all be coplanar.
+// returns a normal and a vector of pair<contactPosition, penetrationDepth> representing the contact surface
+CollisionInfo FindContact(
     const TransformComponent& transform1,
     const SpatialAccelerationStructure::ColliderComponent& collider1,
     const TransformComponent& transform2,
     const SpatialAccelerationStructure::ColliderComponent& collider2
 ) 
 {
+    // if we have like spheres or something with no actual vertices that won't work for this, TODO fallback to EPA
+    assert(collider1.physicsMesh->meshes.size() > 0);
+    assert(collider2.physicsMesh->meshes.size() > 0);
+
+    // Based on pg ~88 of https://media.steampowered.com/apps/valve/2015/DirkGregorius_Contacts.pdf
+
+    // we already know they're colliding, we're just using SAT to find out how
+
+    double farthestDistance = FLT_MIN;
+    glm::vec3 farthestNormal; // in world space
+    const std::vector<glm::vec3>* farthestFace; // in model space
+    enum {
+        Face1Collision = 0,
+        Face2Collision = 1,
+        EdgeCollision = 2
+    } collisionType;
+
     // Face tests:
+    // Test faces of collider1 against vertices of collider2
     
+    // std::pair<glm::vec3, std::vector<glm::dvec3>> farthestFace2;
+    for (auto & face1: collider1.physicsMesh->meshes.at(0).faces) {
+
+        auto normalInWorldSpace = face1.first * transform1.GetNormalMatrix();
+        glm::dvec3 pointOnPlaneInWorldSpace = transform1.GetPhysicsModelMatrix() * glm::dvec4(face1.second.at(0), 1);
+
+        auto vertex2 = FindFarthestVertexOnObject(-normalInWorldSpace, transform2, collider2);
+        double distance = SignedDistanceToPlane(normalInWorldSpace, vertex2, pointOnPlaneInWorldSpace);
+
+        if (distance > farthestDistance) {
+            farthestDistance = distance;
+            collisionType = Face1Collision;
+            farthestFace = &face1.second;
+            farthestNormal = normalInWorldSpace;
+        }
+    }
+    
+    // Test faces of collider2 against vertices of collider1
+    // std::pair<glm::vec3, std::vector<glm::dvec3>> farthestFace1;
+    for (auto & face2: collider1.physicsMesh->meshes.at(0).faces) {
+        auto normalInWorldSpace = face2.first * transform2.GetNormalMatrix();
+        glm::dvec3 pointOnPlaneInWorldSpace = transform2.GetPhysicsModelMatrix() * glm::dvec4(face2.second.at(0), 1);
+        auto vertex1 = FindFarthestVertexOnObject(-normalInWorldSpace, transform1, collider1);
+        double distance = SignedDistanceToPlane(normalInWorldSpace, vertex1, pointOnPlaneInWorldSpace);
+
+        if (distance > farthestDistance) {
+            farthestDistance = distance;
+            collisionType = Face2Collision;
+            farthestFace = &face2.second;
+            farthestNormal = normalInWorldSpace;
+        }
+    }
+
+    // It's possible for them to be colliding without any vertices of one inside the other in an edge collison.
+    // For each pair of <edge from collider1, edge from collider2>, we take the cross product of those to generate a plane/normal and test those planes too
+    
+    double farthestEdgeDistance = FLT_MIN;
+    for (auto & edge1: collider1.physicsMesh->meshes.at(0).edges) {
+        for (auto & edge2: collider2.physicsMesh->meshes.at(0).edges) {
+            // put edges in world space
+            glm::dvec3 edge1aWorld = transform1.GetPhysicsModelMatrix() * glm::dvec4(edge1.first, 1.0);
+            glm::dvec3 edge1bWorld = transform1.GetPhysicsModelMatrix() * glm::dvec4(edge1.second, 1.0);
+            glm::dvec3 edge2aWorld = transform2.GetPhysicsModelMatrix() * glm::dvec4(edge2.first, 1.0);
+            glm::dvec3 edge2bWorld = transform2.GetPhysicsModelMatrix() * glm::dvec4(edge2.second, 1.0);
+
+            glm::vec3 normalInWorldSpace =  glm::normalize(glm::cross(edge1aWorld - edge1bWorld, edge2aWorld - edge2bWorld));
+
+            // make sure all normals go out of collider1, so the sign of our distance calculations is consistent
+            if (glm::dot(normalInWorldSpace, glm::vec3(edge1aWorld - transform1.position())) < 0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
+                normalInWorldSpace *= -1;
+            }
+
+            glm::dvec3 collider2Vertex = FindFarthestVertexOnObject(-normalInWorldSpace, transform2, collider2);
+            double distance = SignedDistanceToPlane(normalInWorldSpace, collider2Vertex, edge1aWorld);
+            
+            if (distance > farthestDistance) {
+                farthestDistance = distance;
+                collisionType = EdgeCollision;
+                farthestNormal = normalInWorldSpace;
+            }
+        }
+    }
+
+    assert(farthestDistance <= 0); // if this was > 0, then they wouldn't be colliding, and if you called this function they better be colliding
+
+    std::vector<std::pair<glm::dvec3, double>> contactPoints;
+
+    // figure whether a face of collider1 hit collider2, a face of collider2 hit collider1, or if their edges hit each other, and then calculate contact points.
+    // smallest distance is the right one.
+    switch (collisionType) {
+        case Face1Collision:
+        return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform1, transform2, collider2)};
+        break;
+        case Face2Collision:
+        return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform2, transform1, collider1)};
+        break;
+        case EdgeCollision:
+        // There are two edges colliding in this case. Contact point is average of closest point on edge1 to edge2 and closest point on edge2 to edge1.
+        // see https://www.geeksforgeeks.org/shortest-distance-between-two-lines-in-3d-space-class-12-maths/#
+        auto distanceBetweenEdges = 
+        auto closestPointOnEdge1ToEdge2 = 
+        // return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = ClipEdgeContactPoints(farthestFace)};
+        break;
+    }
+
 }   
 
 //  EPA algorithm, used to get collision normals/penetration depth, explained here: https://winter.dev/articles/epa-algorithm
@@ -550,6 +764,7 @@ std::optional<CollisionInfo> IsColliding(
             // std::cout << "Executing tetrahedron case.\n";
             if (TetrahedronCase(simplex, searchDirection)) { // this function is not void like the others, returns true if collision confirmed
                 // return EPA(simplex, transform1, collider1, transform2, collider2);
+                return FindContact(transform1, collider1, transform2, collider2);
             }
             break;
             default:
@@ -557,7 +772,5 @@ std::optional<CollisionInfo> IsColliding(
             abort();
             break;
         }
-
-        
     }
 }
