@@ -48,25 +48,25 @@ int main(int numArgs, char *argPtrs[]) {
         floor->renderComponent->SetTextureZ(grassTextureZ);
     }
 
-    {
-        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-        params.meshId = m->meshId;
-        params.materialId = brickMaterial->id;
-        // auto wall1 = ComponentRegistry::NewGameObject(params);
-        // wall1->transformComponent->SetPos({4, 4, 0});
-        // wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-        // wall1->colliderComponent->elasticity = 1.0;
-        // wall1->transformComponent->SetScl({1, 8, 8});
-        // wall1->renderComponent->SetColor({1, 1, 1, 1});
-        // wall1->renderComponent->SetTextureZ(brickTextureZ);
-        auto wall2 = ComponentRegistry::NewGameObject(params);
-        wall2->transformComponent->SetPos({-4, 4, 0});
-        wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-        wall2->colliderComponent->elasticity = 1.0;
-        wall2->transformComponent->SetScl({1, 8, 8});
-        wall2->renderComponent->SetColor({1, 1, 1, 0.5});
-        wall2->renderComponent->SetTextureZ(brickTextureZ);
-    }
+    // {
+    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+    //     params.meshId = m->meshId;
+    //     params.materialId = brickMaterial->id;
+    //     // auto wall1 = ComponentRegistry::NewGameObject(params);
+    //     // wall1->transformComponent->SetPos({4, 4, 0});
+    //     // wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+    //     // wall1->colliderComponent->elasticity = 1.0;
+    //     // wall1->transformComponent->SetScl({1, 8, 8});
+    //     // wall1->renderComponent->SetColor({1, 1, 1, 1});
+    //     // wall1->renderComponent->SetTextureZ(brickTextureZ);
+    //     auto wall2 = ComponentRegistry::NewGameObject(params);
+    //     wall2->transformComponent->SetPos({-4, 4, 0});
+    //     wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+    //     wall2->colliderComponent->elasticity = 1.0;
+    //     wall2->transformComponent->SetScl({1, 8, 8});
+    //     wall2->renderComponent->SetColor({1, 1, 1, 0.5});
+    //     wall2->renderComponent->SetTextureZ(brickTextureZ);
+    // }
 
     auto skyboxFaces = vector<std::string>( // TODO: need to make clear what order skybox faces go in
     { 
@@ -87,9 +87,9 @@ int main(int numArgs, char *argPtrs[]) {
     
     
     int i = 0;
-    for (int x = 0; x < 4; x++) {
-        for (int y = 0; y < 4; y++) {
-            for (int z = 0; z < 4; z++) {
+    for (int x = 0; x < 1; x++) {
+        for (int y = 0; y < 1; y++) {
+            for (int z = 0; z < 1; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
@@ -164,6 +164,7 @@ int main(int numArgs, char *argPtrs[]) {
             SpatialAccelerationStructure::Get().Update();
 
             if (!physicsPaused) {
+                physicsPaused = true;
                 // printf("Stepping PE.\n");
                 for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
                     PE.Step(SIMULATION_TIMESTEP/N_PHYSICS_ITERATIONS);

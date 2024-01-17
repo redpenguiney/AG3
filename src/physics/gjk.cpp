@@ -744,7 +744,7 @@ std::optional<CollisionInfo> IsColliding(
 
         // this is the farthest point in this direction, so if it didn't get past the origin, then origin is gonna be outside the minoski difference meaning no collision.
         if (glm::dot(newSimplexPoint[0], searchDirection) <= 0) {
-            // std::cout << "GJK failed with " << simplex.size() << " vertices.\n\n";
+            std::cout << "GJK failed with " << simplex.size() << " vertices.\n\n";
             // while (true) {}kk
             return std::nullopt;
         }
