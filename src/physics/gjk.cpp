@@ -431,6 +431,7 @@ CollisionInfo FindContact(
     // For each pair of <edge from collider1, edge from collider2>, we take the cross product of those to generate a plane/normal and test those planes too
     
     double farthestEdgeDistance = FLT_MIN;
+    glm::dvec3 farthestEdge1Origin, farthestEdge1Direction, farthestEdge2Origin, farthestEdge2Direction;
     for (auto & edge1: collider1.physicsMesh->meshes.at(0).edges) {
         for (auto & edge2: collider2.physicsMesh->meshes.at(0).edges) {
             // put edges in world space
@@ -453,6 +454,10 @@ CollisionInfo FindContact(
                 farthestDistance = distance;
                 collisionType = EdgeCollision;
                 farthestNormal = normalInWorldSpace;
+                farthestEdge1Origin = edge1aWorld;
+                farthestEdge1Direction = edge1bWorld - edge1aWorld;
+                farthestEdge2Origin = edge2aWorld;
+                farthestEdge2Direction = edge2bWorld - edge2aWorld;
             }
         }
     }
@@ -472,10 +477,12 @@ CollisionInfo FindContact(
         break;
         case EdgeCollision:
         // There are two edges colliding in this case. Contact point is average of closest point on edge1 to edge2 and closest point on edge2 to edge1.
-        // see https://www.geeksforgeeks.org/shortest-distance-between-two-lines-in-3d-space-class-12-maths/#
-        auto distanceBetweenEdges = 
-        auto closestPointOnEdge1ToEdge2 = 
-        // return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = ClipEdgeContactPoints(farthestFace)};
+        // see https://en.wikipedia.org/wiki/Skew_lines#Nearest_points
+        auto n2 = glm::cross(farthestEdge2Direction, (glm::dvec3)farthestNormal);
+        auto closestPointOnEdge1ToEdge2 = farthestEdge1Origin + farthestEdge1Direction * (((farthestEdge2Origin - farthestEdge1Origin) * n2)/(farthestEdge2Direction * n2));
+        auto n1 = glm::cross(farthestEdge1Direction, (glm::dvec3)farthestNormal);
+        auto closestPointOnEdge2ToEdge1 = farthestEdge2Origin + farthestEdge2Direction * (((farthestEdge1Origin - farthestEdge2Origin) * n1)/(farthestEdge2Direction * n1));
+        return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = {{(closestPointOnEdge1ToEdge2 + closestPointOnEdge2ToEdge1)*0.5, farthestEdgeDistance}}};
         break;
     }
 
@@ -764,6 +771,7 @@ std::optional<CollisionInfo> IsColliding(
             // std::cout << "Executing tetrahedron case.\n";
             if (TetrahedronCase(simplex, searchDirection)) { // this function is not void like the others, returns true if collision confirmed
                 // return EPA(simplex, transform1, collider1, transform2, collider2);
+                std::cout << "THERE IS A COLLISION\n";
                 return FindContact(transform1, collider1, transform2, collider2);
             }
             break;
