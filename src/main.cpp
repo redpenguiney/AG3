@@ -96,8 +96,8 @@ int main(int numArgs, char *argPtrs[]) {
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({x * 3, 5 + y * 3, z * 3});
                 g->colliderComponent->elasticity = 1.0;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(0.0, 0.0, 0.0)));
-                // g->rigidbodyComponent->angularVelocity = {1.0, 0.0, 0.0};
+                g->transformComponent->SetRot(glm::quat(glm::vec3(1.0, 0.0, 0.0)));
+                g->rigidbodyComponent->angularVelocity = {1.0, 0.0, 0.0};
                 //g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
@@ -164,7 +164,7 @@ int main(int numArgs, char *argPtrs[]) {
             SpatialAccelerationStructure::Get().Update();
 
             if (!physicsPaused) {
-                physicsPaused = true;
+                // physicsPaused = true;
                 // printf("Stepping PE.\n");
                 for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
                     PE.Step(SIMULATION_TIMESTEP/N_PHYSICS_ITERATIONS);

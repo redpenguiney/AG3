@@ -19,9 +19,18 @@ glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     // this way, to find the farthest vertex on a 10000-vertex mesh we don't need to do 10000 vertex transformations
     // TODO: this is still O(n vertices) complexity
 
+    assert(directionInWorldSpace.x != NAN);
+    assert(directionInWorldSpace.y != NAN);
+    assert(directionInWorldSpace.z != NAN);
+
     // std::cout << "Normal matrix is " << glm::to_string(transform.GetNormalMatrix()) << "\n";
     auto worldToModel = glm::inverse(transform.GetNormalMatrix());
     auto directionInModelSpace = glm::vec3(glm::normalize(worldToModel * glm::vec4(directionInWorldSpace.x, directionInWorldSpace.y, directionInWorldSpace.z, 1)));
+
+    assert(directionInModelSpace.x != NAN);
+    assert(directionInModelSpace.y != NAN);
+    assert(directionInModelSpace.z != NAN);
+
 
     float farthestDistance = -FLT_MAX;
     glm::vec3 farthestVertex = {0, 0, 0};
@@ -50,7 +59,7 @@ glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     }
 
     //// std::cout << "Model matrix is " << glm::to_string(transform.GetPhysicsModelMatrix()) << "\n";
-    std::cout << "Support: farthest vertex in direction " << glm::to_string(directionInModelSpace) << " is " << glm::to_string(farthestVertex) << "\n";
+    // std::cout << "Support: farthest vertex in direction " << glm::to_string(directionInModelSpace) << " is " << glm::to_string(farthestVertex) << "\n";
 
     // put returned point in world space
     const auto& modelToWorld = transform.GetPhysicsModelMatrix();
@@ -354,7 +363,7 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
     for (auto & p: contactList) {
         double distanceToPlane = glm::dot((glm::dvec3)referenceNormal, p - referenceFaceInWorldSpace.at(0));
         if (distanceToPlane < 0) { // if contact point is inside the object
-            contactPoints.push_back({p + ((glm::dvec3)referenceNormal * distanceToPlane), distanceToPlane});
+            contactPoints.push_back({p + ((glm::dvec3)referenceNormal * -distanceToPlane), -distanceToPlane});
         }
     }
 
@@ -383,7 +392,7 @@ CollisionInfo FindContact(
     // we already know they're colliding, we're just using SAT to find out how
 
     double farthestDistance = -FLT_MAX;
-    glm::vec3 farthestNormal; // in world space
+    glm::vec3 farthestNormal(0, 0, 0); // in world space
     const std::vector<glm::vec3>* farthestFace; // in model space
     enum {
         Face1Collision = 0,
@@ -404,6 +413,9 @@ CollisionInfo FindContact(
         double distance = SignedDistanceToPlane(normalInWorldSpace, vertex2, pointOnPlaneInWorldSpace);
 
         if (distance > farthestDistance) {
+            std::cout << "F1: Normal " << glm::to_string(normalInWorldSpace) << " replaced normal " << glm::to_string(farthestNormal) << "\n";
+            std::cout << "\tPoint on plane was " << glm::to_string(pointOnPlaneInWorldSpace) << "\n";
+            std::cout << "\tSuppot point was " << glm::to_string(vertex2) << "\n";
             farthestDistance = distance;
             collisionType = Face1Collision;
             farthestFace = &face1.second;
@@ -420,6 +432,7 @@ CollisionInfo FindContact(
         double distance = SignedDistanceToPlane(normalInWorldSpace, vertex1, pointOnPlaneInWorldSpace);
 
         if (distance > farthestDistance) {
+            std::cout << "F2: Normal " << glm::to_string(normalInWorldSpace) << " replaced normal " << glm::to_string(farthestNormal) << "\n";
             farthestDistance = distance;
             collisionType = Face2Collision;
             farthestFace = &face2.second;
@@ -453,6 +466,7 @@ CollisionInfo FindContact(
             double distance = SignedDistanceToPlane(normalInWorldSpace, collider2Vertex, edge1aWorld);
             
             if (distance > farthestDistance) {
+                std::cout << "EDGY: Normal " << glm::to_string(normalInWorldSpace) << " replaced normal " << glm::to_string(farthestNormal) << "\n";
                 farthestDistance = distance;
                 collisionType = EdgeCollision;
                 farthestNormal = normalInWorldSpace;
@@ -481,7 +495,7 @@ CollisionInfo FindContact(
         break;
         case EdgeCollision:
         // There are two edges colliding in this case. Contact point is average of closest point on edge1 to edge2 and closest point on edge2 to edge1.
-        // see https://en.wikipedia.org/wiki/Skew_lines#Nearest_points
+        // see https://en.wikipedia.org/wiki/Skew_lines#Nearest_points for formula to get those closest points
         auto n2 = glm::cross(farthestEdge2Direction, (glm::dvec3)farthestNormal);
         auto closestPointOnEdge1ToEdge2 = farthestEdge1Origin + farthestEdge1Direction * (((farthestEdge2Origin - farthestEdge1Origin) * n2)/(farthestEdge2Direction * n2));
         auto n1 = glm::cross(farthestEdge1Direction, (glm::dvec3)farthestNormal);
@@ -715,7 +729,7 @@ std::optional<CollisionInfo> IsColliding(
     const SpatialAccelerationStructure::ColliderComponent& collider2
 ) 
 {
-    std::cout << "HI: testing collision between #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
+    // std::cout << "HI: testing collision between #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
     // first dvec3 in each array is actual simplex point on the minkoskwi difference, the other 2 are the collider points whose difference is that point, we need those for contact points
     std::vector<std::array<glm::dvec3, 3>> simplex;
 
@@ -735,11 +749,11 @@ std::optional<CollisionInfo> IsColliding(
 
     while (true) {
 
-        std::cout << "\tSimplex: ";
-        for (auto & p: simplex) {
-            std::cout << glm::to_string(p[0]) << " from " << glm::to_string(p[1]) << " - " << glm::to_string(p[2]) << ", ";
-        }
-        std::cout << "\n";
+        // std::cout << "\tSimplex: ";
+        // for (auto & p: simplex) {
+            // std::cout << glm::to_string(p[0]) << " from " << glm::to_string(p[1]) << " - " << glm::to_string(p[2]) << ", ";
+        // }
+        // std::cout << "\n";
 
         // get new point for simplex
         auto newSimplexPoint = NewSimplexPoint(searchDirection, transform1, collider1, transform2, collider2);
@@ -748,7 +762,7 @@ std::optional<CollisionInfo> IsColliding(
 
         // this is the farthest point in this direction, so if it didn't get past the origin, then origin is gonna be outside the minoski difference meaning no collision.
         if (glm::dot(newSimplexPoint[0], searchDirection) <= 0) {
-            std::cout << "GJK failed with " << simplex.size() << " vertices.\n\n";
+            // std::cout << "GJK failed with " << simplex.size() << " vertices.\n\n";
             // while (true) {}kk
             return std::nullopt;
         }
@@ -776,6 +790,7 @@ std::optional<CollisionInfo> IsColliding(
             if (TetrahedronCase(simplex, searchDirection)) { // this function is not void like the others, returns true if collision confirmed
                 // return EPA(simplex, transform1, collider1, transform2, collider2);
                 std::cout << "THERE IS A COLLISION\n";
+                std::cout << "Positions are #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
                 return FindContact(transform1, collider1, transform2, collider2);
             }
             break;

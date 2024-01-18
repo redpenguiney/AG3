@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <tuple>
 #include <unordered_set>
@@ -33,14 +34,16 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
     std::vector<std::pair<glm::vec3, glm::vec3>> edges;
 
     assert(mesh->indices.size() % 3 == 0);
-    for (unsigned int i = 0; i < mesh->indices.size(); i += 3) {
+    for (auto it = mesh->indices.begin(); it != mesh->indices.end(); it+=3) {
+        auto i = *it;
+        
         auto vertexIndex1 = i * mesh->vertexSize/sizeof(GLfloat);
         auto vertexIndex2 = (i + 1) * mesh->vertexSize/sizeof(GLfloat);
         auto vertexIndex3 = (i + 2) * mesh->vertexSize/sizeof(GLfloat);
 
         glm::vec3 vertex1 = {mesh->vertices[vertexIndex1], mesh->vertices[vertexIndex1 + 1], mesh->vertices[vertexIndex1 + 2]};
         glm::vec3 vertex2 = {mesh->vertices[vertexIndex2], mesh->vertices[vertexIndex2 + 1], mesh->vertices[vertexIndex2 + 2]};
-        glm::vec3 vertex3 = {mesh->vertices[vertexIndex3], mesh->vertices[vertexIndex3 + 1], mesh->vertices[vertexIndex3 + 2]};
+        glm::vec3 vertex3 = {mesh->vertices.at(vertexIndex3), mesh->vertices.at(vertexIndex3 + 1), mesh->vertices.at(vertexIndex3 + 2)};
         
         auto normal = glm::cross(vertex1 - vertex2, vertex1 - vertex3);
 
@@ -152,13 +155,13 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
         });
     }
     
-    std::cout << "Created physics mesh.\n Vertices: ";
-    for (auto & f: faces) {
-        for (auto & v: f.second) {
-            std::cout << glm::to_string(v) << ",\n";
-        }
+    // std::cout << "Created physics mesh.\n Vertices: ";
+    // for (auto & f: faces) {
+    //     for (auto & v: f.second) {
+    //         std::cout << glm::to_string(v) << ",\n";
+    //     }
         
-    }
+    // }
     // std::cout << "";
     return {PhysicsMesh::ConvexMesh {.triangles = triangles, .faces = faces, .edges = edges}};
 }
