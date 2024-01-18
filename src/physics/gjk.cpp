@@ -283,9 +283,10 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
     const std::vector<glm::vec3>* incidentFace = nullptr;
     float smallestDot = FLT_MAX;
     for (auto & face: otherCollider.physicsMesh->meshes.at(0).faces) {
-        auto dot = glm::dot(face.first, referenceNormal);
+        auto dot = glm::dot(otherTransform.GetNormalMatrix() * face.first, referenceNormal);
         if (dot < smallestDot) {
             incidentFace = &face.second;
+            std::cout << "Set incident face to thing with normal " << glm::to_string(otherTransform.GetNormalMatrix() * face.first) << ".\n";
             smallestDot = dot;
         }
     }
@@ -358,15 +359,25 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
         } 
     }
 
+    assert(contactList.size() > 0);
+
     // Lastly, verify for each contact point that it's actually inside the reference face and if it is, move contact points onto the reference face (idk why lel).
     std::vector<std::pair<glm::dvec3, double>> contactPoints; 
     for (auto & p: contactList) {
+        
+        std::cout << "Testing point " << glm::to_string(p) << " against plane with normal " << glm::to_string(referenceNormal) << " and point " << glm::to_string(referenceFaceInWorldSpace.at(0)) << ".\n";
+        
+        assert(p.x != NAN);
+        assert(p.y != NAN);
+        assert(p.z != NAN);
+
         double distanceToPlane = glm::dot((glm::dvec3)referenceNormal, p - referenceFaceInWorldSpace.at(0));
         if (distanceToPlane < 0) { // if contact point is inside the object
             contactPoints.push_back({p + ((glm::dvec3)referenceNormal * -distanceToPlane), -distanceToPlane});
         }
     }
 
+    assert(contactPoints.size() > 0);
     return contactPoints;
 }
 
@@ -465,10 +476,12 @@ CollisionInfo FindContact(
             glm::dvec3 collider2Vertex = FindFarthestVertexOnObject(-normalInWorldSpace, transform2, collider2);
             double distance = SignedDistanceToPlane(normalInWorldSpace, collider2Vertex, edge1aWorld);
             
-            if (distance > farthestDistance) {
-                std::cout << "EDGY: Normal " << glm::to_string(normalInWorldSpace) << " replaced normal " << glm::to_string(farthestNormal) << "\n";
-                farthestDistance = distance;
-                collisionType = EdgeCollision;
+            if (distance > farthestEdgeDistance) {
+                std::cout << "EDGY: Normal " << glm::to_string(normalInWorldSpace) << " replaced normal " << glm::to_string(farthestNormal) << "with distance " << distance << "\n";
+                farthestEdgeDistance = distance;
+                if (distance > farthestDistance) {
+                    collisionType = EdgeCollision;
+                }
                 farthestNormal = normalInWorldSpace;
                 farthestEdge1Origin = edge1aWorld;
                 farthestEdge1Direction = edge1bWorld - edge1aWorld;
@@ -480,7 +493,7 @@ CollisionInfo FindContact(
 
     std::cout << "Farthest edge distance is " << farthestEdgeDistance << ".\n";
 
-    assert(farthestDistance <= 0); // if this was > 0, then they wouldn't be colliding, and if you called this function they better be colliding
+    assert(farthestDistance <= 0 || farthestEdgeDistance <= 0); // if this was > 0, then they wouldn't be colliding, and if you called this function they better be colliding
 
     std::vector<std::pair<glm::dvec3, double>> contactPoints;
 
@@ -488,14 +501,18 @@ CollisionInfo FindContact(
     // smallest distance is the right one.
     switch (collisionType) {
         case Face1Collision:
+        std::cout << "FACE1 COLLISION\n";
         return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform1, transform2, collider2)};
         break;
         case Face2Collision:
+        std::cout << "FACE2 COLLISION\n";
         return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform2, transform1, collider1)};
         break;
         case EdgeCollision:
+        std::cout << "EDGE COLLISION\n";
         // There are two edges colliding in this case. Contact point is average of closest point on edge1 to edge2 and closest point on edge2 to edge1.
         // see https://en.wikipedia.org/wiki/Skew_lines#Nearest_points for formula to get those closest points
+        
         auto n2 = glm::cross(farthestEdge2Direction, (glm::dvec3)farthestNormal);
         auto closestPointOnEdge1ToEdge2 = farthestEdge1Origin + farthestEdge1Direction * (((farthestEdge2Origin - farthestEdge1Origin) * n2)/(farthestEdge2Direction * n2));
         auto n1 = glm::cross(farthestEdge1Direction, (glm::dvec3)farthestNormal);
