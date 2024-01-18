@@ -50,7 +50,7 @@ glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     }
 
     //// std::cout << "Model matrix is " << glm::to_string(transform.GetPhysicsModelMatrix()) << "\n";
-    //// std::cout << "Support: farthest vertex in direction " << glm::to_string(directionInModelSpace) << " is " << glm::to_string(farthestVertex) << "\n";
+    std::cout << "Support: farthest vertex in direction " << glm::to_string(directionInModelSpace) << " is " << glm::to_string(farthestVertex) << "\n";
 
     // put returned point in world space
     const auto& modelToWorld = transform.GetPhysicsModelMatrix();
@@ -382,7 +382,7 @@ CollisionInfo FindContact(
 
     // we already know they're colliding, we're just using SAT to find out how
 
-    double farthestDistance = FLT_MIN;
+    double farthestDistance = -FLT_MAX;
     glm::vec3 farthestNormal; // in world space
     const std::vector<glm::vec3>* farthestFace; // in model space
     enum {
@@ -413,7 +413,7 @@ CollisionInfo FindContact(
     
     // Test faces of collider2 against vertices of collider1
     // std::pair<glm::vec3, std::vector<glm::dvec3>> farthestFace1;
-    for (auto & face2: collider1.physicsMesh->meshes.at(0).faces) {
+    for (auto & face2: collider2.physicsMesh->meshes.at(0).faces) {
         auto normalInWorldSpace = face2.first * transform2.GetNormalMatrix();
         glm::dvec3 pointOnPlaneInWorldSpace = transform2.GetPhysicsModelMatrix() * glm::dvec4(face2.second.at(0), 1);
         auto vertex1 = FindFarthestVertexOnObject(-normalInWorldSpace, transform1, collider1);
@@ -427,10 +427,12 @@ CollisionInfo FindContact(
         }
     }
 
+    std::cout << "Farthest distance is " << farthestDistance << ".\n";
+
     // It's possible for them to be colliding without any vertices of one inside the other in an edge collison.
     // For each pair of <edge from collider1, edge from collider2>, we take the cross product of those to generate a plane/normal and test those planes too
     
-    double farthestEdgeDistance = FLT_MIN;
+    double farthestEdgeDistance = -FLT_MAX;
     glm::dvec3 farthestEdge1Origin, farthestEdge1Direction, farthestEdge2Origin, farthestEdge2Direction;
     for (auto & edge1: collider1.physicsMesh->meshes.at(0).edges) {
         for (auto & edge2: collider2.physicsMesh->meshes.at(0).edges) {
@@ -461,6 +463,8 @@ CollisionInfo FindContact(
             }
         }
     }
+
+    std::cout << "Farthest edge distance is " << farthestEdgeDistance << ".\n";
 
     assert(farthestDistance <= 0); // if this was > 0, then they wouldn't be colliding, and if you called this function they better be colliding
 
@@ -711,7 +715,7 @@ std::optional<CollisionInfo> IsColliding(
     const SpatialAccelerationStructure::ColliderComponent& collider2
 ) 
 {
-    // std::cout << "HI: testing collision between #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
+    std::cout << "HI: testing collision between #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
     // first dvec3 in each array is actual simplex point on the minkoskwi difference, the other 2 are the collider points whose difference is that point, we need those for contact points
     std::vector<std::array<glm::dvec3, 3>> simplex;
 
@@ -731,11 +735,11 @@ std::optional<CollisionInfo> IsColliding(
 
     while (true) {
 
-        // std::cout << "\tSimplex: ";
-        // for (auto & p: simplex) {
-            // std::cout << glm::to_string(p[0]) << " from " << glm::to_string(p[1]) << " - " << glm::to_string(p[2]) << ", ";
-        // }
-        // std::cout << "\n";
+        std::cout << "\tSimplex: ";
+        for (auto & p: simplex) {
+            std::cout << glm::to_string(p[0]) << " from " << glm::to_string(p[1]) << " - " << glm::to_string(p[2]) << ", ";
+        }
+        std::cout << "\n";
 
         // get new point for simplex
         auto newSimplexPoint = NewSimplexPoint(searchDirection, transform1, collider1, transform2, collider2);

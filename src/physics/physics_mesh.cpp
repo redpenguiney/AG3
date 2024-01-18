@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 #include "../utility/let_me_hash_a_tuple.cpp"
+#include "../../external_headers/GLM/gtx/string_cast.hpp"
 
 std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, float simplifyThreshold, bool convexDecomposition) {
     if (MESHES_TO_PHYS_MESHES.count(mesh->meshId)) { // TODO: once we have simplifyThreshold and convexDecomposition, we need to make sure that matches up too
@@ -151,11 +152,14 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
         });
     }
     
-    // std::cout << "Created physics mesh.\n Vertices: ";
-    // for (auto & v: verts) {
-    //     std::cout << v << " ";
-    // }
-    // std::cout << "\n";
+    std::cout << "Created physics mesh.\n Vertices: ";
+    for (auto & f: faces) {
+        for (auto & v: f.second) {
+            std::cout << glm::to_string(v) << ",\n";
+        }
+        
+    }
+    // std::cout << "";
     return {PhysicsMesh::ConvexMesh {.triangles = triangles, .faces = faces, .edges = edges}};
 }
 

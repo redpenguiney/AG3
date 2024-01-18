@@ -27,7 +27,7 @@ PhysicsEngine& PhysicsEngine::Get() {
 
 // Simulates physics of a single rigidbody.
 void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::vector<std::pair<TransformComponent*, glm::dvec3>>& seperations) {
-    // rigidbody.accumulatedForce += PhysicsEngine::Get().GRAVITY * dt * (double)rigidbody.mass;
+    rigidbody.accumulatedForce += PhysicsEngine::Get().GRAVITY * dt * (double)rigidbody.mass;
 
     
     // TODO: should REALLY use tight fitting AABB here
