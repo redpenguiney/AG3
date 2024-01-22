@@ -25,17 +25,18 @@ void RigidbodyComponent::Impulse(glm::vec3 position, glm::vec3 force) {
 
     std::cout << "Applying force " << glm::to_string(force) << " at " << glm::to_string(position) << ".\n";
 
-    float positionToXAxis = glm::length(glm::vec2(position.y, position.z));
-    float positionToYAxis = glm::length(glm::vec2(position.x, position.z));
-    float positionToZAxis = glm::length(glm::vec2(position.x, position.y));
+    // float positionToXAxis = glm::length(glm::vec2(position.y, position.z));
+    // float positionToYAxis = glm::length(glm::vec2(position.x, position.z));
+    // float positionToZAxis = glm::length(glm::vec2(position.x, position.y));
     // std::cout << "Axis distances are " << glm::to_string(glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis))) << ".\n";
-    // accumulatedTorque += glm::cross(position, force);  //glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis)) * force;
+    accumulatedTorque += glm::cross(position, force);  //glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis)) * force;
     std::cout << "Torque is " << glm::to_string(accumulatedTorque) << ".\n";
     accumulatedForce += force;
 }
 
 // fyi position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)
 // almost certainly correctly implemented at this point
+// velocity is relative to center of mass (add overall object velocity to get world velocity)
 glm::dvec3 RigidbodyComponent::VelocityAtPoint(glm::vec3 position) {
     
 
