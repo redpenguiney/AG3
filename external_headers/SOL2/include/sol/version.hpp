@@ -686,7 +686,7 @@
 #elif SOL_IS_ON(SOL_USING_CXX_LUA)
 	#define SOL_USE_LUA_HPP_I_ SOL_OFF
 #elif defined(__has_include)
-	#if __has_include(<lua.hpp")
+	#if __has_include("lua.hpp")
 		#define SOL_USE_LUA_HPP_I_ SOL_ON
 	#else
 		#define SOL_USE_LUA_HPP_I_ SOL_OFF
@@ -817,7 +817,7 @@
 #endif
 
 #if SOL_IS_ON(SOL_USE_BOOST)
-	#include <boost/version.hpp"
+	#include <boost/version.hpp>
 
 	#if BOOST_VERSION >= 107500 // Since Boost 1.75.0 boost::none is constexpr
 		#define SOL_BOOST_NONE_CONSTEXPR_I_ constexpr

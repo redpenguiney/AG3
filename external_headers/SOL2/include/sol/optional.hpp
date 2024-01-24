@@ -28,7 +28,7 @@
 #include "in_place.hpp"
 #include "traits.hpp"
 #if SOL_IS_ON(SOL_USE_BOOST)
-#include <boost/optional.hpp"
+#include <boost/optional.hpp>
 #else
 #include "optional_implementation.hpp"
 #endif // Boost vs. Better optional

@@ -13,6 +13,7 @@
 #include "physics/raycast.hpp"
 #include "physics/engine.hpp"
 #include "gameobjects/rigidbody_component.hpp"
+#include "lua/lua_handler.hpp"
 #include "gameobjects/lifetime.hpp"
 
 using namespace std;
@@ -20,8 +21,10 @@ using namespace std;
 int main(int numArgs, char *argPtrs[]) {
     std::printf("Main function reached.\n");
 
+    // shouldn't actually matter if these lines exist, and if it does fix that please
     auto & GE = GraphicsEngine::Get();
     auto & PE = PhysicsEngine::Get();
+    auto & LUA = LuaHandler::Get();
     //GE.camera.position.y = 3;
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
