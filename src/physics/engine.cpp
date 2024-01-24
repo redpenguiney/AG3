@@ -70,15 +70,17 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             // glm::vec3 contactPointInObjectSpace = glm::dvec3(glm::inverse(transform.GetPhysicsModelMatrix()) * glm::dvec4(averageContactPoint, 1)); // TODO: might need to use whole inverted matrix
             glm::vec3 contactPointInObjectSpace = averageContactPoint - transform.position();
 
-            glm::dvec3 velocityAtContactPoint = rigidbody.velocity; //+ rigidbody.VelocityAtPoint(contactPointInObjectSpace);
-            // glm::vec3 contactPointInOtherObjectSpace = averageContactPoint - otherColliderPtr->GetGameObject()->transformComponent->position(); // TODO: might need to use whole inverted matrix
-            glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity :  glm::dvec3(0, 0, 0);
-            // glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ?  (otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity + otherColliderPtr->GetGameObject()->rigidbodyComponent->VelocityAtPoint(contactPointInOtherObjectSpace)) : glm::dvec3(0, 0, 0);
+            glm::dvec3 velocityAtContactPoint = rigidbody.velocity + rigidbody.VelocityAtPoint(contactPointInObjectSpace);
+            glm::vec3 contactPointInOtherObjectSpace = averageContactPoint - otherColliderPtr->GetGameObject()->transformComponent->position(); // TODO: might need to use whole inverted matrix
+            // glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity :  glm::dvec3(0, 0, 0);
+            glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ?  (otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity + otherColliderPtr->GetGameObject()->rigidbodyComponent->VelocityAtPoint(contactPointInOtherObjectSpace)) : glm::dvec3(0, 0, 0);
 
             seperations.emplace_back(std::make_pair(&transform, seperationVector));
             auto elasticity = otherColliderPtr->elasticity * collider.elasticity;
             std::cout << "Elasticity = " << (otherColliderPtr->GetGameObject()->rigidbodyComponent ? elasticity : 1.0 + elasticity) << ".\n";
             auto relVelocity = glm::abs(velocityAtOtherContactPoint - velocityAtContactPoint); // TODO: abs might create weird behaviour idk
+            
+            // we want a specific POINT to have this change in velocity.
             auto desiredChangeInVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent ? elasticity : 1.0 + elasticity) * collisionTestResult->collisionNormal * relVelocity; //* (glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
             // rigidbody.accumulatedForce = desiredChangeInVelocity * (double)rigidbody.mass;
 
