@@ -51,25 +51,39 @@ int main(int numArgs, char *argPtrs[]) {
         floor->renderComponent->SetTextureZ(grassTextureZ);
     }
 
-    // {
-    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    //     params.meshId = m->meshId;
-    //     params.materialId = brickMaterial->id;
-    //     // auto wall1 = ComponentRegistry::NewGameObject(params);
-    //     // wall1->transformComponent->SetPos({4, 4, 0});
-    //     // wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-    //     // wall1->colliderComponent->elasticity = 1.0;
-    //     // wall1->transformComponent->SetScl({1, 8, 8});
-    //     // wall1->renderComponent->SetColor({1, 1, 1, 1});
-    //     // wall1->renderComponent->SetTextureZ(brickTextureZ);
-    //     auto wall2 = ComponentRegistry::NewGameObject(params);
-    //     wall2->transformComponent->SetPos({-4, 4, 0});
-    //     wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-    //     wall2->colliderComponent->elasticity = 1.0;
-    //     wall2->transformComponent->SetScl({1, 8, 8});
-    //     wall2->renderComponent->SetColor({1, 1, 1, 0.5});
-    //     wall2->renderComponent->SetTextureZ(brickTextureZ);
-    // }
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = brickMaterial->id;
+        auto wall1 = ComponentRegistry::NewGameObject(params);
+        wall1->transformComponent->SetPos({4, 4, 0});
+        wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall1->colliderComponent->elasticity = 1.0;
+        wall1->transformComponent->SetScl({1, 8, 8});
+        wall1->renderComponent->SetColor({1, 1, 1, 1});
+        wall1->renderComponent->SetTextureZ(brickTextureZ);
+        auto wall2 = ComponentRegistry::NewGameObject(params);
+        wall2->transformComponent->SetPos({-4, 4, 0});
+        wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall2->colliderComponent->elasticity = 1.0;
+        wall2->transformComponent->SetScl({1, 8, 8});
+        wall2->renderComponent->SetColor({1, 1, 1, 1.0});
+        wall2->renderComponent->SetTextureZ(brickTextureZ);
+        auto wall3 = ComponentRegistry::NewGameObject(params);
+        wall3->transformComponent->SetPos({0, 4, 4});
+        wall3->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall3->colliderComponent->elasticity = 1.0;
+        wall3->transformComponent->SetScl({8, 8, 1});
+        wall3->renderComponent->SetColor({1, 1, 1, 1});
+        wall3->renderComponent->SetTextureZ(brickTextureZ);
+        auto wall4 = ComponentRegistry::NewGameObject(params);
+        wall4->transformComponent->SetPos({0, 4, -4});
+        wall4->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall4->colliderComponent->elasticity = 1.0;
+        wall4->transformComponent->SetScl({8, 8, 1});
+        wall4->renderComponent->SetColor({1, 1, 1, 1.0});
+        wall4->renderComponent->SetTextureZ(brickTextureZ);
+    }
 
     auto skyboxFaces = vector<std::string>( // TODO: need to make clear what order skybox faces go in
     { 
@@ -98,10 +112,10 @@ int main(int numArgs, char *argPtrs[]) {
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({x * 3, 5 + y * 3, z * 3});
-                g->colliderComponent->elasticity = 1.0;
+                g->colliderComponent->elasticity = 0.5;
                 g->transformComponent->SetRot(glm::quat(glm::vec3(1.0, 0.0, 0.0)));
                 g->rigidbodyComponent->angularVelocity = {1.0, 0.0, 0.0};
-                //g->transformComponent->SetScl(glm::dvec3(2, 2, 2));
+                g->transformComponent->SetScl(glm::dvec3(1.0, 1.1, 1.4));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
                 g->name = std::string("Gameobject #") + to_string(i);

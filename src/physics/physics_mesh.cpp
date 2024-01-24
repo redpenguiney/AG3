@@ -93,26 +93,6 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
             faces.push_back({normal, {vertex1, vertex2, vertex3}});
         }
 
-        // check if any of the edges of this triangle aren't in the edges vector, and if so add them.
-        bool foundEdge12 = false;
-        bool foundEdge13 = false;
-        bool foundEdge23 = false;
-        for (auto & [a, b]: edges) {
-            // the order of a and b doesn't matter so we gotta check both combinations
-            if (a == vertex1 && b == vertex2) {foundEdge12 = true;}
-            if (a == vertex2 && b == vertex1) {foundEdge12 = true;}
-
-            if (a == vertex1 && b == vertex1) {foundEdge13 = true;}
-            if (a == vertex3 && b == vertex1) {foundEdge13 = true;}
-
-            if (a == vertex2 && b == vertex3) {foundEdge23 = true;}
-            if (a == vertex3 && b == vertex2) {foundEdge23 = true;}
-        }
-
-        if (!foundEdge12) {edges.emplace_back(vertex1, vertex2);}
-        if (!foundEdge13) {edges.emplace_back(vertex1, vertex3);}
-        if (!foundEdge23) {edges.emplace_back(vertex2, vertex3);}
-
         // and of course add triangle to triangles vector
         triangles.push_back({vertex1, vertex2, vertex3});
     }
@@ -154,13 +134,35 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
                     
         });
     }
+
+    // Then, we need to get edges of each face.
+    // We don't do this when iterating through triangles since we don't want (for example) the diagonal of a square face to be treated as an edge.
+    for (auto & f: faces) {
+        for (unsigned int i = 0; i < f.second.size(); i++) {
+            auto vertex1 = f.second[i];
+            auto vertex2 = f.second[(i + 1 == f.second.size() ? 0 : i + 1)]; // make sure we get the edge between the last vertex and the first vertex of the face
+            // check if this edge isn't already in the edges vector and if so add it
+            bool foundEdge = false;
+            for (auto & [a, b]: edges) {
+                // the order of a and b doesn't matter so we gotta check both combinations
+                if (a == vertex1 && b == vertex2) {foundEdge = true;}
+                if (a == vertex2 && b == vertex1) {foundEdge = true;}
+            }
+
+            if (!foundEdge) {
+                edges.emplace_back(vertex1, vertex2);
+            }
+        }
+        
+    }
     
     // std::cout << "Created physics mesh.\n Vertices: ";
     // for (auto & f: faces) {
+    //     std::cout << "Face "; 
     //     for (auto & v: f.second) {
-    //         std::cout << glm::to_string(v) << ",\n";
+    //         std::cout << glm::to_string(v) << ", ";
     //     }
-        
+    //     std::cout << ".\n";
     // }
     // std::cout << "";
     return {PhysicsMesh::ConvexMesh {.triangles = triangles, .faces = faces, .edges = edges}};

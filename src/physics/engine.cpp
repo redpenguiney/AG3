@@ -43,11 +43,13 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
         if (otherColliderPtr == &collider) {continue;} // collider shouldn't collide with itself lol
         auto collisionTestResult = IsColliding(*otherColliderPtr->GetGameObject()->transformComponent.GetPtr(), *otherColliderPtr, transform, collider);
         if (collisionTestResult) {
+            assert(collisionTestResult->hitPoints.size() > 0);
 
             // find center of contact region and apply the torque from there
             glm::dvec3 averageContactPoint = {0, 0, 0}; // in object space
             double averagePenetration = 0;
             for (auto & p: collisionTestResult->hitPoints) {
+                std::cout << "One point is " << glm::to_string(p.first) << ".\n";
                 averageContactPoint += p.first;
                 averagePenetration += p.second;
             }
@@ -77,6 +79,8 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             auto elasticity = otherColliderPtr->elasticity * collider.elasticity;
             std::cout << "Elasticity = " << (otherColliderPtr->GetGameObject()->rigidbodyComponent ? elasticity : 1.0 + elasticity) << ".\n";
             auto relVelocity = glm::abs(velocityAtOtherContactPoint - velocityAtContactPoint); // TODO: abs might create weird behaviour idk
+            
+            // we want a specific POINT to have this change in velocity.
             auto desiredChangeInVelocity = (otherColliderPtr->GetGameObject()->rigidbodyComponent ? elasticity : 1.0 + elasticity) * collisionTestResult->collisionNormal * relVelocity; //* (glm::dot(collisionTestResult->collisionNormal, relVelocity) / glm::dot(collisionTestResult->collisionNormal, collisionTestResult->collisionNormal));
             // rigidbody.accumulatedForce = desiredChangeInVelocity * (double)rigidbody.mass;
 
