@@ -306,7 +306,6 @@ SatFacesResult SatFaces(
 // Each pair in the return value is <hitPoint, penetrationDepth>.
 // referenceNormal is normal of refereneceFace IN WORLD SPACE.
 // referenceFace is (IN MODEL SPACE) the face that had the least penetration, and referenceTransform is the transform of the collider that contains referenceFace.
-//
 std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
     const glm::vec3 referenceNormal,
     const std::vector<glm::vec3>* referenceFace, 
@@ -360,10 +359,10 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
 
         // flip normal if needed so normal faces away from the face
         // TODO: needed??
-        // if (glm::dot(planeNormal, referenceNormal) < 0) {
-        //     planeNormal *= -1;
-        //     std::cout << "UH OH FLIPPING\n";
-        // }
+        if (glm::dot(glm::dvec3(planeNormal), v1 - referenceTransform.position()) < 0) {
+            planeNormal *= -1;
+            std::cout << "UH OH FLIPPING\n";
+        }
         std::cout << "Side plane has normal " << glm::to_string(planeNormal) << " and point " << glm::to_string(v1) << ".\n"; 
         sidePlanes.emplace_back(planeNormal, v1);
     }
@@ -516,22 +515,24 @@ CollisionInfo FindContact(
             glm::dvec3 edge1bWorld = transform1.GetPhysicsModelMatrix() * glm::dvec4(edge1.second, 1.0);
             glm::dvec3 edge2aWorld = transform2.GetPhysicsModelMatrix() * glm::dvec4(edge2.first, 1.0);
             glm::dvec3 edge2bWorld = transform2.GetPhysicsModelMatrix() * glm::dvec4(edge2.second, 1.0);
-            // std::cout << "Directions are " << glm::to_string(glm::normalize(edge1bWorld - edge1aWorld)) << " and " << glm::to_string(glm::normalize(edge2bWorld - edge2aWorld)) << ".\n";
+            
 
             glm::vec3 normalInWorldSpace =  glm::cross(glm::normalize(edge1bWorld - edge1aWorld), glm::normalize(edge2bWorld - edge2aWorld));
-            if (glm::length(normalInWorldSpace) == 0) { // if the edges are parallel, cross product is zero and we can't get a normal
+            if (glm::length(normalInWorldSpace) < 0.0001) { // if the edges are parallel, cross product is zero and we can't get a normal
                 // std::cout << "NOPE\n";
                 continue;
             }
+            normalInWorldSpace = glm::normalize(normalInWorldSpace);
             // make sure all normals go out of collider1, so the sign of our distance calculations is consistent
-            if (glm::dot(normalInWorldSpace, glm::vec3(edge1aWorld - transform1.position())) > 0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
+            if (glm::dot(normalInWorldSpace, glm::vec3(edge1aWorld - transform1.position())) < 0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
                 normalInWorldSpace *= -1;
             }
 
             glm::dvec3 collider2Vertex = FindFarthestVertexOnObject(-normalInWorldSpace, transform2, collider2);
             double distance = SignedDistanceToPlane(normalInWorldSpace, collider2Vertex, edge1aWorld);
             if (distance > farthestEdgeDistance) {
-                // std::cout << "EDGY: Normal " << glm::to_string(normalInWorldSpace) << " replaced normal " << glm::to_string(farthestNormal) << "with distance " << distance << "\n";
+                std::cout << "EDGY: Normal " << glm::to_string(normalInWorldSpace) << " replaced normal " << glm::to_string(farthestNormal) << "with distance " << distance << "\n";
+                std::cout << "Directions are " << glm::to_string(glm::normalize(edge1bWorld - edge1aWorld)) << " and " << glm::to_string(glm::normalize(edge2bWorld - edge2aWorld)) << ".\n";
                 farthestEdgeDistance = distance;
                 // if (distance > 0) {
                 //     // std::cout << "NO EDGE COLLISION\n";
@@ -546,9 +547,9 @@ CollisionInfo FindContact(
         }
     }
 
-    
+    assert(farthestEdgeDistance <= 0); // if farthestEdgeDistance > 0, we have no collision and this function won't work
 
-    if (farthestEdgeDistance > farthestDistance && farthestEdgeDistance < 0) { // we know farthestEdgeDistance < 0 if we didn't do the goto
+    if (farthestEdgeDistance > farthestDistance) { 
         collisionType = EdgeCollision;
         farthestDistance = farthestEdgeDistance;
         farthestNormal = farthestEdgeNormal;
