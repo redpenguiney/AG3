@@ -252,7 +252,7 @@ std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNorma
 
 // used by FindContact()
 double SignedDistanceToPlane(glm::dvec3 planeNormal, glm::dvec3 point, glm::dvec3 pointOnPlane) {
-    return glm::dot(point - pointOnPlane, planeNormal);
+    return glm::dot(planeNormal, point - pointOnPlane);
 }
 
 struct SatFacesResult {
@@ -276,12 +276,12 @@ SatFacesResult SatFaces(
 
     for (auto & face1: collider1.physicsMesh->meshes.at(0).faces) {
 
-        auto normalInWorldSpace = face1.first * transform1.GetNormalMatrix();
+        auto normalInWorldSpace = glm::normalize(face1.first * transform1.GetNormalMatrix());
+        
         glm::dvec3 pointOnPlaneInWorldSpace = transform1.GetPhysicsModelMatrix() * glm::dvec4(face1.second.at(0), 1);
 
         auto vertex2 = FindFarthestVertexOnObject(-normalInWorldSpace, transform2, collider2);
         double distance = SignedDistanceToPlane(normalInWorldSpace, vertex2, pointOnPlaneInWorldSpace);
-
         
         if (distance > farthestDistance) {
             // if (distance > 0) {
@@ -296,6 +296,8 @@ SatFacesResult SatFaces(
             farthestFace = &face1.second;
             farthestNormal = normalInWorldSpace;
         }
+
+        assert(distance <= 0);
     }
 
     assert(farthestFace != nullptr);
@@ -463,48 +465,37 @@ CollisionInfo FindContact(
     // Test faces of collider1 against vertices of collider2
     std::cout << "TESTING FACE 1\n";
     auto Face1Result = SatFaces(transform1, collider1, transform2, collider2); 
-    
+    assert(Face1Result.farthestDistance <= 0); // they must be colliding or we mad.    
+
     // Test faces of collider2 against vertices of collider1
     std::cout << "TESTING FACE 2\n";
     auto Face2Result = SatFaces(transform2, collider2, transform1, collider1); 
+    assert(Face2Result.farthestDistance <= 0); // they must be colliding or we mad.
 
     glm::vec3 farthestNormal(0, 0, 0); // in world space
     double farthestDistance;
     const std::vector<glm::vec3>* farthestFace = nullptr; // in model space
 
-    if (Face1Result.farthestDistance < 0) {
-        if ((Face1Result.farthestDistance > Face2Result.farthestDistance) || (Face2Result.farthestDistance > 0)) {
-            std::cout << "Doing face1\n";
-            farthestNormal = Face1Result.farthestNormal;
-            farthestDistance = Face1Result.farthestDistance;
-            farthestFace = Face1Result.farthestFace;
-            collisionType = Face1Collision;
-        }
-        else {
-            std::cout << "Doing face2\n";
-            farthestNormal = Face2Result.farthestNormal;
-            farthestDistance = Face2Result.farthestDistance;
-            farthestFace = Face2Result.farthestFace;
-            collisionType = Face2Collision;
-        }
+    if ((Face1Result.farthestDistance > Face2Result.farthestDistance)) {
+        std::cout << "Doing face1\n";
+        farthestNormal = Face1Result.farthestNormal;
+        farthestDistance = Face1Result.farthestDistance;
+        farthestFace = Face1Result.farthestFace;
+        collisionType = Face1Collision;
     }
-    else if (Face2Result.farthestDistance < 0) {
+    else {
         std::cout << "Doing face2\n";
         farthestNormal = Face2Result.farthestNormal;
         farthestDistance = Face2Result.farthestDistance;
         farthestFace = Face2Result.farthestFace;
         collisionType = Face2Collision;
     }
-    else {
-        std::cout << "NO face was done. There better be an edge collision.\n";
-        farthestDistance = -FLT_MAX;
-    }
     
-    // It's possible for them to be colliding without any vertices of one inside the other in an edge collison.
+    // just testing faces isn't enough for the case of edge-edge collision.
     // For each pair of <edge from collider1, edge from collider2>, we take the cross product of those to generate a plane/normal and test those planes too
     
     double farthestEdgeDistance = -FLT_MAX;
-    glm::vec3 farthestEdgeNormal;
+    glm::vec3 farthestEdgeNormal(0,0,0);
     glm::dvec3 farthestEdge1Origin, farthestEdge1Direction, farthestEdge2Origin, farthestEdge2Direction;
 
     for (auto & edge1: collider1.physicsMesh->meshes.at(0).edges) {

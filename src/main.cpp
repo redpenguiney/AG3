@@ -115,7 +115,7 @@ int main(int numArgs, char *argPtrs[]) {
                 g->colliderComponent->elasticity = 0.5;
                 g->transformComponent->SetRot(glm::quat(glm::vec3(1.0, 0.0, 0.0)));
                 g->rigidbodyComponent->angularVelocity = {1.0, 0.0, 0.0};
-                g->transformComponent->SetScl(glm::dvec3(1.0, 1.1, 1.4));
+                g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
                 g->name = std::string("Gameobject #") + to_string(i);

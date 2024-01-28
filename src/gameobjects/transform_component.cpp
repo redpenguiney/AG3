@@ -74,7 +74,8 @@ class TransformComponent: public BaseComponent<TransformComponent> {
     // we don't need to mess with position tho because its the only thing that touches the last column of the matrix and its set every frame anyways for floating origin
     // TODO: could instead of calling this when rot/scl changes, call this every frame if a rotSclChanged flag is set
     void UpdateRotScaleMatrix() {
-        normalMatrix = glm::toMat3(rotation());
+        // normalMatrix = glm::toMat3(rotation());
+        normalMatrix = glm::inverseTranspose(glm::mat3x3(rotScaleMatrix));
         rotScaleMatrix = glm::mat4x4(rotation()) * glm::scale(glm::identity<glm::mat4x4>(), (glm::vec3)scale());
     }
 
