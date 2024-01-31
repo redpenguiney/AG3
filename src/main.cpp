@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "../external_headers/GLM/gtx/string_cast.hpp"
+
 #include "graphics/engine.hpp"
 #include "graphics/shader_program.hpp"
 #include "graphics/material.hpp"
@@ -44,11 +46,12 @@ int main(int numArgs, char *argPtrs[]) {
         params.materialId = grassMaterial->id;
         auto floor = ComponentRegistry::NewGameObject(params);
         floor->transformComponent->SetPos({0, 0, 0});
-        floor->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        floor->transformComponent->SetRot(glm::vec3 {0, 0, glm::radians(45.0)});
         floor->colliderComponent->elasticity = 1.0;
-        floor->transformComponent->SetScl({9, 1, 9});
+        floor->transformComponent->SetScl({9, 9, 9});
         floor->renderComponent->SetColor({0, 1, 0, 0.5});
         floor->renderComponent->SetTextureZ(grassTextureZ);
+        floor->name = "ah yes the floor here is made of floor";
     }
 
     {
@@ -62,6 +65,7 @@ int main(int numArgs, char *argPtrs[]) {
         wall1->transformComponent->SetScl({1, 8, 8});
         wall1->renderComponent->SetColor({1, 1, 1, 1});
         wall1->renderComponent->SetTextureZ(brickTextureZ);
+        wall1->name = "wall";
         auto wall2 = ComponentRegistry::NewGameObject(params);
         wall2->transformComponent->SetPos({-4, 4, 0});
         wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
@@ -69,6 +73,7 @@ int main(int numArgs, char *argPtrs[]) {
         wall2->transformComponent->SetScl({1, 8, 8});
         wall2->renderComponent->SetColor({1, 1, 1, 1.0});
         wall2->renderComponent->SetTextureZ(brickTextureZ);
+        wall2->name = "wall";
         auto wall3 = ComponentRegistry::NewGameObject(params);
         wall3->transformComponent->SetPos({0, 4, 4});
         wall3->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
@@ -76,6 +81,7 @@ int main(int numArgs, char *argPtrs[]) {
         wall3->transformComponent->SetScl({8, 8, 1});
         wall3->renderComponent->SetColor({1, 1, 1, 1});
         wall3->renderComponent->SetTextureZ(brickTextureZ);
+        wall3->name = "wall";
         auto wall4 = ComponentRegistry::NewGameObject(params);
         wall4->transformComponent->SetPos({0, 4, -4});
         wall4->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
@@ -83,6 +89,7 @@ int main(int numArgs, char *argPtrs[]) {
         wall4->transformComponent->SetScl({8, 8, 1});
         wall4->renderComponent->SetColor({1, 1, 1, 1.0});
         wall4->renderComponent->SetTextureZ(brickTextureZ);
+        wall4->name = "wall";
     }
 
     auto skyboxFaces = vector<std::string>( // TODO: need to make clear what order skybox faces go in
@@ -111,9 +118,10 @@ int main(int numArgs, char *argPtrs[]) {
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({x * 3, 5 + y * 3, z * 3});
+                g->transformComponent->SetPos({x * 3, 9 + y * 3, z * 3});
                 g->colliderComponent->elasticity = 0.5;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(1.0, 0.0, 0.0)));
+                // g->transformComponent->SetRot(glm::quat(glm::vec3(0.0, 1.0, 0.0)));
+                // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 g->rigidbodyComponent->angularVelocity = {1.0, 0.0, 0.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
@@ -192,16 +200,21 @@ int main(int numArgs, char *argPtrs[]) {
         }
         
 
-        //printf("Doing a little raycasting.\n");
+        // printf("Doing a little raycasting.\n");
         if (LMB_DOWN) {
             auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
+            
+            if (castResult.hitObject != nullptr) {
+                // std::cout << "Hit object " << castResult.hitObject->name << ", normal is " << glm::to_string(castResult.hitNormal) << " \n";
+            }
+
             if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
-                //std::cout << "Hit object " << castResult.hitObject->name << " \n";
+                
                 castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
                 //castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position() + castResult.hitNormal * 0.02);
             }
             else {
-                //std::cout << "LMB_DOWN but not hitting anything.\n";
+                // std::cout << "LMB_DOWN but not hitting anything.\n";
             }
 
         }

@@ -1,5 +1,5 @@
 #include "spatial_acceleration_structure.hpp"
-#include "../gameobjects/transform_component.cpp"
+#include "../gameobjects/transform_component.hpp"
 
 // (GJK is the name of the collision detection algorithm)
     // although there is also EPA used to get collision info if one occurred

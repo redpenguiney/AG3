@@ -6,9 +6,10 @@
 #include <cstdio>
 #include <vector>
 #include "../utility/triangle_intersection.hpp"
+#include "../../external_headers/GLM/gtx/string_cast.hpp"
 
 glm::dvec3 GetTriangleNormal(glm::dvec3 triVertex0, glm::dvec3 triVertex1, glm::dvec3 triVertex2) {
-    return glm::cross((triVertex1 - triVertex0), (triVertex2 - triVertex0));
+    return glm::normalize(glm::cross((triVertex1 - triVertex0), (triVertex2 - triVertex0)));
 }
 
 // TODO: max distance for perf?
@@ -29,7 +30,7 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
         auto& mesh = comp->physicsMesh;
         auto obj = comp->GetGameObject();
         assert(obj != nullptr);
-        //std::cout << "Could be colliding with " << obj->name << ".\n";
+        // std::cout << "Could be colliding with " << obj->name << ".\n";
         auto modelMatrix = obj->transformComponent->GetPhysicsModelMatrix();
 
         for (auto & convexMesh: mesh->meshes) {
@@ -42,12 +43,17 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
                 }
 
                 auto normal = GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
-                //std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f, the normal is %f %f %f\n.", trianglePoints[0][0], trianglePoints[0][1], trianglePoints[0][2], trianglePoints[1][0], trianglePoints[1][1], trianglePoints[1][2], trianglePoints[2][0], trianglePoints[2][1], trianglePoints[2][2], normal.x, normal.y, normal.z);
                 
+                
+                // TODO rework physics_mesh.cpp so that triangles have clockwise winding; in the meantime we have to check normals because sometimes they backwards
+                if (glm::dot(normal, trianglePoints[0] - obj->transformComponent->position()) < 0) {
+                    normal *= -1;
+                }
+
                 // backface culling so that we hit the right triangle
                 if (glm::dot(normal, direction) < 0) { // works according to https://en.wikipedia.org/wiki/Back-face_culling
                     //std::cout << "Passed backface culling.\n";
-
+                    // std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f, the normal is %f %f %f\n.", trianglePoints[0][0], trianglePoints[0][1], trianglePoints[0][2], trianglePoints[1][0], trianglePoints[1][1], trianglePoints[1][2], trianglePoints[2][0], trianglePoints[2][1], trianglePoints[2][2], normal.x, normal.y, normal.z);
                     glm::dvec3 intersectionPoint;
 
                     // TODO: IsTriangleColliding() might (?) independently calculate the normal which is waste of resources? compiler could probably optimize out that but idk        
@@ -75,14 +81,14 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
         double closestDistance = FLT_MAX;
         RaycastResult bestResult;
         for (auto & result: hitTriangles) {
-            //std::cout << "Considering object at " << result.hitObject << " named " << result.hitObject->name << "\n";
-            double distance = abs((result.hitPoint - origin).x) + abs((result.hitPoint - origin).y) + abs((result.hitPoint - origin).z);
+            double distance = glm::length2(origin - result.hitPoint);
+            // std::cout << "Considering object normal " << glm::to_string(result.hitNormal) << " named " << result.hitObject->name << " with distance " << distance << " vs closest " << closestDistance << "\n";
             if (distance < closestDistance) {
                 closestDistance = distance;
                 bestResult = result;
             }
-
         }
+
         return bestResult;
     }
     

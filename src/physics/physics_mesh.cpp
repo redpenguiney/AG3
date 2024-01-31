@@ -136,7 +136,7 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
     }
 
     // Then, we need to get edges of each face.
-    // We don't do this when iterating through triangles since we don't want (for example) the diagonal of a square face to be treated as an edge.
+    // We don't do this when iterating through triangles since we don't want (for example) the diagonal of a square face to be treated as an edge, plus we might (???) want edges in clockwise order too.
     for (auto & f: faces) {
         for (unsigned int i = 0; i < f.second.size(); i++) {
             auto vertex1 = f.second[i];
@@ -156,9 +156,9 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
         
     }
     
-    // std::cout << "Created physics mesh.\n Vertices: ";
+    // std::cout << "Created physics mesh:\n ";
     // for (auto & f: faces) {
-    //     std::cout << "Face "; 
+    //     std::cout << "\tFace with normal " << glm::to_string(f.first) << " has vertices "; 
     //     for (auto & v: f.second) {
     //         std::cout << glm::to_string(v) << ", ";
     //     }

@@ -13,7 +13,7 @@
 
 
 PhysicsEngine::PhysicsEngine() {
-    //GRAVITY = {0, -0.1, 0};
+    // GRAVITY = {0, -0.0, 0};
     GRAVITY = {0, -9.807, 0};
 }
 PhysicsEngine::~PhysicsEngine() {}
@@ -52,6 +52,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                 std::cout << "One point is " << glm::to_string(p.first) << ".\n";
                 averageContactPoint += p.first;
                 averagePenetration += p.second;
+                // DebugPlacePointOnPosition({p.first + p.second}, {0.5, 0.0, 0.0, 1.0});
             }
             averageContactPoint /= collisionTestResult->hitPoints.size();
             averagePenetration /= collisionTestResult->hitPoints.size();

@@ -12,7 +12,7 @@
 #include <vector>
 #include "../debug/debug.hpp"
 #include "camera.hpp"
-#include "../gameobjects/transform_component.cpp"
+#include "../gameobjects/transform_component.hpp"
 #include "../utility/utility.hpp"
 #include "material.hpp"
 #include "renderable_mesh.hpp"

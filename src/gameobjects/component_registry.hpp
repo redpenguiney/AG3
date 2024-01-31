@@ -5,7 +5,6 @@
 // TODO: interleaved component pools?
 // TODO: We can't really destroy gameobjects???
 
-
 #pragma once
 #include <array>
 #include <bitset>
@@ -18,7 +17,7 @@
 #include "component_pool.hpp"
 #include <vector>
 #include "../graphics/engine.hpp"
-#include "transform_component.cpp"
+#include "transform_component.hpp"
 #include "../physics/spatial_acceleration_structure.hpp"
 #include "pointlight_component.hpp"
 #include "rigidbody_component.hpp"

@@ -6,7 +6,7 @@
 #include <vector>
 #include <array>
 #include "../../external_headers/GLM/ext.hpp"
-#include "../gameobjects/transform_component.cpp"
+#include "../gameobjects/transform_component.hpp"
 #include "physics_mesh.hpp"
 
 class GameObject;
