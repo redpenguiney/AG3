@@ -1,4 +1,4 @@
-#include "gjk.hpp"
+#include "collision_detection.hpp"
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -12,6 +12,9 @@
 #include <iostream>
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
 #include "../gameobjects/component_registry.hpp"
+
+// DEAR GOD. YOU DON'T KNOW. A MONTH AND A HALF WAS SPENT SUFFERING IN THIS FILE. I NEVER WANT TO TOUCH THIS AGAIN.
+// DECEMBER TO FEBRUARY 2ND. FINALLY.
 
 // the GJK support function. returns farthest vertex (in world space) along a directional vector 
 glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, const TransformComponent& transform, const SpatialAccelerationStructure::ColliderComponent& collider) {
@@ -525,8 +528,9 @@ CollisionInfo FindContact(
             }
             normalInWorldSpace = glm::normalize(normalInWorldSpace);
             // make sure all normals go out of collider1, so the sign of our distance calculations is consistent
-            // TODO: CHANGED TO TRANSFORM2, I THINK THATS RIGHT???
-            if (glm::dot(normalInWorldSpace, glm::vec3(edge1OriginWorld - transform2.position())) < 0.0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
+            // TODO:
+                // transform1 and 2 are both wrong
+            if (glm::dot(normalInWorldSpace, glm::vec3(edge1OriginWorld - transform1.position())) < 0.0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
                 // std::cout << "\tFlipped normal.\n";
                 normalInWorldSpace *= -1;
             }
@@ -535,13 +539,16 @@ CollisionInfo FindContact(
             }
 
             // often times the edge pair will create a normal that is the same as a face normal, in which case we can skip it.
-            if (glm::length(glm::cross(normalInWorldSpace, farthestNormal)) == 0) {
-                // std::cout << "\tSkipping redundant edge pair.\n";
-                continue;
-            }
+            // if (glm::length(glm::cross(normalInWorldSpace, farthestNormal)) == 0) {
+            //     // std::cout << "\tSkipping redundant edge pair.\n";
+            //     continue;
+            // }
             
             glm::dvec3 collider2Vertex = FindFarthestVertexOnObject(-normalInWorldSpace, transform2, collider2);
-            double distance = SignedDistanceToPlane(normalInWorldSpace, collider2Vertex, edge1OriginWorld);
+
+            // using edge1OriginWorld doesn't work here because it's not actually a point on the plane we want to test, so instead we using support function?
+             glm::dvec3 collider1Vertex = FindFarthestVertexOnObject(normalInWorldSpace, transform1, collider1);
+            double distance = SignedDistanceToPlane(normalInWorldSpace, collider2Vertex, collider1Vertex);
             // distance has to be negative if they colliding so use opposite normal if its not
             // if (distance > 0) {
             //     distance *= -1;
@@ -559,9 +566,9 @@ CollisionInfo FindContact(
                 //     goto NoEdgeCollision;
                 // }
                 farthestEdgeNormal = normalInWorldSpace;
-                farthestEdge1Origin = edge1OriginWorld;
+                farthestEdge1Origin = collider1Vertex;
                 farthestEdge1Direction = edge1DirectionWorld;
-                farthestEdge2Origin = edge2OriginWorld;
+                farthestEdge2Origin = collider2Vertex;
                 farthestEdge2Direction = edge2DirectionWorld;
             }
 
@@ -605,11 +612,11 @@ CollisionInfo FindContact(
         auto n2 = glm::cross(farthestEdge2Direction, (glm::dvec3)farthestNormal);
         
 
-        auto closestPointOnEdge1ToEdge2 = farthestEdge1Origin + farthestEdge1Direction * (((farthestEdge2Origin - farthestEdge1Origin) * n2)/(farthestEdge2Direction * n2));
+        auto closestPointOnEdge1ToEdge2 = farthestEdge1Origin + farthestEdge1Direction * (glm::dot((farthestEdge2Origin - farthestEdge1Origin), n2)/glm::dot(n2, farthestEdge1Direction));
         auto n1 = glm::cross(farthestEdge1Direction, (glm::dvec3)farthestNormal);
         
 
-        auto closestPointOnEdge2ToEdge1 = farthestEdge2Origin + farthestEdge2Direction * (((farthestEdge1Origin - farthestEdge2Origin) * n1)/(farthestEdge2Direction * n1));
+        auto closestPointOnEdge2ToEdge1 = farthestEdge2Origin + farthestEdge2Direction * (glm::dot((farthestEdge1Origin - farthestEdge2Origin), n1)/glm::dot(n1, farthestEdge2Direction));
         
 
         auto point = (closestPointOnEdge1ToEdge2 + closestPointOnEdge2ToEdge1) * 0.5;
@@ -623,7 +630,7 @@ CollisionInfo FindContact(
         assert(!std::isnan(closestPointOnEdge2ToEdge1.y));
         assert(!std::isnan(closestPointOnEdge2ToEdge1.z));  
 
-        return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = {{point, farthestEdgeDistance}}};
+        return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = {{point, abs(farthestEdgeDistance)}}};
         break;
     }
 

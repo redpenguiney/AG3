@@ -8,7 +8,7 @@
 #include "../utility/utility.hpp"
 #include <vector>
 #include "engine.hpp"
-#include "gjk.hpp"
+#include "collision_detection.hpp"
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
 
 

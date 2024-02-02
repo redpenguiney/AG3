@@ -156,7 +156,7 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
         
     }
     
-    // std::cout << "Created physics mesh:\n ";
+    // std::cout << "Created physics mesh:\n";
     // for (auto & f: faces) {
     //     std::cout << "\tFace with normal " << glm::to_string(f.first) << " has vertices "; 
     //     for (auto & v: f.second) {
@@ -164,7 +164,9 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
     //     }
     //     std::cout << ".\n";
     // }
-    // std::cout << "";
+    // for (auto & e: edges) {
+    //     std::cout << "\tEdge " << glm::to_string(e.first) << " to " << glm::to_string(e.second) << ".\n";
+    // }
     return {PhysicsMesh::ConvexMesh {.triangles = triangles, .faces = faces, .edges = edges}};
 }
 

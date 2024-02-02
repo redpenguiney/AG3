@@ -1,9 +1,7 @@
 #include "spatial_acceleration_structure.hpp"
 #include "../gameobjects/transform_component.hpp"
 
-// (GJK is the name of the collision detection algorithm)
-    // although there is also EPA used to get collision info if one occurred
-// This file is in charge of narrowphase collision detection, meaning it actually does the hard work of determining exactly whether (and if so, how) given pairs of objects are colliding.
+// This file is in charge of narrowphase collision detection, meaning it actually does the (oh god very so very) hard work of determining exactly whether (and if so, how) given pairs of objects are colliding.
 #pragma once
 #include "../../external_headers/GLM/vec3.hpp"
 #include <optional>
