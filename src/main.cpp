@@ -46,51 +46,51 @@ int main(int numArgs, char *argPtrs[]) {
         params.materialId = grassMaterial->id;
         auto floor = ComponentRegistry::NewGameObject(params);
         floor->transformComponent->SetPos({0, 0, 0});
-        floor->transformComponent->SetRot(glm::vec3 {0, 0, glm::radians(45.0)});
+        // floor->transformComponent->SetRot(glm::vec3 {0, 0, glm::radians(1.0)});
         floor->colliderComponent->elasticity = 1.0;
-        floor->transformComponent->SetScl({9, 9, 9});
+        floor->transformComponent->SetScl({900, 1, 9});
         floor->renderComponent->SetColor({0, 1, 0, 0.5});
         floor->renderComponent->SetTextureZ(grassTextureZ);
         floor->name = "ah yes the floor here is made of floor";
     }
 
-    {
-        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-        params.meshId = m->meshId;
-        params.materialId = brickMaterial->id;
-        auto wall1 = ComponentRegistry::NewGameObject(params);
-        wall1->transformComponent->SetPos({4, 4, 0});
-        wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-        wall1->colliderComponent->elasticity = 1.0;
-        wall1->transformComponent->SetScl({1, 8, 8});
-        wall1->renderComponent->SetColor({1, 1, 1, 1});
-        wall1->renderComponent->SetTextureZ(brickTextureZ);
-        wall1->name = "wall";
-        auto wall2 = ComponentRegistry::NewGameObject(params);
-        wall2->transformComponent->SetPos({-4, 4, 0});
-        wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-        wall2->colliderComponent->elasticity = 1.0;
-        wall2->transformComponent->SetScl({1, 8, 8});
-        wall2->renderComponent->SetColor({1, 1, 1, 1.0});
-        wall2->renderComponent->SetTextureZ(brickTextureZ);
-        wall2->name = "wall";
-        auto wall3 = ComponentRegistry::NewGameObject(params);
-        wall3->transformComponent->SetPos({0, 4, 4});
-        wall3->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-        wall3->colliderComponent->elasticity = 1.0;
-        wall3->transformComponent->SetScl({8, 8, 1});
-        wall3->renderComponent->SetColor({1, 1, 1, 1});
-        wall3->renderComponent->SetTextureZ(brickTextureZ);
-        wall3->name = "wall";
-        auto wall4 = ComponentRegistry::NewGameObject(params);
-        wall4->transformComponent->SetPos({0, 4, -4});
-        wall4->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-        wall4->colliderComponent->elasticity = 1.0;
-        wall4->transformComponent->SetScl({8, 8, 1});
-        wall4->renderComponent->SetColor({1, 1, 1, 1.0});
-        wall4->renderComponent->SetTextureZ(brickTextureZ);
-        wall4->name = "wall";
-    }
+    // {
+    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+    //     params.meshId = m->meshId;
+    //     params.materialId = brickMaterial->id;
+    //     auto wall1 = ComponentRegistry::NewGameObject(params);
+    //     wall1->transformComponent->SetPos({4, 4, 0});
+    //     wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+    //     wall1->colliderComponent->elasticity = 1.0;
+    //     wall1->transformComponent->SetScl({1, 8, 8});
+    //     wall1->renderComponent->SetColor({1, 1, 1, 1});
+    //     wall1->renderComponent->SetTextureZ(brickTextureZ);
+    //     wall1->name = "wall";
+    //     auto wall2 = ComponentRegistry::NewGameObject(params);
+    //     wall2->transformComponent->SetPos({-4, 4, 0});
+    //     wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+    //     wall2->colliderComponent->elasticity = 1.0;
+    //     wall2->transformComponent->SetScl({1, 8, 8});
+    //     wall2->renderComponent->SetColor({1, 1, 1, 1.0});
+    //     wall2->renderComponent->SetTextureZ(brickTextureZ);
+    //     wall2->name = "wall";
+    //     auto wall3 = ComponentRegistry::NewGameObject(params);
+    //     wall3->transformComponent->SetPos({0, 4, 4});
+    //     wall3->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+    //     wall3->colliderComponent->elasticity = 1.0;
+    //     wall3->transformComponent->SetScl({8, 8, 1});
+    //     wall3->renderComponent->SetColor({1, 1, 1, 1});
+    //     wall3->renderComponent->SetTextureZ(brickTextureZ);
+    //     wall3->name = "wall";
+    //     auto wall4 = ComponentRegistry::NewGameObject(params);
+    //     wall4->transformComponent->SetPos({0, 4, -4});
+    //     wall4->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+    //     wall4->colliderComponent->elasticity = 1.0;
+    //     wall4->transformComponent->SetScl({8, 8, 1});
+    //     wall4->renderComponent->SetColor({1, 1, 1, 1.0});
+    //     wall4->renderComponent->SetTextureZ(brickTextureZ);
+    //     wall4->name = "wall";
+    // }
 
     auto skyboxFaces = vector<std::string>( // TODO: need to make clear what order skybox faces go in
     { 
@@ -118,9 +118,9 @@ int main(int numArgs, char *argPtrs[]) {
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({x * 3, 9 + y * 3, z * 3});
+                g->transformComponent->SetPos({x * 3,5 + y * 3, z * 3});
                 g->colliderComponent->elasticity = 0.5;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(45.0), 0.0, 0.0)));
+                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(30.0), 0.0, 0.0)));
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));

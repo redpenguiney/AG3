@@ -1,7 +1,8 @@
-#include "collision_detection.hpp"
+#include "gjk.hpp"
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cfloat>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -299,8 +300,8 @@ SatFacesResult SatFaces(
             farthestFace = &face1.second;
             farthestNormal = normalInWorldSpace;
         }
-
-        assert(distance <= 0);
+        
+        assert(distance <= FLT_EPSILON);
     }
 
     assert(farthestFace != nullptr);
@@ -346,9 +347,9 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
         incidentFaceInWorldSpace.push_back(otherTransform.GetPhysicsModelMatrix() * glm::dvec4(v, 1.0));
     }
 
-    for (auto & v: incidentFaceInWorldSpace) {
+    // for (auto & v: incidentFaceInWorldSpace) {
         // std::cout << "Incident face has vertex " << glm::to_string(v) << "\n";
-    }
+    // }
 
     // Get side planes for reference face.
     // Pairs are <normal, pointOnPlane>
@@ -418,9 +419,9 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
     }
 
     assert(contactList.size() > 0);
-    for (auto & v: contactList) {
+    // for (auto & v: contactList) {
         // std::cout << "After clipping, incident face has vertex " << glm::to_string(v) << "\n";
-    }
+    // }
 
     // Lastly, verify for each contact point that it's actually inside the reference face and if it is, move contact points onto the reference face (idk why lel).
     std::vector<std::pair<glm::dvec3, double>> contactPoints; 
@@ -477,12 +478,12 @@ CollisionInfo FindContact(
     // Test faces of collider1 against vertices of collider2
     std::cout << "TESTING FACE 1\n";
     auto Face1Result = SatFaces(transform1, collider1, transform2, collider2); 
-    assert(Face1Result.farthestDistance <= 0); // they must be colliding or we mad.    
+    assert(Face1Result.farthestDistance <= FLT_EPSILON); // they must be colliding or we mad.    
 
     // Test faces of collider2 against vertices of collider1
     std::cout << "TESTING FACE 2\n";
     auto Face2Result = SatFaces(transform2, collider2, transform1, collider1); 
-    assert(Face2Result.farthestDistance <= 0); // they must be colliding or we mad.
+    assert(Face2Result.farthestDistance <= FLT_EPSILON); // they must be colliding or we mad.
 
     glm::vec3 farthestNormal(0, 0, 0); // in world space
     double farthestDistance;
@@ -556,10 +557,10 @@ CollisionInfo FindContact(
             // }
             
             if (distance > farthestEdgeDistance) {
-                std::cout << "\tEDGY: Normal " << glm::to_string(normalInWorldSpace) << " replaced normal " << glm::to_string(farthestEdgeNormal) << "with distance " << distance << " being bigger than " << farthestEdgeDistance << "\n";
-                std::cout << "\t\tUsed vertex " << glm::to_string(collider2Vertex) << " and point on plane " << glm::to_string(edge1OriginWorld) << ".\n";
-                std::cout << "\t\tOrigins are " << glm::to_string(edge1OriginWorld) << " and " << glm::to_string(edge2OriginWorld) << ".\n";
-                std::cout << "\t\tDirections are " << glm::to_string(edge1DirectionWorld) << " and " << glm::to_string(edge2DirectionWorld) << ".\n";
+                // std::cout << "\tEDGY: Normal " << glm::to_string(normalInWorldSpace) << " replaced normal " << glm::to_string(farthestEdgeNormal) << "with distance " << distance << " being bigger than " << farthestEdgeDistance << "\n";
+                // std::cout << "\t\tUsed vertex " << glm::to_string(collider2Vertex) << " and point on plane " << glm::to_string(edge1OriginWorld) << ".\n";
+                // std::cout << "\t\tOrigins are " << glm::to_string(edge1OriginWorld) << " and " << glm::to_string(edge2OriginWorld) << ".\n";
+                // std::cout << "\t\tDirections are " << glm::to_string(edge1DirectionWorld) << " and " << glm::to_string(edge2DirectionWorld) << ".\n";
                 farthestEdgeDistance = distance;
                 // if (distance > 0) {
                 //     // std::cout << "NO EDGE COLLISION\n";
@@ -572,7 +573,7 @@ CollisionInfo FindContact(
                 farthestEdge2Direction = edge2DirectionWorld;
             }
 
-            assert(distance <= 0); // if distance > 0, we have no collision and this function won't work
+            assert(distance <= FLT_EPSILON); // if distance > 0, we have no collision and this function won't work
         }
     }
 
@@ -585,9 +586,9 @@ CollisionInfo FindContact(
         farthestNormal = farthestEdgeNormal;
     }
 
-    std::cout << "Farthest edge distance is " << farthestEdgeDistance << ".\n";
+    // std::cout << "Farthest edge distance is " << farthestEdgeDistance << ".\n";
 
-    assert(farthestDistance <= 0); // if this was > 0, then they wouldn't be colliding, and if you called this function they better be colliding
+    assert(farthestDistance <= FLT_EPSILON); // if this was > 0, then they wouldn't be colliding, and if you called this function they better be colliding
 
     std::vector<std::pair<glm::dvec3, double>> contactPoints;
 
@@ -595,7 +596,7 @@ CollisionInfo FindContact(
     // smallest distance is the right one.
     switch (collisionType) {
         case Face1Collision:
-        std::cout << "FACE1 COLLISION\n";
+        std::cout << "FACE1 COLLISION\n"; 
         return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform1, transform2, collider2)};
         break;
         case Face2Collision:
@@ -611,7 +612,7 @@ CollisionInfo FindContact(
         std::cout << "Edge info: #2 at " << glm::to_string(farthestEdge2Origin) << " towards " << glm::to_string(farthestEdge2Direction) << ".\n";
         auto n2 = glm::cross(farthestEdge2Direction, (glm::dvec3)farthestNormal);
         
-
+ 
         auto closestPointOnEdge1ToEdge2 = farthestEdge1Origin + farthestEdge1Direction * (glm::dot((farthestEdge2Origin - farthestEdge1Origin), n2)/glm::dot(n2, farthestEdge1Direction));
         auto n1 = glm::cross(farthestEdge1Direction, (glm::dvec3)farthestNormal);
         

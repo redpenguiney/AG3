@@ -14,6 +14,9 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     glm::vec3 accumulatedTorque; // like accumulateForce, but for torque (rotational force), converted to change in angular velocity via torque/momentOfInertia
     glm::vec3 momentOfInertia; // sorta like mass but for rotation; how hard it is to rotate something around each axis basically
 
+    double linearDrag; // rigid body's velocity will be multiplied by this every frame
+    float angularDrag; // rigid body's angular velocity will be multiplied by this every frame
+
     float mass; // may not be zero, probably shouldn't be negative
 
     void Init();
