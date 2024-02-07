@@ -83,21 +83,21 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             glm::dvec3 velocityAtOtherContactPoint = otherRigidbody ?  (otherRigidbody->velocity + otherRigidbody->VelocityAtPoint(contactPointInOtherObjectSpace)) : glm::dvec3(0, 0, 0);
 
             seperations.emplace_back(std::make_pair(&transform, seperationVector));
-            std::cout << "Seperating by " << glm::to_string(seperationVector) << ".\n";
+            // std::cout << "Seperating by " << glm::to_string(seperationVector) << ".\n";
             auto elasticity = otherColliderPtr->elasticity * collider.elasticity;
-            std::cout << "Elasticity = " << (otherColliderPtr->GetGameObject()->rigidbodyComponent ? elasticity : 1.0 + elasticity) << ".\n";
+            // std::cout << "Elasticity = " << (otherColliderPtr->GetGameObject()->rigidbodyComponent ? elasticity : 1.0 + elasticity) << ".\n";
             
             
             auto relVelocity = (velocityAtOtherContactPoint - velocityAtContactPoint); // TODO: abs might create weird behaviour idk
-            std::cout << "Rigidbody had velocity " << glm::to_string(rigidbody.velocity) << ",\n";
+            // std::cout << "Rigidbody had velocity " << glm::to_string(rigidbody.velocity) << ",\n";
             // ???
             glm::vec3 crossThing1 = glm::cross((glm::vec3)collisionTestResult->collisionNormal, contactPointInObjectSpace);
             glm::vec3 crossThing2 = glm::cross((glm::vec3)collisionTestResult->collisionNormal, contactPointInOtherObjectSpace);
             double reducedMass = 1/(1/rigidbody.mass + (otherRigidbody ? 1/otherRigidbody->mass : 0) + glm::dot(crossThing1, (crossThing1/rigidbody.momentOfInertia)) + glm::dot(crossThing2, otherRigidbody ? (crossThing2/otherRigidbody->momentOfInertia): glm::vec3(0, 0, 0)));
-            std::cout << "Reduced mass is " << reducedMass << ".\n";
+            // std::cout << "Reduced mass is " << reducedMass << ".\n";
             glm::vec3 impulse = (1 + elasticity) * reducedMass * relVelocity;
-            std::cout << "Impulse is " << glm::to_string(impulse) << ".\n";
-            std::cout << "Normal is " << glm::to_string(collisionTestResult->collisionNormal) << ".\n";
+            // std::cout << "Impulse is " << glm::to_string(impulse) << ".\n";
+            // std::cout << "Normal is " << glm::to_string(collisionTestResult->collisionNormal) << ".\n";
             rigidbody.accumulatedForce += impulse * glm::vec3(collisionTestResult->collisionNormal);
             rigidbody.accumulatedTorque -= glm::cross(-contactPointInObjectSpace, glm::vec3(collisionTestResult->collisionNormal)) * glm::length(impulse);
 
@@ -109,7 +109,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             // std::cout << "angular velocity is " << glm::to_string(rigidbody.angularVelocity) << " so velocity at point is " << glm::to_string((glm::dvec3)(glm::cross(rigidbody.angularVelocity, contactPointInObjectSpace) * contactPointInObjectSpace)) << ".\n";
             // std::cout << " Contact point in object space is " << glm::to_string(contactPointInObjectSpace) << " \n";
             // std::cout << " Delta-v is " << glm::to_string(desiredChangeInVelocity) << " \n";
-            std::cout << "cross product " << glm::to_string(glm::cross(-contactPointInObjectSpace, glm::vec3(collisionTestResult->collisionNormal))) << " \n"; 
+            // std::cout << "cross product " << glm::to_string(glm::cross(-contactPointInObjectSpace, glm::vec3(collisionTestResult->collisionNormal))) << " \n"; 
             // rigidbody.accumulatedTorque += glm::cross(contactPointInObjectSpace, impulse * glm::vec3(collisionTestResult->collisionNormal));
             // rigidbody.Impulse(contactPointInObjectSpace, (glm::vec3)desiredChangeInVelocity * rigidbody.mass);
             // while (true) {}
@@ -133,6 +133,7 @@ void PhysicsEngine::Step(const double timestep) {
         SpatialAccelerationStructure::ColliderComponent& collider = *std::get<1>(tuple);
         RigidbodyComponent& rigidbody = *std::get<2>(tuple);
         if (collider.live) {
+            // TODO: drag ignores timestep
             rigidbody.velocity *= rigidbody.linearDrag;
             rigidbody.angularVelocity *= rigidbody.angularDrag;
 

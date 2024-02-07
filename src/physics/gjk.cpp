@@ -476,12 +476,12 @@ CollisionInfo FindContact(
 
     // Face tests:
     // Test faces of collider1 against vertices of collider2
-    std::cout << "TESTING FACE 1\n";
+    // std::cout << "TESTING FACE 1\n";
     auto Face1Result = SatFaces(transform1, collider1, transform2, collider2); 
     assert(Face1Result.farthestDistance <= FLT_EPSILON); // they must be colliding or we mad.    
 
     // Test faces of collider2 against vertices of collider1
-    std::cout << "TESTING FACE 2\n";
+    // std::cout << "TESTING FACE 2\n";
     auto Face2Result = SatFaces(transform2, collider2, transform1, collider1); 
     assert(Face2Result.farthestDistance <= FLT_EPSILON); // they must be colliding or we mad.
 
@@ -490,14 +490,14 @@ CollisionInfo FindContact(
     const std::vector<glm::vec3>* farthestFace = nullptr; // in model space
 
     if ((Face1Result.farthestDistance > Face2Result.farthestDistance)) {
-        std::cout << "Doing face1, distance " << Face1Result.farthestDistance << ".\n";
+        // std::cout << "Doing face1, distance " << Face1Result.farthestDistance << ".\n";
         farthestNormal = Face1Result.farthestNormal;
         farthestDistance = Face1Result.farthestDistance;
         farthestFace = Face1Result.farthestFace;
         collisionType = Face1Collision;
     }
     else {
-        std::cout << "Doing face2, distance " << Face2Result.farthestDistance << ".\n";
+        // std::cout << "Doing face2, distance " << Face2Result.farthestDistance << ".\n";
         farthestNormal = Face2Result.farthestNormal;
         farthestDistance = Face2Result.farthestDistance;
         farthestFace = Face2Result.farthestFace;
@@ -596,20 +596,20 @@ CollisionInfo FindContact(
     // smallest distance is the right one.
     switch (collisionType) {
         case Face1Collision:
-        std::cout << "FACE1 COLLISION\n"; 
+        // std::cout << "FACE1 COLLISION\n"; 
         return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform1, transform2, collider2)};
         break;
         case Face2Collision:
-        std::cout << "FACE2 COLLISION\n";
+        // std::cout << "FACE2 COLLISION\n";
         return CollisionInfo {.collisionNormal = -farthestNormal, .hitPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform2, transform1, collider1)};
         break;
         case EdgeCollision:
-        std::cout << "EDGE COLLISION\n";
-        std::printf("Edge is %f vs face %f", farthestEdgeDistance, farthestDistance);
+        // std::cout << "EDGE COLLISION\n";
+        // std::printf("Edge is %f vs face %f", farthestEdgeDistance, farthestDistance);
         // There are two edges colliding in this case. Contact point is average of closest point on edge1 to edge2 and closest point on edge2 to edge1.
         // see https://en.wikipedia.org/wiki/Skew_lines#Nearest_points for formula to get those closest points
-        std::cout << "Edge info: #1 at " << glm::to_string(farthestEdge1Origin) << " towards " << glm::to_string(farthestEdge1Direction) << ".\n";
-        std::cout << "Edge info: #2 at " << glm::to_string(farthestEdge2Origin) << " towards " << glm::to_string(farthestEdge2Direction) << ".\n";
+        // std::cout << "Edge info: #1 at " << glm::to_string(farthestEdge1Origin) << " towards " << glm::to_string(farthestEdge1Direction) << ".\n";
+        // std::cout << "Edge info: #2 at " << glm::to_string(farthestEdge2Origin) << " towards " << glm::to_string(farthestEdge2Direction) << ".\n";
         auto n2 = glm::cross(farthestEdge2Direction, (glm::dvec3)farthestNormal);
         
  
@@ -621,8 +621,8 @@ CollisionInfo FindContact(
         
 
         auto point = (closestPointOnEdge1ToEdge2 + closestPointOnEdge2ToEdge1) * 0.5;
-        std::cout << "EDGE: n2= " << glm::to_string(n2) << ".\n";
-        std::cout << "EDGE: calculated point " << glm::to_string(closestPointOnEdge1ToEdge2) << ".\n";
+        // std::cout << "EDGE: n2= " << glm::to_string(n2) << ".\n";
+        // std::cout << "EDGE: calculated point " << glm::to_string(closestPointOnEdge1ToEdge2) << ".\n";
 
         assert(!std::isnan(closestPointOnEdge1ToEdge2.x));
         assert(!std::isnan(closestPointOnEdge1ToEdge2.y));

@@ -10,7 +10,7 @@ void RigidbodyComponent::Init() {
     angularVelocity = {0, 0, 0}; 
     accumulatedTorque = {0, 0, 0};
     momentOfInertia = {1.0/3.0, 1.0/3.0, 1.0/3.0}; // TODO: that's the moment for a cube with size 1x1x1 and mass 1
-    linearDrag = 0.999;
+    linearDrag = 0.99;
     angularDrag = 0.99;
     mass = 1;
     
