@@ -119,8 +119,8 @@ int main(int numArgs, char *argPtrs[]) {
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({x * 3,5 + y * 3, z * 3});
-                g->colliderComponent->elasticity = 0.5;
-                // g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(30.0), 0.0, 0.0)));
+                g->colliderComponent->elasticity = 0.0;
+                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(30.0), 0.0, 0.0)));
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));

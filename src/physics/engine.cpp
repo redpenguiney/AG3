@@ -57,6 +57,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             averageContactPoint /= collisionTestResult->hitPoints.size();
             averagePenetration /= collisionTestResult->hitPoints.size();
 
+            // averagePenetration = std::max(0, averagePenetration + 0.01)''
             // std::cout << "Object is at " << glm::to_string(transform.position()) << "\n";
             // std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << " world position " << glm::to_string(collisionTestResult->hitPoints.back().first) << " distance " << averagePenetration << "\n"; 
             
