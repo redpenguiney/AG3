@@ -109,6 +109,9 @@ class SpatialAccelerationStructure { // (SAS)
         // how bouncy something is, should probably be between 0 and 1 but knock urself out
         float elasticity; 
 
+        // TODO: currently completely unrelated to mass, just used to compute resting contact forces/linear slop
+        float density; 
+
         // Called when collider is gotten from pool
         void Init(GameObject* gameobject, std::shared_ptr<PhysicsMesh>& physMesh);
 

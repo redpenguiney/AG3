@@ -597,11 +597,11 @@ CollisionInfo FindContact(
     switch (collisionType) {
         case Face1Collision:
         // std::cout << "FACE1 COLLISION\n"; 
-        return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform1, transform2, collider2)};
+        return CollisionInfo {.collisionNormal = farthestNormal, .contactPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform1, transform2, collider2)};
         break;
         case Face2Collision:
         // std::cout << "FACE2 COLLISION\n";
-        return CollisionInfo {.collisionNormal = -farthestNormal, .hitPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform2, transform1, collider1)};
+        return CollisionInfo {.collisionNormal = -farthestNormal, .contactPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform2, transform1, collider1)};
         break;
         case EdgeCollision:
         // std::cout << "EDGE COLLISION\n";
@@ -631,7 +631,7 @@ CollisionInfo FindContact(
         assert(!std::isnan(closestPointOnEdge2ToEdge1.y));
         assert(!std::isnan(closestPointOnEdge2ToEdge1.z));  
 
-        return CollisionInfo {.collisionNormal = farthestNormal, .hitPoints = {{point, abs(farthestEdgeDistance)}}};
+        return CollisionInfo {.collisionNormal = farthestNormal, .contactPoints = {{point, abs(farthestEdgeDistance)}}};
         break;
     }
 
@@ -845,7 +845,7 @@ CollisionInfo FindContact(
 
 //     // return CollisionInfo({
 //     //     .collisionNormal = minNormal,
-//     //     .hitPoints = {pointForObj2},
+//     //     .contactPoints = {pointForObj2},
 //     //     .penetrationDepth = minDistance // TODO: add 0.0001f?
 //     // });
 // }
@@ -920,8 +920,8 @@ std::optional<CollisionInfo> IsColliding(
             // std::cout << "Executing tetrahedron case.\n";
             if (TetrahedronCase(simplex, searchDirection)) { // this function is not void like the others, returns true if collision confirmed
                 // return EPA(simplex, transform1, collider1, transform2, collider2);
-                std::cout << "THERE IS A COLLISION\n";
-                std::cout << "Positions are #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
+                // std::cout << "THERE IS A COLLISION\n";
+                // std::cout << "Positions are #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
                 return FindContact(transform1, collider1, transform2, collider2);
             }
             break;

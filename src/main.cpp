@@ -46,8 +46,8 @@ int main(int numArgs, char *argPtrs[]) {
         params.materialId = grassMaterial->id;
         auto floor = ComponentRegistry::NewGameObject(params);
         floor->transformComponent->SetPos({0, 0, 0});
-        // floor->transformComponent->SetRot(glm::vec3 {0, 0, glm::radians(1.0)});
-        floor->colliderComponent->elasticity = 1.0;
+        // floor->transformComponent->SetRot(glm::vec3 {0, 0, glm::radians(5.0)});
+        floor->colliderComponent->elasticity = 0.9;
         floor->transformComponent->SetScl({900, 1, 9});
         floor->renderComponent->SetColor({0, 1, 0, 0.5});
         floor->renderComponent->SetTextureZ(grassTextureZ);
@@ -119,8 +119,8 @@ int main(int numArgs, char *argPtrs[]) {
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({x * 3,5 + y * 3, z * 3});
-                g->colliderComponent->elasticity = 0.5;
-                // g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(30.0), 0.0, 0.0)));
+                g->colliderComponent->elasticity = 0.8;
+                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(30.0), 0.0, 0.0)));
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
@@ -166,7 +166,7 @@ int main(int numArgs, char *argPtrs[]) {
     // TODO: max framerate option in leiu of vsync
     const double SIMULATION_TIMESTEP = 1.0/60.0; // number of seconds simulation is stepped by every frame
 
-    const unsigned int N_PHYSICS_ITERATIONS = 10; // bigger number = higher quality physics simulation, although do we ever want this? what about just increase sim timestep?
+    const unsigned int N_PHYSICS_ITERATIONS = 1; // bigger number = higher quality physics simulation, although do we ever want this? what about just increase sim timestep?
     double previousTime = Time();
     double physicsLag = 0.0; // how many seconds behind the simulation is. Before rendering, we check if lag is > SIMULATION_TIMESTEP in ms and if so, simulate stuff.
 
@@ -192,7 +192,10 @@ int main(int numArgs, char *argPtrs[]) {
                 // physicsPaused = true;
                 // printf("Stepping PE.\n");
                 for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
-                    PE.Step(SIMULATION_TIMESTEP/N_PHYSICS_ITERATIONS);
+                    PE.Step(SIMULATION_TIMESTEP/2.0);
+                    PE.Step(SIMULATION_TIMESTEP/4.0);
+                    PE.Step(SIMULATION_TIMESTEP/8.0);
+                    PE.Step(SIMULATION_TIMESTEP/8.0);
                 }
             }
             

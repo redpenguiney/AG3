@@ -1,6 +1,8 @@
 #pragma once
 #include "base_component.hpp"
+#include "transform_component.hpp"
 #include "../../external_headers/GLM/vec3.hpp"
+#include "../../external_headers/GLM/mat3x3.hpp"
 
 class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     public:
@@ -11,8 +13,8 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
 
     glm::vec3 angularVelocity; // not a quaternion since those wouldn't be able to represent a rotation >360 degrees every frame
                                // around x, y, and z axis, in radians/second
-    glm::vec3 accumulatedTorque; // like accumulateForce, but for torque (rotational force), converted to change in angular velocity via torque/momentOfInertia
-    glm::vec3 momentOfInertia; // sorta like mass but for rotation; how hard it is to rotate something around each axis basically
+    glm::vec3 accumulatedTorque; // like accumulateForce, but for torque (rotational force), converted to change in angular velocity via torque/localMomentOfInertia
+    glm::mat3x3 localMomentOfInertia; // sorta like mass but for rotation; how hard it is to rotate something around each axis basically; must be converted to global space
 
     double linearDrag; // rigid body's velocity will be multiplied by this every frame
     float angularDrag; // rigid body's angular velocity will be multiplied by this every frame
@@ -30,6 +32,9 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     // (effectively converts the rigidbody's angular velocity to linear)
     // position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)
     glm::dvec3 VelocityAtPoint(glm::vec3 position);
+
+    // returns inverse moment of inertia in world space, given the transform corresponding to the rigidbody
+    glm::mat3x3 GetInverseGlobalMomentOfInertia(const TransformComponent& transform);
 
     private:
     //private constructor to enforce usage of object pool

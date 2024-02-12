@@ -12,7 +12,7 @@ struct CollisionInfo {
 
     // Contact points are in world space, will all be coplanar.
     // Pairs are <position, penetrationDepth>
-    std::vector<std::pair<glm::dvec3, double>> hitPoints;
+    std::vector<std::pair<glm::dvec3, double>> contactPoints;
 
 
 };
