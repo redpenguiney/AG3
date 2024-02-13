@@ -55,6 +55,6 @@ glm::dvec3 RigidbodyComponent::VelocityAtPoint(glm::vec3 position) {
     // float positionToZAxis = glm::length(glm::vec2(position.x, position.y));
     
     // std::cout << "Rigidbody has angular velocity " << glm::to_string(angularVelocity) << " so at position " << glm::to_string(position) << " it has linear velocity " << glm::to_string(glm::cross(angularVelocity, glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis))) << ".\n";
-    return glm::cross(angularVelocity, position);
+    return glm::cross(position, angularVelocity);
 }
 RigidbodyComponent::RigidbodyComponent() {}
