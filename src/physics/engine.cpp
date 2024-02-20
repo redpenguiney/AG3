@@ -70,6 +70,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             //     // DebugPlacePointOnPosition({averageContactPoint}, {0.2, 0.2, 1.0, 1.0});
 
             //     // collision impulse-based response stolen from https://physics.stackexchange.com/questions/686640/resolving-angular-components-in-2d-circular-rigid-body-collision-response
+            //     // also this source looks useful https://gafferongames.com/post/collision_response_and_coulomb_friction/
 
             //     // velocity of the actual point that hit should be used, not the overall velocity of the object
             //     // glm::vec3 contactPointInObjectSpace = glm::dvec3(glm::inverse(transform.GetPhysicsModelMatrix()) * glm::dvec4(averageContactPoint, 1)); // TODO: might need to use whole inverted matrix
