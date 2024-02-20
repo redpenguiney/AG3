@@ -23,7 +23,8 @@ void RigidbodyComponent::Destroy() {
 
 glm::mat3x3 RigidbodyComponent::GetInverseGlobalMomentOfInertia(const TransformComponent &transform) {
     auto rotMat = glm::toMat3(transform.rotation());
-    return rotMat * glm::inverse(localMomentOfInertia) * glm::transpose(rotMat);
+    return (rotMat) * glm::inverse(localMomentOfInertia);
+    // return glm::toMat4(transform.rotation());
 }
 
 // fyi position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)

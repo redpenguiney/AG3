@@ -131,10 +131,10 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             
             // std::cout << "Seperating by " << glm::to_string(seperationVector) << ".\n";
             auto elasticity = otherColliderPtr->elasticity * collider.elasticity;
-            auto density = otherColliderPtr->density * collider.density;
-            if (collisionTestResult->contactPoints.size() < 4) {
-                elasticity += 0.2;
-            }
+            // auto density = otherColliderPtr->density * collider.density;
+            // if (collisionTestResult->contactPoints.size() < 4) {
+                // elasticity += 0.2;
+            // }
             std::cout << "Elasticity = " << (1.0 + elasticity) << ".\n";
             
             
@@ -146,6 +146,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             glm::vec3 crossThing1 = glm::cross(-(glm::vec3)normal, -posRelToContact);
             glm::vec3 crossThing2 = glm::cross(-(glm::vec3)normal, -otherPosRelToContact);
             glm::mat3 globalInverseInertiaTensor1 = rigidbody.GetInverseGlobalMomentOfInertia(transform);
+            std::cout << "Computed inverse inertia tensor of " << glm::to_string(globalInverseInertiaTensor1) << ".\n"; 
             glm::mat3 globalInverseInertiaTensor2 = otherRigidbody ? otherRigidbody->GetInverseGlobalMomentOfInertia(*otherTransform): glm::identity<glm::mat3x3>();
             double reducedMass = 1/(1/rigidbody.mass + (otherRigidbody ? 1/otherRigidbody->mass : 0) + glm::dot(crossThing1, (crossThing1 * globalInverseInertiaTensor1)) + glm::dot(crossThing2, otherRigidbody ? (crossThing2 * globalInverseInertiaTensor2): glm::vec3(0, 0, 0)));
             
@@ -219,7 +220,7 @@ void PhysicsEngine::Step(const double timestep) {
 
             // a = t/i
             glm::mat3 globalInverseInertiaTensor = rigidbody.GetInverseGlobalMomentOfInertia(transform); 
-            rigidbody.angularVelocity += globalInverseInertiaTensor * rigidbody.accumulatedTorque;
+            rigidbody.angularVelocity += /*globalInverseInertiaTensor **/ rigidbody.accumulatedTorque;
             rigidbody.accumulatedTorque = {0, 0, 0};
 
             if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {

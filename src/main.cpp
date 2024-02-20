@@ -46,9 +46,9 @@ int main(int numArgs, char *argPtrs[]) {
         params.materialId = grassMaterial->id;
         auto floor = ComponentRegistry::NewGameObject(params);
         floor->transformComponent->SetPos({0, 0, 0});
-        // floor->transformComponent->SetRot(glm::vec3 {0, 0, glm::radians(5.0)});
+        floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(5.0)});
         floor->colliderComponent->elasticity = 0.9;
-        floor->transformComponent->SetScl({900, 1, 9});
+        floor->transformComponent->SetScl({900, 1, 900});
         floor->renderComponent->SetColor({0, 1, 0, 0.5});
         floor->renderComponent->SetTextureZ(grassTextureZ);
         floor->name = "ah yes the floor here is made of floor";
@@ -118,9 +118,9 @@ int main(int numArgs, char *argPtrs[]) {
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({x * 3,5 + y * 3, z * 3});
+                g->transformComponent->SetPos({x * 3,3 + y * 3, z * 3});
                 g->colliderComponent->elasticity = 0.8;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(30.0), 0.0, 0.0)));
+                // g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(30.0), 0.0, 0.0)));
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));

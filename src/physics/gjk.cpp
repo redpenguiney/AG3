@@ -16,6 +16,7 @@
 
 // DEAR GOD. YOU DON'T KNOW. A MONTH AND A HALF WAS SPENT SUFFERING IN THIS FILE. I NEVER WANT TO TOUCH THIS AGAIN.
 // DECEMBER TO FEBRUARY 2ND. FINALLY.
+// feb 14 it wasn't enough apparently
 
 // the GJK support function. returns farthest vertex (in world space) along a directional vector 
 glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, const TransformComponent& transform, const SpatialAccelerationStructure::ColliderComponent& collider) {
@@ -301,7 +302,8 @@ SatFacesResult SatFaces(
             farthestNormal = normalInWorldSpace;
         }
         
-        assert(distance <= FLT_EPSILON);
+        std::cout << "d = " << distance << "\n";
+        assert(distance <= 0.1);
     }
 
     assert(farthestFace != nullptr);
@@ -451,8 +453,9 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
 // When GJK determines a collision, we then use SAT to find the contact information.
 // TODO: optimizations, concave support, non-vertex based support
 // Contact points are in world space, will all be coplanar.
-// returns a normal and a vector of pair<contactPosition, penetrationDepth> representing the contact surface
-CollisionInfo FindContact(
+// returns a normal and a vector of pair<contactPosition, penetrationDepth> representing the contact surface.
+// TODO: because sometimes GJK and SAT disagree about whether there's a collision because it's really close + FP precision errors, this function can say there wasn't actually a collision, which might not work.
+std::optional<CollisionInfo> FindContact(
     const TransformComponent& transform1,
     const SpatialAccelerationStructure::ColliderComponent& collider1,
     const TransformComponent& transform2,
@@ -478,12 +481,14 @@ CollisionInfo FindContact(
     // Test faces of collider1 against vertices of collider2
     // std::cout << "TESTING FACE 1\n";
     auto Face1Result = SatFaces(transform1, collider1, transform2, collider2); 
-    assert(Face1Result.farthestDistance <= FLT_EPSILON); // they must be colliding or we mad.    
+    assert(Face1Result.farthestDistance <= 0.1); // they must be colliding or we mad.    
+    if (Face1Result.farthestDistance > 0) {return std::nullopt;}
 
     // Test faces of collider2 against vertices of collider1
     // std::cout << "TESTING FACE 2\n";
     auto Face2Result = SatFaces(transform2, collider2, transform1, collider1); 
-    assert(Face2Result.farthestDistance <= FLT_EPSILON); // they must be colliding or we mad.
+    assert(Face2Result.farthestDistance <= 0.1); // they must be colliding or we mad.
+    if (Face2Result.farthestDistance > 0) {return std::nullopt;}
 
     glm::vec3 farthestNormal(0, 0, 0); // in world space
     double farthestDistance;
@@ -573,7 +578,8 @@ CollisionInfo FindContact(
                 farthestEdge2Direction = edge2DirectionWorld;
             }
 
-            assert(distance <= FLT_EPSILON); // if distance > 0, we have no collision and this function won't work
+            assert(distance <= 0.1); // if distance > 0, we have no collision and this function won't work
+            if (Face1Result.farthestDistance > 0) {return std::nullopt;}
         }
     }
 
@@ -588,7 +594,7 @@ CollisionInfo FindContact(
 
     // std::cout << "Farthest edge distance is " << farthestEdgeDistance << ".\n";
 
-    assert(farthestDistance <= FLT_EPSILON); // if this was > 0, then they wouldn't be colliding, and if you called this function they better be colliding
+    assert(farthestDistance <= 0.1); // if this was > 0, then they wouldn't be colliding, and if you called this function they better be colliding
 
     std::vector<std::pair<glm::dvec3, double>> contactPoints;
 
@@ -919,6 +925,21 @@ std::optional<CollisionInfo> IsColliding(
             case 4:
             // std::cout << "Executing tetrahedron case.\n";
             if (TetrahedronCase(simplex, searchDirection)) { // this function is not void like the others, returns true if collision confirmed
+                // to make SAT stop crashing because distance is barely > 0 somehow:
+                std::array<int, 12> faces {0, 1, 2,   0, 1, 3,   0, 2, 3,   1, 2, 3};
+                for (unsigned int f = 0; f < 4; f++) {
+                    auto p1 = simplex[faces[f * 3]][0];
+                    auto p2 = simplex[faces[f * 3 + 1]][0];
+                    auto p3 = simplex[faces[f * 3 + 2]][0];
+
+                    auto normal = glm::normalize(glm::cross(p1 - p2, p2 - p3));
+                    auto distance = SignedDistanceToPlane(normal, {0, 0, 0}, p1);
+                    // std::cout << "bru distance is " << distance << " from normal " << glm::to_string(normal) << "\n";
+                    if (std::abs(distance) < 1.0e-06) {
+                        return std::nullopt;
+                    }
+                }
+
                 // return EPA(simplex, transform1, collider1, transform2, collider2);
                 // std::cout << "THERE IS A COLLISION\n";
                 // std::cout << "Positions are #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
