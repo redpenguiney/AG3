@@ -38,6 +38,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
     // TODO: this does mean redundant narrowphase collision checks, we should cache results of narrowphase checks to avoid that
     for (auto & otherColliderPtr: potentialColliding) {
         if (otherColliderPtr == &collider) {continue;} // collider shouldn't collide with itself lol
+        
         auto collisionTestResult = IsColliding(*otherColliderPtr->GetGameObject()->transformComponent.GetPtr(), *otherColliderPtr, transform, collider);
         if (collisionTestResult) {
 
@@ -136,10 +137,10 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             // if (collisionTestResult->contactPoints.size() < 4) {
                 // elasticity += 0.2;
             // }
-            std::cout << "Elasticity = " << (1.0 + elasticity) << ".\n";
+            // std::cout << "Elasticity = " << (1.0 + elasticity) << ".\n";
             
             
-            // auto relVelocity = (velocityAtOtherContactPoint - velocityAtContactPoint); // TODO: abs might create weird behaviour idk
+            auto relVelocity = (velocityAtOtherContactPoint - velocityAtContactPoint); // TODO: abs might create weird behaviour idk
             double relVelocityAlongContactNormal = glm::dot(glm::dvec3(normal), velocityAtContactPoint - velocityAtOtherContactPoint);
             // std::cout << "Rigidbody had velocity " << glm::to_string(rigidbody.velocity) << ",\n";
             
@@ -153,8 +154,8 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             
             // std::cout << "Reduced mass is " << reducedMass << ".\n";
             float impulse = (1 + elasticity) * reducedMass * relVelocityAlongContactNormal; //* (penetration/averagePenetration);
-            std::cout << "Impulse is " << impulse << ".\n";
-            std::cout << "Normal is " << glm::to_string(normal) << " rel velocity " << relVelocityAlongContactNormal << ".\n";
+            // std::cout << "Impulse is " << impulse << ".\n";
+            // std::cout << "Normal is " << glm::to_string(normal) << " rel velocity " << relVelocityAlongContactNormal << ".\n";
             // std::cout << "Prior to impulse accumulated force is " << glm::to_string(rigidbody.accumulatedForce) << ".\n";
             
 
@@ -167,11 +168,18 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             // }
             // else {
                 // std::cout << "IMPULSE\n";
-            rigidbody.accumulatedForce -= (impulse * glm::vec3(normal));
+            auto collisionForce = (impulse * glm::vec3(normal)); 
+            rigidbody.accumulatedForce -= collisionForce;
             
             rigidbody.accumulatedTorque -= glm::cross(-posRelToContact, glm::vec3(normal)) * impulse;
             // }
-            
+
+            // FRICTION
+            glm::vec3 relVelocityAlongPlane =  relVelocity + (normal * relVelocityAlongContactNormal);
+            std::cout << "Along plane, rel velocity is " << glm::to_string(relVelocityAlongPlane) << " as calculated from total rel vel " << glm::to_string(relVelocity) << " and vel along normal " << relVelocityAlongContactNormal << ".\n";
+            float friction = otherColliderPtr->friction * collider.friction;
+            rigidbody.accumulatedForce += (friction * relVelocityAlongPlane);   
+            rigidbody.accumulatedTorque -= glm::cross(-posRelToContact, -relVelocityAlongPlane) * friction;
             // std::cout << "It SHOULD have apllied force " << glm::to_string(impulse * glm::vec3(collisionTestResult->collisionNormal)) << ".\n";
 
 
@@ -221,7 +229,7 @@ void PhysicsEngine::Step(const double timestep) {
 
             // a = t/i
             glm::mat3 globalInverseInertiaTensor = rigidbody.GetInverseGlobalMomentOfInertia(transform); 
-            rigidbody.angularVelocity += /*globalInverseInertiaTensor **/ rigidbody.accumulatedTorque;
+            rigidbody.angularVelocity += globalInverseInertiaTensor * rigidbody.accumulatedTorque;
             rigidbody.accumulatedTorque = {0, 0, 0};
 
             if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {

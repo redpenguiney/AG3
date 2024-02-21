@@ -559,6 +559,7 @@ void SpatialAccelerationStructure::ColliderComponent::Init(GameObject* gameobj, 
     gameobject = gameobj;
     physicsMesh = physMesh;
     elasticity = 1;
+    friction = 0.2;
     density = 1.0;
     SpatialAccelerationStructure::Get().AddCollider(this, *gameobject->transformComponent);
 

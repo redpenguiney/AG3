@@ -482,13 +482,13 @@ std::optional<CollisionInfo> FindContact(
     // std::cout << "TESTING FACE 1\n";
     auto Face1Result = SatFaces(transform1, collider1, transform2, collider2); 
     assert(Face1Result.farthestDistance <= 0.1); // they must be colliding or we mad.    
-    if (Face1Result.farthestDistance > 0) {return std::nullopt;}
+    if (Face1Result.farthestDistance > 0) {std::cout << "sus amogus\n"; return std::nullopt;}
 
     // Test faces of collider2 against vertices of collider1
     // std::cout << "TESTING FACE 2\n";
     auto Face2Result = SatFaces(transform2, collider2, transform1, collider1); 
     assert(Face2Result.farthestDistance <= 0.1); // they must be colliding or we mad.
-    if (Face2Result.farthestDistance > 0) {return std::nullopt;}
+    if (Face2Result.farthestDistance > 0) {std::cout << "sus amogus\n"; return std::nullopt;}
 
     glm::vec3 farthestNormal(0, 0, 0); // in world space
     double farthestDistance;
@@ -579,7 +579,7 @@ std::optional<CollisionInfo> FindContact(
             }
 
             assert(distance <= 0.1); // if distance > 0, we have no collision and this function won't work
-            if (Face1Result.farthestDistance > 0) {return std::nullopt;}
+            if (Face1Result.farthestDistance > 0) {std::cout << "sus amogus\n"; return std::nullopt;}
         }
     }
 
@@ -925,25 +925,29 @@ std::optional<CollisionInfo> IsColliding(
             case 4:
             // std::cout << "Executing tetrahedron case.\n";
             if (TetrahedronCase(simplex, searchDirection)) { // this function is not void like the others, returns true if collision confirmed
-                // to make SAT stop crashing because distance is barely > 0 somehow:
-                std::array<int, 12> faces {0, 1, 2,   0, 1, 3,   0, 2, 3,   1, 2, 3};
-                for (unsigned int f = 0; f < 4; f++) {
-                    auto p1 = simplex[faces[f * 3]][0];
-                    auto p2 = simplex[faces[f * 3 + 1]][0];
-                    auto p3 = simplex[faces[f * 3 + 2]][0];
+                // // to make SAT stop crashing because distance is barely > 0 somehow:
+                // std::array<int, 12> faces {0, 1, 2,   0, 1, 3,   0, 2, 3,   1, 2, 3};
+                // for (unsigned int f = 0; f < 4; f++) {
+                //     auto p1 = simplex[faces[f * 3]][0];
+                //     auto p2 = simplex[faces[f * 3 + 1]][0];
+                //     auto p3 = simplex[faces[f * 3 + 2]][0];
 
-                    auto normal = glm::normalize(glm::cross(p1 - p2, p2 - p3));
-                    auto distance = SignedDistanceToPlane(normal, {0, 0, 0}, p1);
-                    // std::cout << "bru distance is " << distance << " from normal " << glm::to_string(normal) << "\n";
-                    if (std::abs(distance) < 1.0e-06) {
-                        return std::nullopt;
-                    }
-                }
+                //     auto normal = glm::normalize(glm::cross(p1 - p2, p2 - p3));
+                //     auto distance = SignedDistanceToPlane(normal, {0, 0, 0}, p1);
+                //     // std::cout << "bru distance is " << distance << " from normal " << glm::to_string(normal) << "\n";
+                //     if (std::abs(distance) < 1.0e-06) {
+                //         return std::nullopt;
+                //     }
+                // }
 
                 // return EPA(simplex, transform1, collider1, transform2, collider2);
                 // std::cout << "THERE IS A COLLISION\n";
                 // std::cout << "Positions are #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
-                return FindContact(transform1, collider1, transform2, collider2);
+                auto result = FindContact(transform1, collider1, transform2, collider2);
+                if (!result) {
+                    std::cout << "SAT and GJK disagreed, uh oh.\n";
+                }
+                return result;
             }
             break;
             default:

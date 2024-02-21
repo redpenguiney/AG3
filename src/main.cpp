@@ -46,9 +46,9 @@ int main(int numArgs, char *argPtrs[]) {
         params.materialId = grassMaterial->id;
         auto floor = ComponentRegistry::NewGameObject(params);
         floor->transformComponent->SetPos({0, 0, 0});
-        floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(5.0)});
+        // floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(5.0)});
         floor->colliderComponent->elasticity = 0.9;
-        floor->transformComponent->SetScl({900, 1, 900});
+        floor->transformComponent->SetScl({10, 1, 10});
         floor->renderComponent->SetColor({0, 1, 0, 0.5});
         floor->renderComponent->SetTextureZ(grassTextureZ);
         floor->name = "ah yes the floor here is made of floor";

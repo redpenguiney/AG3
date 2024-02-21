@@ -112,6 +112,9 @@ class SpatialAccelerationStructure { // (SAS)
         // TODO: currently completely unrelated to mass, just used to compute resting contact forces/linear slop
         float density; 
 
+        // duh
+        float friction;
+
         // Called when collider is gotten from pool
         void Init(GameObject* gameobject, std::shared_ptr<PhysicsMesh>& physMesh);
 
