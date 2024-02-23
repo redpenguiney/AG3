@@ -26,7 +26,8 @@ int main(int numArgs, char *argPtrs[]) {
     // shouldn't actually matter if these lines exist, and if it does fix that please
     auto & GE = GraphicsEngine::Get();
     auto & PE = PhysicsEngine::Get();
-    auto & LUA = LuaHandler::Get();
+    // auto & LUA = LuaHandler::Get();
+    // LUA.RunString("print(\"Hello!\")");
     //GE.camera.position.y = 3;
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);

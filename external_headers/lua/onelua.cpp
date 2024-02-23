@@ -12,6 +12,7 @@
 */
 
 /* default is to build the full interpreter */
+extern "C"{
 #ifndef MAKE_LIB
 #ifndef MAKE_LUAC
 #ifndef MAKE_LUA
@@ -119,3 +120,4 @@
 #ifdef MAKE_LUAC
 #include "luac.c"
 #endif
+}

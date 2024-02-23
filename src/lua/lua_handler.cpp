@@ -14,12 +14,23 @@ LuaHandler& LuaHandler::Get() {
 }
 
 LuaHandler::LuaHandler() {
-    // assert(!LUA_STATE.has_value()); // the constructor is supposed to make a lua state so there better not already be one
+    assert(!LUA_STATE.has_value()); // the constructor is supposed to make a lua state so there better not already be one
     
     // intitialize lua
-    // LUA_STATE = sol::state();
+    LUA_STATE = sol::state();
+
+    // setup lua standard library
+    LUA_STATE->open_libraries(sol::lib::base, sol::lib::os, sol::lib::math, sol::lib::table, sol::lib::coroutine, sol::lib::string);
+}
+
+void LuaHandler::RunString(const std::string source) {
+    LUA_STATE->script(source);
+}
+
+void LuaHandler::RunFile(const std::string scriptPath) {
+    LUA_STATE->script_file(scriptPath);
 }
 
 LuaHandler::~LuaHandler() {
-    // LUA_STATE = std::nullopt; // delete all the lua stuff and let sol2 cleanup
+    LUA_STATE = std::nullopt; // delete all the lua stuff and let sol2 cleanup
 }

@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [-std=c++20, -Wall, -Wshadow, -I external_headers/sol2/include]
+  Add: [-std=c++20, -Wall, -Wshadow, -I ../../external_headers/sol2/include]
