@@ -24,7 +24,7 @@
 #ifndef SOL_IS_INTEGER_HPP
 #define SOL_IS_INTEGER_HPP
 
-#include "object.hpp"
+#include <sol/object.hpp>
 
 namespace sol::utility {
 

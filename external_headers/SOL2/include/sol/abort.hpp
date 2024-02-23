@@ -24,9 +24,9 @@
 #ifndef SOL_ABORT_HPP
 #define SOL_ABORT_HPP
 
-#include "version.hpp"
+#include <sol/version.hpp>
 
-#include "base_traits.hpp"
+#include <sol/base_traits.hpp>
 
 #include <cstdlib>
 

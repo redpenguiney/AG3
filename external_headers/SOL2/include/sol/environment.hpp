@@ -24,7 +24,7 @@
 #ifndef SOL_ENVIRONMENT_HPP
 #define SOL_ENVIRONMENT_HPP
 
-#include "table.hpp"
+#include <sol/table.hpp>
 
 namespace sol {
 

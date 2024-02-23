@@ -24,8 +24,8 @@
 #ifndef SOL_TRAMPOLINE_HPP
 #define SOL_TRAMPOLINE_HPP
 
-#include "types.hpp"
-#include "traits.hpp"
+#include <sol/types.hpp>
+#include <sol/traits.hpp>
 #include <exception>
 #include <cstring>
 

@@ -24,13 +24,13 @@
 #ifndef SOL_FUNCTION_TYPES_HPP
 #define SOL_FUNCTION_TYPES_HPP
 
-#include "function_types_core.hpp"
-#include "function_types_templated.hpp"
-#include "function_types_stateless.hpp"
-#include "function_types_stateful.hpp"
-#include "function_types_overloaded.hpp"
-#include "resolve.hpp"
-#include "call.hpp"
+#include <sol/function_types_core.hpp>
+#include <sol/function_types_templated.hpp>
+#include <sol/function_types_stateless.hpp>
+#include <sol/function_types_stateful.hpp>
+#include <sol/function_types_overloaded.hpp>
+#include <sol/resolve.hpp>
+#include <sol/call.hpp>
 
 namespace sol {
 	namespace function_detail {

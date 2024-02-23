@@ -24,7 +24,7 @@
 #ifndef SOL_WRAPPER_HPP
 #define SOL_WRAPPER_HPP
 
-#include "types.hpp"
+#include <sol/types.hpp>
 
 namespace sol {
 

@@ -24,17 +24,17 @@
 #ifndef SOL_STACK_CORE_HPP
 #define SOL_STACK_CORE_HPP
 
-#include "types.hpp"
-#include "inheritance.hpp"
-#include "error_handler.hpp"
-#include "reference.hpp"
-#include "stack_reference.hpp"
-#include "tuple.hpp"
-#include "traits.hpp"
-#include "tie.hpp"
-#include "stack_guard.hpp"
-#include "demangle.hpp"
-#include "forward_detail.hpp"
+#include <sol/types.hpp>
+#include <sol/inheritance.hpp>
+#include <sol/error_handler.hpp>
+#include <sol/reference.hpp>
+#include <sol/stack_reference.hpp>
+#include <sol/tuple.hpp>
+#include <sol/traits.hpp>
+#include <sol/tie.hpp>
+#include <sol/stack_guard.hpp>
+#include <sol/demangle.hpp>
+#include <sol/forward_detail.hpp>
 
 #include <vector>
 #include <bitset>

@@ -1,9 +1,9 @@
-#include <lua_zm_interop.hpp"
+#include <lua_zm_interop.hpp>
 
-#include <zm/vec3.hpp"
+#include <zm/vec3.hpp>
 
 #define SOL_ALL_SAFETIES_ON 1
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
 bool sol_lua_check(sol::types<zm::vec3>, lua_State* L, int index,
      std::function<sol::check_handler_type> handler,

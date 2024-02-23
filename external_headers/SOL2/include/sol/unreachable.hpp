@@ -24,7 +24,7 @@
 #ifndef SOL_UNREACHABLE_HPP
 #define SOL_UNREACHABLE_HPP
 
-#include "version.hpp"
+#include <sol/version.hpp>
 
 #if SOL_HAS_BUILTIN_I_(__builtin_unreachable)
 #define SOL_UNREACHABLE() __builtin_unreachable();

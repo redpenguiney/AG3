@@ -24,9 +24,9 @@
 #ifndef SOL_BIND_TRAITS_HPP
 #define SOL_BIND_TRAITS_HPP
 
-#include "forward.hpp"
-#include "base_traits.hpp"
-#include "tuple.hpp"
+#include <sol/forward.hpp>
+#include <sol/base_traits.hpp>
+#include <sol/tuple.hpp>
 
 namespace sol { namespace meta {
 	namespace meta_detail {

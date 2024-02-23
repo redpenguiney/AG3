@@ -24,16 +24,16 @@
 #ifndef SOL_TYPES_HPP
 #define SOL_TYPES_HPP
 
-#include "error.hpp"
-#include "optional.hpp"
-#include "compatibility.hpp"
-#include "forward.hpp"
-#include "forward_detail.hpp"
-#include "traits.hpp"
-#include "string_view.hpp"
-#include "raii.hpp"
-#include "policies.hpp"
-#include "ebco.hpp"
+#include <sol/error.hpp>
+#include <sol/optional.hpp>
+#include <sol/compatibility.hpp>
+#include <sol/forward.hpp>
+#include <sol/forward_detail.hpp>
+#include <sol/traits.hpp>
+#include <sol/string_view.hpp>
+#include <sol/raii.hpp>
+#include <sol/policies.hpp>
+#include <sol/ebco.hpp>
 
 #include <array>
 #include <initializer_list>

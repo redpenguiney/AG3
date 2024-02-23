@@ -4,9 +4,9 @@
 #define PROGRAM_LUA_ZM_INTEROP_HPP
 
 #define SOL_ALL_SAFETIES_ON 1
-#include "forward.hpp"
+#include <sol/forward.hpp>
 
-#include <zm/vec3.hpp"
+#include <zm/vec3.hpp>
 
 #include <functional>
 

@@ -24,8 +24,8 @@
 #ifndef SOL_ERROR_HANDLER_HPP
 #define SOL_ERROR_HANDLER_HPP
 
-#include "types.hpp"
-#include "demangle.hpp"
+#include <sol/types.hpp>
+#include <sol/demangle.hpp>
 
 #include <cstdio>
 

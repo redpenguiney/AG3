@@ -24,7 +24,7 @@
 #ifndef SOL_LUA_TABLE_HPP
 #define SOL_LUA_TABLE_HPP
 
-#include "table_core.hpp"
+#include <sol/table_core.hpp>
 
 namespace sol {
 

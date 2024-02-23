@@ -38,9 +38,9 @@
 #ifndef SOL_TL_OPTIONAL_HPP
 #define SOL_TL_OPTIONAL_HPP
 
-#include "version.hpp"
+#include <sol/version.hpp>
 
-#include "in_place.hpp"
+#include <sol/in_place.hpp>
 
 #define SOL_TL_OPTIONAL_VERSION_MAJOR 0
 #define SOL_TL_OPTIONAL_VERSION_MINOR 5

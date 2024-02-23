@@ -24,10 +24,10 @@
 #ifndef SOL_UNIQUE_USERTYPE_TRAITS_HPP
 #define SOL_UNIQUE_USERTYPE_TRAITS_HPP
 
-#include "base_traits.hpp"
-#include "pointer_like.hpp"
+#include <sol/base_traits.hpp>
+#include <sol/pointer_like.hpp>
 
-#include "forward.hpp"
+#include <sol/forward.hpp>
 
 #include <memory>
 

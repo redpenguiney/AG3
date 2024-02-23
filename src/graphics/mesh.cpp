@@ -160,8 +160,8 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
         auto atangentY = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
         auto atangentZ = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
 
-        for (unsigned int i = 0; i < 3; i++) {
-            auto indexIntoIndices = triangleIndex * 3 + i;
+        for (unsigned int i2 = 0; i2 < 3; i2++) {
+            auto indexIntoIndices = triangleIndex * 3 + i2;
             auto vertexIndex = indices.at(indexIntoIndices);
             vertices.at(nFloatsPerVertex * vertexIndex + 8) = atangentX;
             vertices.at(nFloatsPerVertex * vertexIndex + 9) = atangentY;

@@ -1,5 +1,5 @@
 #define SOL_ALL_SAFETIES_ON 1
-#include "sol.hpp" // or #include "sol.hpp", whichever suits your needs
+#include <sol/sol.hpp> // or #include "sol.hpp", whichever suits your needs
 
 int main(int argc, char* argv[]) {
 	// silence unused warnings

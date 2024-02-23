@@ -26,13 +26,13 @@
 #ifndef SOL_CALL_HPP
 #define SOL_CALL_HPP
 
-#include "property.hpp"
-#include "protect.hpp"
-#include "wrapper.hpp"
-#include "trampoline.hpp"
-#include "policies.hpp"
-#include "stack.hpp"
-#include "unique_usertype_traits.hpp"
+#include <sol/property.hpp>
+#include <sol/protect.hpp>
+#include <sol/wrapper.hpp>
+#include <sol/trampoline.hpp>
+#include <sol/policies.hpp>
+#include <sol/stack.hpp>
+#include <sol/unique_usertype_traits.hpp>
 
 namespace sol {
 	namespace u_detail {

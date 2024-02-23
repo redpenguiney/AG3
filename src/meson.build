@@ -2,6 +2,8 @@ sources = ['gameobjects/transform_component.cpp', 'lua/lua_handler.cpp', 'graphi
 glew_dep = declare_dependency(link_args: ['-lglew64'])
 glfw_dep = declare_dependency(link_args: ['-l64glfw3'])
 gl_dep = declare_dependency(link_args: ['-lopengl32'])
-#lua_dep = declare_dependency(link_args: ['-Lbin -llua54dll -ldl'])
+lua_dep = declare_dependency(link_args: ['-L -Llua54dll -ldl'])
 
-srclib = static_library('srclib', sources, dependencies: [lua_dep, glew_dep, glfw_dep, gl_dep], cpp_args: ['-O3', '-Wshadow'])
+incdir = include_directories('../external_headers/sol2/include', '../external_headers/lua')
+
+srclib = static_library('srclib', sources, include_directories: incdir, dependencies: [lua_dep, glew_dep, glfw_dep, gl_dep], cpp_args: ['-O3', '-Wshadow'])

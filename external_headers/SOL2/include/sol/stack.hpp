@@ -24,17 +24,17 @@
 #ifndef SOL_STACK_HPP
 #define SOL_STACK_HPP
 
-#include "trampoline.hpp"
-#include "stack_core.hpp"
-#include "stack_reference.hpp"
-#include "stack_check.hpp"
-#include "stack_get.hpp"
-#include "stack_check_get.hpp"
-#include "stack_push.hpp"
-#include "stack_pop.hpp"
-#include "stack_field.hpp"
-#include "stack_probe.hpp"
-#include "assert.hpp"
+#include <sol/trampoline.hpp>
+#include <sol/stack_core.hpp>
+#include <sol/stack_reference.hpp>
+#include <sol/stack_check.hpp>
+#include <sol/stack_get.hpp>
+#include <sol/stack_check_get.hpp>
+#include <sol/stack_push.hpp>
+#include <sol/stack_pop.hpp>
+#include <sol/stack_field.hpp>
+#include <sol/stack_probe.hpp>
+#include <sol/assert.hpp>
 
 #include <cstring>
 #include <array>

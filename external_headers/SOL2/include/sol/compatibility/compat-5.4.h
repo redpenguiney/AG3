@@ -4,9 +4,9 @@
 #if defined(__cplusplus) && !defined(COMPAT53_LUA_CPP)
 extern "C" {
 #endif
-#include "../../../../lua/lua.h"
-#include "../../../../lua/lauxlib.h"
-#include "../../../../lua/lualib.h"
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
 #if defined(__cplusplus) && !defined(COMPAT53_LUA_CPP)
 }
 #endif

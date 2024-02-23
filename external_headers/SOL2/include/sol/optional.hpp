@@ -24,13 +24,13 @@
 #ifndef SOL_OPTIONAL_HPP
 #define SOL_OPTIONAL_HPP
 
-#include "forward.hpp"
-#include "in_place.hpp"
-#include "traits.hpp"
+#include <sol/forward.hpp>
+#include <sol/in_place.hpp>
+#include <sol/traits.hpp>
 #if SOL_IS_ON(SOL_USE_BOOST)
 #include <boost/optional.hpp>
 #else
-#include "optional_implementation.hpp"
+#include <sol/optional_implementation.hpp>
 #endif // Boost vs. Better optional
 
 

@@ -24,9 +24,9 @@
 #ifndef SOL_LOAD_RESULT_HPP
 #define SOL_LOAD_RESULT_HPP
 
-#include "stack.hpp"
-#include "function.hpp"
-#include "proxy_base.hpp"
+#include <sol/stack.hpp>
+#include <sol/function.hpp>
+#include <sol/proxy_base.hpp>
 #include <cstdint>
 
 namespace sol {

@@ -26,7 +26,7 @@
 #ifndef SOL_ASSERT_HPP
 #define SOL_ASSERT_HPP
 
-#include "forward.hpp"
+#include <sol/forward.hpp>
 
 #if SOL_IS_ON(SOL2_CI)
 

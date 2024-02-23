@@ -24,8 +24,8 @@
 #ifndef SOL_USERTYPE_STORAGE_HPP
 #define SOL_USERTYPE_STORAGE_HPP
 
-#include "usertype_core.hpp"
-#include "make_reference.hpp"
+#include <sol/usertype_core.hpp>
+#include <sol/make_reference.hpp>
 
 #include <bitset>
 #include <unordered_map>

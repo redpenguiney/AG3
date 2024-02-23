@@ -1,9 +1,9 @@
-#include <lua_interop.hpp"
+#include <lua_interop.hpp>
 
-#include <entity.hpp"
+#include <entity.hpp>
 
 #define SOL_ALL_SAFETIES_ON 1
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
 void register_lua(sol::state& lua) {
 	lua.new_usertype<entity>("entity",

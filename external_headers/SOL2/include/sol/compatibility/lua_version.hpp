@@ -24,23 +24,23 @@
 #ifndef SOL_COMPATIBILITY_LUA_VERSION_HPP
 #define SOL_COMPATIBILITY_LUA_VERSION_HPP
 
-#include "../version.hpp"
+#include <sol/version.hpp>
 
 // clang-format off
 
-// #if SOL_IS_ON(SOL_USING_CXX_LUA)
-// 	#include "../../../../lua/lua.h"
-// 	#include "../../../../lua/lualib.h"
-// 	#include "../../../../lua/lauxlib.h"
-// #elif SOL_IS_ON(SOL_USE_LUA_HPP)
-	#include "../../../../lua/lua.hpp"
-// #else
-// 	extern "C" {
-// 		#include "../../../../lua/lua.h"
-// 		#include "../../../../lua/lauxlib.h"
-// 		#include "../../../../lua/lualib.h"
-// 	}
-// #endif // C++ Mangling for Lua vs. Not
+#if SOL_IS_ON(SOL_USING_CXX_LUA)
+	#include <lua.h>
+	#include <lualib.h>
+	#include <lauxlib.h>
+#elif SOL_IS_ON(SOL_USE_LUA_HPP)
+	#include <lua.hpp>
+#else
+	extern "C" {
+		#include <lua.h>
+		#include <lauxlib.h>
+		#include <lualib.h>
+	}
+#endif // C++ Mangling for Lua vs. Not
 
 #if defined(SOL_LUAJIT)
 	#if (SOL_LUAJIT != 0)

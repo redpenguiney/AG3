@@ -24,11 +24,11 @@
 #ifndef SOL_STATE_VIEW_HPP
 #define SOL_STATE_VIEW_HPP
 
-#include "error.hpp"
-#include "table.hpp"
-#include "environment.hpp"
-#include "load_result.hpp"
-#include "state_handling.hpp"
+#include <sol/error.hpp>
+#include <sol/table.hpp>
+#include <sol/environment.hpp>
+#include <sol/load_result.hpp>
+#include <sol/state_handling.hpp>
 
 #include <memory>
 #include <cstddef>

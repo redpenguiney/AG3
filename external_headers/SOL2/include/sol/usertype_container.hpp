@@ -24,9 +24,9 @@
 #ifndef SOL_USERTYPE_CONTAINER_HPP
 #define SOL_USERTYPE_CONTAINER_HPP
 
-#include "traits.hpp"
-#include "stack.hpp"
-#include "object.hpp"
+#include <sol/traits.hpp>
+#include <sol/stack.hpp>
+#include <sol/object.hpp>
 
 namespace sol {
 

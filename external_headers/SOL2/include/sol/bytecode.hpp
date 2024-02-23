@@ -24,8 +24,8 @@
 #ifndef SOL_BYTECODE_HPP
 #define SOL_BYTECODE_HPP
 
-#include "compatibility.hpp"
-#include "string_view.hpp"
+#include <sol/compatibility.hpp>
+#include <sol/string_view.hpp>
 #include <vector>
 #include <cstdint>
 #include <cstddef>

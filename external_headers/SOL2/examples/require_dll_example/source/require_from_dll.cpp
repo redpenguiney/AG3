@@ -1,7 +1,7 @@
 #define SOL_ALL_SAFETIES_ON 1
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
-#include <my_object/my_object.hpp"
+#include <my_object/my_object.hpp>
 
 #include <iostream>
 

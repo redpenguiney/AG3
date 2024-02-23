@@ -24,12 +24,12 @@
 #ifndef SOL_COROUTINE_HPP
 #define SOL_COROUTINE_HPP
 
-#include "reference.hpp"
-#include "object.hpp"
-#include "stack.hpp"
-#include "function_result.hpp"
-#include "thread.hpp"
-#include "protected_handler.hpp"
+#include <sol/reference.hpp>
+#include <sol/object.hpp>
+#include <sol/stack.hpp>
+#include <sol/function_result.hpp>
+#include <sol/thread.hpp>
+#include <sol/protected_handler.hpp>
 
 namespace sol {
 	template <typename Reference>

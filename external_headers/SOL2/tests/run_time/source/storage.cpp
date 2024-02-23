@@ -24,9 +24,9 @@
 #define SOL_ALL_SAFETIES_ON 1
 #define SOL_ENABLE_INTEROP 1
 
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
-#include <catch2/catch_all.hpp"
+#include <catch2/catch_all.hpp>
 
 TEST_CASE("storage/registry construction", "ensure entries from the registry can be retrieved") {
 	const auto& code = R"(

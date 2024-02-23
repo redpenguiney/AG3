@@ -24,11 +24,11 @@
 
 #include "sol_test.hpp"
 
-#include "forward.hpp"
-#include "reference.hpp"
-#include "utility/is_integer.hpp"
+#include <sol/forward.hpp>
+#include <sol/reference.hpp>
+#include <sol/utility/is_integer.hpp>
 
-#include <catch2/catch_all.hpp"
+#include <catch2/catch_all.hpp>
 
 TEST_CASE("is_integer") {
 	sol::state lua;

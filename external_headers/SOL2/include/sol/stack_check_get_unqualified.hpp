@@ -24,10 +24,10 @@
 #ifndef SOL_STACK_CHECK_UNQUALIFIED_GET_HPP
 #define SOL_STACK_CHECK_UNQUALIFIED_GET_HPP
 
-#include "stack_core.hpp"
-#include "stack_get.hpp"
-#include "stack_check.hpp"
-#include "optional.hpp"
+#include <sol/stack_core.hpp>
+#include <sol/stack_get.hpp>
+#include <sol/stack_check.hpp>
+#include <sol/optional.hpp>
 
 #include <cstdlib>
 #include <cmath>

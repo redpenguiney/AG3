@@ -20,7 +20,7 @@ These are all the things. Use your browser's search to find things you want.
 asserts / prerequisites
 -----------------------
 
-You'll need to ``#include "sol.hpp"`` somewhere in your code. sol is header-only, so you don't need to compile anything. However, **Lua must be compiled and available**. See the :doc:`getting started tutorial<getting-started>` for more details.
+You'll need to ``#include <sol/sol.hpp>`` somewhere in your code. sol is header-only, so you don't need to compile anything. However, **Lua must be compiled and available**. See the :doc:`getting started tutorial<getting-started>` for more details.
 
 Below, you will see use of a function called ``SOL_ASSERT``. This is an assert macro that comes with sol2 for the expression purpose of checking things; it's value is immaterial.
 

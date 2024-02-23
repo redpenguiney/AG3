@@ -24,7 +24,7 @@
 #ifndef SOL_DUMP_HANDLER_HPP
 #define SOL_DUMP_HANDLER_HPP
 
-#include "compatibility.hpp"
+#include <sol/compatibility.hpp>
 
 #include <cstdint>
 #include <exception>

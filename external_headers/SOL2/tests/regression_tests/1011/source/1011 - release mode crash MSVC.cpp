@@ -6,7 +6,7 @@
 #define SOL_SAFE_NUMERICS 1
 #define SOL_SAFE_GETTER 1
 
-#include "sol.hpp"
+#include <sol/sol.hpp>
 #include <iostream>
 
 #if THIS_IS_BUSTED

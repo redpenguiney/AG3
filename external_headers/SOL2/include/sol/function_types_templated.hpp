@@ -24,7 +24,7 @@
 #ifndef SOL_FUNCTION_TYPES_TEMPLATED_HPP
 #define SOL_FUNCTION_TYPES_TEMPLATED_HPP
 
-#include "call.hpp"
+#include <sol/call.hpp>
 
 namespace sol {
 	namespace function_detail {

@@ -21,9 +21,9 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#include <catch2/catch_all.hpp"
+#include <catch2/catch_all.hpp>
 
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
 TEST_CASE("environments/this_environment", "test various situations of pulling out an environment") {
 	static std::string code = "return (f(10))";

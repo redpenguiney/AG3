@@ -27,8 +27,8 @@
 #include <iostream>
 #include <cstdlib>
 
-#include "forward.hpp"
-#include "sol.hpp"
+#include <sol/forward.hpp>
+#include <sol/sol.hpp>
 
 struct test_stack_guard {
 	lua_State* L;

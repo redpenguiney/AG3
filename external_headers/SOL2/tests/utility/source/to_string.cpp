@@ -24,11 +24,11 @@
 
 #include "sol_test.hpp"
 
-#include "forward.hpp"
-#include "reference.hpp"
-#include "utility/to_string.hpp"
+#include <sol/forward.hpp>
+#include <sol/reference.hpp>
+#include <sol/utility/to_string.hpp>
 
-#include <catch2/catch_all.hpp"
+#include <catch2/catch_all.hpp>
 
 namespace {
 	int someFunc() {

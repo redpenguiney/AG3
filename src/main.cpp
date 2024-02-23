@@ -110,27 +110,27 @@ int main(int numArgs, char *argPtrs[]) {
     GE.debugFreecamPos = glm::vec3(0, 3, 8);
     
     
-    int i = 0;
-    for (int x = 0; x < 1; x++) {
-        for (int y = 0; y < 1; y++) {
-            for (int z = 0; z < 1; z++) {
-                GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
-                params.meshId = m->meshId;
-                params.materialId = brickMaterial->id;
-                auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({x * 3,3 + y * 3, z * 3});
-                g->colliderComponent->elasticity = 0.8;
-                // g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(30.0), 0.0, 0.0)));
-                // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
-                // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
-                g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
-                g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-                g->renderComponent->SetTextureZ(brickTextureZ);
-                g->name = std::string("Gameobject #") + to_string(i);
-                i++;
-            } 
-        }
-    }
+    // int i = 0;
+    // for (int x = 0; x < 1; x++) {
+    //     for (int y = 0; y < 1; y++) {
+    //         for (int z = 0; z < 1; z++) {
+    //             GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
+    //             params.meshId = m->meshId;
+    //             params.materialId = brickMaterial->id;
+    //             auto g = ComponentRegistry::NewGameObject(params);
+    //             g->transformComponent->SetPos({x * 3,3 + y * 3, z * 3});
+    //             g->colliderComponent->elasticity = 0.8;
+    //             // g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(30.0), 0.0, 0.0)));
+    //             // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
+    //             // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
+    //             g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
+    //             g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
+    //             g->renderComponent->SetTextureZ(brickTextureZ);
+    //             g->name = std::string("Gameobject #") + to_string(i);
+    //             i++;
+    //         } 
+    //     }
+    // }
 
     
     // make light

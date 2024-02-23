@@ -11,7 +11,7 @@ sol2 is a C++ library binding to Lua. It currently supports all Lua versions 5.1
 ## Sneak Peek
 
 ```cpp
-#include "sol.hpp"
+#include <sol/sol.hpp>
 #include <cassert>
 
 int main() {
@@ -24,7 +24,7 @@ int main() {
 ```
 
 ```cpp
-#include "sol.hpp"
+#include <sol/sol.hpp>
 #include <cassert>
 
 struct vars {

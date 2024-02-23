@@ -24,10 +24,10 @@
 #ifndef SOL_THREAD_HPP
 #define SOL_THREAD_HPP
 
-#include "reference.hpp"
-#include "object.hpp"
-#include "stack.hpp"
-#include "state_view.hpp"
+#include <sol/reference.hpp>
+#include <sol/object.hpp>
+#include <sol/stack.hpp>
+#include <sol/state_view.hpp>
 
 namespace sol {
 	struct lua_thread_state {

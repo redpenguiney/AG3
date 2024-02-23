@@ -24,13 +24,13 @@
 #ifndef SOL_STACK_PUSH_HPP
 #define SOL_STACK_PUSH_HPP
 
-#include "stack_core.hpp"
-#include "raii.hpp"
-#include "optional.hpp"
-#include "usertype_traits.hpp"
-#include "policies.hpp"
-#include "unicode.hpp"
-#include "assert.hpp"
+#include <sol/stack_core.hpp>
+#include <sol/raii.hpp>
+#include <sol/optional.hpp>
+#include <sol/usertype_traits.hpp>
+#include <sol/policies.hpp>
+#include <sol/unicode.hpp>
+#include <sol/assert.hpp>
 
 #include <memory>
 #include <type_traits>
@@ -42,7 +42,7 @@
 #include <variant>
 #endif // Can use variant
 
-#include "debug.hpp"
+#include <sol/debug.hpp>
 
 namespace sol { namespace stack {
 	namespace stack_detail {

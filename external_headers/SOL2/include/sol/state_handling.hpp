@@ -24,12 +24,12 @@
 #ifndef SOL_STATE_DEFAULT_HPP
 #define SOL_STATE_DEFAULT_HPP
 
-#include "trampoline.hpp"
-#include "stack.hpp"
-#include "error.hpp"
-#include "function.hpp"
-#include "object.hpp"
-#include "lua_value.hpp"
+#include <sol/trampoline.hpp>
+#include <sol/stack.hpp>
+#include <sol/error.hpp>
+#include <sol/function.hpp>
+#include <sol/object.hpp>
+#include <sol/lua_value.hpp>
 
 #if SOL_IS_ON(SOL_PRINT_ERRORS)
 #include <iostream>

@@ -24,7 +24,7 @@
 #ifndef SOL_FORWARD_HPP
 #define SOL_FORWARD_HPP
 
-#include "version.hpp"
+#include <sol/version.hpp>
 
 #include <utility>
 #include <type_traits>

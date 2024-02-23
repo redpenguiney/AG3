@@ -24,9 +24,9 @@
 #ifndef SOL_STACK_CHECK_UNQUALIFIED_HPP
 #define SOL_STACK_CHECK_UNQUALIFIED_HPP
 
-#include "stack_core.hpp"
-#include "usertype_traits.hpp"
-#include "inheritance.hpp"
+#include <sol/stack_core.hpp>
+#include <sol/usertype_traits.hpp>
+#include <sol/inheritance.hpp>
 #include <memory>
 #include <functional>
 #include <utility>

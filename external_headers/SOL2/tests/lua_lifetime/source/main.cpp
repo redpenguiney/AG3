@@ -1,4 +1,4 @@
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
 sol::function fn;
 

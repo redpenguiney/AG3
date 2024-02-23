@@ -24,10 +24,10 @@
 #ifndef SOL_PROTECTED_HANDLER_HPP
 #define SOL_PROTECTED_HANDLER_HPP
 
-#include "reference.hpp"
-#include "stack.hpp"
-#include "protected_function_result.hpp"
-#include "unsafe_function.hpp"
+#include <sol/reference.hpp>
+#include <sol/stack.hpp>
+#include <sol/protected_function_result.hpp>
+#include <sol/unsafe_function.hpp>
 #include <cstdint>
 
 namespace sol { namespace detail {

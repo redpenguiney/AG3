@@ -11,7 +11,7 @@ os.chdir(script_path)
 
 includes = set([])
 local_include = re.compile(r'#(\s*?)include "(.*?)"')
-project_include = re.compile(r'#(\s*?)include ".*"')
+project_include = re.compile(r'#(\s*?)include <sol/(.*?)>')
 pragma_once_cpp = re.compile(r'(\s*)#(\s*)pragma(\s+)once')
 ifndef_cpp = re.compile(r'#ifndef SOL_.*?_HPP')
 define_cpp = re.compile(r'#define SOL_.*?_HPP')

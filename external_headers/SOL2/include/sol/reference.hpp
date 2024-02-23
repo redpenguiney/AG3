@@ -24,8 +24,8 @@
 #ifndef SOL_REFERENCE_HPP
 #define SOL_REFERENCE_HPP
 
-#include "types.hpp"
-#include "stack_reference.hpp"
+#include <sol/types.hpp>
+#include <sol/stack_reference.hpp>
 
 #include <functional>
 

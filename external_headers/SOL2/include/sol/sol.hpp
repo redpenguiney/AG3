@@ -22,7 +22,7 @@
 #ifndef SOL_HPP
 #define SOL_HPP
 
-#include "version.hpp"
+#include <sol/version.hpp>
 
 #if SOL_IS_ON(SOL_INSIDE_UNREAL_ENGINE)
 #ifdef check
@@ -45,25 +45,25 @@
 #pragma warning(disable : 4505) // unreferenced local function has been removed GEE THANKS
 #endif                          // clang++ vs. g++ vs. VC++
 
-#include "forward.hpp"
-#include "forward_detail.hpp"
-#include "assert.hpp"
-#include "bytecode.hpp"
-#include "stack.hpp"
-#include "object.hpp"
-#include "function.hpp"
-#include "protected_function.hpp"
-#include "usertype.hpp"
-#include "table.hpp"
-#include "state.hpp"
-#include "coroutine.hpp"
-#include "thread.hpp"
-#include "userdata.hpp"
-#include "metatable.hpp"
-#include "as_args.hpp"
-#include "variadic_args.hpp"
-#include "variadic_results.hpp"
-#include "lua_value.hpp"
+#include <sol/forward.hpp>
+#include <sol/forward_detail.hpp>
+#include <sol/assert.hpp>
+#include <sol/bytecode.hpp>
+#include <sol/stack.hpp>
+#include <sol/object.hpp>
+#include <sol/function.hpp>
+#include <sol/protected_function.hpp>
+#include <sol/usertype.hpp>
+#include <sol/table.hpp>
+#include <sol/state.hpp>
+#include <sol/coroutine.hpp>
+#include <sol/thread.hpp>
+#include <sol/userdata.hpp>
+#include <sol/metatable.hpp>
+#include <sol/as_args.hpp>
+#include <sol/variadic_args.hpp>
+#include <sol/variadic_results.hpp>
+#include <sol/lua_value.hpp>
 
 #if SOL_IS_ON(SOL_COMPILER_GCC)
 #pragma GCC diagnostic pop

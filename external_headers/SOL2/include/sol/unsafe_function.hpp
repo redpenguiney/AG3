@@ -24,13 +24,13 @@
 #ifndef SOL_UNSAFE_FUNCTION_HPP
 #define SOL_UNSAFE_FUNCTION_HPP
 
-#include "reference.hpp"
-#include "object.hpp"
-#include "stack.hpp"
-#include "function_result.hpp"
-#include "function_types.hpp"
-#include "bytecode.hpp"
-#include "dump_handler.hpp"
+#include <sol/reference.hpp>
+#include <sol/object.hpp>
+#include <sol/stack.hpp>
+#include <sol/function_result.hpp>
+#include <sol/function_types.hpp>
+#include <sol/bytecode.hpp>
+#include <sol/dump_handler.hpp>
 #include <cstdint>
 
 namespace sol {

@@ -24,8 +24,8 @@
 #ifndef SOL_METATABLE_HPP
 #define SOL_METATABLE_HPP
 
-#include "table_core.hpp"
-#include "usertype.hpp"
+#include <sol/table_core.hpp>
+#include <sol/usertype.hpp>
 
 namespace sol {
 

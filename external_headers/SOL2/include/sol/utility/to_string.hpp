@@ -24,8 +24,8 @@
 #ifndef SOL_TO_STRING_HPP
 #define SOL_TO_STRING_HPP
 
-#include "forward.hpp"
-#include "object.hpp"
+#include <sol/forward.hpp>
+#include <sol/object.hpp>
 
 #include <cstddef>
 #include <string>

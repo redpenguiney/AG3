@@ -24,11 +24,11 @@
 #ifndef SOL_TRAITS_HPP
 #define SOL_TRAITS_HPP
 
-#include "tuple.hpp"
-#include "bind_traits.hpp"
-#include "pointer_like.hpp"
-#include "base_traits.hpp"
-#include "string_view.hpp"
+#include <sol/tuple.hpp>
+#include <sol/bind_traits.hpp>
+#include <sol/pointer_like.hpp>
+#include <sol/base_traits.hpp>
+#include <sol/string_view.hpp>
 
 #include <type_traits>
 #include <cstdint>

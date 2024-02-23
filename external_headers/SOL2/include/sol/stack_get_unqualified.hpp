@@ -24,15 +24,15 @@
 #ifndef SOL_STACK_UNQUALIFIED_GET_HPP
 #define SOL_STACK_UNQUALIFIED_GET_HPP
 
-#include "version.hpp"
+#include <sol/version.hpp>
 
-#include "stack_core.hpp"
-#include "usertype_traits.hpp"
-#include "inheritance.hpp"
-#include "overload.hpp"
-#include "error.hpp"
-#include "unicode.hpp"
-#include "abort.hpp"
+#include <sol/stack_core.hpp>
+#include <sol/usertype_traits.hpp>
+#include <sol/inheritance.hpp>
+#include <sol/overload.hpp>
+#include <sol/error.hpp>
+#include <sol/unicode.hpp>
+#include <sol/abort.hpp>
 
 #include <memory>
 #include <functional>

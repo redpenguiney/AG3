@@ -23,8 +23,8 @@ void RigidbodyComponent::Destroy() {
 
 glm::mat3x3 RigidbodyComponent::GetInverseGlobalMomentOfInertia(const TransformComponent &transform) {
     auto rotMat = glm::toMat3(transform.rotation());
-    // return (rotMat) * glm::inverse(localMomentOfInertia);
-    return glm::inverse(glm::transpose(glm::inverse(rotMat) * localMomentOfInertia * glm::inverse(localMomentOfInertia)));
+    return glm::inverse((rotMat) * (localMomentOfInertia) * glm::transpose(rotMat));
+    // return glm::inverse(glm::transpose(glm::inverse(rotMat) * localMomentOfInertia * glm::inverse(localMomentOfInertia)));
     // return glm::toMat4(transform.rotation());
 }
 

@@ -26,7 +26,7 @@
 #ifndef SOL_DETAIL_BUILD_VERSION_HPP
 #define SOL_DETAIL_BUILD_VERSION_HPP
 
-#include "../version.hpp"
+#include <sol/version.hpp>
 
 // clang-format off
 

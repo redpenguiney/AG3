@@ -24,8 +24,8 @@
 #ifndef SOL_USERDATA_HPP
 #define SOL_USERDATA_HPP
 
-#include "object_base.hpp"
-#include "table.hpp"
+#include <sol/object_base.hpp>
+#include <sol/table.hpp>
 
 namespace sol {
 	template <typename base_type>

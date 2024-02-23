@@ -24,8 +24,8 @@
 #ifndef SOL_USERTYPE_CONTAINER_LAUNCH_HPP
 #define SOL_USERTYPE_CONTAINER_LAUNCH_HPP
 
-#include "stack.hpp"
-#include "usertype_container.hpp"
+#include <sol/stack.hpp>
+#include <sol/usertype_container.hpp>
 
 #include <unordered_map>
 

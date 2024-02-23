@@ -24,9 +24,9 @@
 #ifndef SOL_AS_RETURNS_HPP
 #define SOL_AS_RETURNS_HPP
 
-#include "traits.hpp"
-#include "stack.hpp"
-#include "ebco.hpp"
+#include <sol/traits.hpp>
+#include <sol/stack.hpp>
+#include <sol/ebco.hpp>
 
 namespace sol {
 	template <typename T>

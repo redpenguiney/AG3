@@ -24,15 +24,15 @@
 #ifndef SOL_TABLE_CORE_HPP
 #define SOL_TABLE_CORE_HPP
 
-#include "table_proxy.hpp"
-#include "stack.hpp"
-#include "function_types.hpp"
-#include "table_iterator.hpp"
-#include "pairs_iterator.hpp"
-#include "types.hpp"
-#include "object.hpp"
-#include "usertype.hpp"
-#include "optional.hpp"
+#include <sol/table_proxy.hpp>
+#include <sol/stack.hpp>
+#include <sol/function_types.hpp>
+#include <sol/table_iterator.hpp>
+#include <sol/pairs_iterator.hpp>
+#include <sol/types.hpp>
+#include <sol/object.hpp>
+#include <sol/usertype.hpp>
+#include <sol/optional.hpp>
 
 namespace sol {
 	namespace detail {

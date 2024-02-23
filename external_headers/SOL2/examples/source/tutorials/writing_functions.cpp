@@ -1,5 +1,5 @@
 #define SOL_ALL_SAFETIES_ON 1
-#include "sol.hpp"
+#include <sol/sol.hpp>
 
 std::string my_function(int D_count, std::string original) {
 	// Create a string with the letter 'D' "D_count" times,

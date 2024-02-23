@@ -24,10 +24,10 @@
 #ifndef SOL_FORWARD_DETAIL_HPP
 #define SOL_FORWARD_DETAIL_HPP
 
-#include "version.hpp"
+#include <sol/version.hpp>
 
-#include "forward.hpp"
-#include "traits.hpp"
+#include <sol/forward.hpp>
+#include <sol/traits.hpp>
 
 namespace sol {
 	namespace detail {

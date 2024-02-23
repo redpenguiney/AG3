@@ -24,7 +24,7 @@
 #ifndef SOL_STRING_VIEW_HPP
 #define SOL_STRING_VIEW_HPP
 
-#include "version.hpp"
+#include <sol/version.hpp>
 
 #include <cstddef>
 #include <string>

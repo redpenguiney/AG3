@@ -24,9 +24,9 @@
 #ifndef SOL_LUA_VALUE_HPP
 #define SOL_LUA_VALUE_HPP
 
-#include "stack.hpp"
-#include "reference.hpp"
-#include "make_reference.hpp"
+#include <sol/stack.hpp>
+#include <sol/reference.hpp>
+#include <sol/make_reference.hpp>
 
 namespace sol {
 	struct lua_value {

@@ -24,7 +24,7 @@
 #ifndef SOL_STACK_REFERENCE_HPP
 #define SOL_STACK_REFERENCE_HPP
 
-#include "types.hpp"
+#include <sol/types.hpp>
 
 namespace sol {
 	namespace detail {

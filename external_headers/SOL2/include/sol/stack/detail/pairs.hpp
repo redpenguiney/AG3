@@ -24,12 +24,12 @@
 #ifndef SOL_DETAIL_PAIRS_HPP
 #define SOL_DETAIL_PAIRS_HPP
 
-#include "../../version.hpp"
+#include <sol/version.hpp>
 
-#include "../../stack.hpp"
-#include "../../stack_reference.hpp"
-#include "../../protected_function.hpp"
-#include "../../assert.hpp"
+#include <sol/stack.hpp>
+#include <sol/stack_reference.hpp>
+#include <sol/protected_function.hpp>
+#include <sol/assert.hpp>
 
 #include <optional>
 

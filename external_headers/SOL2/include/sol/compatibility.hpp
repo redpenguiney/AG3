@@ -29,8 +29,8 @@
 // but has been modified in many places for use with sol and luajit,
 // though the core abstractions remain the same
 
-#include "version.hpp"
-#include "compatibility/lua_version.hpp"
+#include <sol/version.hpp>
+#include <sol/compatibility/lua_version.hpp>
 
 #if SOL_IS_ON(SOL_USE_COMPATIBILITY_LAYER)
 
@@ -43,8 +43,8 @@
 	#ifndef COMPAT53_INCLUDE_SOURCE
 		#define COMPAT53_INCLUDE_SOURCE 1
 	#endif // Build Compat Layer Inline
-	#include "compatibility/compat-5.3.h"
-	#include "compatibility/compat-5.4.h"
+	#include <sol/compatibility/compat-5.3.h>
+	#include <sol/compatibility/compat-5.4.h>
 #endif
 // clang-format on
 

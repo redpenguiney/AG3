@@ -24,14 +24,14 @@
 #ifndef SOL_PROTECTED_FUNCTION_HPP
 #define SOL_PROTECTED_FUNCTION_HPP
 
-#include "reference.hpp"
-#include "object.hpp"
-#include "stack.hpp"
-#include "protected_function_result.hpp"
-#include "unsafe_function.hpp"
-#include "protected_handler.hpp"
-#include "bytecode.hpp"
-#include "dump_handler.hpp"
+#include <sol/reference.hpp>
+#include <sol/object.hpp>
+#include <sol/stack.hpp>
+#include <sol/protected_function_result.hpp>
+#include <sol/unsafe_function.hpp>
+#include <sol/protected_handler.hpp>
+#include <sol/bytecode.hpp>
+#include <sol/dump_handler.hpp>
 
 #include <cstdint>
 #include <algorithm>

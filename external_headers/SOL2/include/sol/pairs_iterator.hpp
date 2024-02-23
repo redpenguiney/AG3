@@ -24,14 +24,14 @@
 #ifndef SOL_PAIRS_ITERATOR_HPP
 #define SOL_PAIRS_ITERATOR_HPP
 
-#include "version.hpp"
+#include <sol/version.hpp>
 
-#include "reference.hpp"
-#include "stack_reference.hpp"
-#include "table_iterator.hpp"
-#include "protected_function.hpp"
+#include <sol/reference.hpp>
+#include <sol/stack_reference.hpp>
+#include <sol/table_iterator.hpp>
+#include <sol/protected_function.hpp>
 
-#include "stack/detail/pairs.hpp"
+#include <sol/stack/detail/pairs.hpp>
 
 namespace sol {
 

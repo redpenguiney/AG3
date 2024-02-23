@@ -37,7 +37,7 @@
      So that when sol2 includes the file
 
 
-#include "config.hpp"
+#include <sol/config.hpp>
 
 
      it gives you the configuration values you desire. Configuration values can be
