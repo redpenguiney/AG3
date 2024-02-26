@@ -1,6 +1,7 @@
 #include "rigidbody_component.hpp"
 #include "../../external_headers/GLM/ext.hpp"
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
+#include <cassert>
 #include <iostream>
 
 void RigidbodyComponent::Init() {
@@ -13,18 +14,30 @@ void RigidbodyComponent::Init() {
                             0.0,     1.0/3.0, 0.0, 
                             0.0,     0.0,     1.0/3.0}; // TODO: that's the moment for a cube with size 1x1x1 and mass 1
     linearDrag = 0.99;
-    angularDrag = 0.99;
-    mass = 1;
+    angularDrag = 0.999;
+    inverseMass = 1;
 }
 
 void RigidbodyComponent::Destroy() {
     
 }
 
+float RigidbodyComponent::InverseMass() const {
+    return inverseMass;
+}
+
+void RigidbodyComponent::SetMass(float newMass) {
+    assert(newMass != 0);
+    inverseMass = 1.0/newMass;
+}
+
+// whyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 glm::mat3x3 RigidbodyComponent::GetInverseGlobalMomentOfInertia(const TransformComponent &transform) {
     auto rotMat = glm::toMat3(transform.rotation());
-    return glm::inverse((rotMat) * (localMomentOfInertia) * glm::transpose(rotMat));
-    // return glm::inverse(glm::transpose(glm::inverse(rotMat) * localMomentOfInertia * glm::inverse(localMomentOfInertia)));
+    // return glm::inverse(localMomentOfInertia);
+    return glm::inverse((rotMat) * (localMomentOfInertia));
+    // return rotMat * localMomentOfInertia;
+    // return glm::transpose(glm::inverse(rotMat)) * glm::inverse(localMomentOfInertia) * glm::inverse(rotMat);
     // return glm::toMat4(transform.rotation());
 }
 

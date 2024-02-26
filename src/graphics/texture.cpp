@@ -16,12 +16,12 @@
 #include "../debug/debug.hpp"
 #include "texture.hpp"
 
-GLenum TextureBindingLocationFromType(TextureType type) {
+GLenum TextureBindingLocationFromType(Texture::TextureType type) {
     switch (type) {
-    case TEXTURE_2D:
+    case Texture::Texture2D:
     return GL_TEXTURE_2D_ARRAY;    
     break;
-    case TEXTURE_CUBEMAP:
+    case Texture::TextureCubemap:
     return GL_TEXTURE_CUBE_MAP;
     break;
     default:
@@ -33,16 +33,18 @@ GLenum TextureBindingLocationFromType(TextureType type) {
     return 0; // gotta return something to hide the warning
 }
 
-unsigned int NChannelsFromFormat(TextureFormat format ) {
+unsigned int NChannelsFromFormat(Texture::TextureFormat format ) {
     switch (format) {
-    case RGBA:
+    case Texture::RGBA:
     return STBI_rgb_alpha; // same as 4
     break;
-    case RGB:
+    case Texture::RGB:
     return STBI_rgb; // same as 3
     break;
-    case Grayscale:
+    case Texture::Grayscale:
     return STBI_grey; // same as 1
+    case Texture::Auto:
+    return 0; // 0 means we don't tell STBI to return a specific number of channels
     default:
     std::cout << "forgot something2\n";
     abort();
@@ -59,7 +61,7 @@ glTextureIndex(textureIndex),
 type(textureType)
 {
     // skyboxes need 6 textures, everything else obviously only needs 1
-    if (textureType == TEXTURE_CUBEMAP) {
+    if (textureType == Texture::TextureCubemap) {
         assert(params.texturePaths.size() == 6);
     }
     else {
@@ -75,6 +77,8 @@ type(textureType)
         // use stbi_image.h to load file
         std::cout << "Loading \"" << path << "\".\n";
         imageDatas.push_back(stbi_load(path.c_str(), &width, &height, &nChannels, NChannelsFromFormat(params.format)));
+        // TODO: we don't throw an error if we put in a one channel image (for example) and wanted 3 channels, we just create 2 more channels, is that ok?
+        std::cout << "We want a minimum of " << NChannelsFromFormat(params.format) << " and we got " << nChannels << ".\n"; 
         nChannels = std::max(nChannels, (int)NChannelsFromFormat(params.format)); // apparently nChannels is set to the amount that the original image had, even if we asked for (and recieved) extra channels, so this makes sure it has the right value
         if (imageDatas.back() == nullptr) { // error check
             std::printf("STBI failed to load %s because %s", path.c_str(), stbi_failure_reason());
@@ -84,7 +88,7 @@ type(textureType)
             std::cout << "All textures given must be same size.\n";
             abort();
         }
-        if (width != height && type == TEXTURE_CUBEMAP) {
+        if (width != height && type == Texture::TextureCubemap) {
             std::cout << "Cubemaps have to be square.\n";
             abort();
         }
@@ -99,42 +103,72 @@ type(textureType)
     unsigned int sourceFormat;
     switch (nChannels) {
     case 4:
-    sourceFormat = GL_RGBA; std::cout << "picked rgba\n";
+    sourceFormat = GL_RGBA; std::cout << "src picked rgba\n";
     break;
     case 3:
-    sourceFormat = GL_RGB; std::cout << "picked rgb\n";
+    sourceFormat = GL_RGB; std::cout << "src picked rgb\n";
     break;
     case 1:
-    sourceFormat = GL_RED; std::cout << "picked grayscale\n";
+    sourceFormat = GL_RED; std::cout << "src picked grayscale\n";
     break;
     default:
-    std::cout << "uh what the \n";
+    std::cout << "texture.cpp: uh what the \n";
     abort();
     break;
     }
 
+    auto internalFormat = params.format; // format the texture will use when stored on the GPU
+    if (params.format == Texture::Auto) {
+        switch (nChannels) {
+        case 4:
+        internalFormat = Texture::RGBA; std::cout << "auto picked rgba\n";
+        break;
+        case 3:
+        internalFormat = Texture::RGB; std::cout << "auto picked rgb\n";
+        break;
+        case 1:
+        internalFormat = Texture::Grayscale; std::cout << "auto picked grayscale\n";
+        break;
+        default:
+        std::cout << "texture.cpp: uh what the \n";
+        abort();
+        break;
+        }
+    }
+
     // TODO: there was a crash when loading a 3-channel jpeg to create a grayscale texture
     // generate OpenGL texture object and put image data in it
+    std::cout << " gene\n";
     glGenTextures(1, &glTextureId);
 
-    // std::cout << "Texture data: ";
-    // for (unsigned int i = 0; i < width * height; i++) {
-    //     std:: cout << (unsigned int)(imageDatas.back()[i]) << ", ";
+    // std::cout << "Textuhhuhuhuhuure data: ";
+    // for (unsigned int i = 0; i < width * height * nChannels; i++) {
+    //     std:: cout << (char)(imageDatas.back()[i]);
     // }
     // std::cout << "\n";
-
-    // Use();
-    glBindTexture(bindingLocation, glTextureId);
-    if (type == TEXTURE_2D) {
+    std::cout << " binding.\n";
+    Use();
+    // glBindTexture(bindingLocation, glTextureId);
+    if (type == Texture::Texture2D) {
         std::cout << "here we go!\n";
-        depth = 1;
-        std::printf("Ok so its %u %u %u %u %u\n", glTextureId, params.format, width, height, depth);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // TODO: this may be neccesary in certain situations??? further investigation neededd
-        glTexImage3D(bindingLocation, 0, params.format, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.back()); // put data in opengl
-        std::cout << "die\n";
+        depth = 1; 
+        std::printf("Ok so its %u %u %u %u %u %u, %i\n", glTextureId, internalFormat, sourceFormat, width, height, depth, nChannels);
+        std::cout << " gonna load " << (void*)imageDatas.back() << ".\n";
+        // glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // TODO: this may be neccesary in certain situations??? further investigation neededd
+        // glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        // glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+        // glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+        std::cout << " pixels store i ed\n";
+        glTexImage3D(bindingLocation, 0, internalFormat, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.back()); // put data in opengl
+        std::cout << "die\n"; 
     }
-    else {
-        std::cout << " you forgot cubemap texture constructor my guy"; abort();
+    else if (type == Texture::TextureCubemap) {
+        std::cout << "we do be cubing\n";
+        std::printf("and so its %u %u %u %u %u %u, %i\n", glTextureId, internalFormat, sourceFormat, width, height, depth, nChannels);
+        for (unsigned int i = 0; i < 6; i++) {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.back());
+        }
+        
     }
     // else if (type == TEXTURE_2D_ARRAY) {
     //     if (layerHeight == -1) {layerHeight = height;}
@@ -142,6 +176,10 @@ type(textureType)
     //     height = layerHeight;
     //     glTexImage3D(bindingLocation, 0, GL_RGBA8, width, height, depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
     // }
+    else {
+        std::cout << " texture.cpp: que?\n";
+        abort();
+    }
 
     std::cout << "freeing.\n";
     // free the data loaded by stbi
@@ -149,7 +187,7 @@ type(textureType)
         stbi_image_free(data);
     }
     
-    ConfigTexture();
+    ConfigTexture(params);
 }
 
 // float Texture::AddLayer() {
@@ -167,13 +205,100 @@ void Texture::Use() {
 }
 
 // Sets all of the OpenGL texture parameters.
-void Texture::ConfigTexture() {
+void Texture::ConfigTexture(const TextureCreateParams& params) {
+    // mag filter vs min filter:
+    // mag filter is used when a fragment (pixel) on the screen is smaller than the pixels on texture (for close up objects)
+    // min filter is used when each fragment covers up many pixels on a texture (for far away objects)
+
     Use();
-    glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT means tile the texture; TODO: add params for this stuff
+
+    // mipmapping and filtering settings used for determining min filter
+    switch (params.mipmapBehaviour) {
+    case Texture::NoMipmaps:
+
+        switch (params.filteringBehaviour) {
+        case Texture::LinearTextureFiltering:
+        glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        break;
+        case Texture::NoTextureFiltering:
+        glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_NEAREST); 
+        break;
+        default:
+        std::cout << "something very wrong in config texture filtering\n"; abort();
+        }
+    
+    break;
+    case Texture::UseNearestMipmap:
+
+        switch (params.filteringBehaviour) {
+        case Texture::LinearTextureFiltering:
+        glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+        break;
+        case Texture::NoTextureFiltering:
+        glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); 
+        break;
+        default:
+        std::cout << "something very wrong in config texture filtering\n"; abort();
+        }
+
+    glGenerateMipmap(bindingLocation); // make sure we actually have mipmaps to use in this case
+
+    break;
+    case Texture::LinearMipmapInterpolation:
+    
+        switch (params.filteringBehaviour) {
+        case Texture::LinearTextureFiltering:
+        glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        break;
+        case Texture::NoTextureFiltering:
+        glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST); 
+        break;
+        default:
+        std::cout << "something very wrong in config texture filtering\n"; abort();
+        }
+    
+    glGenerateMipmap(bindingLocation); // make sure we actually have mipmaps to use in this case
+
+    break;
+    default:
+    std::cout << "something very wrong in config texture mipmapping\n"; abort();
+    }
+
+    // wrapping settings
+    switch (params.wrappingBehaviour) {
+    case Texture::WrapClampToEdge:
+    glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+    glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    break;
+    case Texture::WrapTiled:
+    glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT means tile the texture
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    break;
+    case Texture::WrapMirroredTiled:
+    glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT); 
+    glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    break;
+    case Texture::WrapMirroredClamped:
+    glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_MIRROR_CLAMP_TO_EDGE); 
+    glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_T, GL_MIRROR_CLAMP_TO_EDGE);
+    break;
+    default:
+    std::cout << "something very wrong in config texture wrappnig\n"; abort();
+    }
+
+    // filtering settings again for the mag filter
+    switch (params.filteringBehaviour) {
+    case Texture::LinearTextureFiltering:
     glTexParameteri(bindingLocation, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glGenerateMipmap(bindingLocation);
+    break;
+    case Texture::NoTextureFiltering:
+    glTexParameteri(bindingLocation, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // nearest means choose the closest pixel instead of interpolating between multiple
+    break;
+    default:
+    std::cout << "something very wrong in config texture filtering\n"; abort();
+    }
+    
+    
 }
 
 // Texture::Texture(TextureType textureType, std::string path, int layerHeight, int mipmapLevels) {
@@ -269,3 +394,15 @@ void Texture::ConfigTexture() {
 
 //     ConfigTexture();
 // }
+
+TextureCreateParams::TextureCreateParams(const std::vector<std::string>& imagePaths, const Texture::TextureUsage texUsage):
+    texturePaths(imagePaths),
+    usage(texUsage)
+{
+    format = Texture::Auto;
+
+    wrappingBehaviour = Texture::WrapTiled;
+    mipmapBehaviour = Texture::LinearMipmapInterpolation;
+    filteringBehaviour = Texture::LinearTextureFiltering;
+    
+}

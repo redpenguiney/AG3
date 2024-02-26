@@ -117,16 +117,15 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                 
                 DebugPlacePointOnPosition({averageContactPoint}, {0.2, 0.2, 1.0, 1.0});
 
-                // collision impulse-based response stolen from https://physics.stackexchange.com/questions/686640/resolving-angular-components-in-2d-circular-rigid-body-collision-response
 
                 // velocity of the actual point that hit should be used, not the overall velocity of the object
                 // glm::vec3 contactPointInObjectSpace = glm::dvec3(glm::inverse(transform.GetPhysicsModelMatrix()) * glm::dvec4(averageContactPoint, 1)); // TODO: might need to use whole inverted matrix
                 
                 
-            glm::vec3 posRelToContact = transform.position() - averageContactPoint;
+            glm::vec3 posRelToContact = (transform.position() - averageContactPoint);
 
             glm::dvec3 velocityAtContactPoint = rigidbody.velocity + rigidbody.VelocityAtPoint(posRelToContact);
-            glm::vec3 otherPosRelToContact = otherTransform->position() - averageContactPoint; // TODO: might need to use whole inverted matrix
+            glm::vec3 otherPosRelToContact = (otherTransform->position() - averageContactPoint); // TODO: might need to use whole inverted matrix
             // glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity :  glm::dvec3(0, 0, 0);
             glm::dvec3 velocityAtOtherContactPoint = otherRigidbody ?  (otherRigidbody->velocity + otherRigidbody->VelocityAtPoint(otherPosRelToContact)) : glm::dvec3(0, 0, 0);
 
@@ -150,11 +149,11 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             glm::mat3 globalInverseInertiaTensor1 = rigidbody.GetInverseGlobalMomentOfInertia(transform);
             std::cout << "Computed inverse inertia tensor of " << glm::to_string(globalInverseInertiaTensor1) << ".\n"; 
             glm::mat3 globalInverseInertiaTensor2 = otherRigidbody ? otherRigidbody->GetInverseGlobalMomentOfInertia(*otherTransform): glm::identity<glm::mat3x3>();
-            double reducedMass = 1/(1/rigidbody.mass + (otherRigidbody ? 1/otherRigidbody->mass : 0) + glm::dot(crossThing1, (crossThing1 * globalInverseInertiaTensor1)) + glm::dot(crossThing2, otherRigidbody ? (crossThing2 * globalInverseInertiaTensor2): glm::vec3(0, 0, 0)));
+            double reducedInverseMassAlongNormal = 1/(rigidbody.InverseMass() + (otherRigidbody ? otherRigidbody->InverseMass() : 0) + glm::dot(crossThing1, (globalInverseInertiaTensor1 * crossThing1)) + glm::dot(crossThing2, otherRigidbody ? (globalInverseInertiaTensor2 * crossThing2): glm::vec3(0, 0, 0)));
             
             // std::cout << "Reduced mass is " << reducedMass << ".\n";
-            float impulse = (1 + elasticity) * reducedMass * relVelocityAlongContactNormal; //* (penetration/averagePenetration);
-            // std::cout << "Impulse is " << impulse << ".\n";
+            float impulse = (1 + elasticity) * reducedInverseMassAlongNormal * relVelocityAlongContactNormal; //* (penetration/averagePenetration);
+            std::cout << "Impulse is " << impulse << ".\n";
             // std::cout << "Normal is " << glm::to_string(normal) << " rel velocity " << relVelocityAlongContactNormal << ".\n";
             // std::cout << "Prior to impulse accumulated force is " << glm::to_string(rigidbody.accumulatedForce) << ".\n";
             
@@ -176,10 +175,21 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
 
             // FRICTION
             glm::vec3 relVelocityAlongPlane =  relVelocity + (normal * relVelocityAlongContactNormal);
-            std::cout << "Along plane, rel velocity is " << glm::to_string(relVelocityAlongPlane) << " as calculated from total rel vel " << glm::to_string(relVelocity) << " and vel along normal " << relVelocityAlongContactNormal << ".\n";
-            float friction = otherColliderPtr->friction * collider.friction;
-            rigidbody.accumulatedForce += (friction * relVelocityAlongPlane);   
-            rigidbody.accumulatedTorque -= glm::cross(-posRelToContact, -relVelocityAlongPlane) * friction;
+            if (glm::length(relVelocityAlongPlane) > 0) {
+                auto tangentDirection = glm::normalize(relVelocityAlongPlane);
+
+                glm::vec3 planarCrossThing1 = glm::cross((glm::vec3)tangentDirection, -posRelToContact);
+                glm::vec3 planarCrossThing2 = glm::cross((glm::vec3)tangentDirection, -otherPosRelToContact);
+                std::cout << "Along plane, rel velocity is " << glm::to_string(relVelocityAlongPlane) << " as calculated from total rel vel " << glm::to_string(relVelocity) << " and vel along normal " << relVelocityAlongContactNormal << ".\n";
+                
+                float friction = otherColliderPtr->friction * collider.friction;
+                double reducedInverseMassAlongPlane = 1/(rigidbody.InverseMass() + (otherRigidbody ? otherRigidbody->InverseMass() : 0) + glm::dot(planarCrossThing1, (globalInverseInertiaTensor1 * planarCrossThing1)) + glm::dot(planarCrossThing2, otherRigidbody ? (globalInverseInertiaTensor2 * planarCrossThing2): glm::vec3(0, 0, 0)));
+                float frictionImpulse = friction * reducedInverseMassAlongPlane * glm::length(relVelocityAlongPlane);
+
+                rigidbody.accumulatedForce += frictionImpulse * tangentDirection;   
+                rigidbody.accumulatedTorque -= glm::cross(-posRelToContact, -tangentDirection) * frictionImpulse;
+            }
+           
             // std::cout << "It SHOULD have apllied force " << glm::to_string(impulse * glm::vec3(collisionTestResult->collisionNormal)) << ".\n";
 
 
@@ -216,7 +226,7 @@ void PhysicsEngine::Step(const double timestep) {
         SpatialAccelerationStructure::ColliderComponent& collider = *std::get<1>(tuple);
         RigidbodyComponent& rigidbody = *std::get<2>(tuple);
         if (collider.live) {
-            rigidbody.accumulatedForce += PhysicsEngine::Get().GRAVITY * timestep * (double)rigidbody.mass;
+            rigidbody.accumulatedForce += PhysicsEngine::Get().GRAVITY * timestep * (double)rigidbody.InverseMass();
 
             // TODO: drag ignores timestep
             // rigidbody.velocity *= rigidbody.linearDrag;
@@ -224,7 +234,7 @@ void PhysicsEngine::Step(const double timestep) {
 
             // f = ma, so a = f/m
             
-            rigidbody.velocity += rigidbody.accumulatedForce/rigidbody.mass;
+            rigidbody.velocity += rigidbody.accumulatedForce * rigidbody.InverseMass();
             rigidbody.accumulatedForce = {0, 0, 0};
 
             // a = t/i

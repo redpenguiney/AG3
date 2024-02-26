@@ -1,5 +1,6 @@
 #include "renderable_mesh.hpp"
 #include <cassert>
+#include <iostream>
 
 RenderableMesh::RenderableMesh(std::shared_ptr<Mesh> mesh) {
     assert(mesh->instancedColor && mesh->instancedTextureZ); // don't make the vertices have this stuff please i don't want to add vertex attributes for that

@@ -19,7 +19,7 @@ class Material {
     };
 
     const unsigned int id;
-    const TextureType materialType;
+    const Texture::TextureType materialType;
 
     bool HasSpecularMap();
     bool HasNormalMap();
@@ -42,13 +42,13 @@ class Material {
     // Returns a pair of (textureZ, ptr to the created material).
     // Take care that any shaders you use with this material use the requested color/normal/specular.
     // TODO: default normal/specular option?
-    static std::pair<float, std::shared_ptr<Material>> New(const std::vector<TextureCreateParams>& textureParams, TextureType type);
+    static std::pair<float, std::shared_ptr<Material>> New(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type);
 
     //~Material(); implicit destructor fine
     
     private:
     static inline unsigned int LAST_MATERIAL_ID = 1;
-    Material(const std::vector<TextureCreateParams>& textureParams, TextureType type);
+    Material(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type);
 
     std::optional<Texture> colorMap;
     std::optional<Texture> normalMap; 

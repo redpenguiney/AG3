@@ -13,13 +13,18 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
 
     glm::vec3 angularVelocity; // not a quaternion since those wouldn't be able to represent a rotation >360 degrees every frame
                                // around x, y, and z axis, in radians/second
-    glm::vec3 accumulatedTorque; // like accumulateForce, but for torque (rotational force), converted to change in angular velocity via torque/localMomentOfInertia
+                               // axis are in world space?
+    glm::vec3 accumulatedTorque; // like accumulateForce, but for torque (rotational force), converted to change in angular velocity via torque/globalMomentOfInertia
     glm::mat3x3 localMomentOfInertia; // sorta like mass but for rotation; how hard it is to rotate something around each axis basically; must be converted to global space
 
     double linearDrag; // rigid body's velocity will be multiplied by this every frame
     float angularDrag; // rigid body's angular velocity will be multiplied by this every frame
 
-    float mass; // may not be zero, probably shouldn't be negative
+    // returns 1/mass of the rigid body.
+    float InverseMass() const;
+
+    // newMass must not be zero
+    void SetMass(float newMass);
 
     void Init();
     void Destroy();
@@ -41,4 +46,6 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     friend class ComponentPool<RigidbodyComponent>;
     RigidbodyComponent();
     RigidbodyComponent(const RigidbodyComponent& other) = delete;
+
+    float inverseMass; // we store 1/mass instead of mass because all the formulas use inverse mass and this saves us some division
 };

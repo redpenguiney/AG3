@@ -302,7 +302,7 @@ SatFacesResult SatFaces(
             farthestNormal = normalInWorldSpace;
         }
         
-        std::cout << "d = " << distance << "\n";
+        // std::cout << "d = " << distance << "\n";
         assert(distance <= 0.1);
     }
 

@@ -31,15 +31,15 @@ int main(int numArgs, char *argPtrs[]) {
     //GE.camera.position.y = 3;
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
-    auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {.texturePaths = {"../textures/grass.png"}, .format = RGB, .usage = ColorMap}, TextureCreateParams {.texturePaths = {"../textures/crate_specular.png"}, .format = Grayscale, .usage = SpecularMap}}, TEXTURE_2D);
+    auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
 
     //std::printf("ITS %u %u\n", m->meshId, grassMaterial->id);
     auto [brickTextureZ, brickMaterial] = Material::New({
-        TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/color.jpg"}, .format = RGBA, .usage = ColorMap}, 
-        TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/roughness.jpg"}, .format = Grayscale, .usage = SpecularMap}, 
-        TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/normal_gl.jpg"}, .format = RGB, .usage = NormalMap}, 
+        TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap}, 
+        TextureCreateParams {{"../textures/ambientcg_bricks085/roughness.jpg",}, Texture::SpecularMap}, 
+        TextureCreateParams {{"../textures/ambientcg_bricks085/normal_gl.jpg",}, Texture::NormalMap}, 
         // TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
-        }, TEXTURE_2D);
+        }, Texture::Texture2D);
 
     {
         GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
@@ -47,9 +47,9 @@ int main(int numArgs, char *argPtrs[]) {
         params.materialId = grassMaterial->id;
         auto floor = ComponentRegistry::NewGameObject(params);
         floor->transformComponent->SetPos({0, 0, 0});
-        // floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(5.0)});
+        floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(5.0)});
         floor->colliderComponent->elasticity = 0.9;
-        floor->transformComponent->SetScl({10, 1, 10});
+        floor->transformComponent->SetScl({100, 1, 10});
         floor->renderComponent->SetColor({0, 1, 0, 0.5});
         floor->renderComponent->SetTextureZ(grassTextureZ);
         floor->name = "ah yes the floor here is made of floor";
@@ -96,22 +96,22 @@ int main(int numArgs, char *argPtrs[]) {
     auto skyboxFaces = vector<std::string>( // TODO: need to make clear what order skybox faces go in
     { 
         "../textures/sky/bottom.png",
-        "../textures/sky/bottom.png",
-        "../textures/sky/bottom.png",
+        "../textures/sky/right.png",
+        "../textures/sky/left.png",
         "../textures/sky/top.png",
         "../textures/sky/bottom.png",
         "../textures/sky/bottom.png"
     });
 
     {
-        // auto [index, sky_m_ptr] = Material::New({TextureCreateParams {.texturePaths = skyboxFaces, .format = RGBA, .usage = ColorMap}}, TEXTURE_CUBEMAP);
-        // GE.skyboxMaterial = sky_m_ptr;
-        // GE.skyboxMaterialLayer = index;
+        auto [index, sky_m_ptr] = Material::New({TextureCreateParams {skyboxFaces, Texture::ColorMap}}, Texture::TextureCubemap);
+        GE.skyboxMaterial = sky_m_ptr;
+        GE.skyboxMaterialLayer = index;
     }
     GE.debugFreecamPos = glm::vec3(0, 3, 8);
     
     
-    int i = 0;
+    int nObjs = 0;
     for (int x = 0; x < 1; x++) {
         for (int y = 0; y < 1; y++) {
             for (int z = 0; z < 1; z++) {
@@ -119,16 +119,16 @@ int main(int numArgs, char *argPtrs[]) {
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({x * 3,3 + y * 3, z * 3});
+                g->transformComponent->SetPos({x * 3,1.5 + y * 3, z * 3});
                 g->colliderComponent->elasticity = 0.8;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(30.0), 0.0, 30.0)));
+                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), 0.0, glm::radians(0.0))));
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
-                g->name = std::string("Gameobject #") + to_string(i);
-                i++;
+                g->name = std::string("Gameobject #") + to_string(nObjs);
+                nObjs++;
             } 
         }
     }
