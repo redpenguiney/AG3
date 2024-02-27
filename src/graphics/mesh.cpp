@@ -26,7 +26,7 @@ std::shared_ptr<Mesh> Mesh::FromVertices(std::vector<GLfloat> &verts, std::vecto
     return ptr;
 }
 
-std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextureZ, bool instanceColor, float textureZ, unsigned int meshTransparency, unsigned int expectedCount) {
+std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextureZ, bool instanceColor, float textureZ, unsigned int meshTransparency, unsigned int expectedCount, bool normalizeSize) {
     // Load file
     auto config = tinyobj::ObjReaderConfig();
     config.triangulate = true;
@@ -50,39 +50,42 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
 
     // scale vertex positions into range -0.5 to 0.5
 
-    // find mesh extents
-    float minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0;
-    unsigned int i = 0; 
-    for (float v: positions) {
-        if (i % 3 == 0) {
-            minX = std::min(minX, v);
-            maxX = std::max(maxX, v);
+    if (normalizeSize) {
+        // find mesh extents
+        float minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0;
+        unsigned int i = 0; 
+        for (float v: positions) {
+            if (i % 3 == 0) {
+                minX = std::min(minX, v);
+                maxX = std::max(maxX, v);
+            }
+            else if (i % 3 == 1) {
+                minY = std::min(minY, v);
+                maxY = std::max(maxY, v);
+            }
+            else if (i % 3 == 2) {
+                minZ = std::min(minZ, v);
+                maxZ = std::max(maxZ, v);
+            }
+            i++;
         }
-        else if (i % 3 == 1) {
-            minY = std::min(minY, v);
-            maxY = std::max(maxY, v);
-        }
-        else if (i % 3 == 2) {
-            minZ = std::min(minZ, v);
-            maxZ = std::max(maxZ, v);
-        }
-        i++;
-    }
 
-    // scale mesh by extents
-    i = 0;
-    for (float& v: positions) {
-        if (i % 3 == 0) {
-            v = 1.0*(v-minX)/(maxX-minX) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
+        // scale mesh by extents
+        i = 0;
+        for (float& v: positions) {
+            if (i % 3 == 0) {
+                v = 1.0*(v-minX)/(maxX-minX) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
+            }
+            else if (i % 3 == 1) {
+                v = 1.0*(v-minY)/(maxY-minY) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
+            }
+            else if (i % 3 == 2) {
+                v = 1.0*(v-minZ)/(maxZ-minZ) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
+            }
+            i++;
         }
-        else if (i % 3 == 1) {
-            v = 1.0*(v-minY)/(maxY-minY) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
-        }
-        else if (i % 3 == 2) {
-            v = 1.0*(v-minZ)/(maxZ-minZ) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
-        }
-        i++;
     }
+    
 
     // take all the seperate colors, positions, etc. and put them in a single interleaved vertices thing with one indices
     std::unordered_map<std::tuple<GLuint, GLuint, GLuint>, GLuint, hash_tuple::hash<std::tuple<GLuint, GLuint, GLuint>>> objIndicesToGlIndices; // tuple is (posIndex, texXyIndex, normalIndex)

@@ -30,7 +30,7 @@ GLenum TextureBindingLocationFromType(Texture::TextureType type) {
     
     break;
     }
-    return 0; // gotta return something to hide the warning
+    // return 0; // gotta return something to hide the warning
 }
 
 unsigned int NChannelsFromFormat(Texture::TextureFormat format ) {
@@ -72,7 +72,7 @@ type(textureType)
     std::vector<unsigned char*> imageDatas;
     
     std::cout << "Requiring " << NChannelsFromFormat(params.format) << " channels.\n";
-    int lastWidth = 0, lastHeight = 0;
+    int lastWidth = 0, lastHeight = 0, lastNChannels = 0;
     for (auto & path: params.texturePaths) {
         // use stbi_image.h to load file
         std::cout << "Loading \"" << path << "\".\n";
@@ -92,10 +92,14 @@ type(textureType)
             std::cout << "Cubemaps have to be square.\n";
             abort();
         }
-        // TODO: we should also assert that all files have same number of color/alpha channels
+        if (lastNChannels != 0 && lastNChannels != nChannels) {
+            std::cout << "All texture given must have the same number of channels.\n";
+            abort();
+        }
 
         lastWidth = width;
         lastHeight = height;
+        lastNChannels = nChannels;
     }
 
     // Determine what format the image data was in; RGB? RGBA? etc (nChannels is how many components the loaded mage had)
@@ -142,10 +146,10 @@ type(textureType)
     glGenTextures(1, &glTextureId);
 
     // std::cout << "Textuhhuhuhuhuure data: ";
-    // for (unsigned int i = 0; i < width * height * nChannels; i++) {
-    //     std:: cout << (char)(imageDatas.back()[i]);
+    // for (unsigned int i = 0; i < width; i++) {
+    //     std:: cout << (int)(imageDatas.back()[i]) << " ";
     // }
-    // std::cout << "\n";
+    std::cout << "\n";
     std::cout << " binding.\n";
     Use();
     // glBindTexture(bindingLocation, glTextureId);
@@ -269,18 +273,22 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
     case Texture::WrapClampToEdge:
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (glTextureIndex == GL_TEXTURE_CUBE_MAP) {glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); }
     break;
     case Texture::WrapTiled:
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_REPEAT); // GL_REPEAT means tile the texture
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    if (glTextureIndex == GL_TEXTURE_CUBE_MAP) {glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_REPEAT); }
     break;
     case Texture::WrapMirroredTiled:
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT); 
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    if (glTextureIndex == GL_TEXTURE_CUBE_MAP) {glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_MIRRORED_REPEAT); }
     break;
     case Texture::WrapMirroredClamped:
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_S, GL_MIRROR_CLAMP_TO_EDGE); 
     glTexParameteri(bindingLocation, GL_TEXTURE_WRAP_T, GL_MIRROR_CLAMP_TO_EDGE);
+    if (glTextureIndex == GL_TEXTURE_CUBE_MAP) {glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_MIRROR_CLAMP_TO_EDGE); }
     break;
     default:
     std::cout << "something very wrong in config texture wrappnig\n"; abort();

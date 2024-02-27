@@ -7,5 +7,6 @@ in vec3 fragmentTexCoords;
 uniform samplerCube skybox;
 
 void main() {
-    Output = vec4(0.5, 0.5, 0.5, 1.0) + texture(skybox, fragmentTexCoords);
+    Output = texture(skybox, fragmentTexCoords);
+    //Output = vec4(fragmentTexCoords, 1.0);
 }

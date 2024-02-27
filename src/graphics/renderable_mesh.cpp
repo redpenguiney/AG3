@@ -20,9 +20,9 @@ RenderableMesh::RenderableMesh(std::shared_ptr<Mesh> mesh) {
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(0, 3, GL_FLOAT, false, 8 * sizeof(GLfloat), 0); // position
-    glVertexAttribPointer(1, 2, GL_FLOAT, false, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat))); // texture
-    glVertexAttribPointer(2, 3, GL_FLOAT, false, 8 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat))); // normal
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, mesh->vertexSize, 0); // position
+    glVertexAttribPointer(1, 2, GL_FLOAT, false, mesh->vertexSize, (void*)(3 * sizeof(GLfloat))); // texture
+    glVertexAttribPointer(2, 3, GL_FLOAT, false, mesh->vertexSize, (void*)(5 * sizeof(GLfloat))); // normal
 }
 
 RenderableMesh::~RenderableMesh() {

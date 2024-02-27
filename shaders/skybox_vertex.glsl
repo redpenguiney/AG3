@@ -12,6 +12,6 @@ out vec3 fragmentTexCoords;
 void main()
 {
     vec4 position = camera * vec4(vertexPos, 1.0);
-    gl_Position = position.xyww; // set z coordinate to be big so skybox isn't drawn over stuff
+    gl_Position = vec4(position.xyww); // set z coordinate to be big so skybox isn't drawn over stuff
     fragmentTexCoords = vertexPos;
-}   
+}    

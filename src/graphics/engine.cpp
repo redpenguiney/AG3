@@ -34,8 +34,13 @@ pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024
     defaultShaderProgramId = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl")->shaderProgramId;
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
 
-    skybox = new RenderableMesh(Mesh::FromFile("../models/skybox.obj"));
-
+    auto skybox_boxmesh = Mesh::FromFile("../models/skybox.obj", true, true, -1.0, 1.0, 1, false);
+    skybox = new RenderableMesh(skybox_boxmesh);
+    std::cout << "SKYBOX has indices: ";
+    for (auto & v: skybox_boxmesh->indices) {
+        std::cout << v << ", ";
+    }
+    std::cout << "\n";
     glDepthFunc(GL_LEQUAL); // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
 }
 
@@ -71,7 +76,7 @@ bool GraphicsEngine::ShouldClose() {
 void GraphicsEngine::DebugAxis() {
     static auto crummyDebugShader =  ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
     crummyDebugShader->Use();
-
+    // TODO: i literally made the renderablemesh class for this sort of thing, use it
     // xyz, rgb
     const static std::vector<float> vertices = {0.0,  0.0,  0.0, 1.0, 0.0, 0.0,
                                    0.2,  0.0,  0.0,    1.0, 0.0, 0.0,
@@ -202,16 +207,17 @@ void GraphicsEngine::RenderScene() {
         } 
     }
 
+    
+    UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
     // Draw skybox afterwards to encourage early z-test
     DrawSkybox();
-    UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
-    
     glFlush(); // Tell OpenGL we're done drawing.
 }
 
 void GraphicsEngine::DrawSkybox() {
     if (skyboxShaderProgram == nullptr || skyboxMaterial == nullptr) {return;} // make sure there is a skybox
     glDisable(GL_CULL_FACE);
+    // glDisable(GL_DEPTH_TEST);
     skyboxShaderProgram->Use();
     skyboxMaterial->Use();
     skybox->Draw();

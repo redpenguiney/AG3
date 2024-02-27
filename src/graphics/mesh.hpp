@@ -25,7 +25,13 @@ class Mesh {
                                       // def make it like a million for cubes and stuff, otherwise default of 1024 should be fine
                                       // NOTE: if you're constantly adding and removing unique meshes, they better all have same expectedCount or it's gonna cost you in memory
     const glm::vec3 originalSize; // When loading a mesh from file, it is automatically scaled so all vertex positions are in the range -0.5 to 0.5. (this lets you and the physics engine easily know what the actual size of the object is) Set gameobject scale to this value to restore it to original size.
+    
+    
     const unsigned int vertexSize; // the size, in bytes, of a single vertex. 
+    // TODO
+    // const int positionOffset; // the offset, in bytes, of the position vertex attribute (-1 if no such attribute)
+    // const int UVOffset; // the offset, in bytes, of the texture UV vertex attribute (-1 if no such attribute)
+    
 
     static std::shared_ptr<Mesh>& Get(unsigned int meshId);
 
@@ -39,7 +45,8 @@ class Mesh {
     // TODO: MTL support should be easy
     // meshTransparency will be the initial alpha value of every vertex color, because obj files only support RGB (and also they don't REALLY support RGA).
     // leave expectedCount at 1024 unless it's something like a cube, in which case maybe set it to like 100k (you can create more objects than this number, just for instancing)
-    static std::shared_ptr<Mesh> FromFile(const std::string& path, bool instanceTextureZ=true, bool instanceColor=true, float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024);
+    // normalizeSize should ALWAYS be true unless you're creating a mesh (like the mesh) for internal usage
+    static std::shared_ptr<Mesh> FromFile(const std::string& path, bool instanceTextureZ=true, bool instanceColor=true, float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024, bool normalizeSize = true);
     static void Unload(int meshId);
 
     private:
