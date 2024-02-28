@@ -151,8 +151,8 @@ type(textureType)
     // }
     std::cout << "\n";
     std::cout << " binding.\n";
-    Use();
-    // glBindTexture(bindingLocation, glTextureId);
+    // Use();
+    glBindTexture(bindingLocation, glTextureId);
     if (type == Texture::Texture2D) {
         std::cout << "here we go!\n";
         depth = 1; 
@@ -168,9 +168,10 @@ type(textureType)
     }
     else if (type == Texture::TextureCubemap) {
         std::cout << "we do be cubing\n";
+        depth = 1; 
         std::printf("and so its %u %u %u %u %u %u, %i\n", glTextureId, internalFormat, sourceFormat, width, height, depth, nChannels);
         for (unsigned int i = 0; i < 6; i++) {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.back());
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.at(i));
         }
         
     }

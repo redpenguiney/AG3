@@ -40,7 +40,7 @@ class Material {
     // textureParams must at minimum contain a TextureCreateParams for color.
     // If possible, will not to create a new material, but simply add the requested textures to an existing compatible material.
     // Returns a pair of (textureZ, ptr to the created material).
-    // Take care that any shaders you use with this material use the requested color/normal/specular.
+    // Take care that any shaders you use with this material actually use the requested color/normal/specular.
     // TODO: default normal/specular option?
     static std::pair<float, std::shared_ptr<Material>> New(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type);
 

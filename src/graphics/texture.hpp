@@ -11,6 +11,8 @@
 
 struct TextureCreateParams;
 
+class Framebuffer;
+
 class Texture {
     public:
 
@@ -53,6 +55,8 @@ class Texture {
         SpecularMap = 1,
         NormalMap = 2,
         DisplacementMap = 3
+
+
     };
 
     // lets textureId be read only without a getter
@@ -60,8 +64,13 @@ class Texture {
 
     const TextureFormat format;
 
-    Texture(const TextureCreateParams& params, const GLuint textureIndex, TextureType textureType);
-    Texture(const Texture&) = delete; // destructor deletes the openGL texture, so copying it would be bad
+    // normal constructor for a texture. TextureIndex refers to which texture unit it will occupy when bound (when rendering, each texture unit can hold one texture for shaders to access)
+    Texture(const TextureCreateParams& params, const GLuint textureIndex, TextureType textureType); 
+
+    // constructor that creates an empty texture (params.texturePaths is ignored and should be an empty vector) and binds it to the given framebuffer.
+    Texture(const Framebuffer& framebuffer, const TextureCreateParams& params); 
+    Texture(const Texture&) = delete; // destructor deletes the openGL texture, so copying it would be bad since it would be using the same id of the now-deleted openGL texture 
+
 
     // Given that the texture is an array texture, will append the image at the given path to the texture array, returning the textureZ coordinate the image can be accessed through.
     float AddLayer();
@@ -95,7 +104,9 @@ class Texture {
 };
 
 struct TextureCreateParams {
-    const std::vector<std::string> texturePaths; // Note: unless creating cubemap, size must = 1.
+    // Unless creating cubemap, size must = 1.
+    // If it is a cubemap, it goes Right,Left,Top,Bottom,Back,Front
+    const std::vector<std::string> texturePaths; 
 
     // how texture data is stored on the GPU; RGB, RGBA, grayscale for things like heightmaps, etc.
     // NOT how it is stored within the file, we automatically determine that.

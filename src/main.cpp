@@ -30,77 +30,77 @@ int main(int numArgs, char *argPtrs[]) {
     // LUA.RunString("print(\"Hello!\")");
     //GE.camera.position.y = 3;
 
-    // auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
-    // auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
+    auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
 
-    // //std::printf("ITS %u %u\n", m->meshId, grassMaterial->id);
-    // auto [brickTextureZ, brickMaterial] = Material::New({
-    //     TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap}, 
-    //     TextureCreateParams {{"../textures/ambientcg_bricks085/roughness.jpg",}, Texture::SpecularMap}, 
-    //     TextureCreateParams {{"../textures/ambientcg_bricks085/normal_gl.jpg",}, Texture::NormalMap}, 
-    //     // TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
-    //     }, Texture::Texture2D);
+    //std::printf("ITS %u %u\n", m->meshId, grassMaterial->id);
+    auto [brickTextureZ, brickMaterial] = Material::New({
+        TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap}, 
+        TextureCreateParams {{"../textures/ambientcg_bricks085/roughness.jpg",}, Texture::SpecularMap}, 
+        TextureCreateParams {{"../textures/ambientcg_bricks085/normal_gl.jpg",}, Texture::NormalMap}, 
+        // TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
+        }, Texture::Texture2D);
 
-    // {
-    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    //     params.meshId = m->meshId;
-    //     params.materialId = grassMaterial->id;
-    //     auto floor = ComponentRegistry::NewGameObject(params);
-    //     floor->transformComponent->SetPos({0, 0, 0});
-    //     floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(5.0)});
-    //     floor->colliderComponent->elasticity = 0.9;
-    //     floor->transformComponent->SetScl({100, 1, 10});
-    //     floor->renderComponent->SetColor({0, 1, 0, 0.5});
-    //     floor->renderComponent->SetTextureZ(grassTextureZ);
-    //     floor->name = "ah yes the floor here is made of floor";
-    // }
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = grassMaterial->id;
+        auto floor = ComponentRegistry::NewGameObject(params);
+        floor->transformComponent->SetPos({0, 0, 0});
+        floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(5.0)});
+        floor->colliderComponent->elasticity = 0.9;
+        floor->transformComponent->SetScl({100, 1, 10});
+        floor->renderComponent->SetColor({0, 1, 0, 0.5});
+        floor->renderComponent->SetTextureZ(grassTextureZ);
+        floor->name = "ah yes the floor here is made of floor";
+    }
 
-    // {
-    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    //     params.meshId = m->meshId;
-    //     params.materialId = brickMaterial->id;
-    //     auto wall1 = ComponentRegistry::NewGameObject(params);
-    //     wall1->transformComponent->SetPos({4, 4, 0});
-    //     wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-    //     wall1->colliderComponent->elasticity = 1.0;
-    //     wall1->transformComponent->SetScl({1, 8, 8});
-    //     wall1->renderComponent->SetColor({1, 1, 1, 1});
-    //     wall1->renderComponent->SetTextureZ(brickTextureZ);
-    //     wall1->name = "wall";
-    //     auto wall2 = ComponentRegistry::NewGameObject(params);
-    //     wall2->transformComponent->SetPos({-4, 4, 0});
-    //     wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-    //     wall2->colliderComponent->elasticity = 1.0;
-    //     wall2->transformComponent->SetScl({1, 8, 8});
-    //     wall2->renderComponent->SetColor({1, 1, 1, 1.0});
-    //     wall2->renderComponent->SetTextureZ(brickTextureZ);
-    //     wall2->name = "wall";
-    //     auto wall3 = ComponentRegistry::NewGameObject(params);
-    //     wall3->transformComponent->SetPos({0, 4, 4});
-    //     wall3->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-    //     wall3->colliderComponent->elasticity = 1.0;
-    //     wall3->transformComponent->SetScl({8, 8, 1});
-    //     wall3->renderComponent->SetColor({1, 1, 1, 1});
-    //     wall3->renderComponent->SetTextureZ(brickTextureZ);
-    //     wall3->name = "wall";
-    //     auto wall4 = ComponentRegistry::NewGameObject(params);
-    //     wall4->transformComponent->SetPos({0, 4, -4});
-    //     wall4->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-    //     wall4->colliderComponent->elasticity = 1.0;
-    //     wall4->transformComponent->SetScl({8, 8, 1});
-    //     wall4->renderComponent->SetColor({1, 1, 1, 1.0});
-    //     wall4->renderComponent->SetTextureZ(brickTextureZ);
-    //     wall4->name = "wall";
-    // }
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = brickMaterial->id;
+        auto wall1 = ComponentRegistry::NewGameObject(params);
+        wall1->transformComponent->SetPos({4, 4, 0});
+        wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall1->colliderComponent->elasticity = 1.0;
+        wall1->transformComponent->SetScl({1, 8, 8});
+        wall1->renderComponent->SetColor({1, 1, 1, 1});
+        wall1->renderComponent->SetTextureZ(brickTextureZ);
+        wall1->name = "wall";
+        auto wall2 = ComponentRegistry::NewGameObject(params);
+        wall2->transformComponent->SetPos({-4, 4, 0});
+        wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall2->colliderComponent->elasticity = 1.0;
+        wall2->transformComponent->SetScl({1, 8, 8});
+        wall2->renderComponent->SetColor({1, 1, 1, 1.0});
+        wall2->renderComponent->SetTextureZ(brickTextureZ);
+        wall2->name = "wall";
+        auto wall3 = ComponentRegistry::NewGameObject(params);
+        wall3->transformComponent->SetPos({0, 4, 4});
+        wall3->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall3->colliderComponent->elasticity = 1.0;
+        wall3->transformComponent->SetScl({8, 8, 1});
+        wall3->renderComponent->SetColor({1, 1, 1, 1});
+        wall3->renderComponent->SetTextureZ(brickTextureZ);
+        wall3->name = "wall";
+        auto wall4 = ComponentRegistry::NewGameObject(params);
+        wall4->transformComponent->SetPos({0, 4, -4});
+        wall4->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall4->colliderComponent->elasticity = 1.0;
+        wall4->transformComponent->SetScl({8, 8, 1});
+        wall4->renderComponent->SetColor({1, 1, 1, 1.0});
+        wall4->renderComponent->SetTextureZ(brickTextureZ);
+        wall4->name = "wall";
+    }
 
-    auto skyboxFaces = vector<std::string>( // TODO: need to make clear what order skybox faces go in
+    auto skyboxFaces = vector<std::string>(
     { 
-        "../textures/sky/bottom.png",
-        "../textures/sky/back.png",
+        "../textures/sky/right.png",
         "../textures/sky/left.png",
         "../textures/sky/top.png",
         "../textures/sky/bottom.png",
-        "../textures/sky/bottom.png"
+        "../textures/sky/back.png",
+        "../textures/sky/front.png"
     });
 
     {
@@ -135,22 +135,22 @@ int main(int numArgs, char *argPtrs[]) {
 
     
     // make light
-    // {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    // params.meshId = m->meshId;
-    // params.materialId = 0;
-    // auto coolLight = ComponentRegistry::NewGameObject(params);
-    // coolLight->renderComponent->SetTextureZ(-1);
-    // coolLight->transformComponent->SetPos({0, 10, 10});
-    // coolLight->pointLightComponent->SetRange(200);
-    // coolLight->pointLightComponent->SetColor({1, 1, 1});}
-    // {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    // params.meshId = m->meshId;
-    // params.materialId = grassMaterial->id;
-    // auto coolLight = ComponentRegistry::NewGameObject(params);
-    // coolLight->renderComponent->SetTextureZ(-1);
-    // coolLight->transformComponent->SetPos({30, 10, 30});
-    // coolLight->pointLightComponent->SetRange(100);
-    // coolLight->pointLightComponent->SetColor({1, 1, 1});}
+    {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+    params.meshId = m->meshId;
+    params.materialId = 0;
+    auto coolLight = ComponentRegistry::NewGameObject(params);
+    coolLight->renderComponent->SetTextureZ(-1);
+    coolLight->transformComponent->SetPos({0, 10, 10});
+    coolLight->pointLightComponent->SetRange(200);
+    coolLight->pointLightComponent->SetColor({1, 1, 1});}
+    {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+    params.meshId = m->meshId;
+    params.materialId = grassMaterial->id;
+    auto coolLight = ComponentRegistry::NewGameObject(params);
+    coolLight->renderComponent->SetTextureZ(-1);
+    coolLight->transformComponent->SetPos({30, 10, 30});
+    coolLight->pointLightComponent->SetRange(100);
+    coolLight->pointLightComponent->SetColor({1, 1, 1});}
     
     
     GE.debugFreecamEnabled = true;
