@@ -15,6 +15,7 @@
 #include "../../external_headers/stb/stb_image.h" 
 #include "../debug/debug.hpp"
 #include "texture.hpp"
+#include "framebuffer.hpp"
 
 GLenum TextureBindingLocationFromType(Texture::TextureType type) {
     switch (type) {
@@ -53,8 +54,8 @@ unsigned int NChannelsFromFormat(Texture::TextureFormat format ) {
     return 0; // gotta return something to hide the warning
 }
 
-// Create texture.
-Texture::Texture(const TextureCreateParams& params, const GLuint textureIndex, TextureType textureType):
+// Create texture (for use on objects).
+Texture::Texture(const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType):
 format(params.format),
 bindingLocation(TextureBindingLocationFromType(textureType)),
 glTextureIndex(textureIndex),
@@ -198,6 +199,26 @@ type(textureType)
 // float Texture::AddLayer() {
 //     abort();
 // }
+
+// Create texture and attach it to framebuffer
+Texture::Texture(const Framebuffer& framebuffer, const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType):
+format(params.format),
+bindingLocation(TextureBindingLocationFromType(textureType)),
+glTextureIndex(textureIndex),
+type(textureType) 
+{
+    assert(params.texturePaths.size() == 0); 
+
+    glGenTextures(1, &glTextureId);
+    glBindTexture(bindingLocation, glTextureId);
+
+    width = framebuffer.width;
+    height = framebuffer.height;
+    depth = 1; // TODO
+
+    framebuffer.StartDrawingWith();
+    glFramebufferTextureLayer(framebuffer.);
+}
 
 Texture::~Texture() {
     glDeleteTextures(1, &glTextureId);

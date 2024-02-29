@@ -1,3 +1,4 @@
+#pragma once
 #include "../../external_headers/GLEW/glew.h"
 #include <optional>
 #include <vector>
@@ -17,9 +18,10 @@ class Framebuffer {
     // Unbinds the framebuffer, causing all drawing operators to be drawn onto the window/default framebuffer instead.
     void StopDrawingWith();
 
-    private:
     const unsigned int width;
     const unsigned int height;
+
+    private:
     GLuint glFramebufferId;
 
     // these store what is rendered onto the framebuffer
