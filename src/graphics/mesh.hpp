@@ -28,7 +28,7 @@ class Mesh {
     
     
     const unsigned int vertexSize; // the size, in bytes, of a single vertex. 
-    // TODO
+    // TODO: this, and by extension optional vertex attributes
     // const int positionOffset; // the offset, in bytes, of the position vertex attribute (-1 if no such attribute)
     // const int UVOffset; // the offset, in bytes, of the texture UV vertex attribute (-1 if no such attribute)
     
@@ -37,7 +37,9 @@ class Mesh {
 
     // verts must be organized into (XYZ, TextureXY, NormalXYZ, TangentXYZ, RGBA if !instanceColor, TextureZ if !instanceTextureZ).
     // leave expectedCount at 1024 unless it's something like a cube, in which case maybe set it to like 100k (you can create more objects than this number, just for instancing)
-    static std::shared_ptr<Mesh> FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor=true, bool instanceTextureZ=true, unsigned int expectedCount=1024);
+    // normalizeSize should ALWAYS be true unless you're creating a mesh (like the screen quad or skybox mesh) for internal usage
+    // TODO: how to pass verts by ref while still normalizing size? prob not worth trying to
+    static std::shared_ptr<Mesh> FromVertices(std::vector<GLfloat> verts, const std::vector<GLuint> &indies, bool instanceColor=true, bool instanceTextureZ=true, unsigned int expectedCount=1024, bool normalizeSize = true);
 
     // only accepts OBJ files.
     // File should just contain one object. 
@@ -45,12 +47,12 @@ class Mesh {
     // TODO: MTL support should be easy
     // meshTransparency will be the initial alpha value of every vertex color, because obj files only support RGB (and also they don't REALLY support RGA).
     // leave expectedCount at 1024 unless it's something like a cube, in which case maybe set it to like 100k (you can create more objects than this number, just for instancing)
-    // normalizeSize should ALWAYS be true unless you're creating a mesh (like the mesh) for internal usage
+    // normalizeSize should ALWAYS be true unless you're creating a mesh (like the screen quad or skybox mesh) for internal usage
     static std::shared_ptr<Mesh> FromFile(const std::string& path, bool instanceTextureZ=true, bool instanceColor=true, float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024, bool normalizeSize = true);
     static void Unload(int meshId);
 
     private:
-    Mesh(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor, bool instanceTextureZ, unsigned int expectedCount);
+    Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, bool instanceColor, bool instanceTextureZ, unsigned int expectedCount);
     inline static std::atomic<unsigned int> LAST_MESH_ID = {1};
     inline static std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
     inline static tinyobj::ObjReader OBJ_LOADER;

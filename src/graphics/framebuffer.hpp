@@ -12,21 +12,23 @@ class Framebuffer {
 
     ~Framebuffer();
 
-    // Binds the framebuffer, causing all drawing operations to be drawn onto this framebuffer until StopDrawingWith() is called or StartDrawingWith() is called on another framebuffer.
-    void StartDrawingWith();
+    // Binds the framebuffer, causing all drawing operations to be drawn onto this framebuffer until Bind() is called on another framebuffer, or Unbind() is called.
+    void Bind();
 
-    // Unbinds the framebuffer, causing all drawing operators to be drawn onto the window/default framebuffer instead.
-    void StopDrawingWith();
+    // Unbinds whatever framebuffer is currently bound, so that all drawing operations are drawn on the window.
+    static void Unbind();
 
     const unsigned int width;
     const unsigned int height;
+
+    // these store what is rendered onto the framebuffer
+    std::vector<Texture> textureAttachments;
 
     private:
     GLuint glFramebufferId;
     const GLenum bindingLocation; // TODO, currently always GL_FRAMEBUFFER
 
-    // these store what is rendered onto the framebuffer
-    std::vector<Texture> textureAttachments;
+    
 
     // std::optional<unsigned int> colorRenderbufferId; i don't think we actually want this?
     std::optional<unsigned int> depthRenderbufferId;

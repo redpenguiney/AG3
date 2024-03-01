@@ -22,9 +22,9 @@ void main()
     );
 
     float kernel[9] = float[](
-        0,  0, 0,
-        0,  1, 0,
-        0,  0, 0
+        1,  1, 1,
+        1,  -7, 1,
+        1,  1, 1
     );
     
     vec3 sampleTex[9];
@@ -37,7 +37,9 @@ void main()
         col += sampleTex[i] * kernel[i];
     
     // FragColor = vec4(col, 1.0);
+    FragColor = texture(screenTexture, TexCoords);
+    // FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 
     //float depthValue = texture(screenTexture, TexCoords).r;
-    //FragColor = vec4(vec3(depthValue), 1.0);
+    // FragColor = vec4(vec3(depthValue), 1.0);
 }

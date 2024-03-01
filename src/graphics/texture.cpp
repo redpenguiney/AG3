@@ -216,21 +216,23 @@ type(textureType)
     height = framebuffer.height;
     depth = 1; // TODO
 
-    
-    framebuffer.StartDrawingWith(); // bind the framebuffer so we can attach textures to it
+    // std::cout << " bind buffer for tex creation\n";
+    framebuffer.Bind(); // bind the framebuffer so we can attach textures to it
     if (bindingLocation == GL_TEXTURE_2D_ARRAY) {
+
         // allocate storage for texture by passing nullptr as the data to load into the texture
         glTexImage3D(bindingLocation, 0, params.format, width, height, depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         ConfigTexture(params);
 
         // attach the texture to the framebuffer
-        glFramebufferTextureLayer(framebuffer.bindingLocation, framebufferAttachmentType, bindingLocation, 0, 0);
+        glFramebufferTextureLayer(framebuffer.bindingLocation, framebufferAttachmentType, glTextureId, 0, 0);
     }
     else {
         std::cout << " add support first my guy\n";
         abort();
     }
-    framebuffer.StopDrawingWith(); // TODO: probably not really needed and might carry high perf cost?
+
+    // Framebuffer::Unbind(); // TODO: probably not really needed and might carry high perf cost?
 }
 
 Texture::~Texture() {

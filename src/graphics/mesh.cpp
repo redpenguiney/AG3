@@ -1,4 +1,3 @@
-#pragma once
 #include "mesh.hpp"
 #include <cassert>
 #include <cstdio>
@@ -6,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 #include "../../external_headers/GLM/gtc/type_ptr.hpp"
 #define TINYOBJLOADER_IMPLEMENTATION // what kind of library makes you have to ask it to actually implement the functions???
 #include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
@@ -19,8 +19,17 @@ std::shared_ptr<Mesh>& Mesh::Get(unsigned int meshId) {
     return LOADED_MESHES[meshId];
 }
 
-std::shared_ptr<Mesh> Mesh::FromVertices(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor, bool instanceTextureZ, unsigned int expectedCount) {
+// // Scales the vertex positions by the given 
+// glm::vec3 NormalizeVertices(std::vector<GLfloat> & verts) {
+
+// }
+
+std::shared_ptr<Mesh> Mesh::FromVertices(std::vector<GLfloat> verts, const std::vector<GLuint> &indies, bool instanceColor, bool instanceTextureZ, unsigned int expectedCount, bool normalizeSize) {
     unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
+    if (normalizeSize) {
+        std::cout << "YOU DIDN\'T ADD THIS YET (MESH.CPP)\n";
+        abort();
+    }
     auto ptr = std::shared_ptr<Mesh>(new Mesh(verts, indies, instanceColor, instanceTextureZ, expectedCount));
     LOADED_MESHES[meshId] = ptr;
     return ptr;
@@ -187,7 +196,7 @@ void Mesh::Unload(int meshId) {
     LOADED_MESHES.erase(meshId);
 }
 
-Mesh::Mesh(std::vector<GLfloat> &verts, std::vector<GLuint> &indies, bool instanceColor, bool instanceTextureZ, unsigned int expectedCount):
+Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, bool instanceColor, bool instanceTextureZ, unsigned int expectedCount):
 meshId(LAST_MESH_ID++),
 vertices(verts),
 indices(indies),

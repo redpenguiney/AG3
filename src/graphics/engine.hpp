@@ -42,6 +42,13 @@ class GraphicsEngine {
     // Which layer of the skyboxMaterial we should actually be using.
     unsigned int skyboxMaterialLayer; 
 
+    // Postprocessing shader, aka the shader used to render the screen quad that the actual world was rendered onto the texture of.
+    // Can freely change this with no issues.
+    std::shared_ptr<ShaderProgram> postProcessingShaderProgram; 
+
+    // Default shader program used for new RenderComponents. You can freely change this with no issues (I think??? TODO what happens).
+    std::shared_ptr<ShaderProgram> defaultShaderProgram;
+
     // freecam is just a thing for debugging
     bool debugFreecamEnabled = false;
     glm::dvec3 debugFreecamPos = {0, 0, 0};
@@ -78,7 +85,7 @@ class GraphicsEngine {
         unsigned int meshId;
 
         // called to initialize when given to a gameobject
-        void Init(unsigned int mesh_id, unsigned int materialId, unsigned int shader_id = Get().defaultShaderProgramId);
+        void Init(unsigned int mesh_id, unsigned int materialId, unsigned int shader_id = Get().defaultShaderProgram->shaderProgramId);
 
         // call before returning to pool
         void Destroy();
@@ -107,7 +114,6 @@ class GraphicsEngine {
         RenderComponent();
     };
 
-    unsigned int GetDefaultShaderId();
     std::shared_ptr<Material> GetDefaultMaterial(); // TODO
 
     private:
@@ -126,9 +132,11 @@ class GraphicsEngine {
     RenderableMesh* skybox; 
 
     // everything is drawn onto this framebuffer, and then this framebuffer's texture is used to draw a screen quad on the default framebuffer with a post processing shader.
+    // todo: make it not do post processing when this isn't here
     std::optional<Framebuffer> mainFramebuffer;
 
-    unsigned int defaultShaderProgramId;
+    // Used for postprocessing, the mesh is just a quad that covers the screen, nothing deep.
+    RenderableMesh screenQuad;
 
     // just a little thing to visualize axis
     void DebugAxis();
