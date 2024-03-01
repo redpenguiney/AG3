@@ -1,3 +1,4 @@
+#pragma once
 #include "../../external_headers/GLEW/glew.h"
 #include <optional>
 #include <vector>
@@ -17,16 +18,20 @@ class Framebuffer {
     // Unbinds the framebuffer, causing all drawing operators to be drawn onto the window/default framebuffer instead.
     void StopDrawingWith();
 
-    private:
     const unsigned int width;
     const unsigned int height;
+
+    private:
     GLuint glFramebufferId;
+    const GLenum bindingLocation; // TODO, currently always GL_FRAMEBUFFER
 
     // these store what is rendered onto the framebuffer
     std::vector<Texture> textureAttachments;
 
     // std::optional<unsigned int> colorRenderbufferId; i don't think we actually want this?
     std::optional<unsigned int> depthRenderbufferId;
+
+    friend class Texture;
     
     
 };

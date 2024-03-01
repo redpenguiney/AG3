@@ -134,13 +134,13 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
 
     // calculate tangent vectors
     std::vector<GLfloat> tangents;
-    const unsigned int sizeOfVertex = sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!instanceColor) ? sizeof(glm::vec4) : 0) + ((!instanceTextureZ) ? sizeof(GLfloat) : 0);
+    // const unsigned int sizeOfVertex = sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!instanceColor) ? sizeof(glm::vec4) : 0) + ((!instanceTextureZ) ? sizeof(GLfloat) : 0);
     //std::cout << "There are " << vertices.size() << " vertices.\n";
     
     for (unsigned int triangleIndex = 0; triangleIndex < indices.size()/3; triangleIndex++) {
         glm::vec3 points[3];
         glm::vec3 texCoords[3];
-        glm::vec3 normals[3];
+        glm::vec3 l_normals[3]; // l_ to avoid shadowing
         for (unsigned int j = 0; j < 3; j++) {
             auto indexIntoIndices = triangleIndex * 3 + j;
             //std::cout << " i = " << indexIntoIndices << "nfloats = " << nFloatsPerVertex << " actual index = " << indices.at(indexIntoIndices) <<  " \n";
@@ -148,7 +148,7 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
             //std::cout << "thing in indices  was " << vertexIndex << " \n"; 
             points[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex));
             texCoords[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + 3));
-            normals[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + 5));
+            l_normals[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + 5));
         }
          
         glm::vec3 edge1 = points[1] - points[0];

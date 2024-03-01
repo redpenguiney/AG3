@@ -16,6 +16,7 @@
 #include "../utility/utility.hpp"
 #include "material.hpp"
 #include "renderable_mesh.hpp"
+#include "framebuffer.hpp"
 
 struct MeshLocation {
     unsigned int poolId; // uuid of the meshpool 
@@ -124,6 +125,9 @@ class GraphicsEngine {
 
     RenderableMesh* skybox; 
 
+    // everything is drawn onto this framebuffer, and then this framebuffer's texture is used to draw a screen quad on the default framebuffer with a post processing shader.
+    std::optional<Framebuffer> mainFramebuffer;
+
     unsigned int defaultShaderProgramId;
 
     // just a little thing to visualize axis
@@ -145,6 +149,7 @@ class GraphicsEngine {
     GraphicsEngine();
     ~GraphicsEngine();
 
+    void UpdateMainFramebuffer();
     void CalculateLightingClusters();
     void UpdateLights();
     void DrawSkybox();

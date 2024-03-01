@@ -19,9 +19,10 @@ class Texture {
     // whether texture is 2d, 3d, cubemap, etc.
     // TODO: why caps lock
     enum TextureType {
+        
         Texture2D = 0,
         TextureCubemap = 1, // cubemap is for skybox
-        TextureFont = 2
+        TextureFont = 2,
     };
 
     enum TextureFormat {
@@ -65,10 +66,10 @@ class Texture {
     const TextureFormat format;
 
     // normal constructor for a texture. TextureIndex refers to which texture unit it will occupy when bound (when rendering, each texture unit can hold one texture for shaders to access)
-    Texture(const TextureCreateParams& params, const GLuint textureIndex, TextureType textureType); 
+    Texture(const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType); 
 
     // constructor that creates an empty texture (params.texturePaths is ignored and should be an empty vector) and binds it to the given framebuffer.
-    Texture(const Framebuffer& framebuffer, const TextureCreateParams& params); 
+    Texture(Framebuffer& framebuffer, const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType, const GLenum framebufferAttachmentType); 
     Texture(const Texture&) = delete; // destructor deletes the openGL texture, so copying it would be bad since it would be using the same id of the now-deleted openGL texture 
 
 
@@ -99,8 +100,8 @@ class Texture {
     // Sets all of the OpenGL texture parameters.
     void ConfigTexture(const TextureCreateParams& params);
 
-    Texture(TextureType textureType, std::string path, int layerHeight, int mipmapLevels);
-    Texture(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels);
+    // Texture(TextureType textureType, std::string path, int layerHeight, int mipmapLevels);
+    // Texture(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels);
 };
 
 struct TextureCreateParams {
