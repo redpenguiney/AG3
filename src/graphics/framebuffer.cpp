@@ -1,5 +1,6 @@
 #include "framebuffer.hpp"
 #include <cassert>
+#include "engine.hpp"
 
 Framebuffer::Framebuffer(const unsigned int fbWidth, const unsigned int fbHeight, const std::vector<TextureCreateParams>& attachmentParams, const bool haveDepthRenderbuffer): 
 width(fbWidth), 
@@ -10,7 +11,7 @@ bindingLocation(GL_FRAMEBUFFER)
     glGenFramebuffers(1, &glFramebufferId);
 
     // bind it so we can set it up
-    StartDrawingWith();
+    Bind();
 
     // attach textures
     for (auto & params: attachmentParams) {
@@ -36,7 +37,14 @@ Framebuffer::~Framebuffer() {
 }
 
 // TODO: apparently sometimes you want to use an argument besides GL_FRAMEBUFFER?
-void Framebuffer::StartDrawingWith() {
+void Framebuffer::Bind() {
     glViewport(0, 0, width, height);
-    glBindFramebuffer(GL_FRAMEBUFFER, glFramebufferId);
+    glBindFramebuffer(bindingLocation, glFramebufferId);
+}
+
+void Framebuffer::Unbind() {
+    unsigned int windowWidth = GraphicsEngine::Get().window.width;
+    unsigned int windowHeight = GraphicsEngine::Get().window.height;
+    glViewport(0, 0, windowWidth, windowHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // TODO: other binding locations
 }

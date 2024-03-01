@@ -7,6 +7,7 @@
 #include <pstl/glue_execution_defs.h>
 #include <tuple>
 #include <execution>
+#include <vector>
 #include "../gameobjects/pointlight_component.hpp"
 #include "../gameobjects/component_registry.hpp"
 
@@ -21,10 +22,21 @@ struct PointLightInfo {
     glm::vec4 relPos; // w-coord is padding; openGL wants everything on a vec4 alignment
 };
 
-
+// XYZ, UV, then normals and tangents but those don't matter for this so they just zero
+std::vector<GLfloat> screenQuadVertices = {
+    -1.0, -1.0, 0.0,   0.0, 0.0,    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    -1.0,  1.0, 0.0,   0.0, 1.0,    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+     1.0, -1.0, 0.0,   1.0, 0.0,    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+     1.0,  1.0, 0.0,   1.0, 1.0,    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+};
+std::vector<GLuint> screenQuadIndices = {
+    0, 1, 2,
+    1, 2, 3
+};
 
 GraphicsEngine::GraphicsEngine(): 
-pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3))
+pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)),
+screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, true, true, 1, false))
 {
     debugFreecamEnabled = false;
     debugFreecamPos = {0.0, 0.0, 0.0};
@@ -33,8 +45,9 @@ pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024
 
     skyboxMaterial = nullptr;
 
-    defaultShaderProgramId = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl")->shaderProgramId;
+    defaultShaderProgram = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl");
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
+    
 
     auto skybox_boxmesh = Mesh::FromFile("../models/skybox.obj", true, true, -1.0, 1.0, 1, false);
     skybox = new RenderableMesh(skybox_boxmesh);
@@ -177,7 +190,6 @@ void GraphicsEngine::RenderScene() {
     // std::cout << "\tAdding cached meshes.\n";
 
     // Update various things
-    UpdateMainFramebuffer();
 
     // std::cout << "\tAdding cached meshes.\n";
     AddCachedMeshes();
@@ -195,6 +207,9 @@ void GraphicsEngine::RenderScene() {
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin);
 
+    // Draw the world onto a framebuffer so we can draw the contents of that framebuffer onto the screen with a postprocessing shader.
+    UpdateMainFramebuffer();
+    mainFramebuffer->Bind();
 
     // Draw world stuff.
     for (auto & [shaderId, map1] : meshpools) {
@@ -219,11 +234,19 @@ void GraphicsEngine::RenderScene() {
             } 
         } 
     }
-
     
     UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
     // Draw skybox afterwards to encourage early z-test
     DrawSkybox();
+
+    // Go back to drawing on the window.
+    Framebuffer::Unbind();
+
+    // Draw contents of main framebuffer on screen quad, using the postprocessing shader.
+    postProcessingShaderProgram->Use();
+    mainFramebuffer->textureAttachments.at(0).Use();
+    screenQuad.Draw();
+
     glFlush(); // Tell OpenGL we're done drawing.
 }
 
@@ -447,10 +470,6 @@ void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, u
     meshLocation->shaderProgramId = shaderId;
     meshLocation->materialId = materialId;
     meshesToAdd[shaderId][materialId][meshId].push_back(meshLocation);
-}
-
-unsigned int GraphicsEngine::GetDefaultShaderId() {
-    return defaultShaderProgramId;
 }
 
 void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int materialId, unsigned int shader_id) {
