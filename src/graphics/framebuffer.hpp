@@ -23,12 +23,15 @@ class Framebuffer {
 
     private:
     GLuint glFramebufferId;
+    const GLenum bindingLocation; // TODO, currently always GL_FRAMEBUFFER
 
     // these store what is rendered onto the framebuffer
     std::vector<Texture> textureAttachments;
 
     // std::optional<unsigned int> colorRenderbufferId; i don't think we actually want this?
     std::optional<unsigned int> depthRenderbufferId;
+
+    friend class Texture;
     
     
 };

@@ -19,9 +19,10 @@ class Texture {
     // whether texture is 2d, 3d, cubemap, etc.
     // TODO: why caps lock
     enum TextureType {
+        
         Texture2D = 0,
         TextureCubemap = 1, // cubemap is for skybox
-        TextureFont = 2
+        TextureFont = 2,
     };
 
     enum TextureFormat {
@@ -68,7 +69,7 @@ class Texture {
     Texture(const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType); 
 
     // constructor that creates an empty texture (params.texturePaths is ignored and should be an empty vector) and binds it to the given framebuffer.
-    Texture(const Framebuffer& framebuffer, const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType); 
+    Texture(Framebuffer& framebuffer, const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType, const GLenum framebufferAttachmentType); 
     Texture(const Texture&) = delete; // destructor deletes the openGL texture, so copying it would be bad since it would be using the same id of the now-deleted openGL texture 
 
 

@@ -201,7 +201,7 @@ type(textureType)
 // }
 
 // Create texture and attach it to framebuffer
-Texture::Texture(const Framebuffer& framebuffer, const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType):
+Texture::Texture(Framebuffer& framebuffer, const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType, const GLenum framebufferAttachmentType):
 format(params.format),
 bindingLocation(TextureBindingLocationFromType(textureType)),
 glTextureIndex(textureIndex),
@@ -216,8 +216,21 @@ type(textureType)
     height = framebuffer.height;
     depth = 1; // TODO
 
-    framebuffer.StartDrawingWith();
-    glFramebufferTextureLayer(framebuffer.);
+    
+    framebuffer.StartDrawingWith(); // bind the framebuffer so we can attach textures to it
+    if (bindingLocation == GL_TEXTURE_2D_ARRAY) {
+        // allocate storage for texture by passing nullptr as the data to load into the texture
+        glTexImage3D(bindingLocation, 0, params.format, width, height, depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        ConfigTexture(params);
+
+        // attach the texture to the framebuffer
+        glFramebufferTextureLayer(framebuffer.bindingLocation, framebufferAttachmentType, bindingLocation, 0, 0);
+    }
+    else {
+        std::cout << " add support first my guy\n";
+        abort();
+    }
+    framebuffer.StopDrawingWith(); // TODO: probably not really needed and might carry high perf cost?
 }
 
 Texture::~Texture() {

@@ -3,7 +3,8 @@
 
 Framebuffer::Framebuffer(const unsigned int fbWidth, const unsigned int fbHeight, const std::vector<TextureCreateParams>& attachmentParams, const bool haveDepthRenderbuffer): 
 width(fbWidth), 
-height(fbHeight) 
+height(fbHeight),
+bindingLocation(GL_FRAMEBUFFER)
 {
     // create openGL framebuffer
     glGenFramebuffers(1, &glFramebufferId);
@@ -13,12 +14,17 @@ height(fbHeight)
 
     // attach textures
     for (auto & params: attachmentParams) {
-        textureAttachments.emplace_back(*this, params);
+        textureAttachments.emplace_back(*this, params, 0, Texture::Texture2D, GL_COLOR_ATTACHMENT0);
     }
 
-    // create renderbuffer
+    // create renderbuffer if they want it
     if (haveDepthRenderbuffer) {
-
+        unsigned int rbo;
+        glGenRenderbuffers(1, &rbo);
+        depthRenderbufferId = rbo;
+        glBindRenderbuffer(GL_RENDERBUFFER, depthRenderbufferId.value());
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);  
     }
 
     // make sure framebuffer is "complete"? 

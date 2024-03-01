@@ -24,8 +24,8 @@ inline glm::dvec2 MOUSE_DELTA; // how much mouse has moved since last frame
 
 class Window {
     public:
-    static inline int width = 0;
-    static inline int height = 0;
+    static inline unsigned int width = 0;
+    static inline unsigned int height = 0;
     bool mouseLocked;
 
     Window() = delete; 
