@@ -641,6 +641,7 @@ std::optional<CollisionInfo> FindContact(
         break;
     }
 
+    assert(false); // shut up compiler warning for reaching end of non-void function
 }   
 
 //  EPA algorithm, used to get collision normals/penetration depth, explained here: https://winter.dev/articles/epa-algorithm

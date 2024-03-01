@@ -70,8 +70,10 @@ class Texture {
 
     // constructor that creates an empty texture (params.texturePaths is ignored and should be an empty vector) and binds it to the given framebuffer.
     Texture(Framebuffer& framebuffer, const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType, const GLenum framebufferAttachmentType); 
+    
     Texture(const Texture&) = delete; // destructor deletes the openGL texture, so copying it would be bad since it would be using the same id of the now-deleted openGL texture 
 
+    Texture(Texture&&) = default; // move constructor is allowed
 
     // Given that the texture is an array texture, will append the image at the given path to the texture array, returning the textureZ coordinate the image can be accessed through.
     float AddLayer();

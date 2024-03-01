@@ -1,4 +1,3 @@
-#pragma once
 #include "mesh.hpp"
 #include <cassert>
 #include <cstdio>

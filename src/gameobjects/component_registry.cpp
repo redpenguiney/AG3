@@ -116,7 +116,7 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
 {
     assert(transformComponent); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
     transformComponent->Init();
-    if (renderComponent) {renderComponent->Init(params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().GetDefaultShaderId());}
+    if (renderComponent) {renderComponent->Init(params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);}
     if (colliderComponent) {
         std::shared_ptr<PhysicsMesh> physMesh;
         if (params.physMeshId == 0) {
