@@ -31,12 +31,6 @@ Framebuffer::~Framebuffer() {
 
 // TODO: apparently sometimes you want to use an argument besides GL_FRAMEBUFFER?
 void Framebuffer::StartDrawingWith() {
-    glViewport()
+    glViewport(0, 0, width, height);
     glBindFramebuffer(GL_FRAMEBUFFER, glFramebufferId);
-}
-
-// TODO: again, apparently sometimes you want to use an argument besides GL_FRAMEBUFFER?
-void Framebuffer::StopDrawingWith() {
-    glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
