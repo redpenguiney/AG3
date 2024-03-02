@@ -286,9 +286,7 @@ void Meshpool::ExpandNonInstanced() {
     glBindVertexArray(newVao);
 
     // vertex pos
-    glEnableVertexAttribArray(POS_ATTRIBUTE);
-    glVertexAttribPointer(POS_ATTRIBUTE, 3, GL_FLOAT, false, vertexSize, (void*)0);
-    glVertexAttribDivisor(POS_ATTRIBUTE, 0); // don't instance
+    
 
     // textureXY 
     glEnableVertexAttribArray(TEXTURE_XY_ATTRIBUTE);

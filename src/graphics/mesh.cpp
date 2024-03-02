@@ -11,7 +11,44 @@
 #include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
 #include "../utility/let_me_hash_a_tuple.cpp"
 
+unsigned int MeshVertexFormat::GetInstancedVertexSize() const {
+    unsigned int size = 0;
+    for (auto & atr: vertexAttributes) {
+        if (atr.has_value() && atr->instanced) {
+            size += atr->size;
+        }
+    }
+    return size;
+}
 
+unsigned int MeshVertexFormat::GetNonInstancedVertexSize() const {
+    unsigned int size = 0;
+    for (auto & atr: vertexAttributes) {
+        if (atr.has_value() && !atr->instanced) {
+            size += atr->size;
+        }
+    }
+    return size;
+}
+
+void Mesh::HandleAttribute(GLuint& vaoId, const std::optional<VertexAttribute>& attribute, const GLuint attributeName) const {
+    if (attribute.has_value()) {
+        glEnableVertexAttribArray(attributeName);
+        glVertexAttribPointer(attributeName, 3, GL_FLOAT, false, attribute->instanced ? instancedVertexSize : nonInstancedVertexSize, (void*)0);
+        glVertexAttribDivisor(attributeName, 0); // don't instance
+    }
+}
+
+void Mesh::SetVaoVertexAttributes(GLuint& vaoId) const {
+    HandleAttribute(vaoId, vertexFormat.position, MeshVertexFormat::POS_ATTRIBUTE_NAME);
+    HandleAttribute(vaoId, vertexFormat.color, MeshVertexFormat::COLOR_ATTRIBUTE_NAME);
+    HandleAttribute(vaoId, vertexFormat.normal, MeshVertexFormat::NORMAL_ATTRIBUTE_NAME);
+    HandleAttribute(vaoId, vertexFormat.tangent, MeshVertexFormat::TANGENT_ATTRIBUTE_NAME);
+    HandleAttribute(vaoId, vertexFormat.textureUV, MeshVertexFormat::TEXTURE_UV_ATTRIBUTE_NAME);
+    HandleAttribute(vaoId, vertexFormat.textureZ, MeshVertexFormat::TEXTURE_Z_ATTRIBUTE_NAME);
+    HandleAttribute(vaoId, vertexFormat.modelMatrix, MeshVertexFormat::MODEL_MATRIX_ATTRIBUTE_NAME);
+    HandleAttribute(vaoId, vertexFormat.normalMatrix, MeshVertexFormat::NORMAL_MATRIX_ATTRIBUTE_NAME);
+}
 
 // engine calls this to get mesh from an object's meshId
 std::shared_ptr<Mesh>& Mesh::Get(unsigned int meshId) {
@@ -24,29 +61,29 @@ std::shared_ptr<Mesh>& Mesh::Get(unsigned int meshId) {
 
 // }
 
-std::shared_ptr<Mesh> Mesh::FromVertices(std::vector<GLfloat> verts, const std::vector<GLuint> &indies, bool instanceColor, bool instanceTextureZ, unsigned int expectedCount, bool normalizeSize) {
+std::shared_ptr<Mesh> Mesh::FromVertices(std::vector<GLfloat> verts, const std::vector<GLuint> &indies, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizeSize) {
     unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
     if (normalizeSize) {
         std::cout << "YOU DIDN\'T ADD THIS YET (MESH.CPP)\n";
         abort();
     }
-    auto ptr = std::shared_ptr<Mesh>(new Mesh(verts, indies, instanceColor, instanceTextureZ, expectedCount));
+    auto ptr = std::shared_ptr<Mesh>(new Mesh(verts, indies, meshVertexFormat, expectedCount, {1, 1, 1}));
     LOADED_MESHES[meshId] = ptr;
     return ptr;
 }
 
-std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextureZ, bool instanceColor, float textureZ, unsigned int meshTransparency, unsigned int expectedCount, bool normalizeSize) {
+std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextureZ, const MeshVertexFormat& meshVertexFormat, unsigned int meshTransparency, unsigned int expectedCount, bool normalizeSize) {
     // Load file
     auto config = tinyobj::ObjReaderConfig();
     config.triangulate = true;
-    config.vertex_color = !instanceColor;
+    config.vertex_color = !meshVertexFormat.color->instanced;
     bool success = OBJ_LOADER.ParseFromFile(path, config);
     if (!success) {
         std::printf("Mesh::FromFile failed to load %s because %s", path.c_str(), OBJ_LOADER.Error().c_str());
         abort();
     }
 
-    const unsigned int nFloatsPerVertex = 3 + 3 + 2 + 3 + (instanceTextureZ ? 0 : 1) + (instanceColor ? 0 : 4);
+    auto nFloatsPerVertex = meshVertexFormat.GetNonInstancedVertexSize()/sizeof(GLfloat);
 
     auto shape = OBJ_LOADER.GetShapes().at(0);
     //auto material = OBJ_LOADER.GetMaterials().at(0);
@@ -100,6 +137,7 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, bool instanceTextu
     std::unordered_map<std::tuple<GLuint, GLuint, GLuint>, GLuint, hash_tuple::hash<std::tuple<GLuint, GLuint, GLuint>>> objIndicesToGlIndices; // tuple is (posIndex, texXyIndex, normalIndex)
     std::vector<GLuint> indices;
     std::vector<GLfloat> vertices;
+    vertices.resize(nFloatsPerVertex * );
     for (auto & index : shape.mesh.indices) {
         auto indexTuple = std::make_tuple(index.vertex_index, index.texcoord_index, index.normal_index);
 
@@ -196,15 +234,15 @@ void Mesh::Unload(int meshId) {
     LOADED_MESHES.erase(meshId);
 }
 
-Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, bool instanceColor, bool instanceTextureZ, unsigned int expectedCount):
+Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, glm::vec3 originalSize):
 meshId(LAST_MESH_ID++),
 vertices(verts),
 indices(indies),
-instancedColor(instanceColor),
-instancedTextureZ(instanceTextureZ),
 instanceCount(expectedCount),
-originalSize(),
-vertexSize(sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec3) + sizeof(glm::vec2) + ((!instancedColor) ? sizeof(glm::vec4) : 0) + ((!instancedTextureZ) ? sizeof(GLfloat) : 0)) // this is just sizeof(vertexPos) + sizeof(vertexNormals) + sizeof(textureXY) + sizeof(color if not instanced) + sizeof(textureZ if not instanced) 
+originalSize(originalSize),
+nonInstancedVertexSize(meshVertexFormat.GetNonInstancedVertexSize()),
+instancedVertexSize(meshVertexFormat.GetInstancedVertexSize()),
+vertexFormat(meshVertexFormat)
 {
     // std::cout << "Created mesh with id " << meshId << "\n";
 }

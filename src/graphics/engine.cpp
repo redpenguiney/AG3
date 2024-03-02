@@ -93,6 +93,7 @@ void GraphicsEngine::UpdateMainFramebuffer() {
         TextureCreateParams colorTextureParams({}, Texture::ColorMap);
         colorTextureParams.filteringBehaviour = Texture::LinearTextureFiltering;
         colorTextureParams.format = Texture::RGB;
+        colorTextureParams.wrappingBehaviour = Texture::WrapClampToEdge;
         mainFramebuffer.emplace(window.width, window.height, std::vector {colorTextureParams}, true);
     }
 }
@@ -200,9 +201,7 @@ void GraphicsEngine::RenderScene() {
 
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
 
-    // TODO: actual settings to toggle debug stuff
-    DebugAxis();
-    SpatialAccelerationStructure::Get().DebugVisualize();
+    
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
 
@@ -248,6 +247,11 @@ void GraphicsEngine::RenderScene() {
     postProcessingShaderProgram->Use();
     mainFramebuffer->textureAttachments.at(0).Use();
     screenQuad.Draw();
+
+    // Debugging stuff
+    // TODO: actual settings to toggle debug stuff
+    DebugAxis();
+    // SpatialAccelerationStructure::Get().DebugVisualize();
 
     glFlush(); // Tell OpenGL we're done drawing.
 }

@@ -22,22 +22,22 @@ void main()
     );
 
     float kernel[9] = float[](
-        1,  1, 1,
-        1,  -7, 1,
-        1,  1, 1
+        -1,  -1, -1,
+        -1,  9, -1,
+        -1,  -1, -1
     );
     
     vec3 sampleTex[9];
     for(int i = 0; i < 9; i++)
     {
-        sampleTex[i] = vec3(texture(screenTexture, TexCoords.st + offsets[i], 0.0));
+        sampleTex[i] = vec3(texture(screenTexture, vec3(TexCoords.st + offsets[i], 0.0)));
     }
     vec3 col = vec3(0.0);
     for(int i = 0; i < 9; i++)
         col += sampleTex[i] * kernel[i];
     
-    // FragColor = vec4(col, 1.0);
-    FragColor = texture(screenTexture, TexCoords);
+    FragColor = vec4(col, 1.0);
+    // FragColor = texture(screenTexture, TexCoords);
     // FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 
     //float depthValue = texture(screenTexture, TexCoords).r;
