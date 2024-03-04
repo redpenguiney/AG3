@@ -47,6 +47,7 @@ Window::Window(int widthh, int heightt) {
     // See gl_error_handler, just prints opengl errors to console automatically
     // todo: disable on release builds for performance
     glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // make sure it actually prints out the errors on the thread that created the error so you actually get a useful stack trace
     glDebugMessageCallback(MessageCallback, 0);
 };
 

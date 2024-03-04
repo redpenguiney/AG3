@@ -4,20 +4,19 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include "meshpool.hpp"
 
 // TODO: use GL_SHORT for indices in meshpools where there are fewer than 65536 indices (wait is that even possible)
 
-// constructor takes mesh reference to set variables, doesn't actually add the given mesh or anything
-Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh): 
-    instanceSize(sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + ((mesh->instancedColor) ? sizeof(glm::vec4) : 0) + (mesh->instancedTextureZ ? sizeof(GLfloat) : 0)), // instances will be bigger if the mesh also wants color/texturez to be instanced
-    vertexSize(mesh->vertexSize), 
-    meshVerticesSize(((((int)std::pow(2, 1 + (int)std::log2(mesh->vertices.size() * sizeof(GLfloat)))) + vertexSize - 1)/vertexSize) * vertexSize), // makes meshVerticesSize a power of two rounded to the nearest multiple of vertexSize (must be multiple of vertexSize for OpenGL base vertex argument to work)
+Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat, unsigned int numVertices): 
+    instancedVertexSize(meshVertexFormat.GetInstancedVertexSize()),
+    nonInstancedVertexSize(meshVertexFormat.GetNonInstancedVertexSize()), 
+    meshVerticesSize(((((int)std::pow(2, 1 + (int)std::log2(numVertices * nonInstancedVertexSize))) + nonInstancedVertexSize - 1)/nonInstancedVertexSize) * nonInstancedVertexSize), // makes meshVerticesSize a power of two rounded to the nearest multiple of vertexSize (must be multiple of vertexSize for OpenGL base vertex argument to work)
     meshIndicesSize(meshVerticesSize),
-    instanceColor(mesh->instancedColor),
-    instanceTextureZ(mesh->instancedTextureZ),
+    vertexFormat(meshVertexFormat),
     baseMeshCapacity((TARGET_VBO_SIZE/meshVerticesSize) + 1), // +1 just in case the base capacity was somehow 0
-    baseInstanceCapacity((TARGET_VBO_SIZE/instanceSize) + 1),
+    baseInstanceCapacity((TARGET_VBO_SIZE/instancedVertexSize) + 1),
 
     vertexBuffer(GL_ARRAY_BUFFER, 1, 0),
     instancedVertexBuffer(GL_ARRAY_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0),
@@ -34,7 +33,6 @@ Meshpool::Meshpool(std::shared_ptr<Mesh>& mesh):
     ExpandInstanced(1);
 }
 
-// Adds count identical meshes to pool, and returns a vector of pairs of (slot, instanceOffset) used to access the object.
 std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const unsigned int meshId, unsigned int count) {
     std::printf("\tBe advised: adding %u of %u\n", count, meshId);
     std::vector<std::pair<unsigned int, unsigned int>> objLocations;
@@ -132,7 +130,6 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
     return objLocations;
 }
 
-// Frees the given object from the meshpool, so something else can use that space.
 void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instanceId) {    
     // don't remove all these debug print statements, i have a feeling we'll need them again soon
 
@@ -182,14 +179,15 @@ void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, 
         assert(!slotInstanceSpaces[slot].count(instanceId));
     }
 
-    assert(instanceColor == true);
-    glm::vec4* colorLocation = (glm::vec4*)(sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
+    assert(vertexFormat.attributes.color->instanced == true);
+    glm::vec4* colorLocation = (glm::vec4*)(vertexFormat.attributes.color->offset + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
 
     // make sure we don't segfault 
-    assert((char*)colorLocation + sizeof(glm::vec4) <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
+    assert((char*)colorLocation + sizeof(glm::vec4) <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
     assert((char*)colorLocation >= instancedVertexBuffer.Data());
     
-    *colorLocation = rgba;
+    memcpy(colorLocation, &rgba, vertexFormat.attributes.color->nFloats * sizeof(GLfloat));
+    // *colorLocation = rgba;
 }
 
 void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ) {
@@ -198,11 +196,11 @@ void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceI
         assert(!slotInstanceSpaces[slot].count(instanceId));
     }
     
-    assert(instanceTextureZ == true);
-    float* textureZLocation = (float*)(sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + ((instanceColor) ? sizeof(glm::vec4) : 0) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
+    assert(vertexFormat.attributes.textureZ->instanced == true);
+    float* textureZLocation = (float*)(vertexFormat.attributes.textureZ->offset + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
 
     // make sure we don't segfault 
-    assert((char*)textureZLocation + sizeof(float) <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
+    assert((char*)textureZLocation + sizeof(float) <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
     assert((char*)textureZLocation >= instancedVertexBuffer.Data());
     
     *textureZLocation = textureZ;
@@ -215,10 +213,10 @@ void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instan
     }
     
 
-    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
+    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
 
     // make sure we don't segfault 
-    assert((char*)modelMatrixLocation <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
+    assert((char*)modelMatrixLocation <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
     assert((char*)modelMatrixLocation >= instancedVertexBuffer.Data());
     *modelMatrixLocation = matrix;
 }
@@ -230,12 +228,12 @@ void Meshpool::SetNormalMatrix(const unsigned int slot, const unsigned int insta
     }
     
 
-    glm::mat3x3* normalMatrixLocation = (glm::mat3x3*)(sizeof(glm::mat4x4) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instanceSize));
+    glm::mat3x3* normalMatrixLocation = (glm::mat3x3*)(sizeof(glm::mat4x4) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
 
     // make sure we don't segfault 
     assert(instanceId < instanceCapacity);
     assert(slot < meshCapacity);
-    assert((char*)normalMatrixLocation <= instancedVertexBuffer.Data() + (instanceSize * instanceCapacity)); 
+    assert((char*)normalMatrixLocation <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
     assert((char*)normalMatrixLocation >= instancedVertexBuffer.Data());
     *normalMatrixLocation = normal;
 }
@@ -248,7 +246,7 @@ void Meshpool::Draw() {
    // glMultiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, 0, drawCount, 0); TODO: GET INDIRECT DRAWING TO WORK
     for (auto & command: drawCommands) {
         if (command.count == 0) {continue;}
-        glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance + (instancedVertexBuffer.GetOffset()/instanceSize));
+        glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance + (instancedVertexBuffer.GetOffset()/instancedVertexSize));
     }
     
     
@@ -282,40 +280,13 @@ void Meshpool::ExpandNonInstanced() {
     GLuint newVao;
     glGenVertexArrays(1, &newVao);
 
-    // Associate data with the vao and describe format of non-instanced data
     glBindVertexArray(newVao);
+    vertexBuffer.Bind();
+    vertexFormat.SetNonInstancedVaoVertexAttributes(newVao, instancedVertexSize, nonInstancedVertexSize);
 
-    // vertex pos
-    
-
-    // textureXY 
-    glEnableVertexAttribArray(TEXTURE_XY_ATTRIBUTE);
-    glVertexAttribPointer(TEXTURE_XY_ATTRIBUTE, 2, GL_FLOAT, false, vertexSize, (void*)sizeof(glm::vec3));
-    glVertexAttribDivisor(TEXTURE_XY_ATTRIBUTE, 0); // don't instance
-
-    // vertex normal
-    glEnableVertexAttribArray(NORMAL_ATTRIBUTE);
-    glVertexAttribPointer(NORMAL_ATTRIBUTE, 3, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2)));
-    glVertexAttribDivisor(NORMAL_ATTRIBUTE, 0); // don't instance
-
-    // atangent vector
-    glEnableVertexAttribArray(ATANGENT_ATTRIBUTE);
-    glVertexAttribPointer(ATANGENT_ATTRIBUTE, 3, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3)));
-    glVertexAttribDivisor(ATANGENT_ATTRIBUTE, 0); // don't instance
-
-    // color (rgba)
-    if (!instanceColor) {
-        glEnableVertexAttribArray(COLOR_ATTRIBUTE);
-        glVertexAttribPointer(COLOR_ATTRIBUTE, 4, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3) + sizeof(glm::vec3)));
-        glVertexAttribDivisor(COLOR_ATTRIBUTE, 0); // don't instance
-    }
-
-    // textureZ
-    if (!instanceTextureZ) {
-        glEnableVertexAttribArray(TEXTURE_Z_ATTRIBUTE);
-        glVertexAttribPointer(TEXTURE_Z_ATTRIBUTE, 1, GL_FLOAT, false, vertexSize, (void*)(sizeof(glm::vec3) + sizeof(glm::vec2) + sizeof(glm::vec3) + sizeof(glm::vec3) + ((!instanceColor) ? sizeof(glm::vec4) : 0)));
-        glVertexAttribDivisor(TEXTURE_Z_ATTRIBUTE, 0); // don't instance
-    }
+    // because we just recreated the vao, we have to rebind the instanced attributes too (TOO: This wasn't here before, was that me being dumb or?)
+    instancedVertexBuffer.Bind();
+    vertexFormat.SetInstancedVaoVertexAttributes(newVao, instancedVertexSize, nonInstancedVertexSize);
 
     // Delete the old vao if there is one.
     if (oldMeshCapacity != 0) {
@@ -339,56 +310,12 @@ void Meshpool::ExpandInstanced(GLuint multiplier) {
     // }
 
     // Update buffer.
-    instancedVertexBuffer.Reallocate(instanceCapacity * instanceSize);
+    instancedVertexBuffer.Reallocate(instanceCapacity * instancedVertexSize);
 
     // Associate data with the vao and describe format of instanced data
     glBindVertexArray(vao);
-
-    // model matrix
-    // each vertex attribute has to be no more than a vec4, so for a whole model matrix we do 4 attributes
-    // TODO: we could definitely get away with just a 4x3 model matrix that is converted into 4x4 in the vertex shader
-    glEnableVertexAttribArray(MODEL_MATRIX_ATTRIBUTE);
-    glEnableVertexAttribArray(MODEL_MATRIX_ATTRIBUTE+1);
-    glEnableVertexAttribArray(MODEL_MATRIX_ATTRIBUTE+2);
-    glEnableVertexAttribArray(MODEL_MATRIX_ATTRIBUTE+3);
-
-    glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE, 4, GL_FLOAT, false, instanceSize, (void*)0);
-    glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+1, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 1));
-    glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+2, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 2));
-    glVertexAttribPointer(MODEL_MATRIX_ATTRIBUTE+3, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::vec4) * 3));
-
-    glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE, 1); // tell openGL that this is an instanced vertex attribute (meaning per instance, not per vertex)
-    glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE+1, 1);
-    glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE+2, 1);
-    glVertexAttribDivisor(MODEL_MATRIX_ATTRIBUTE+3, 1);
-
-    // normal matrix
-    // just 3x3 so only 3 attributes
-    glEnableVertexAttribArray(NORMAL_MATRIX_ATTRIBUTE);
-    glEnableVertexAttribArray(NORMAL_MATRIX_ATTRIBUTE+1);
-    glEnableVertexAttribArray(NORMAL_MATRIX_ATTRIBUTE+2);
-
-    glVertexAttribPointer(NORMAL_MATRIX_ATTRIBUTE, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4)));
-    glVertexAttribPointer(NORMAL_MATRIX_ATTRIBUTE+1, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4) + sizeof(glm::vec3) * 1));
-    glVertexAttribPointer(NORMAL_MATRIX_ATTRIBUTE+2, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4) + sizeof(glm::vec3) * 2));
-
-    glVertexAttribDivisor(NORMAL_MATRIX_ATTRIBUTE, 1); // tell openGL that this is an instanced vertex attribute (meaning per instance, not per vertex)
-    glVertexAttribDivisor(NORMAL_MATRIX_ATTRIBUTE+1, 1);
-    glVertexAttribDivisor(NORMAL_MATRIX_ATTRIBUTE+2, 1);
-
-    // color (rgba)
-    if (instanceColor) {
-        glEnableVertexAttribArray(COLOR_ATTRIBUTE);
-        glVertexAttribPointer(COLOR_ATTRIBUTE, 4, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4) + sizeof(glm::mat3x3)));
-        glVertexAttribDivisor(COLOR_ATTRIBUTE, 1); // don't instance
-    }
-
-    // textureZ
-    if (instanceTextureZ) {
-        glEnableVertexAttribArray(TEXTURE_Z_ATTRIBUTE);
-        glVertexAttribPointer(TEXTURE_Z_ATTRIBUTE, 2, GL_FLOAT, false, instanceSize, (void*)(sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + ((instanceColor) ? sizeof(glm::vec4) : 0)));
-        glVertexAttribDivisor(TEXTURE_Z_ATTRIBUTE, 1); // don't instance
-    }
+    instancedVertexBuffer.Bind();
+    vertexFormat.SetInstancedVaoVertexAttributes(vao, instancedVertexSize, nonInstancedVertexSize);
 }
 
 // Fills the given slot with the given mesh's vertices and indices.
@@ -400,7 +327,7 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
 
     std::cout << "\tWe gonna copy!\n";
     // literally just memcpy into the buffers
-    std::cout << "\tOk so dst " << (void*)vertexBuffer.Data() << " slot " << slot << " mVS " << meshVerticesSize << " src " << vertices->data() << " count " << vertices->size() << " size " << vertexSize << "\n";
+    std::cout << "\tOk so dst " << (void*)vertexBuffer.Data() << " slot " << slot << " mVS " << meshVerticesSize << " src " << vertices->data() << " count " << vertices->size() << " size " << nonInstancedVertexSize << "\n";
     memcpy(vertexBuffer.Data() + (slot * meshVerticesSize), vertices->data(), vertices->size() * sizeof(GLfloat) /*vertexSize*/);
     std::cout << "\tvertices done\n";
     memcpy(indexBuffer.Data() + (slot * meshIndicesSize), indices->data(), indices->size() * sizeof(GLuint));
@@ -409,11 +336,11 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     // also update drawCommands before doing the indirect draw buffer
     drawCommands[slot].count = indices->size();
     drawCommands[slot].firstIndex = (slot * meshIndicesSize);
-    drawCommands[slot].baseVertex = slot * (meshVerticesSize/vertexSize);
+    drawCommands[slot].baseVertex = slot * (meshVerticesSize/nonInstancedVertexSize);
     drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceReservedCounts[slot - 1];
     drawCommands[slot].instanceCount = instanceCount;
 
-    std::printf("\tOnce again we're printing this stuff; %u %u   %u %u %u %u %u\n", meshVerticesSize, vertexSize, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
+    std::printf("\tOnce again we're printing this stuff; %u %u   %u %u %u %u %u\n", meshVerticesSize, nonInstancedVertexSize, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
 
     // idk what to call this
     slotToInstanceLocations[slot] = drawCommands[slot].baseInstance;
@@ -433,17 +360,14 @@ void Meshpool::UpdateIndirectDrawBuffer(const unsigned int slot) {
     memcpy(indirectDrawBuffer.Data() + (slot * sizeof(IndirectDrawCommand)), &drawCommands[slot], sizeof(IndirectDrawCommand));
 }
 
-// We want meshes to fit snugly in the slots of their meshpool.
-// Returns -1 if mesh is too big/incompatible w/ meshpool, otherwise lower number = better fit for meshpool.
-// The engine will put meshes in the best fitting pool.
-int Meshpool::ScoreMeshFit(const unsigned int verticesNBytes, const unsigned int indicesNBytes, const bool shouldInstanceColor, const bool shouldInstanceTextureZ) {
-    if (shouldInstanceColor != instanceColor || shouldInstanceTextureZ != instanceTextureZ) { // make sure mesh compatible
+int Meshpool::ScoreMeshFit(const unsigned int verticesNBytes, const unsigned int indicesNBytes, const MeshVertexFormat& meshVertexFormat) {
+    if (vertexFormat != meshVertexFormat) { // make sure mesh compatible
         return -1;
     }
     if (verticesNBytes > meshVerticesSize || indicesNBytes > meshIndicesSize) { // if mesh too big forget it
         return -1;
     }
-    else {
+    else { 
         return std::min(meshVerticesSize - verticesNBytes, meshIndicesSize - indicesNBytes);
     }
 }

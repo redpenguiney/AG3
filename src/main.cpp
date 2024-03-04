@@ -30,7 +30,7 @@ int main(int numArgs, char *argPtrs[]) {
     // LUA.RunString("print(\"Hello!\")");
     //GE.camera.position.y = 3;
 
-    auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true, -1.0, 1.0, 16384);
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
     auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
 
     //std::printf("ITS %u %u\n", m->meshId, grassMaterial->id);

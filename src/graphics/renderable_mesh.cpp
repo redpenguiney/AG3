@@ -3,7 +3,7 @@
 #include <iostream>
 
 RenderableMesh::RenderableMesh(std::shared_ptr<Mesh> mesh) {
-    assert(mesh->instancedColor && mesh->instancedTextureZ); // don't make the vertices have this stuff please i don't want to add vertex attributes for that
+    assert(mesh->vertexFormat.attributes.color->instanced && mesh->vertexFormat.attributes.textureZ->instanced); // don't make the vertices have this stuff please i don't want to add vertex attributes for that
 
     indexCount = mesh->indices.size();
 
@@ -17,12 +17,8 @@ RenderableMesh::RenderableMesh(std::shared_ptr<Mesh> mesh) {
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, mesh->vertices.size() * sizeof(GLfloat), mesh->vertices.data(), GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(0, 3, GL_FLOAT, false, mesh->vertexSize, 0); // position
-    glVertexAttribPointer(1, 2, GL_FLOAT, false, mesh->vertexSize, (void*)(3 * sizeof(GLfloat))); // texture
-    glVertexAttribPointer(2, 3, GL_FLOAT, false, mesh->vertexSize, (void*)(5 * sizeof(GLfloat))); // normal
+    mesh->vertexFormat.SetNonInstancedVaoVertexAttributes(vao, mesh->instancedVertexSize, mesh->nonInstancedVertexSize);
+    // mesh->vertexFormat.SetInstancedVaoVertexAttributes(vao, mesh->instancedVertexSize, mesh->nonInstancedVertexSize);
 }
 
 RenderableMesh::~RenderableMesh() {

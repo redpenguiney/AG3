@@ -37,13 +37,14 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
     for (auto it = mesh->indices.begin(); it != mesh->indices.end(); it+=3) {
         auto i = *it;
         
-        auto vertexIndex1 = i * mesh->vertexSize/sizeof(GLfloat);
-        auto vertexIndex2 = (i + 1) * mesh->vertexSize/sizeof(GLfloat);
-        auto vertexIndex3 = (i + 2) * mesh->vertexSize/sizeof(GLfloat);
+        auto vertexIndex1 = i * mesh->nonInstancedVertexSize/sizeof(GLfloat);
+        auto vertexIndex2 = (i + 1) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
+        auto vertexIndex3 = (i + 2) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
 
-        glm::vec3 vertex1 = {mesh->vertices[vertexIndex1], mesh->vertices[vertexIndex1 + 1], mesh->vertices[vertexIndex1 + 2]};
-        glm::vec3 vertex2 = {mesh->vertices[vertexIndex2], mesh->vertices[vertexIndex2 + 1], mesh->vertices[vertexIndex2 + 2]};
-        glm::vec3 vertex3 = {mesh->vertices.at(vertexIndex3), mesh->vertices.at(vertexIndex3 + 1), mesh->vertices.at(vertexIndex3 + 2)};
+        auto offset = mesh->vertexFormat.attributes.position->offset/sizeof(GLfloat);
+        glm::vec3 vertex1 = {mesh->vertices[vertexIndex1 + offset], mesh->vertices[vertexIndex1 + 1 + offset], mesh->vertices[vertexIndex1 + 2 + offset]};
+        glm::vec3 vertex2 = {mesh->vertices[vertexIndex2 + offset], mesh->vertices[vertexIndex2 + 1 + offset], mesh->vertices[vertexIndex2 + 2 + offset]};
+        glm::vec3 vertex3 = {mesh->vertices.at(vertexIndex3 + offset), mesh->vertices.at(vertexIndex3 + 1 + offset), mesh->vertices.at(vertexIndex3 + 2 + offset)};
         
         auto normal = glm::cross(vertex1 - vertex2, vertex1 - vertex3);
 

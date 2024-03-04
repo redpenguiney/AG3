@@ -36,7 +36,7 @@ std::vector<GLuint> screenQuadIndices = {
 
 GraphicsEngine::GraphicsEngine(): 
 pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)),
-screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, true, true, 1, false))
+screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, MeshVertexFormat::Default(), 1, false))
 {
     debugFreecamEnabled = false;
     debugFreecamPos = {0.0, 0.0, 0.0};
@@ -49,10 +49,15 @@ screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, true, true,
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
 
-    auto skybox_boxmesh = Mesh::FromFile("../models/skybox.obj", true, true, -1.0, 1.0, 1, false);
+    auto skybox_boxmesh = Mesh::FromFile("../models/skybox.obj", MeshVertexFormat::Default(), -1.0, 1.0, 1, false);
     skybox = new RenderableMesh(skybox_boxmesh);
     std::cout << "SKYBOX has indices: ";
     for (auto & v: skybox_boxmesh->indices) {
+        std::cout << v << ", ";
+    }
+    std::cout << "\n";
+    std::cout << "SKYBOX has vertices: ";
+    for (auto & v: skybox_boxmesh->vertices) {
         std::cout << v << ", ";
     }
     std::cout << "\n";
@@ -195,7 +200,6 @@ void GraphicsEngine::RenderScene() {
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin);
 
     // Draw the world onto a framebuffer so we can draw the contents of that framebuffer onto the screen with a postprocessing shader.
-    std::cout << " updating main framebuffer.\n";
     UpdateMainFramebuffer();
     mainFramebuffer->Bind();
 
@@ -243,7 +247,6 @@ void GraphicsEngine::RenderScene() {
     glDisable(GL_DEPTH_TEST);
 
     // Draw contents of main framebuffer on screen quad, using the postprocessing shader.
-    std::cout << " oh yeah.\n";
     postProcessingShaderProgram->Use();
     mainFramebuffer->textureAttachments.at(0).Use();
     screenQuad.Draw();
@@ -432,15 +435,13 @@ void GraphicsEngine::AddCachedMeshes() {
                 std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
                 const unsigned int verticesNBytes = m->vertices.size() * sizeof(GLfloat);
                 const unsigned int indicesNBytes = m->indices.size() * sizeof(GLuint);
-                const bool shouldInstanceColor = m->instancedColor;
-                const bool shouldInstanceTextureZ = m->instancedTextureZ;
 
                 // pick best pool for mesh
                 // TODO: O(n) complexity might be an issue
                 int bestPoolScore = INT_MAX;
                 int bestPoolId = -1;
                 for (auto & [poolId, pool] : meshpools[shaderId][textureId]) {
-                    int score = pool->ScoreMeshFit(verticesNBytes, indicesNBytes, shouldInstanceColor, shouldInstanceTextureZ);
+                    int score = pool->ScoreMeshFit(verticesNBytes, indicesNBytes, m->vertexFormat);
                     if (score == -1) {continue;} // this continues the inner loop which is what we want
                     if (score < bestPoolScore) {
                         bestPoolScore = score;
@@ -451,7 +452,7 @@ void GraphicsEngine::AddCachedMeshes() {
                 if (bestPoolId == -1) { // if we didn't find a suitable pool just make one
                     std::cout << "\tmust create pool for new mesh.\n";
                     bestPoolId = lastPoolId++;
-                    meshpools[shaderId][textureId][bestPoolId] = new Meshpool(m);
+                    meshpools[shaderId][textureId][bestPoolId] = new Meshpool(m->vertexFormat, m->vertices.size() * m->vertexFormat.GetNonInstancedVertexSize()/sizeof(GLfloat));
                 }
                 std::cout << "\tmesh pool id is " << bestPoolId << "\n"; 
 
@@ -482,8 +483,8 @@ void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int ma
     assert(live);
     assert(mesh_id != 0);
 
-    colorChanged = (Mesh::Get(mesh_id)->instancedColor)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
-    textureZChanged = (Mesh::Get(mesh_id)->instancedTextureZ)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+    colorChanged = (Mesh::Get(mesh_id)->vertexFormat.attributes.color->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+    textureZChanged = (Mesh::Get(mesh_id)->vertexFormat.attributes.textureZ->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
     color = glm::vec4(1, 1, 1, 1);
     textureZ = -1.0;
     meshId = mesh_id;

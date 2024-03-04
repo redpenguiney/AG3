@@ -190,7 +190,7 @@ void SpatialAccelerationStructure::DebugVisualize() {
     static auto crummyDebugShader =  ShaderProgram::New("../shaders/debug_simple_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
     crummyDebugShader->Use();
 
-    const static auto m = Mesh::FromFile("../models/rainbowcube.obj", true, true);
+    const static auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default());
     const static auto& vertices = m->vertices; // remember, its xyz, uv, normal, tangent tho we only bothering with xyz
     const static auto& indices = m->indices;
 
@@ -217,32 +217,12 @@ void SpatialAccelerationStructure::DebugVisualize() {
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-    glEnableVertexAttribArray(0); // position
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, false, m->vertexSize, (void*)0);
-
-    glVertexAttribDivisor(0, 0); // tell openGL that vertex position is per-vertex
+    m->vertexFormat.SetNonInstancedVaoVertexAttributes(vao, m->instancedVertexSize, m->nonInstancedVertexSize);
 
 
     glBindBuffer(GL_ARRAY_BUFFER, ivbo);
 
-    glEnableVertexAttribArray(2); // model matrix (needs 4 vec4 attributes)
-    glEnableVertexAttribArray(2+1);
-    glEnableVertexAttribArray(2+2);
-    glEnableVertexAttribArray(2+3);
-    glEnableVertexAttribArray(1); // color
-
-    glVertexAttribPointer(2, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)0);
-    glVertexAttribPointer(2+1, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)(sizeof(glm::vec4) * 1));
-    glVertexAttribPointer(2+2, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)(sizeof(glm::vec4) * 2));
-    glVertexAttribPointer(2+3, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)(sizeof(glm::vec4) * 3));
-    glVertexAttribPointer(1, 4, GL_FLOAT, false, sizeof(glm::mat4x4) + sizeof(glm::vec4), (void*)sizeof(glm::mat4x4));
-
-    glVertexAttribDivisor(2, 1); // tell openGL that these are instanced vertex attributes (meaning per object, not per vertex)
-    glVertexAttribDivisor(2+1, 1);
-    glVertexAttribDivisor(2+2, 1);
-    glVertexAttribDivisor(2+3, 1);
-    glVertexAttribDivisor(1, 1);
+    m->vertexFormat.SetInstancedVaoVertexAttributes(vao, m->instancedVertexSize, m->nonInstancedVertexSize);
 
     
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
