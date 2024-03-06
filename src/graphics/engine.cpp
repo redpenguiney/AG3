@@ -22,21 +22,37 @@ struct PointLightInfo {
     glm::vec4 relPos; // w-coord is padding; openGL wants everything on a vec4 alignment
 };
 
-// XYZ, UV, then normals and tangents but those don't matter for this so they just zero
-std::vector<GLfloat> screenQuadVertices = {
-    -1.0, -1.0, 0.0,   0.0, 0.0,    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    -1.0,  1.0, 0.0,   0.0, 1.0,    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-     1.0, -1.0, 0.0,   1.0, 0.0,    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-     1.0,  1.0, 0.0,   1.0, 1.0,    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+// XYZ, UV
+const std::vector<GLfloat> screenQuadVertices = {
+    -1.0, -1.0, 0.0,   0.0, 0.0,
+    -1.0,  1.0, 0.0,   0.0, 1.0,
+     1.0, -1.0, 0.0,   1.0, 0.0,
+     1.0,  1.0, 0.0,   1.0, 1.0,
 };
-std::vector<GLuint> screenQuadIndices = {
+
+constexpr MeshVertexFormat screenQuadVertexFormat = MeshVertexFormat {
+    .attributes = {
+        .position = {{
+            .offset = 0,
+            .nFloats = 3,
+            .instanced = false
+        }},
+        .textureUV = {{
+            .offset = 3 * sizeof(GLfloat),
+            .nFloats = 2,
+            .instanced = false
+        }}
+    }
+};
+
+const std::vector<GLuint> screenQuadIndices = {
     0, 1, 2,
     1, 2, 3
 };
 
 GraphicsEngine::GraphicsEngine(): 
 pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)),
-screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, MeshVertexFormat::Default(), 1, false))
+screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, screenQuadVertexFormat, 1, false))
 {
     debugFreecamEnabled = false;
     debugFreecamPos = {0.0, 0.0, 0.0};
@@ -51,15 +67,15 @@ screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, MeshVertexF
 
     auto skybox_boxmesh = Mesh::FromFile("../models/skybox.obj", MeshVertexFormat::Default(), -1.0, 1.0, 1, false);
     skybox = new RenderableMesh(skybox_boxmesh);
-    std::cout << "SKYBOX has indices: ";
-    for (auto & v: skybox_boxmesh->indices) {
-        std::cout << v << ", ";
-    }
-    std::cout << "\n";
-    std::cout << "SKYBOX has vertices: ";
-    for (auto & v: skybox_boxmesh->vertices) {
-        std::cout << v << ", ";
-    }
+    // std::cout << "SKYBOX has indices: ";
+    // for (auto & v: skybox_boxmesh->indices) {
+    //     std::cout << v << ", ";
+    // }
+    // std::cout << "\n";
+    // std::cout << "SKYBOX has vertices: ";
+    // for (auto & v: skybox_boxmesh->vertices) {
+    //     std::cout << v << ", ";
+    // }
     std::cout << "\n";
     glDepthFunc(GL_LEQUAL); // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
 }

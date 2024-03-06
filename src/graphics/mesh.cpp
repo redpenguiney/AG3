@@ -67,12 +67,16 @@ void MeshVertexFormat::HandleAttribute(GLuint& vaoId, const std::optional<Vertex
             }
         }
 
+        GLint array = 0;
+        glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &array); // make sure a vbo is bound
+        assert(array != 0); 
+
         // because each attribute name can only have up to 4 floats in OpenGL, we do a for loop to create more as needed.
         for (unsigned int i = 0; i < nAttributes; i++) {
-
+            
             // Tell OpenGL this vertex attribute exists with the given name (shaders use this name to access the vertex attribute)
             glEnableVertexAttribArray(attributeName + i); 
-
+            
             // Associate data with the VAO and describe format of mesh data
             glVertexAttribPointer(attributeName + i, nFloats, GL_FLOAT, false, attribute->instanced ? instancedSize : nonInstancedSize, (void*)(size_t)(attribute->offset)); // ignore the warning, this is completely fine
             glVertexAttribDivisor(attributeName + i, attribute->instanced ? 1 : 0); // attribDivisor is whether the vertex attribute is instanced or not.
@@ -91,24 +95,42 @@ bool MeshVertexFormat::operator==(const MeshVertexFormat& other) const {
 }
 
 void MeshVertexFormat::SetNonInstancedVaoVertexAttributes(GLuint& vaoId, unsigned int instancedSize, unsigned int nonInstancedSize) const {
+    std::cout << "Noninstanced:\n";
+    // std::cout << "Pos:\n";
     HandleAttribute(vaoId, attributes.position, MeshVertexFormat::POS_ATTRIBUTE_NAME, false, instancedSize, nonInstancedSize);
+    // std::cout << "Color:\n"; 
     HandleAttribute(vaoId, attributes.color, MeshVertexFormat::COLOR_ATTRIBUTE_NAME, false, instancedSize, nonInstancedSize);
+    // std::cout << "Normal:\n";
     HandleAttribute(vaoId, attributes.normal, MeshVertexFormat::NORMAL_ATTRIBUTE_NAME, false, instancedSize, nonInstancedSize);
+    // std::cout << "Tangent:\n";
     HandleAttribute(vaoId, attributes.tangent, MeshVertexFormat::TANGENT_ATTRIBUTE_NAME, false, instancedSize, nonInstancedSize);
+    // std::cout << "UV:\n";
     HandleAttribute(vaoId, attributes.textureUV, MeshVertexFormat::TEXTURE_UV_ATTRIBUTE_NAME, false, instancedSize, nonInstancedSize);
+    // std::cout << "TZ:\n";
     HandleAttribute(vaoId, attributes.textureZ, MeshVertexFormat::TEXTURE_Z_ATTRIBUTE_NAME, false, instancedSize, nonInstancedSize);
+    // std::cout << "ModelM:\n";
     HandleAttribute(vaoId, attributes.modelMatrix, MeshVertexFormat::MODEL_MATRIX_ATTRIBUTE_NAME, false, instancedSize, nonInstancedSize);
+    // std::cout << "NormalM:\n";
     HandleAttribute(vaoId, attributes.normalMatrix, MeshVertexFormat::NORMAL_MATRIX_ATTRIBUTE_NAME, false, instancedSize, nonInstancedSize);
 }
 
 void MeshVertexFormat::SetInstancedVaoVertexAttributes(GLuint& vaoId, unsigned int instancedSize, unsigned int nonInstancedSize) const {
+    std::cout << "Instanced:\n";
+    // std::cout << "Position:\n";
     HandleAttribute(vaoId, attributes.position, MeshVertexFormat::POS_ATTRIBUTE_NAME, true, instancedSize, nonInstancedSize);
+    // std::cout << "Color:\n";
     HandleAttribute(vaoId, attributes.color, MeshVertexFormat::COLOR_ATTRIBUTE_NAME, true, instancedSize, nonInstancedSize);
+    // std::cout << "Normal:\n";
     HandleAttribute(vaoId, attributes.normal, MeshVertexFormat::NORMAL_ATTRIBUTE_NAME, true, instancedSize, nonInstancedSize);
+    // std::cout << "Tangent:\n";
     HandleAttribute(vaoId, attributes.tangent, MeshVertexFormat::TANGENT_ATTRIBUTE_NAME, true, instancedSize, nonInstancedSize);
+    // std::cout << "UV:\n";
     HandleAttribute(vaoId, attributes.textureUV, MeshVertexFormat::TEXTURE_UV_ATTRIBUTE_NAME, true, instancedSize, nonInstancedSize);
+    // std::cout << "TZ:\n";
     HandleAttribute(vaoId, attributes.textureZ, MeshVertexFormat::TEXTURE_Z_ATTRIBUTE_NAME, true, instancedSize, nonInstancedSize);
+    // std::cout << "ModelM:\n";
     HandleAttribute(vaoId, attributes.modelMatrix, MeshVertexFormat::MODEL_MATRIX_ATTRIBUTE_NAME, true, instancedSize, nonInstancedSize);
+    // std::cout << "NormalM:\n";
     HandleAttribute(vaoId, attributes.normalMatrix, MeshVertexFormat::NORMAL_MATRIX_ATTRIBUTE_NAME, true, instancedSize, nonInstancedSize);
 }
 

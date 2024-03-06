@@ -23,6 +23,7 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat, unsigned int numVer
     indexBuffer(GL_ELEMENT_ARRAY_BUFFER, 1, 0),
     indirectDrawBuffer(GL_DRAW_INDIRECT_BUFFER, 1, 0)
 { 
+
     vao = 0;
 
     meshCapacity = 0;
@@ -284,9 +285,13 @@ void Meshpool::ExpandNonInstanced() {
     vertexBuffer.Bind();
     vertexFormat.SetNonInstancedVaoVertexAttributes(newVao, instancedVertexSize, nonInstancedVertexSize);
 
-    // because we just recreated the vao, we have to rebind the instanced attributes too (TOO: This wasn't here before, was that me being dumb or?)
-    instancedVertexBuffer.Bind();
-    vertexFormat.SetInstancedVaoVertexAttributes(newVao, instancedVertexSize, nonInstancedVertexSize);
+    // because we just recreated the vao, we have to rebind the instanced attributes too 
+    // but when we're initializing, we don't want to do this because calling ExpandInstanced() in initializiation will and we don't have an instanced vertex buffer yet
+    if (instancedVertexBuffer.bufferId != 0) {
+        instancedVertexBuffer.Bind();
+        vertexFormat.SetInstancedVaoVertexAttributes(newVao, instancedVertexSize, nonInstancedVertexSize);
+    }
+    
 
     // Delete the old vao if there is one.
     if (oldMeshCapacity != 0) {

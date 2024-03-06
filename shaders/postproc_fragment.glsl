@@ -37,8 +37,8 @@ void main()
         col += sampleTex[i] * kernel[i];
     
     FragColor = vec4(col, 1.0);
-    // FragColor = texture(screenTexture, TexCoords);
-    // FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    //FragColor = texture(screenTexture, TexCoords);
+    //FragColor = vec4(TexCoords, 0.5, 1.0);
 
     //float depthValue = texture(screenTexture, TexCoords).r;
     // FragColor = vec4(vec3(depthValue), 1.0);

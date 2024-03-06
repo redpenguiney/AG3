@@ -3,12 +3,14 @@
 #include <cstddef>
 #include <cstdio>
 #include <cwchar>
+#include <iostream>
 
 // bufferCount is no buffering (1), double buffering (2) or triple buffering (3).
 BufferedBuffer::BufferedBuffer(GLenum bindingLocation, const unsigned int bufferCount, GLuint initalSize): 
 bufferBindingLocation(bindingLocation),
 numBuffers(bufferCount)
 {
+    // assert(initalSize != 0);
     currentBuffer = 0;
     size = 0;
     if (initalSize != 0) {
@@ -43,9 +45,10 @@ void BufferedBuffer::Update() {
 }
 
 // Recreates the buffer with the given size, and copies the buffer's old data into the new one.
-// Doesn't touch vaos obviously so you still need to do reset that after reallocation.
+// Doesn't touch vaos obviously so you still need to reset that after reallocation.
 // newSize must be >= size.
 void BufferedBuffer::Reallocate(unsigned int newSize) {
+    assert(newSize != 0);
     unsigned int oldSize = size;
     size = newSize;
     assert(newSize >= size);
@@ -53,6 +56,10 @@ void BufferedBuffer::Reallocate(unsigned int newSize) {
     // Create a new buffer with the desired size and get a pointer to its contents.
     GLuint newBufferId;
     glGenBuffers(1, &newBufferId);
+    if (bufferBindingLocation == GL_ARRAY_BUFFER) {
+        std::cout << "New buffer = " << newBufferId << ".\n";
+    }
+    
     glBindBuffer(bufferBindingLocation, newBufferId);
     glBufferStorage(bufferBindingLocation, newSize * numBuffers, nullptr, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
     void* newBufferData = glMapBufferRange(bufferBindingLocation, 0, newSize * numBuffers, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
@@ -69,6 +76,7 @@ void BufferedBuffer::Reallocate(unsigned int newSize) {
 }
 
 void BufferedBuffer::Bind() {
+    assert(bufferId != 0);
     glBindBuffer(bufferBindingLocation, bufferId);
 }
 
