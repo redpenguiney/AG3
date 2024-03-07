@@ -5,7 +5,7 @@ in vec2 TexCoords;
 
 uniform sampler2DArray screenTexture;
 
-const float offset = 1.0 / 300.0;  
+const float offset = 1.0 / 900.0;  
 
 void main()
 { 
