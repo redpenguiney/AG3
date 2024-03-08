@@ -38,7 +38,7 @@ MeshVertexFormat MeshVertexFormat::Default(bool instancedColor, bool instancedTe
         .attributes = {
             .position = VertexAttribute {.offset = 0, .nFloats = 3, .instanced = false},
             .textureUV = VertexAttribute {.offset = sizeof(glm::vec3), .nFloats = 2, .instanced = false},   
-            .textureZ = VertexAttribute {.offset = (unsigned short)(instancedTextureZ ? (sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + (instancedColor ? sizeof(glm::vec4) : 0)) : (3 * sizeof(glm::vec3) + sizeof(glm::vec2) + (!instancedColor ? sizeof(glm::vec4) : 0))), .nFloats = 1, .instanced = instancedColor},
+            .textureZ = VertexAttribute {.offset = (unsigned short)(instancedTextureZ ? (sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + (instancedColor ? sizeof(glm::vec4) : 0)) : (3 * sizeof(glm::vec3) + sizeof(glm::vec2) + (!instancedColor ? sizeof(glm::vec4) : 0))), .nFloats = 1, .instanced = instancedTextureZ},
             .color = VertexAttribute {.offset = (unsigned short)(instancedColor ? (sizeof(glm::mat4x4) + sizeof(glm::mat3x3)) : (3 * sizeof(glm::vec3) + sizeof(glm::vec2))), .nFloats = 4, .instanced = instancedColor}, 
             .modelMatrix = VertexAttribute {.offset = 0, .nFloats = 16, .instanced = true},
             .normalMatrix = VertexAttribute {.offset = sizeof(glm::mat4x4), .nFloats = 9, .instanced = true},
@@ -78,7 +78,7 @@ void MeshVertexFormat::HandleAttribute(GLuint& vaoId, const std::optional<Vertex
             glEnableVertexAttribArray(attributeName + i); 
             
             // Associate data with the VAO and describe format of mesh data
-            glVertexAttribPointer(attributeName + i, nFloats, GL_FLOAT, false, attribute->instanced ? instancedSize : nonInstancedSize, (void*)(size_t)(attribute->offset)); // ignore the warning, this is completely fine
+            glVertexAttribPointer(attributeName + i, nFloats, GL_FLOAT, false, attribute->instanced ? instancedSize : nonInstancedSize, (void*)(size_t)(attribute->offset + (i * nFloats * sizeof(GLfloat)))); // ignore the warning, this is completely fine
             glVertexAttribDivisor(attributeName + i, attribute->instanced ? 1 : 0); // attribDivisor is whether the vertex attribute is instanced or not.
         }
         
@@ -159,8 +159,8 @@ std::shared_ptr<Mesh> Mesh::FromVertices(std::vector<GLfloat> verts, const std::
 // helper thing for Mesh::FromFile() that will expand the vector so that it contains index if needed, then return vector.at(index)
 template<typename T>
 typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::vector<T>& vector) {
-    if (vector.size() >= index) {
-        vector.resize(index + 1);
+    if (vector.size() <= index) {
+        vector.resize(index + 1, 6.66);
     }
     return vector.at(index);
 }
@@ -327,6 +327,8 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
         }
     }
 
+    std::cout << "Mesh has " << vertices.size() << " floats in its vertices, and each vertex should be " << meshVertexFormat.GetNonInstancedVertexSize()/4 << "floats.\n";
+
     // calculate tangent vectors
     if (meshVertexFormat.attributes.tangent.has_value() && meshVertexFormat.attributes.tangent->instanced == false) {
 
@@ -347,7 +349,7 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
                 //std::cout << " i = " << indexIntoIndices << "nfloats = " << nFloatsPerVertex << " actual index = " << indices.at(indexIntoIndices) <<  " \n";
                 auto vertexIndex = indices.at(indexIntoIndices);
                 //std::cout << "thing in indices  was " << vertexIndex << " \n"; 
-                points[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex));
+                points[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.position->offset/sizeof(GLfloat)));
                 texCoords[j] = glm::make_vec2(&vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.textureUV->offset/sizeof(GLfloat)));
                 l_normals[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.normal->offset/sizeof(GLfloat)));
             }
@@ -368,8 +370,8 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
                 auto indexIntoIndices = triangleIndex * 3 + i2;
                 auto vertexIndex = indices.at(indexIntoIndices);
                 vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat)) = atangentX;
-                vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat)) = atangentY;
-                vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat)) = atangentZ;
+                vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat) + 1) = atangentY;
+                vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat) + 2) = atangentZ;
             }
             
         }

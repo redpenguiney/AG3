@@ -33,6 +33,12 @@ int main(int numArgs, char *argPtrs[]) {
     auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
     auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
 
+    std::cout << "Created cube mesh vertices:\n ";
+    for (auto & v: m->vertices) {
+        std::cout << v << ", ";
+    }
+    std::cout << ".\n";
+
     //std::printf("ITS %u %u\n", m->meshId, grassMaterial->id);
     auto [brickTextureZ, brickMaterial] = Material::New({
         TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap}, 
@@ -45,6 +51,7 @@ int main(int numArgs, char *argPtrs[]) {
         GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
         params.meshId = m->meshId;
         params.materialId = grassMaterial->id;
+
         auto floor = ComponentRegistry::NewGameObject(params);
         floor->transformComponent->SetPos({0, 0, 0});
         floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(5.0)});
@@ -135,28 +142,32 @@ int main(int numArgs, char *argPtrs[]) {
 
     
     // make light
-    {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    params.meshId = m->meshId;
-    params.materialId = 0;
-    auto coolLight = ComponentRegistry::NewGameObject(params);
-    coolLight->renderComponent->SetTextureZ(-1);
-    coolLight->transformComponent->SetPos({0, 10, 10});
-    coolLight->pointLightComponent->SetRange(200);
-    coolLight->pointLightComponent->SetColor({1, 1, 1});}
-    {GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    params.meshId = m->meshId;
-    params.materialId = grassMaterial->id;
-    auto coolLight = ComponentRegistry::NewGameObject(params);
-    coolLight->renderComponent->SetTextureZ(-1);
-    coolLight->transformComponent->SetPos({30, 10, 30});
-    coolLight->pointLightComponent->SetRange(100);
-    coolLight->pointLightComponent->SetColor({1, 1, 1});}
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = 0;
+        auto coolLight = ComponentRegistry::NewGameObject(params);
+        coolLight->renderComponent->SetTextureZ(-1);
+        coolLight->transformComponent->SetPos({0, 10, 10});
+        coolLight->pointLightComponent->SetRange(200);
+        coolLight->pointLightComponent->SetColor({1, 1, 1});
+    }
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = grassMaterial->id;
+        auto coolLight = ComponentRegistry::NewGameObject(params);
+        coolLight->renderComponent->SetTextureZ(-1);
+        coolLight->transformComponent->SetPos({30, 10, 30});
+        coolLight->pointLightComponent->SetRange(100);
+        coolLight->pointLightComponent->SetColor({1, 1, 1});
+    }
     
     
     GE.debugFreecamEnabled = true;
     GE.window.SetMouseLocked(true);
     
-    glPointSize(4.0); // debug thing, ignore
+    glPointSize(8.0); // debug thing, ignore
     glLineWidth(2.0);
 
     printf("Starting main loop.\n");

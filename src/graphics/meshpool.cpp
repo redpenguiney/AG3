@@ -213,8 +213,8 @@ void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instan
         assert(!slotInstanceSpaces[slot].count(instanceId));
     }
     
-
-    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
+    assert(vertexFormat.attributes.modelMatrix->instanced == true);
+    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(vertexFormat.attributes.modelMatrix->offset + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
 
     // make sure we don't segfault 
     assert((char*)modelMatrixLocation <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
@@ -228,8 +228,8 @@ void Meshpool::SetNormalMatrix(const unsigned int slot, const unsigned int insta
         assert(!slotInstanceSpaces[slot].count(instanceId));
     }
     
-
-    glm::mat3x3* normalMatrixLocation = (glm::mat3x3*)(sizeof(glm::mat4x4) + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
+    assert(vertexFormat.attributes.normalMatrix->instanced == true);
+    glm::mat3x3* normalMatrixLocation = (glm::mat3x3*)(vertexFormat.attributes.normalMatrix->offset + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
 
     // make sure we don't segfault 
     assert(instanceId < instanceCapacity);

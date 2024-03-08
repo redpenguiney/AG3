@@ -216,8 +216,8 @@ void GraphicsEngine::RenderScene() {
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin);
 
     // Draw the world onto a framebuffer so we can draw the contents of that framebuffer onto the screen with a postprocessing shader.
-    UpdateMainFramebuffer();
-    mainFramebuffer->Bind();
+    // UpdateMainFramebuffer();
+    // mainFramebuffer->Bind();
 
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
 
@@ -258,19 +258,20 @@ void GraphicsEngine::RenderScene() {
     DrawSkybox();
 
     // Go back to drawing on the window.
-    Framebuffer::Unbind();
-    glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
+    // Framebuffer::Unbind();
+    // glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
+    // glDisable(GL_DEPTH_TEST);
 
-    // Draw contents of main framebuffer on screen quad, using the postprocessing shader.
-    postProcessingShaderProgram->Use();
-    mainFramebuffer->textureAttachments.at(0).Use();
-    screenQuad.Draw();
+    // // Draw contents of main framebuffer on screen quad, using the postprocessing shader.
+    // postProcessingShaderProgram->Use();
+    // mainFramebuffer->textureAttachments.at(0).Use();
+    // screenQuad.Draw();
 
     // Debugging stuff
     // TODO: actual settings to toggle debug stuff
-    DebugAxis();
+    
     // SpatialAccelerationStructure::Get().DebugVisualize();
+    DebugAxis();
 
     glFlush(); // Tell OpenGL we're done drawing.
 }
