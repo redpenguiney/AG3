@@ -56,7 +56,7 @@ int main(int numArgs, char *argPtrs[]) {
         floor->transformComponent->SetPos({0, 0, 0});
         floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(5.0)});
         floor->colliderComponent->elasticity = 0.9;
-        floor->transformComponent->SetScl({100, 1, 10});
+        floor->transformComponent->SetScl({100, 1, 100});
         floor->renderComponent->SetColor({0, 1, 0, 0.5});
         floor->renderComponent->SetTextureZ(grassTextureZ);
         floor->name = "ah yes the floor here is made of floor";
@@ -148,7 +148,7 @@ int main(int numArgs, char *argPtrs[]) {
         params.materialId = 0;
         auto coolLight = ComponentRegistry::NewGameObject(params);
         coolLight->renderComponent->SetTextureZ(-1);
-        coolLight->transformComponent->SetPos({0, 10, 10});
+        coolLight->transformComponent->SetPos({5, 5, 5});
         coolLight->pointLightComponent->SetRange(200);
         coolLight->pointLightComponent->SetColor({1, 1, 1});
     }
@@ -158,8 +158,8 @@ int main(int numArgs, char *argPtrs[]) {
         params.materialId = grassMaterial->id;
         auto coolLight = ComponentRegistry::NewGameObject(params);
         coolLight->renderComponent->SetTextureZ(-1);
-        coolLight->transformComponent->SetPos({30, 10, 30});
-        coolLight->pointLightComponent->SetRange(100);
+        coolLight->transformComponent->SetPos({40, 5, 40});
+        coolLight->pointLightComponent->SetRange(1000);
         coolLight->pointLightComponent->SetColor({1, 1, 1});
     }
     

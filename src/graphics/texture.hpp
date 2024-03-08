@@ -26,10 +26,12 @@ class Texture {
     };
 
     enum TextureFormat {
-        RGBA = GL_RGBA8,
-        RGB = GL_RGB8,
-        Grayscale = GL_R8,
-        Auto = 0, // texture format will be identical to the file's format
+        RGBA_8Bit = GL_RGBA8,
+        RGB_8Bit = GL_RGB8,
+        Grayscale_8Bit = GL_R8,
+        Auto_8Bit = 0, // texture format will be identical to the file's format (but still rgb)
+
+        RGBA_16Float = GL_RGBA16F // you don't need 16 bit textures for objects, these are for things like floating point framebuffers for HDR
     };
 
     enum TextureWrappingBehaviour {

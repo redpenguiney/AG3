@@ -22,11 +22,12 @@ void main()
     );
 
     float kernel[9] = float[](
-        -1,  -1, -1,
-        -1,  9, -1,
-        -1,  -1, -1
+        0,  0, 0,
+        0,   1, 0,
+        0,  0, 0
     );
     
+    // do kernel-based post processing
     vec3 sampleTex[9];
     for(int i = 0; i < 9; i++)
     {
@@ -35,8 +36,10 @@ void main()
     vec3 col = vec3(0.0);
     for(int i = 0; i < 9; i++)
         col += sampleTex[i] * kernel[i];
-    
-    FragColor = vec4(col, 1.0);
+
+    // tonemapping
+    vec3 mapped = col / (col + vec3(1.0));
+    FragColor = vec4(mapped, 1.0);
     //FragColor = texture(screenTexture, TexCoords);
     //FragColor = vec4(TexCoords, 0.5, 1.0);
 

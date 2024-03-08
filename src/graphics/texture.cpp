@@ -36,15 +36,15 @@ GLenum TextureBindingLocationFromType(Texture::TextureType type) {
 
 unsigned int NChannelsFromFormat(Texture::TextureFormat format ) {
     switch (format) {
-    case Texture::RGBA:
+    case Texture::RGBA_8Bit:
     return STBI_rgb_alpha; // same as 4
     break;
-    case Texture::RGB:
+    case Texture::RGB_8Bit:
     return STBI_rgb; // same as 3
     break;
-    case Texture::Grayscale:
+    case Texture::Grayscale_8Bit:
     return STBI_grey; // same as 1
-    case Texture::Auto:
+    case Texture::Auto_8Bit:
     return 0; // 0 means we don't tell STBI to return a specific number of channels
     default:
     std::cout << "forgot something2\n";
@@ -123,16 +123,16 @@ type(textureType)
     }
 
     auto internalFormat = params.format; // format the texture will use when stored on the GPU
-    if (params.format == Texture::Auto) {
+    if (params.format == Texture::Auto_8Bit) {
         switch (nChannels) {
         case 4:
-        internalFormat = Texture::RGBA; std::cout << "auto picked rgba\n";
+        internalFormat = Texture::RGBA_8Bit; std::cout << "auto picked rgba\n";
         break;
         case 3:
-        internalFormat = Texture::RGB; std::cout << "auto picked rgb\n";
+        internalFormat = Texture::RGB_8Bit; std::cout << "auto picked rgb\n";
         break;
         case 1:
-        internalFormat = Texture::Grayscale; std::cout << "auto picked grayscale\n";
+        internalFormat = Texture::Grayscale_8Bit; std::cout << "auto picked grayscale\n";
         break;
         default:
         std::cout << "texture.cpp: uh what the \n";
@@ -444,7 +444,7 @@ TextureCreateParams::TextureCreateParams(const std::vector<std::string>& imagePa
     texturePaths(imagePaths),
     usage(texUsage)
 {
-    format = Texture::Auto;
+    format = Texture::Auto_8Bit;
 
     wrappingBehaviour = Texture::WrapTiled;
     mipmapBehaviour = Texture::LinearMipmapInterpolation;

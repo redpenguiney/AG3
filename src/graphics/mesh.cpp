@@ -256,7 +256,7 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
             // uv
             if (meshVertexFormat.attributes.textureUV.has_value() && !meshVertexFormat.attributes.textureUV->instanced) {
                 for (unsigned int i = 0; i < meshVertexFormat.attributes.textureUV->nFloats; i++) {
-                    vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.attributes.textureUV->offset/sizeof(GLfloat) + i, vertices) = (texcoordsXY[index.texcoord_index * 3 + i]);
+                    vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.attributes.textureUV->offset/sizeof(GLfloat) + i, vertices) = (texcoordsXY[index.texcoord_index * 2 + i]);
                 }
             }
             

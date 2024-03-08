@@ -95,9 +95,12 @@ vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, vec3 no
 
     float specularStrength = 0.8;
     vec3 viewDir = normalize(-cameraToFragmentPosition);
-    vec3 reflectDir = reflect(-lightDir, normal); 
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+    // vec3 reflectDir = reflect(-lightDir, normal); // replace reflectDir with halfwayDir for blinn-phong lighting, which is better than phong lighting
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 32);
     vec3 specular = specularStrength * spec * lightColor;  
+
+    
 
     vec3 ambient = lightColor * 0.1;
 
@@ -137,7 +140,9 @@ void main()
     if (tx.a < 0.1) {
         discard;
     };
-    vec4 color = tx * fragmentColor * vec4(light, 1);
+
+    vec3 globalAmbient = vec3(0.1, 0.1, 0.1);
+    vec4 color = tx * fragmentColor * vec4((light + globalAmbient), 1);
     Output = color;
 
 };
