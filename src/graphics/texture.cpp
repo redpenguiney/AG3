@@ -1,7 +1,9 @@
 #include "engine.hpp"
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLM/ext.hpp"
-#include "../../external_headers/freetype/ft2build.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
+// #include "../../external_headers/freetype/freetype/freetype.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
@@ -71,75 +73,101 @@ type(textureType)
 
     // Get all the image data
     std::vector<unsigned char*> imageDatas;
-    
-    std::cout << "Requiring " << NChannelsFromFormat(params.format) << " channels.\n";
-    int lastWidth = 0, lastHeight = 0, lastNChannels = 0;
-    for (auto & path: params.texturePaths) {
-        // use stbi_image.h to load file
-        std::cout << "Loading \"" << path << "\".\n";
-        imageDatas.push_back(stbi_load(path.c_str(), &width, &height, &nChannels, NChannelsFromFormat(params.format)));
-        // TODO: we don't throw an error if we put in a one channel image (for example) and wanted 3 channels, we just create 2 more channels, is that ok?
-        std::cout << "We want a minimum of " << NChannelsFromFormat(params.format) << " and we got " << nChannels << ".\n"; 
-        nChannels = std::max(nChannels, (int)NChannelsFromFormat(params.format)); // apparently nChannels is set to the amount that the original image had, even if we asked for (and recieved) extra channels, so this makes sure it has the right value
-        if (imageDatas.back() == nullptr) { // error check
-            std::printf("STBI failed to load %s because %s", path.c_str(), stbi_failure_reason());
-            abort(); // TODO: set image data to pointer to an error texture when this happens instead of aborting
-        }
-        if ((lastWidth != 0 && lastWidth != width) || (lastHeight != 0 && lastHeight != height)) {
-            std::cout << "All textures given must be same size.\n";
-            abort();
-        }
-        if (width != height && type == Texture::TextureCubemap) {
-            std::cout << "Cubemaps have to be square.\n";
-            abort();
-        }
-        if (lastNChannels != 0 && lastNChannels != nChannels) {
-            std::cout << "All texture given must have the same number of channels.\n";
-            abort();
-        }
-
-        lastWidth = width;
-        lastHeight = height;
-        lastNChannels = nChannels;
-    }
-
-    // Determine what format the image data was in; RGB? RGBA? etc (nChannels is how many components the loaded mage had)
-    // TODO: bug related to # of channels in source image being too high 
     unsigned int sourceFormat;
-    switch (nChannels) {
-    case 4:
-    sourceFormat = GL_RGBA; std::cout << "src picked rgba\n";
-    break;
-    case 3:
-    sourceFormat = GL_RGB; std::cout << "src picked rgb\n";
-    break;
-    case 1:
-    sourceFormat = GL_RED; std::cout << "src picked grayscale\n";
-    break;
-    default:
-    std::cout << "texture.cpp: uh what the \n";
-    abort();
-    break;
-    }
+    TextureFormat internalFormat = params.format;
 
-    auto internalFormat = params.format; // format the texture will use when stored on the GPU
-    if (params.format == Texture::Auto_8Bit) {
+    
+    if (type != Texture::TextureFont) { // For textures that aren't a font, we use stbi_image.h to load the files and then figure all the formatting and what not.
+
+       std::cout << "Requiring " << NChannelsFromFormat(params.format) << " channels.\n";
+        int lastWidth = 0, lastHeight = 0, lastNChannels = 0;
+        for (auto & path: params.texturePaths) {
+            // use stbi_image.h to load file
+            std::cout << "Loading \"" << path << "\".\n";
+            imageDatas.push_back(stbi_load(path.c_str(), &width, &height, &nChannels, NChannelsFromFormat(params.format)));
+            // TODO: we don't throw an error if we put in a one channel image (for example) and wanted 3 channels, we just create 2 more channels, is that ok?
+            std::cout << "We want a minimum of " << NChannelsFromFormat(params.format) << " and we got " << nChannels << ".\n"; 
+            nChannels = std::max(nChannels, (int)NChannelsFromFormat(params.format)); // apparently nChannels is set to the amount that the original image had, even if we asked for (and recieved) extra channels, so this makes sure it has the right value
+            if (imageDatas.back() == nullptr) { // error check
+                std::printf("STBI failed to load %s because %s", path.c_str(), stbi_failure_reason());
+                abort(); // TODO: set image data to pointer to an error texture when this happens instead of aborting
+            }
+            if ((lastWidth != 0 && lastWidth != width) || (lastHeight != 0 && lastHeight != height)) {
+                std::cout << "All textures given must be same size.\n";
+                abort();
+            }
+            if (width != height && type == Texture::TextureCubemap) {
+                std::cout << "Cubemaps have to be square.\n";
+                abort();
+            }
+            if (lastNChannels != 0 && lastNChannels != nChannels) {
+                std::cout << "All texture given must have the same number of channels.\n";
+                abort();
+            }
+
+            lastWidth = width;
+            lastHeight = height;
+            lastNChannels = nChannels;
+        }
+
+        // Determine what format the image data was in; RGB? RGBA? etc (nChannels is how many components the loaded mage had)
+        // TODO: bug related to # of channels in source image being too high 
         switch (nChannels) {
         case 4:
-        internalFormat = Texture::RGBA_8Bit; std::cout << "auto picked rgba\n";
+        sourceFormat = GL_RGBA; std::cout << "src picked rgba\n";
         break;
         case 3:
-        internalFormat = Texture::RGB_8Bit; std::cout << "auto picked rgb\n";
+        sourceFormat = GL_RGB; std::cout << "src picked rgb\n";
         break;
         case 1:
-        internalFormat = Texture::Grayscale_8Bit; std::cout << "auto picked grayscale\n";
+        sourceFormat = GL_RED; std::cout << "src picked grayscale\n";
         break;
         default:
         std::cout << "texture.cpp: uh what the \n";
         abort();
         break;
         }
+
+        if (params.format == Texture::Auto_8Bit) {
+            switch (nChannels) {
+            case 4:
+            internalFormat = Texture::RGBA_8Bit; std::cout << "auto picked rgba\n";
+            break;
+            case 3:
+            internalFormat = Texture::RGB_8Bit; std::cout << "auto picked rgb\n";
+            break;
+            case 1:
+            internalFormat = Texture::Grayscale_8Bit; std::cout << "auto picked grayscale\n";
+            break;
+            default:
+            std::cout << "texture.cpp: uh what the \n";
+            abort();
+            break;
+            }
+        } 
     }
+    else { // to create font textures, we use freetype to rasterize them for us from vector ttf fonts
+
+        // make sure freetype libraryexists and was initialized successfully.
+        static bool initializedFT = false;
+        static FT_Library ft;
+        if (!initializedFT) {
+            initializedFT = true;
+            assert(!FT_Init_FreeType(&ft))
+        }
+        
+        // create a face (what freetype calls a loaded font)
+        FT_Face face;
+        assert(!FT_New_Face(ft, params.texturePaths.back().c_str(), 0, &face));
+
+        // set font size
+        FT_Set_Pixel_Sizes(face, 0, params.fontHeight);
+
+        for (unsigned char c = 0; c < 128; c++) { // C++ NO WAYYYYYYYY!!!!
+        
+        }
+    }
+    
 
     // TODO: there was a crash when loading a 3-channel jpeg to create a grayscale texture
     // generate OpenGL texture object and put image data in it
@@ -159,7 +187,7 @@ type(textureType)
         depth = 1; 
         std::printf("Ok so its %u %u %u %u %u %u, %i\n", glTextureId, internalFormat, sourceFormat, width, height, depth, nChannels);
         std::cout << " gonna load " << (void*)imageDatas.back() << ".\n";
-        // glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // TODO: this may be neccesary in certain situations??? further investigation neededd
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // TODO: this may be neccesary in certain situations??? further investigation neededd
         // glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
         // glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
         // glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
@@ -450,4 +478,5 @@ TextureCreateParams::TextureCreateParams(const std::vector<std::string>& imagePa
     mipmapBehaviour = Texture::LinearMipmapInterpolation;
     filteringBehaviour = Texture::LinearTextureFiltering;
     
+    fontHeight = 48;
 }

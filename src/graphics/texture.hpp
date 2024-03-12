@@ -2,6 +2,7 @@
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLM/vec3.hpp"
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -22,7 +23,7 @@ class Texture {
         
         Texture2D = 0,
         TextureCubemap = 1, // cubemap is for skybox
-        TextureFont = 2,
+        TextureFont = 2, // doing this will create a rasterized version of the characters in the font so that you can write stuff with it.
     };
 
     enum TextureFormat {
@@ -106,6 +107,9 @@ class Texture {
 
     // Texture(TextureType textureType, std::string path, int layerHeight, int mipmapLevels);
     // Texture(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels);
+
+    // If this texture is a font, then this map exists and will store 
+    std::optional<std::unordered_map<char, Glyph>> fontGlyphs;
 };
 
 struct TextureCreateParams {
@@ -130,4 +134,6 @@ struct TextureCreateParams {
     Texture::TextureMipmapBehaviour mipmapBehaviour;
 
     TextureCreateParams(const std::vector<std::string>& imagePaths, const Texture::TextureUsage usage);
+
+    unsigned int fontHeight; // font width is automatically calculated
 };
