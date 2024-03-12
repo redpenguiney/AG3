@@ -3,6 +3,7 @@ glew_dep = declare_dependency(link_args: ['-lglew64'])
 glfw_dep = declare_dependency(link_args: ['-l64glfw3'])
 gl_dep = declare_dependency(link_args: ['-lopengl32'])
 lua_dep = declare_dependency(link_args: ['-L -Llua54dll -ldl'])
+freetype_dep = declare_dependency(link_args: ['-l'])
 
 incdir = include_directories('../external_headers/sol2/include', '../external_headers/lua', '../external_headers/freetype')
 

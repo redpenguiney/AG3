@@ -135,10 +135,23 @@ void ComponentHandle<T>::Clear() {
 
 class RigidbodyComponent;
 
+
 // The gameobject system uses ECS (google it).
 class GameObject {
     public:
     std::string name; // just an identifier i have mainly for debug reasons, scripts could also use it i guess
+
+    struct GameObjectNetworkData {
+        // Whether or not the running application owns this gameobject (and is sending sync data to other clients) or not (and is recieving sync data from the owning client)
+        bool isOwner;
+
+        // Value is pointless and undefined if not the owner.
+        // 
+        unsigned int syncAccumulator;
+    };
+
+    // If this is null, this gameobject will not be synced between server/client.
+    std::optional<GameObjectNetworkData> networkData;
 
     // TODO: any way to avoid not storing ptrs for components we don't have?
     ComponentHandle<TransformComponent> transformComponent;

@@ -12,6 +12,22 @@
 
 struct TextureCreateParams;
 
+// Contains information about a specific characte of a specific font, and how to draw it from a font texture.
+struct Glyph {
+    unsigned int width;
+    unsigned int height;
+
+    unsigned int advance; // how many pixels the next glyph should start after this one
+
+    unsigned int bearingX; // offset from baseline to left of glyph
+    unsigned int bearingY; // offset from baseline to bottom of glyph
+
+    GLfloat leftUv; // X texture coordinate for left side of glyph on the rasterized font's texture atlas
+    GLfloat rightUv; // X texture coordinate for right side of glyph on the rasterized font's texture atlas
+    GLfloat topUv; // Y texture coordinate for top side of glyph on the rasterized font's texture atlas
+    GLfloat bottomUv; // Y texture coordinate for bottom side of glyph on the rasterized font's texture atlas
+};
+
 class Framebuffer;
 
 class Texture {

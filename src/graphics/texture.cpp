@@ -72,11 +72,8 @@ type(textureType)
     }
 
     // Get all the image data
-    std::vector<unsigned char*> imageDatas;
-    unsigned int sourceFormat;
-    TextureFormat internalFormat = params.format;
+    std::vector<unsigned char*> imageDatas;    
 
-    
     if (type != Texture::TextureFont) { // For textures that aren't a font, we use stbi_image.h to load the files and then figure all the formatting and what not.
 
        std::cout << "Requiring " << NChannelsFromFormat(params.format) << " channels.\n";
@@ -112,6 +109,7 @@ type(textureType)
 
         // Determine what format the image data was in; RGB? RGBA? etc (nChannels is how many components the loaded mage had)
         // TODO: bug related to # of channels in source image being too high 
+        unsigned int sourceFormat;
         switch (nChannels) {
         case 4:
         sourceFormat = GL_RGBA; std::cout << "src picked rgba\n";
@@ -128,6 +126,7 @@ type(textureType)
         break;
         }
 
+        TextureFormat internalFormat = params.format;
         if (params.format == Texture::Auto_8Bit) {
             switch (nChannels) {
             case 4:
@@ -145,6 +144,59 @@ type(textureType)
             break;
             }
         } 
+
+        // TODO: there was a crash when loading a 3-channel jpeg to create a grayscale texture
+        // generate OpenGL texture object and put image data in it
+        std::cout << " gene\n";
+        glGenTextures(1, &glTextureId);
+
+        // std::cout << "Textuhhuhuhuhuure data: ";
+        // for (unsigned int i = 0; i < width; i++) {
+        //     std:: cout << (int)(imageDatas.back()[i]) << " ";
+        // }
+        std::cout << "\n";
+        std::cout << " binding.\n";
+        // Use();
+        glBindTexture(bindingLocation, glTextureId);
+        if (type == Texture::Texture2D) {
+            std::cout << "here we go!\n";
+            depth = 1; 
+            std::printf("Ok so its %u %u %u %u %u %u, %i\n", glTextureId, internalFormat, sourceFormat, width, height, depth, nChannels);
+            std::cout << " gonna load " << (void*)imageDatas.back() << ".\n";
+            // glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // TODO: this may be neccesary in certain situations??? further investigation neededd
+            // glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+            // glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+            // glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+            std::cout << " pixels store i ed\n";
+            glTexImage3D(bindingLocation, 0, internalFormat, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.back()); // put data in opengl
+            std::cout << "die\n"; 
+        }
+        else if (type == Texture::TextureCubemap) {
+            std::cout << "we do be cubing\n";
+            depth = 1; 
+            std::printf("and so its %u %u %u %u %u %u, %i\n", glTextureId, internalFormat, sourceFormat, width, height, depth, nChannels);
+            for (unsigned int i = 0; i < 6; i++) {
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.at(i));
+            }
+            
+        }
+        // else if (type == TEXTURE_2D_ARRAY) {
+        //     if (layerHeight == -1) {layerHeight = height;}
+        //     depth = height/layerHeight;
+        //     height = layerHeight;
+        //     glTexImage3D(bindingLocation, 0, GL_RGBA8, width, height, depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+        // }
+        else {
+            std::cout << " texture.cpp: que?\n";
+            abort();
+        }
+
+        std::cout << "freeing.\n";
+        // free the data loaded by stbi
+        for (auto & data: imageDatas) {
+            stbi_image_free(data);
+        }
+    
     }
     else { // to create font textures, we use freetype to rasterize them for us from vector ttf fonts
 
@@ -153,7 +205,7 @@ type(textureType)
         static FT_Library ft;
         if (!initializedFT) {
             initializedFT = true;
-            assert(!FT_Init_FreeType(&ft))
+            assert(!FT_Init_FreeType(&ft));
         }
         
         // create a face (what freetype calls a loaded font)
@@ -163,65 +215,68 @@ type(textureType)
         // set font size
         FT_Set_Pixel_Sizes(face, 0, params.fontHeight);
 
+        // collect glyphs from font, and track information needed to determine size of OpenGL texture
+        unsigned int totalWidth = 0;
+        unsigned int greatestHeight = 0;
+
+        fontGlyphs = {};
+        std::unordered_map<char, void*> glyphImageDataPtrs;
         for (unsigned char c = 0; c < 128; c++) { // C++ NO WAYYYYYYYY!!!!
-        
+            if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+            {
+                std::cout << "ERROR::FREETYTPE: Failed to load character " << c << " from font " << params.texturePaths.back() << "/n";
+                abort();
+            }
+
+            greatestHeight = std::max(greatestHeight, face->glyph->bitmap.rows + 1); // add 1 pixel of vertial space between each row of rasterized glyphs on the texture
+            totalWidth += face->glyph->bitmap.width + 1; // add 1 pixel of horizontal space between each glyph on the texture
+
+            (*fontGlyphs)[c] = Glyph {
+                .width = face->glyph->bitmap.width,
+                .height = face->glyph->bitmap.rows,
+                .advance = face->glyph->advance.x,
+                .bearingX = face->glyph->bitmap_left,
+                .bearingY = face->glyph->bitmap_top
+                // UVs are done later
+            };
+            glyphImageDataPtrs[c] = face->glyph->bitmap.buffer;
         }
+
+        // create openGL texture
+        glGenTextures(1, &glTextureId);
+        glBindTexture(bindingLocation, glTextureId);
+
+        // allocate space for all the glyphs
+        int maxWidth; // if texture is too wide to be supported by the OpenGL implmentation, we split it into multiple rows. 
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxWidth);
+        unsigned int numRows = totalWidth / maxWidth + (totalWidth % maxWidth != 0);
+
+        width = std::min(totalWidth, (unsigned int)maxWidth);
+        height = numRows * greatestHeight;
+        
+        glTexImage2D(bindingLocation, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+
+        // fill texture with glyphs and calculate uvs
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // make sure we don't segfault
+        unsigned int currentX = 0;
+        unsigned int currentY = 0;
+        for (auto & [character, glyph] : *fontGlyphs) {
+            glTexSubImage2D(bindingLocation, 0,  currentX, currentY, glyph.width, glyph.height, 0, GL_RED, glyphImageDataPtrs.at(character));
+            currentX += (glyph.width + 1);
+            // see if there's room for another character on this row, and if not, move to the next row
+            if ((currentX + glyph.width + 1) >= maxWidth) {
+                currentY += greatestHeight;
+            }
+        };
+
+        // tell freetype it can delete all its data now
+        FT_Done_Face(face);
+        FT_Done_FreeType(ft);
     }
     
-
-    // TODO: there was a crash when loading a 3-channel jpeg to create a grayscale texture
-    // generate OpenGL texture object and put image data in it
-    std::cout << " gene\n";
-    glGenTextures(1, &glTextureId);
-
-    // std::cout << "Textuhhuhuhuhuure data: ";
-    // for (unsigned int i = 0; i < width; i++) {
-    //     std:: cout << (int)(imageDatas.back()[i]) << " ";
-    // }
-    std::cout << "\n";
-    std::cout << " binding.\n";
-    // Use();
-    glBindTexture(bindingLocation, glTextureId);
-    if (type == Texture::Texture2D) {
-        std::cout << "here we go!\n";
-        depth = 1; 
-        std::printf("Ok so its %u %u %u %u %u %u, %i\n", glTextureId, internalFormat, sourceFormat, width, height, depth, nChannels);
-        std::cout << " gonna load " << (void*)imageDatas.back() << ".\n";
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // TODO: this may be neccesary in certain situations??? further investigation neededd
-        // glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-        // glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-        // glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-        std::cout << " pixels store i ed\n";
-        glTexImage3D(bindingLocation, 0, internalFormat, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.back()); // put data in opengl
-        std::cout << "die\n"; 
-    }
-    else if (type == Texture::TextureCubemap) {
-        std::cout << "we do be cubing\n";
-        depth = 1; 
-        std::printf("and so its %u %u %u %u %u %u, %i\n", glTextureId, internalFormat, sourceFormat, width, height, depth, nChannels);
-        for (unsigned int i = 0; i < 6; i++) {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.at(i));
-        }
-        
-    }
-    // else if (type == TEXTURE_2D_ARRAY) {
-    //     if (layerHeight == -1) {layerHeight = height;}
-    //     depth = height/layerHeight;
-    //     height = layerHeight;
-    //     glTexImage3D(bindingLocation, 0, GL_RGBA8, width, height, depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
-    // }
-    else {
-        std::cout << " texture.cpp: que?\n";
-        abort();
-    }
-
-    std::cout << "freeing.\n";
-    // free the data loaded by stbi
-    for (auto & data: imageDatas) {
-        stbi_image_free(data);
-    }
-    
+    // setup wrapping, mipmaps, etc.
     ConfigTexture(params);
+    
 }
 
 // float Texture::AddLayer() {

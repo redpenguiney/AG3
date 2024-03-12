@@ -17,6 +17,7 @@
 #include "gameobjects/rigidbody_component.hpp"
 #include "lua/lua_handler.hpp"
 #include "gameobjects/lifetime.hpp"
+#include "network/client.hpp"
 
 using namespace std;
 
