@@ -210,6 +210,7 @@ int main(int numArgs, char *argPtrs[]) {
 
     unsigned int accum = 0;
     std::string ttt = "a";
+    std::cout << "INITIAL:::    Origional size is " << glm::to_string(textMesh->originalSize) << ".\n";
     while (!GE.ShouldClose()) 
     {
         accum += 1;
@@ -217,8 +218,9 @@ int main(int numArgs, char *argPtrs[]) {
             accum = 0;
             auto [vers, inds] = textMesh->StartModifying();
             TextMeshFromText(ttt, arialFont.second->fontMapConstAccess.value(), textMesh->vertexFormat, vers, inds);
-            textMesh->StopModifying(false);
+            textMesh->StopModifying(true);
             text->transformComponent->SetScl(textMesh->originalSize * 0.01f);
+            std::cout << "Origional size is " << glm::to_string(textMesh->originalSize) << ".\n";
             ttt += 'a';
         }
         // std::printf("ok %f %f \n", GE.debugFreecamPitch, GE.debugFreecamYaw);
