@@ -116,7 +116,7 @@ int main(int numArgs, char *argPtrs[]) {
         GE.skyboxMaterial = sky_m_ptr;
         GE.skyboxMaterialLayer = index;
     }
-    GE.debugFreecamPos = glm::vec3(0, 3, 8);
+    GE.debugFreecamPos = glm::vec3(0, 15, 0);
     
     
     // int nObjs = 0;
@@ -163,6 +163,29 @@ int main(int numArgs, char *argPtrs[]) {
         coolLight->pointLightComponent->SetRange(1000);
         coolLight->pointLightComponent->SetColor({1, 1, 1});
     }
+
+    // { // text rendering stuff
+        auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
+        ttfParams.fontHeight = 60;
+        ttfParams.format = Texture::Grayscale_8Bit;
+        auto arialFont = Material::New({ttfParams, TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap}}, Texture::Texture2D);
+
+        auto textMesh = Mesh::FromText(
+            // "abcdefghijklmnopqrstuvwxyz\nABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ",
+            arialFont.second->fontMapConstAccess.value());
+        std::cout << "Textmesh id = "  << textMesh->meshId << ".\n";  
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+        params.meshId = textMesh->meshId;
+        params.shaderId = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl")->shaderProgramId;
+        params.materialId = arialFont.second->id;
+        auto text = ComponentRegistry::NewGameObject(params);
+        text->renderComponent->SetTextureZ(arialFont.first);
+        text->transformComponent->SetPos({0, 15, 5.0});
+        text->transformComponent->SetScl(textMesh->originalSize * 0.01f);
+        text->transformComponent->SetRot(glm::quat(glm::vec3(0.0, 0.0, glm::radians(180.0))));
+
+    // }
     
     
     GE.debugFreecamEnabled = true;
@@ -185,8 +208,19 @@ int main(int numArgs, char *argPtrs[]) {
 
     bool physicsPaused = false;
 
+    unsigned int accum = 0;
+    std::string ttt = "a";
     while (!GE.ShouldClose()) 
     {
+        accum += 1;
+        if (accum == 180) {
+            accum = 0;
+            auto [vers, inds] = textMesh->StartModifying();
+            TextMeshFromText(ttt, arialFont.second->fontMapConstAccess.value(), textMesh->vertexFormat, vers, inds);
+            textMesh->StopModifying(false);
+            text->transformComponent->SetScl(textMesh->originalSize * 0.01f);
+            ttt += 'a';
+        }
         // std::printf("ok %f %f \n", GE.debugFreecamPitch, GE.debugFreecamYaw);
         double currentTime = Time();
         double elapsedTime = currentTime - previousTime;

@@ -52,7 +52,7 @@ const std::vector<GLuint> screenQuadIndices = {
 
 GraphicsEngine::GraphicsEngine(): 
 pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)),
-screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, screenQuadVertexFormat, 1, false))
+screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, screenQuadVertexFormat, 1, false))
 {
     debugFreecamEnabled = false;
     debugFreecamPos = {0.0, 0.0, 0.0};
@@ -243,8 +243,11 @@ void GraphicsEngine::RenderScene() {
             else {
                 auto& material = Material::Get(materialId);
                 material->Use();
+                shader->Uniform("specularMappingEnabled", material->HasSpecularMap());
+                shader->Uniform("fontMappingEnabled", material->HasFontMap());
                 shader->Uniform("normalMappingEnabled", material->HasNormalMap());
                 shader->Uniform("parallaxMappingEnabled", material->HasDisplacementMap());
+                shader->Uniform("colorMappingEnabled", material->HasColorMap());
             }
             
             for (auto & [poolId, pool] : map2) {
@@ -500,11 +503,15 @@ void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int ma
     assert(live);
     assert(mesh_id != 0);
 
-    colorChanged = (Mesh::Get(mesh_id)->vertexFormat.attributes.color->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
-    textureZChanged = (Mesh::Get(mesh_id)->vertexFormat.attributes.textureZ->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
     color = glm::vec4(1, 1, 1, 1);
     textureZ = -1.0;
     meshId = mesh_id;
+
+    colorChanged = (Mesh::Get(meshId)->vertexFormat.attributes.color->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+    textureZChanged = (Mesh::Get(meshId)->vertexFormat.attributes.textureZ->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+    if (Mesh::Get(meshId)->dynamic) {
+        GraphicsEngine::Get().dynamicMeshUsers.emplace(meshId, this);
+    }
 
     meshLocation.materialId = materialId;
     meshLocation.shaderProgramId = shader_id;
@@ -518,6 +525,10 @@ void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int ma
 
 void GraphicsEngine::RenderComponent::Destroy() {
     assert(live == true);
+
+    if (Mesh::Get(meshId)->dynamic) {
+        GraphicsEngine::Get().dynamicMeshUsers.erase(meshId);
+    }
 
     // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from GraphicsEngine::meshesToAdd
     // meshLocation will still have its shaderProgramId and textureId set tho immediately by AddObject

@@ -56,10 +56,7 @@ void BufferedBuffer::Reallocate(unsigned int newSize) {
     // Create a new buffer with the desired size and get a pointer to its contents.
     GLuint newBufferId;
     glGenBuffers(1, &newBufferId);
-    if (bufferBindingLocation == GL_ARRAY_BUFFER) {
-        std::cout << "New buffer = " << newBufferId << ".\n";
-    }
-    
+
     glBindBuffer(bufferBindingLocation, newBufferId);
     glBufferStorage(bufferBindingLocation, newSize * numBuffers, nullptr, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
     void* newBufferData = glMapBufferRange(bufferBindingLocation, 0, newSize * numBuffers, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);

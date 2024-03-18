@@ -17,14 +17,14 @@ void GLAPIENTRY MessageCallback( GLenum source,
       return; // Shaders do their own checking for compile errors, and checking here won't give us the nature of the compile error, just the fact that one occurred.
   }
   if (type == GL_DEBUG_TYPE_ERROR && (severity == GL_DEBUG_SEVERITY_MEDIUM || severity == GL_DEBUG_SEVERITY_HIGH)) {
-      fprintf( stderr, "\nFATAL OPENGL ERROR: %s type = 0x%x, severity = 0x%x, message = %s",
+      fprintf( stderr, "\nFATAL OPENGL ERROR: %s type = 0x%x, severity = 0x%x, message = %s\n",
            ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
             type, severity, message );
-      std::printf("\nAborting.");
+      std::printf("\nAborting.\n");
       abort();
   }
   else if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
-      fprintf( stderr, "\n Minor OpenGL debug thingy: %s type = 0x%x, severity = 0x%x, message = %s",
+      fprintf( stderr, "\n Minor OpenGL debug thingy: %s type = 0x%x, severity = 0x%x, message = %s \n",
            ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
             type, severity, message );
 

@@ -15,15 +15,18 @@ class Material {
         COLORMAP_TEXTURE_INDEX = 0,
         NORMALMAP_TEXTURE_INDEX = 1,
         SPECULARMAP_TEXTURE_INDEX = 2,
-        DISPLACEMENTMAP_TEXTURE_INDEX = 3
+        DISPLACEMENTMAP_TEXTURE_INDEX = 3,
+        FONTMAP_TEXTURE_INDEX = 4
     };
 
     const unsigned int id;
     const Texture::TextureType materialType;
 
+    bool HasColorMap();
     bool HasSpecularMap();
     bool HasNormalMap();
     bool HasDisplacementMap();
+    bool HasFontMap();
 
     // Returns a ptr to the material with the given id.
     static std::shared_ptr<Material>& Get(const unsigned int id);
@@ -46,7 +49,17 @@ class Material {
 
     //~Material(); implicit destructor fine
     
+    // read only access to materials (TODO other ones if needed)
+    const std::optional<Texture>& colorMapConstAccess = colorMap;
+    const std::optional<Texture>& fontMapConstAccess = fontMap;
+
     private:
+    
+    // For optimization purposes, when you ask for a new texture, it will try to simply add a new layer to an existing material of the same size if it can.
+    // If the given textures are compatible with this material and it successfully adds a new layer for them, it will return the textureZ they were put on.
+    // If not, it returns std::nullopt.
+    std::optional<float> TryAppendLayer(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type);
+
     static inline unsigned int LAST_MATERIAL_ID = 1;
     Material(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type);
 
@@ -54,6 +67,7 @@ class Material {
     std::optional<Texture> normalMap; 
     std::optional<Texture> specularMap;
     std::optional<Texture> displacementMap;
+    std::optional<Texture> fontMap;
 
     inline static std::unordered_map<unsigned int,  std::shared_ptr<Material>> MATERIALS;
 };

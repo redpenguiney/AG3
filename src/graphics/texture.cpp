@@ -1,7 +1,9 @@
 #include "engine.hpp"
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLM/ext.hpp"
+#include <cstring>
 #include <ft2build.h>
+#include <new>
 #include FT_FREETYPE_H
 // #include "../../external_headers/freetype/freetype/freetype.h"
 #include <algorithm>
@@ -59,9 +61,11 @@ unsigned int NChannelsFromFormat(Texture::TextureFormat format ) {
 // Create texture (for use on objects).
 Texture::Texture(const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType):
 format(params.format),
+type(textureType),
+usage(params.usage),
+lineSpacing(params.fontHeight),
 bindingLocation(TextureBindingLocationFromType(textureType)),
-glTextureIndex(textureIndex),
-type(textureType)
+glTextureIndex(textureIndex)
 {
     // skyboxes need 6 textures, everything else obviously only needs 1
     if (textureType == Texture::TextureCubemap) {
@@ -74,7 +78,7 @@ type(textureType)
     // Get all the image data
     std::vector<unsigned char*> imageDatas;    
 
-    if (type != Texture::TextureFont) { // For textures that aren't a font, we use stbi_image.h to load the files and then figure all the formatting and what not.
+    if (usage != Texture::FontMap) { // For textures that aren't a font, we use stbi_image.h to load the files and then figure all the formatting and what not.
 
        std::cout << "Requiring " << NChannelsFromFormat(params.format) << " channels.\n";
         int lastWidth = 0, lastHeight = 0, lastNChannels = 0;
@@ -156,8 +160,8 @@ type(textureType)
         // }
         std::cout << "\n";
         std::cout << " binding.\n";
-        // Use();
-        glBindTexture(bindingLocation, glTextureId);
+        Use();
+        // glBindTexture(bindingLocation, glTextureId);
         if (type == Texture::Texture2D) {
             std::cout << "here we go!\n";
             depth = 1; 
@@ -199,27 +203,27 @@ type(textureType)
     
     }
     else { // to create font textures, we use freetype to rasterize them for us from vector ttf fonts
+        assert(params.format == TextureFormat::Grayscale_8Bit);
+
+        // TODO: optimization needed probably
 
         // make sure freetype libraryexists and was initialized successfully.
-        static bool initializedFT = false;
-        static FT_Library ft;
-        if (!initializedFT) {
-            initializedFT = true;
-            assert(!FT_Init_FreeType(&ft));
-        }
+        FT_Library ft;
+        assert(!FT_Init_FreeType(&ft));
         
         // create a face (what freetype calls a loaded font)
         FT_Face face;
         assert(!FT_New_Face(ft, params.texturePaths.back().c_str(), 0, &face));
 
         // set font size
+        assert(params.fontHeight != 0);
         FT_Set_Pixel_Sizes(face, 0, params.fontHeight);
 
         // collect glyphs from font, and track information needed to determine size of OpenGL texture
         unsigned int totalWidth = 0;
         unsigned int greatestHeight = 0;
 
-        fontGlyphs = {};
+        fontGlyphs.emplace();
         std::unordered_map<char, void*> glyphImageDataPtrs;
         for (unsigned char c = 0; c < 128; c++) { // C++ NO WAYYYYYYYY!!!!
             if (FT_Load_Char(face, c, FT_LOAD_RENDER))
@@ -234,17 +238,21 @@ type(textureType)
             (*fontGlyphs)[c] = Glyph {
                 .width = face->glyph->bitmap.width,
                 .height = face->glyph->bitmap.rows,
-                .advance = face->glyph->advance.x,
+                .advance = (unsigned int)((float)(face->glyph->advance.x)/64.0f), // advance is for some reason given in the dumbest imaginable units so must be converted
                 .bearingX = face->glyph->bitmap_left,
                 .bearingY = face->glyph->bitmap_top
                 // UVs are done later
             };
-            glyphImageDataPtrs[c] = face->glyph->bitmap.buffer;
+            
+            // when we call load_char for the next one, it will delete this char, so we just gonna memcpy it to a new void*
+            void* newBuffer = operator new[](face->glyph->bitmap.width * face->glyph->bitmap.rows);
+            memcpy(newBuffer, face->glyph->bitmap.buffer, face->glyph->bitmap.width * face->glyph->bitmap.rows);
+            glyphImageDataPtrs[c] = newBuffer;
         }
 
         // create openGL texture
         glGenTextures(1, &glTextureId);
-        glBindTexture(bindingLocation, glTextureId);
+        Use();
 
         // allocate space for all the glyphs
         int maxWidth; // if texture is too wide to be supported by the OpenGL implmentation, we split it into multiple rows. 
@@ -253,25 +261,41 @@ type(textureType)
 
         width = std::min(totalWidth, (unsigned int)maxWidth);
         height = numRows * greatestHeight;
+        unsigned int layer = 0; // TODO: OPTIMIZE BY PUTTING DIFFERENT FONTS ON SAME FONTMAP
         
-        glTexImage2D(bindingLocation, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_R8, width, height, 1, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
 
         // fill texture with glyphs and calculate uvs
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // make sure we don't segfault
         unsigned int currentX = 0;
         unsigned int currentY = 0;
         for (auto & [character, glyph] : *fontGlyphs) {
-            glTexSubImage2D(bindingLocation, 0,  currentX, currentY, glyph.width, glyph.height, 0, GL_RED, glyphImageDataPtrs.at(character));
-            currentX += (glyph.width + 1);
-            // see if there's room for another character on this row, and if not, move to the next row
+
+            // see if there's room for another character on this row, and if not, move to the next row    
             if ((currentX + glyph.width + 1) >= maxWidth) {
                 currentY += greatestHeight;
+                currentX = 0;
             }
+
+            glyph.topUv = GLfloat(currentY)/GLfloat(height);
+            glyph.leftUv = GLfloat(currentX)/GLfloat(width);
+
+            glyph.bottomUv = GLfloat(currentY + glyph.height)/GLfloat(height);
+            glyph.rightUv = GLfloat(currentX + glyph.width)/GLfloat(width);
+
+            glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0,  currentX, currentY, layer, glyph.width, glyph.height, 1, GL_RED, GL_UNSIGNED_BYTE, glyphImageDataPtrs.at(character));
+            currentX += (glyph.width + 1);
+
+            
+            
         };
+
+        // delete the glyph image data ptrs
+        // TODO LITERAL MEMORY LEAK
 
         // tell freetype it can delete all its data now
         FT_Done_Face(face);
-        FT_Done_FreeType(ft);
+        FT_Done_FreeType(ft); // TODO: WAIT WE SHOULDN'T INIT AND UNINIT FREETYPE EVERY TIME WE MAKE A FONT
     }
     
     // setup wrapping, mipmaps, etc.
@@ -286,14 +310,16 @@ type(textureType)
 // Create texture and attach it to framebuffer
 Texture::Texture(Framebuffer& framebuffer, const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType, const GLenum framebufferAttachmentType):
 format(params.format),
+type(textureType),
+usage(params.usage),
+lineSpacing(params.fontHeight),
 bindingLocation(TextureBindingLocationFromType(textureType)),
-glTextureIndex(textureIndex),
-type(textureType) 
+glTextureIndex(textureIndex) 
 {
     assert(params.texturePaths.size() == 0); 
 
     glGenTextures(1, &glTextureId);
-    glBindTexture(bindingLocation, glTextureId);
+    Use();
 
     width = framebuffer.width;
     height = framebuffer.height;

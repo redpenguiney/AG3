@@ -19,8 +19,8 @@ struct Glyph {
 
     unsigned int advance; // how many pixels the next glyph should start after this one
 
-    unsigned int bearingX; // offset from baseline to left of glyph
-    unsigned int bearingY; // offset from baseline to bottom of glyph
+    int bearingX; // offset from baseline to left of glyph
+    int bearingY; // offset from baseline to bottom of glyph
 
     GLfloat leftUv; // X texture coordinate for left side of glyph on the rasterized font's texture atlas
     GLfloat rightUv; // X texture coordinate for right side of glyph on the rasterized font's texture atlas
@@ -39,7 +39,6 @@ class Texture {
         
         Texture2D = 0,
         TextureCubemap = 1, // cubemap is for skybox
-        TextureFont = 2, // doing this will create a rasterized version of the characters in the font so that you can write stuff with it.
     };
 
     enum TextureFormat {
@@ -74,9 +73,8 @@ class Texture {
         ColorMap = 0,
         SpecularMap = 1,
         NormalMap = 2,
-        DisplacementMap = 3
-
-
+        DisplacementMap = 3,
+        FontMap = 4
     };
 
     // lets textureId be read only without a getter
@@ -109,6 +107,15 @@ class Texture {
     // Makes OpenGL draw everything with this texture, until Use() is called on a different texture.
     void Use();
 
+    const TextureType type;
+    const TextureUsage usage;
+
+    // read-only access to fontGlyphs
+    const std::optional<std::unordered_map<char, Glyph>>& glyphs = fontGlyphs; 
+
+    // distance between each line, if it is a font texture
+    const unsigned int lineSpacing;
+
     private:
     int width, height, depth, nChannels; // if the texture is not an array texture or a 3d texture, depth = 1
 
@@ -116,7 +123,7 @@ class Texture {
     const GLenum bindingLocation; // basically what kind of opengl texture it is; cubemap, 3d, 2d, 2d array, etc.
     const GLuint glTextureIndex; // multiple textures can be bound at once; this is which index it is bound to
     
-    const TextureType type;
+    
 
     // Sets all of the OpenGL texture parameters.
     void ConfigTexture(const TextureCreateParams& params);
@@ -124,7 +131,7 @@ class Texture {
     // Texture(TextureType textureType, std::string path, int layerHeight, int mipmapLevels);
     // Texture(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels);
 
-    // If this texture is a font, then this map exists and will store 
+    // If this texture is a font, then this map exists and will store information (uvs, spacing, etc.) for each character
     std::optional<std::unordered_map<char, Glyph>> fontGlyphs;
 };
 

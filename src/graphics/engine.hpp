@@ -108,6 +108,9 @@ class GraphicsEngine {
 
         MeshLocation meshLocation;
         friend class GraphicsEngine;
+
+        // mesh.cpp needs to access mesh location sorry
+        friend class Mesh;
         
         //private constructor to enforce usage of object pool
         friend class ComponentPool<RenderComponent>;
@@ -116,7 +119,15 @@ class GraphicsEngine {
 
     std::shared_ptr<Material> GetDefaultMaterial(); // TODO
 
+    // Render components that use a dynamic mesh add themselves to this unordered map (and remove themselves on destruction).
+    // Key is mesh id, value is ptr to rendercomponent which uses that mesh.
+    // Needed so that mesh.cpp can access the meshpools being used by objects with dynamic meshes, in order to apply changes made to those dynamic meshes to the GPU.
+    std::unordered_map<unsigned int, RenderComponent*> dynamicMeshUsers;
+
     private:
+
+    friend class Mesh; // literally just friend so dynamic mesh support is less work for me idc about keeping it modular
+
     // SSBO that stores all points lights so that the GPU can use them.
     // Format is:
     // struct lightInfo {
@@ -126,6 +137,8 @@ class GraphicsEngine {
     // unsigned int numLights;
     // vec3 padding
     // lightInfo pointLights[];
+
+    
     
     BufferedBuffer pointLightDataBuffer;
 

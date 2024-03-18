@@ -12,6 +12,10 @@
 #include <string>
 #include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
 
+class Texture;
+
+
+
 // Something a vertex has; color, position, normal, etc.
 struct VertexAttribute {
     // the offset, in bytes, of the vertex attribute.
@@ -34,7 +38,7 @@ struct MeshVertexFormat {
     union { // this cursed union lets us either refer to vertex attributes by name, or iterate through them using the member vertexAttributes[]
         struct { // BRUH I HAD TO NAME THE STRUCT MID C++ IS MID
             std::optional<VertexAttribute> position;
-            std::optional<VertexAttribute> textureUV;
+            std::optional<VertexAttribute> textureUV; // TODO: when using colormap with fontmap, ability to use different uvs for each texture is needed? actually nvm i think just modifying shader and having 4-var uv is enough
             std::optional<VertexAttribute> textureZ; // texture z is seperate from the uvs because texture z is often instanced, but texture uv should never be instanced
             std::optional<VertexAttribute> color;
             std::optional<VertexAttribute> modelMatrix; // (will be all zeroes if not instanced, you must give it a value yourself which is TODO impossible) one 4x4 model matrix per thing being drawn, multiplying vertex positions by this puts them in the right position via rotating, scaling, and translating
@@ -48,7 +52,7 @@ struct MeshVertexFormat {
     
     static inline const GLuint POS_ATTRIBUTE_NAME = 0;
     static inline const GLuint COLOR_ATTRIBUTE_NAME = 1;
-    static inline const GLuint TEXTURE_UV_ATTRIBUTE_NAME = 2;
+    static inline const GLuint TEXTURE_UV_ATTRIBUTE_NAME = 2; 
     static inline const GLuint TEXTURE_Z_ATTRIBUTE_NAME = 3;
     static inline const GLuint NORMAL_ATTRIBUTE_NAME = 4;
     static inline const GLuint TANGENT_ATTRIBUTE_NAME = 5; 
@@ -63,7 +67,11 @@ struct MeshVertexFormat {
     // returns combined size in bytes of each instanced vertex attribute for one vertex
     unsigned int GetInstancedVertexSize() const;
 
+    // Returns a simple mesh vertex format that should work for normal people doing normal things in 3D.
     static MeshVertexFormat Default(bool instancedColor = true, bool instancedTextureZ = true);
+
+    // Returns a simple mesh vertex format that should work for normal people doing normal things with GUI.
+    static MeshVertexFormat DefaultGui();
 
     // Takes a VAO and sets its noninstanced vertex attributes using VertexAttribPointer().
     // The VAO must ALREADY BE BOUND.
@@ -77,56 +85,78 @@ struct MeshVertexFormat {
     bool operator==(const MeshVertexFormat& other) const;
 };
 
+// sets vertices/indices to contain the right stuff, not normalized.
+void TextMeshFromText(const std::string &text, const Texture &font, const MeshVertexFormat& vertexFormat, std::vector<GLfloat>& vertices, std::vector<GLuint>& indices);
 
-
-// TODO: MODIFY MESH
+// TODO: MAKE DYNAMIC MESHES UNUSABLE WHILE THEY ARE BEING MODIFIED
 class Mesh {
     public:
-    
+    const bool dynamic; // if a mesh is not dynamic, it saves memory and performance. If it is dynamic, you can modify the mesh using Start/StopModifying().
+
     const int meshId; // meshes have an id so that the engine can easily determine that two objects use the same mesh and instance them
-    const std::vector<GLfloat> vertices;
-    const std::vector<GLuint> indices; 
+    const std::vector<GLfloat>& vertices = meshVertices; // read only access to vertices
+    const std::vector<GLuint>& indices = meshIndices; // read only access to indices
 
     const unsigned int instanceCount; // meshpool will make room for this many objects to use this mesh (if you go over it's fine, but performance may be affected)
                                       // the memory cost of this is ~64 * instanceCount bytes
                                       // def make it like a million for cubes and stuff, otherwise default of 1024 should be fine
-                                      // NOTE: if you're constantly adding and removing unique meshes, they better all have same expectedCount or it's gonna cost you in memory
+                                      // NOTE: if you're constantly adding and removing unique meshes, they better all have same expectedCount or TODO memory issues i should probably address at somepoint
     
-    const glm::vec3 originalSize; // When loading a mesh from file, it is automatically scaled so all vertex positions are in the range -0.5 to 0.5. (this lets you and the physics engine easily know what the actual size of the object is) Set gameobject scale to this value to restore it to original size.
+    glm::vec3 originalSize; // When loading a mesh, it is automatically scaled so all vertex positions are in the range -0.5 to 0.5. (this lets you and the physics engine easily know what the actual size of the object is) Set gameobject scale to this value to restore it to original size.
     
     
     const unsigned int nonInstancedVertexSize; // the size, in bytes, of a single vertex's noninstanced attributes.
     const unsigned int instancedVertexSize; // the size, in bytes, of a single vertex's instanced attributes. 
 
     const MeshVertexFormat vertexFormat;
+
+    // returns a reference to vertices/indices, allowing you to mess with the mesh as you see fit.
+    // you must immediately use this reference to modify the mesh, and then call StopModifying() to apply the changes. Don't hold onto this reference.
+    // Also, completely ignores the RenderableMesh class, but you shouldn't care about that.
+    // NOTE: EITHER ALL POSITIONS YOU GIVE MUST BE IN THE RANGE [-0.5, 0.5], OR YOU SHOULD OVERWRITE ALL POSITIONS TO BE IN MODEL SPACE. NO EXCEPTIONS.
+    // Mesh must be dynamic.
+    std::pair<std::vector<GLfloat>&, std::vector<GLuint>&> StartModifying();
     
+    // Updates all objects using this mesh after you changed the mesh via StartModifying().
+    // Must only be called after a call to StartModifying().
+    void StopModifying(bool normalizeSize);
 
     static std::shared_ptr<Mesh>& Get(unsigned int meshId);
 
     // verts must be organized in accordance with the given meshVertexFormat.
     // leave expectedCount at 1024 unless it's something like a cube, in which case maybe set it to like 100k (you can create more objects than this number, just for instancing)
     // normalizeSize should ALWAYS be true unless you're creating a mesh (like the screen quad or skybox mesh) for internal usage
-    // TODO: how to pass verts by ref while still normalizing size? prob not worth trying to
-    static std::shared_ptr<Mesh> FromVertices(std::vector<GLfloat> verts, const std::vector<GLuint> &indies, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount=1024, bool normalizeSize = true);
+    static std::shared_ptr<Mesh> FromVertices(const std::vector<GLfloat>& verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount=1024, bool normalizeSize = true);
 
     // only accepts OBJ files.
     // File should just contain one object. 
     // TODO: materials
     // TODO: MTL support should be easy
-    // meshTransparency will be the initial alpha value of every vertex color, because obj files only support RGB (and also they don't REALLY support RGA).
+    // meshTransparency will be the initial alpha value of every vertex color, because obj files only support RGB (and also they don't REALLY support RGB).
     // leave expectedCount at 1024 unless it's something like a cube, in which case maybe set it to like 100k (you can create more objects than this number, just for instancing)
     // textureZ is used as a starter value for every vertex's textureZ if it isn't instanced
-        // TODO: you can never actually change textureZ, or anything about a mesh for that matter. Need to fix that!
     // normalizeSize should ALWAYS be true unless you're creating a mesh (like the screen quad or skybox mesh) for internal usage
-    static std::shared_ptr<Mesh> FromFile(const std::string& path, const MeshVertexFormat& meshVertexFormat, float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024, bool normalizeSize = true);
+    static std::shared_ptr<Mesh> FromFile(const std::string& path, const MeshVertexFormat& meshVertexFormat = MeshVertexFormat::Default(), float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024, bool normalizeSize = true, const bool isDynamic = false);
+    
+    // Creates a mesh for the given text in the given font.
+    // Texture must be a font.
+    static std::shared_ptr<Mesh> FromText(const std::string& text, const Texture& font, const MeshVertexFormat& meshVertexFormat = MeshVertexFormat::DefaultGui(), const bool isDynamic = true);
+    
     static void Unload(int meshId);
 
     private:
-    Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, glm::vec3 originalSize);
+
+    // true if the mesh was created using Mesh::FromText(). If that's the case, 
+    const bool wasCreatedFromText;
+
+    Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizePositions, bool fromText = false);
     inline static std::atomic<unsigned int> LAST_MESH_ID = {1};
     inline static std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
     inline static tinyobj::ObjReader OBJ_LOADER;
 
-    // helper function for SetVaoVertexAttributes()
+    // scale vertex positions into range -0.5 to 0.5 and calculate originalSize
+    void NormalizePositions();
 
+    std::vector<GLfloat> meshVertices;
+    std::vector<GLuint> meshIndices;
 };

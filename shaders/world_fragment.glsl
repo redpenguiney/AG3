@@ -17,6 +17,7 @@ layout(binding=3) uniform sampler2DArray displacementMap; // note: this syntax n
 
 uniform bool normalMappingEnabled;
 uniform bool parallaxMappingEnabled;
+uniform bool specularMappingEnabled;
 
 struct pointLight {
     vec4 colorAndRange; // w-coord is range, xyz is rgb
@@ -105,7 +106,10 @@ vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, vec3 no
     vec3 ambient = lightColor * 0.1;
 
     float strength = range/pow(distance, 2);
-    return strength * (ambient + diffuse + (specular * texture(specularMap, realTexCoords).x));
+    if (specularMappingEnabled) {
+        specular *= texture(specularMap, realTexCoords).x;
+    }
+    return strength * (ambient + diffuse + specular);
 };
 
 // TODO; to avoid color banding add dithering 

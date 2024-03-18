@@ -1,15 +1,102 @@
 #include "mesh.hpp"
+#include "texture.hpp"
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <vector>
 #include "../../external_headers/GLM/gtc/type_ptr.hpp"
 #define TINYOBJLOADER_IMPLEMENTATION // what kind of library makes you have to ask it to actually implement the functions???
 #include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
 #include "../utility/let_me_hash_a_tuple.cpp"
+#include "engine.hpp"
+
+// helper thing for Mesh::FromFile() and TextMeshFromText() that will expand the vector so that it contains index if needed, then return vector.at(index)
+template<typename T>
+typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::vector<T>& vector) {
+    if (vector.size() <= index) {
+        vector.resize(index + 1, 6.66);
+    }
+    return vector.at(index);
+}
+
+void TextMeshFromText(const std::string &text, const Texture &font, const MeshVertexFormat& vertexFormat, std::vector<GLfloat>& vertices, std::vector<GLuint>& indices) {
+    GLfloat currentX = 0;
+    GLfloat currentY = 0;
+
+    vertices.clear();
+    indices.clear();
+
+    unsigned int vertexIndex = 0;
+    unsigned int vertexSize = vertexFormat.GetNonInstancedVertexSize()/sizeof(GLfloat);
+
+    for (const char & c: text) {
+        if (c == '\n') {
+            currentY += font.lineSpacing;
+            currentX = 0;
+            continue;
+        }
+
+        const auto & glyph = font.glyphs->at(c);
+
+        // make sure the font actually has the letter we want (TODO give a default character instead)
+        assert(font.glyphs->count(c));
+
+        // based on https://learnopengl.com/In-Practice/Text-Rendering 
+        GLfloat characterX = currentX + glyph.bearingX;
+        GLfloat width = glyph.width;
+        GLfloat characterY = currentY - glyph.bearingY;
+        GLfloat height = glyph.height;
+
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = characterX;
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = characterY + height;
+        if (vertexFormat.attributes.position->nFloats > 2) {
+            vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
+        }
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.leftUv;
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat) + 1, vertices) = glyph.bottomUv;
+        indices.push_back(vertexIndex);
+        vertexIndex += 1;
+
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = characterX + width;
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = characterY + height;
+        if (vertexFormat.attributes.position->nFloats > 2) {
+            vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
+        }
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.rightUv;
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat) + 1, vertices) = glyph.bottomUv;
+        indices.push_back(vertexIndex);
+
+        vertexIndex += 1;
+
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = characterX + width;
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = characterY;
+        if (vertexFormat.attributes.position->nFloats > 2) {
+            vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
+        }
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.rightUv;
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat) + 1, vertices) = glyph.topUv;
+        indices.push_back(vertexIndex);
+        indices.push_back(vertexIndex - 2);
+        indices.push_back(vertexIndex);
+        vertexIndex += 1;
+
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = characterX;
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = characterY;
+        if (vertexFormat.attributes.position->nFloats > 2) {
+            vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
+        }
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.leftUv;
+        vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat) + 1, vertices) = glyph.topUv;
+        indices.push_back(vertexIndex);
+        vertexIndex += 1;
+
+        currentX += glyph.advance;
+    }
+}
 
 unsigned int MeshVertexFormat::GetInstancedVertexSize() const {
     unsigned int size = 0;
@@ -44,6 +131,24 @@ MeshVertexFormat MeshVertexFormat::Default(bool instancedColor, bool instancedTe
             .normalMatrix = VertexAttribute {.offset = sizeof(glm::mat4x4), .nFloats = 9, .instanced = true},
             .normal = VertexAttribute {.offset = sizeof(glm::vec3) + sizeof(glm::vec2), .nFloats = 3, .instanced = false},   
             .tangent = VertexAttribute {.offset = 2 * sizeof(glm::vec3) + sizeof(glm::vec2), .nFloats = 3, .instanced = false},
+        }
+    };
+}
+
+// noninstanced (XYZ, TextureXY).
+    // (z is so gui has layers)
+// instanced: model matrix, normal matrix (so texture can be rotated w/o problems), rgba, textureZ
+MeshVertexFormat MeshVertexFormat::DefaultGui() {
+    return MeshVertexFormat {
+        .attributes = {
+            .position = VertexAttribute {.offset = 0, .nFloats = 3, .instanced = false},
+            .textureUV = VertexAttribute {.offset = sizeof(glm::vec3), .nFloats = 2, .instanced = false},   
+            .textureZ = VertexAttribute {.offset = (sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + sizeof(glm::vec4)), .nFloats = 1, .instanced = true},
+            .color = VertexAttribute {.offset = sizeof(glm::mat4x4) + sizeof(glm::mat3x3), .nFloats = 4, .instanced = true}, 
+            .modelMatrix = VertexAttribute {.offset = 0, .nFloats = 16, .instanced = true},
+            .normalMatrix = VertexAttribute {.offset = sizeof(glm::mat4x4), .nFloats = 9, .instanced = true},
+            .normal = std::nullopt,   
+            .tangent = std::nullopt,
         }
     };
 }
@@ -145,27 +250,37 @@ std::shared_ptr<Mesh>& Mesh::Get(unsigned int meshId) {
 
 // }
 
-std::shared_ptr<Mesh> Mesh::FromVertices(std::vector<GLfloat> verts, const std::vector<GLuint> &indies, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizeSize) {
+std::shared_ptr<Mesh> Mesh::FromVertices(const std::vector<GLfloat>& verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizeSize) {
     unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
-    if (normalizeSize) {
-        std::cout << "YOU DIDN\'T ADD THIS YET (MESH.CPP)\n";
-        abort();
-    }
-    auto ptr = std::shared_ptr<Mesh>(new Mesh(verts, indies, meshVertexFormat, expectedCount, {1, 1, 1}));
+    auto ptr = std::shared_ptr<Mesh>(new Mesh(verts, indies, isDynamic, meshVertexFormat, expectedCount, normalizeSize));
     LOADED_MESHES[meshId] = ptr;
     return ptr;
 }
 
-// helper thing for Mesh::FromFile() that will expand the vector so that it contains index if needed, then return vector.at(index)
-template<typename T>
-typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::vector<T>& vector) {
-    if (vector.size() <= index) {
-        vector.resize(index + 1, 6.66);
-    }
-    return vector.at(index);
+
+
+
+
+// TODO: really bad right now
+std::shared_ptr<Mesh> Mesh::FromText(const std::string &text, const Texture &font, const MeshVertexFormat& vertexFormat, const bool isDynamic) {
+
+    assert(vertexFormat.attributes.position.has_value() && vertexFormat.attributes.position->nFloats >= 2);
+    assert(vertexFormat.attributes.textureUV.has_value() && vertexFormat.attributes.textureUV->nFloats >= 2);
+    assert(font.usage == Texture::FontMap);
+    assert(font.glyphs.has_value());
+
+    std::vector<GLfloat> vertices;
+    std::vector<GLuint> indices;
+
+    TextMeshFromText(text, font, vertexFormat, vertices, indices);
+
+    unsigned int i = LAST_MESH_ID;
+    auto ptr = std::shared_ptr<Mesh>(new Mesh(vertices, indices, isDynamic, vertexFormat, 1, true, true));
+    LOADED_MESHES[i] = ptr;
+    return ptr;
 }
 
-std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFormat& meshVertexFormat, float textureZ, unsigned int meshTransparency, unsigned int expectedCount, bool normalizeSize) {
+std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFormat& meshVertexFormat, float textureZ, unsigned int meshTransparency, unsigned int expectedCount, bool normalizeSize, const bool isDynamic) {
     // Load file
     auto config = tinyobj::ObjReaderConfig();
     config.triangulate = true;
@@ -186,48 +301,6 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
     std::vector<GLfloat> & texcoordsXY = attrib.texcoords;
     std::vector<GLfloat> & normals = attrib.normals;
     std::vector<GLfloat> & colors = attrib.colors;
-
-    // scale vertex positions into range -0.5 to 0.5
-
-    glm::vec3 originalSizeScale = {1, 1, 1};
-    if (normalizeSize) {
-        // find mesh extents
-        float minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0;
-        unsigned int i = 0; 
-        for (float v: positions) {
-            if (i % 3 == 0) {
-                minX = std::min(minX, v);
-                maxX = std::max(maxX, v);
-            }
-            else if (i % 3 == 1) {
-                minY = std::min(minY, v);
-                maxY = std::max(maxY, v);
-            }
-            else if (i % 3 == 2) {
-                minZ = std::min(minZ, v);
-                maxZ = std::max(maxZ, v);
-            }
-            i++;
-        }
-
-        // scale mesh by extents
-        i = 0;
-        for (float& v: positions) {
-            if (i % 3 == 0) {
-                v = 1.0*(v-minX)/(maxX-minX) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
-            }
-            else if (i % 3 == 1) {
-                v = 1.0*(v-minY)/(maxY-minY) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
-            }
-            else if (i % 3 == 2) {
-                v = 1.0*(v-minZ)/(maxZ-minZ) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
-            }
-            i++;
-        }
-
-        originalSizeScale = {maxX - minX, maxY - minY, maxZ - minZ};
-    }
-    
 
     // take all the seperate colors, positions, etc. and put them in a single interleaved vertices thing with one indices
     std::unordered_map<std::tuple<GLuint, GLuint, GLuint>, GLuint, hash_tuple::hash<std::tuple<GLuint, GLuint, GLuint>>> objIndicesToGlIndices; // tuple is (posIndex, texXyIndex, normalIndex)
@@ -378,7 +451,7 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
     }
     
     unsigned int meshId = LAST_MESH_ID; // (creating a mesh increments this)
-    auto ptr = std::shared_ptr<Mesh>(new Mesh(vertices, indices, meshVertexFormat, expectedCount, originalSizeScale));
+    auto ptr = std::shared_ptr<Mesh>(new Mesh(vertices, indices, isDynamic, meshVertexFormat, expectedCount, normalizeSize));
     LOADED_MESHES[meshId] = ptr;
     return ptr;
 }
@@ -391,17 +464,116 @@ void Mesh::Unload(int meshId) {
     LOADED_MESHES.erase(meshId);
 }
 
-Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, glm::vec3 originalSizeScale):
+Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizePositions, bool fromText):
+dynamic(isDynamic),
 meshId(LAST_MESH_ID++),
-vertices(verts),
-indices(indies),
 instanceCount(expectedCount),
-originalSize(originalSizeScale),
 nonInstancedVertexSize(meshVertexFormat.GetNonInstancedVertexSize()),
 instancedVertexSize(meshVertexFormat.GetInstancedVertexSize()),
-vertexFormat(meshVertexFormat)
+vertexFormat(meshVertexFormat),
+wasCreatedFromText(fromText),
+meshVertices(verts),
+meshIndices(indies)
 {
-    // std::cout << "Created mesh with id " << meshId << "\n";
+    if (normalizePositions) {
+        NormalizePositions();
+    }
+    
 }
 
+void Mesh::NormalizePositions() {
+    assert(vertexFormat.attributes.position.has_value() && !vertexFormat.attributes.position->instanced && (vertexFormat.attributes.position->nFloats == 2 || vertexFormat.attributes.position->nFloats == 3));
 
+    // find mesh extents
+    float minX = 0, maxX = 0, minY = 0, maxY = 0, minZ = 0, maxZ = 0;
+    for (unsigned int i = 0; i < vertices.size(); i++) {
+        const float & v = vertices[i];
+        unsigned int remainder = (i % (nonInstancedVertexSize/sizeof(GLfloat))) - (vertexFormat.attributes.position->offset/sizeof(GLfloat));
+        
+        if (remainder == 0) {
+            minX = std::min(minX, v);
+            maxX = std::max(maxX, v);
+        }
+        else if (remainder == 1) {
+            minY = std::min(minY, v);
+            maxY = std::max(maxY, v);
+        }
+        else if (remainder == 2 && vertexFormat.attributes.position->nFloats == 3) {
+            minZ = std::min(minZ, v);
+            maxZ = std::max(maxZ, v);
+        }
+    }
+
+    // scale mesh by extents
+    for (unsigned int i = 0; i < vertices.size(); i++) {
+        float & v = meshVertices[i];
+        unsigned int remainder = (i % (nonInstancedVertexSize/sizeof(GLfloat))) - (vertexFormat.attributes.position->offset/sizeof(GLfloat));
+        if (remainder == 0) {
+            v = 1.0*(v-minX)/(maxX-minX) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
+        }
+        else if (remainder == 1) {
+            v = 1.0*(v-minY)/(maxY-minY) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
+        }
+        else if (remainder == 2 && vertexFormat.attributes.position->nFloats == 3) {
+            v = 1.0*(v-minZ)/(maxZ-minZ) - 0.5; // i don't really know how this bit works i got it from stack overflow and modified it
+        }
+    }
+
+    originalSize = {maxX - minX, maxY - minY, maxZ - minZ};
+}
+
+std::pair<std::vector<GLfloat>&, std::vector<GLuint>&> Mesh::StartModifying() {
+    assert(dynamic == true);
+    return {meshVertices, meshIndices};
+}
+
+void Mesh::StopModifying(bool normalizeSize) {
+    assert(dynamic == true);
+
+    if (normalizeSize) {
+        NormalizePositions();
+    }
+
+    std::cout << "MODIFICATION HALTED\n";
+    std::cout << "There are " << GraphicsEngine::Get().dynamicMeshUsers.size() << " dynamic mesh users.\n";
+
+    // keep in mind that same mesh could be in multiple different meshpools because different materials/shaders 
+
+    std::vector<unsigned int> modifiedMeshpoolIds; // make sure we don't waste perf. resetting the same meshpool multiple times
+
+    // For every object that uses a dynamic mesh...
+    for (auto & [id, renderComponent] : GraphicsEngine::Get().dynamicMeshUsers) {
+
+        if (id == meshId) { // if this mesh is that dynamic mesh...
+            Meshpool& pool = *GraphicsEngine::Get().meshpools.at(renderComponent->meshLocation.shaderProgramId).at(renderComponent->meshLocation.materialId).at(renderComponent->meshLocation.poolId);
+
+            // If the vertex/index counts didn't change enough to make the mesh not fit in the pool, just refill the meshpool's slot.
+            std::cout << "Pool holds " << pool.meshVerticesSize << "bytes, but the mesh is " << vertices.size() * sizeof(GLfloat) << "bytes.\n";
+            if (pool.meshVerticesSize >= vertices.size() * sizeof(GLfloat) && pool.meshIndicesSize >= indices.size() * sizeof(GLuint)) {
+
+                // if we already did that, move onto the next object.
+                if (std::find(modifiedMeshpoolIds.begin(), modifiedMeshpoolIds.end(), renderComponent->meshLocation.poolId) != modifiedMeshpoolIds.end()) {
+                    continue;
+                }
+
+                std::cout << "Filling slot for dynamic mesh update.\n";
+
+                // instanceCount argument is meaningless when modifying == true.
+                pool.FillSlot(meshId, renderComponent->meshLocation.poolSlot, 0, true);
+                modifiedMeshpoolIds.push_back(renderComponent->meshLocation.poolSlot);
+            }
+
+            // Otherwise, we have to remove every object using this mesh/meshpool combo from its meshpool, and find a new pool for it.
+            else {
+                // todo: could potentially do some crazy optimization here by manually wiping the mesh from the pool then directly setting pool ids for new pool?
+                // low priority in any case
+
+                std::cout << "Removing/readding object for dynamic mesh update.\n";
+
+                pool.RemoveObject(renderComponent->meshLocation.poolSlot, renderComponent->meshLocation.poolInstance);
+                GraphicsEngine::Get().AddObject(renderComponent->meshLocation.shaderProgramId, renderComponent->meshLocation.materialId, meshId, &renderComponent->meshLocation);
+            }
+        }
+    }
+    
+}

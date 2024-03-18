@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <process.h>
 
 void Material::Destroy(const unsigned int id) {
     assert(MATERIALS.count(id));
@@ -27,9 +28,12 @@ id(LAST_MATERIAL_ID++),
 materialType(type),
 colorMap(std::nullopt),
 normalMap(std::nullopt),
-specularMap(std::nullopt)
+specularMap(std::nullopt),
+displacementMap(std::nullopt),
+fontMap(std::nullopt)
 {
     // Just go through textureParams and create each texture they ask for
+    // TODO: lots of sanity checks should be made here on the params for each texture
     for (auto & textureToMake: textureParams) {
         switch (textureToMake.usage) {
             case Texture::ColorMap:
@@ -60,6 +64,13 @@ specularMap(std::nullopt)
             }
             displacementMap.emplace(textureToMake, DISPLACEMENTMAP_TEXTURE_INDEX, type); // constructs the texture inside the optional without copying
             break;
+            case Texture::FontMap:
+            if (fontMap) { // only one fontmap per material
+                std::cout << "PROBLEM: you tried to give us two different font textures for this material. Thats bad.\n";
+                abort();
+            }
+            fontMap.emplace(textureToMake, FONTMAP_TEXTURE_INDEX, type);
+            break;
             default:
             std::cout << "material constructor: what are you doing???\n";
             abort();
@@ -69,10 +80,11 @@ specularMap(std::nullopt)
 }
 
 void Material::Use() {
-    colorMap->Use();
+    if (colorMap) colorMap->Use();
     if (specularMap) specularMap->Use();
     if (normalMap) normalMap->Use();
     if (displacementMap) displacementMap->Use();
+    if (fontMap) fontMap->Use();
 }
 
 // TODO: this feels bad.
@@ -109,4 +121,12 @@ bool Material::HasSpecularMap() {
 
 bool Material::HasDisplacementMap() {
     return displacementMap.has_value();
+}
+
+bool Material::HasFontMap() {
+    return fontMap.has_value();
+}
+
+bool Material::HasColorMap() {
+    return colorMap.has_value();
 }

@@ -13,7 +13,7 @@ const unsigned int INSTANCED_VERTEX_BUFFERING_FACTOR = 3;
 
 // TODO: INDBO shouldn't be persistent, and arguably neither should the vertices/indices.
 // TODO: INDBO should just be written to directly instead of writing to drawCommands and then doing memcpy.
-// TODO: MODIFY VERTICES
+// TODO: MASSIVE MEMORY OPTIMIZATION WHEN SAME OBJECT IS USED WITH MULTIPLE DIFFERENT SHADERS/MATERIALS: just one meshpool per object size, different indbos for different materials/shaders
 
 // Contains an arbitrary number of arbitary meshes and is used to render them very quickly.
 class Meshpool {
@@ -57,10 +57,12 @@ class Meshpool {
     int ScoreMeshFit(const unsigned int verticesNBytes, const unsigned int indicesNBytes, const MeshVertexFormat& meshVertexFormat);
 
     private:
+    friend class Mesh; // for dynamic mesh support, idc about modularity
+
     const unsigned int instancedVertexSize; // Each gameobject has one instance containing its data (at minimum a model matrix)
-    const unsigned int nonInstancedVertexSize; // the size of a single vertex. (not to be confused with meshVertexSize, the maximum combined size of a mesh's vertices allowed by the pool)
-    const unsigned int meshVerticesSize; // The vertex data of meshes inside the pool can be smaller but no bigger than this (if they're way smaller they should still go in a new mesh pool)
-    const unsigned int meshIndicesSize; // same as meshVertexSize but for the indices of a mesh
+    const unsigned int nonInstancedVertexSize; // the size of a single vertex in bytes. (not to be confused with meshVertexSize, the maximum combined size of a mesh's vertices allowed by the pool)
+    const unsigned int meshVerticesSize; // The vertex data of meshes inside the pool can be smaller but no bigger than this ( in bytes) (if they're way smaller they should still go in a new mesh pool)
+    const unsigned int meshIndicesSize; // same as meshVertexSize but for the indices of a mesh, again in bytes
     const MeshVertexFormat vertexFormat; // only meshes that store their vertices in the same way can go in the same meshpool, so we store it here to check
 
     const unsigned int baseMeshCapacity; // everytime the mesh pool expands its non-instanced vertex buffer, it will add room for this many meshes (or a multiple of this number if more than baseMeshCapacity meshes were added at once)
@@ -99,6 +101,9 @@ class Meshpool {
     void ExpandNonInstanced();
     void ExpandInstanced(GLuint multiplier);
 
-    void FillSlot(const unsigned int meshId, const unsigned int slot, const unsigned int instanceCount);
+    // if modifying == true, then the slot already contains this mesh and it's just resetting the vertex data within (solely for modifying dynamic meshes).
+    // (instanceCount argument is meaningless when modifying == true.)
+    // if modifying == false, it's adding a whole new mesh to a slot that was previously either empty or holding a different mesh before. TODO: possibly won't work idk
+    void FillSlot(const unsigned int meshId, const unsigned int slot, const unsigned int instanceCount, bool modifiying);
     void UpdateIndirectDrawBuffer(const unsigned int slot);
 };

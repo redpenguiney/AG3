@@ -114,7 +114,7 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
 
         std::cout << "\tSlot obtained.\n";
         unsigned int start = drawCommands[slot].instanceCount;
-        FillSlot(meshId, slot, std::min(count, meshInstanceCapacity));
+        FillSlot(meshId, slot, std::min(count, meshInstanceCapacity), false);
         std::cout << "\tFilled slot.\n";
         drawCount += 1;
 
@@ -324,7 +324,10 @@ void Meshpool::ExpandInstanced(GLuint multiplier) {
 }
 
 // Fills the given slot with the given mesh's vertices and indices.
-void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, const unsigned int instanceCount) {
+void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, const unsigned int instanceCount, bool modifying) {
+    if (modifying) {
+        std::cout << "OK BOYS WE ARE IN FACT MODIFYING\n";
+    }
 
     auto mesh = Mesh::Get(meshId);
     auto vertices = &mesh->vertices;
@@ -342,22 +345,27 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     drawCommands[slot].count = indices->size();
     drawCommands[slot].firstIndex = (slot * meshIndicesSize);
     drawCommands[slot].baseVertex = slot * (meshVerticesSize/nonInstancedVertexSize);
-    drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceReservedCounts[slot - 1];
-    drawCommands[slot].instanceCount = instanceCount;
+    if (modifying != true) {
+        drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceReservedCounts[slot - 1];
+        drawCommands[slot].instanceCount = instanceCount;
 
-    std::printf("\tOnce again we're printing this stuff; %u %u   %u %u %u %u %u\n", meshVerticesSize, nonInstancedVertexSize, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
+        std::printf("\tOnce again we're printing this stuff; %u %u   %u %u %u %u %u\n", meshVerticesSize, nonInstancedVertexSize, drawCommands[slot].count, drawCommands[slot].firstIndex, drawCommands[slot].baseVertex, drawCommands[slot].baseInstance, drawCommands[slot].instanceCount);
 
-    // idk what to call this
-    slotToInstanceLocations[slot] = drawCommands[slot].baseInstance;
-    slotInstanceReservedCounts[slot] = mesh->instanceCount;
-    slotContents[meshId].push_back(slot);
+        // idk what to call this
+        slotToInstanceLocations[slot] = drawCommands[slot].baseInstance;
+        slotInstanceReservedCounts[slot] = mesh->instanceCount;
+        slotContents[meshId].push_back(slot);
 
-    // make sure instanced data buffer has room
-    if (drawCommands[slot].baseInstance + drawCommands[slot].instanceCount > instanceCapacity) { 
-        auto missingSlots = (drawCommands[slot].baseInstance + drawCommands[slot].instanceCount) - instanceCapacity;
-        auto multiplier = missingSlots/baseInstanceCapacity + (missingSlots % instanceCapacity != 0); // this is just integer division that rounds up (so we always expand by at least 1)
-        ExpandInstanced(multiplier);
+        // make sure instanced data buffer has room
+        if (drawCommands[slot].baseInstance + drawCommands[slot].instanceCount > instanceCapacity) { 
+            auto missingSlots = (drawCommands[slot].baseInstance + drawCommands[slot].instanceCount) - instanceCapacity;
+            auto multiplier = missingSlots/baseInstanceCapacity + (missingSlots % instanceCapacity != 0); // this is just integer division that rounds up (so we always expand by at least 1)
+            ExpandInstanced(multiplier);
+        }
     }
+    
+
+    
     UpdateIndirectDrawBuffer(slot);
 }
 
