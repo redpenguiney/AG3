@@ -3,6 +3,7 @@
 #include "../../external_headers/GLM/ext.hpp"
 #include "../../external_headers/GLM/gtx/quaternion.hpp"
 #include <cstdio>
+#include <vector>
 
 // TODO: header
 
@@ -10,9 +11,9 @@
 class TransformComponent: public BaseComponent<TransformComponent> {
     public:
 
-    const glm::dvec3& position() const; // allows public read only access to rotation
-    const glm::quat& rotation() const;// allows public read only access to rotation
-    const glm::vec3& scale() const; // allows public read only access to scale
+    const glm::dvec3& position = localPosition_; // allows public read only access to rotation
+    const glm::quat& rotation = rotation_;// allows public read only access to rotation
+    const glm::vec3& scale = scale_; // allows public read only access to scale
 
     // Called when a gameobject is given this component.
     void Init();
@@ -46,6 +47,12 @@ class TransformComponent: public BaseComponent<TransformComponent> {
     // private constructor to enforce usage of object pool
     friend class ComponentPool<TransformComponent>;
 
+    // nullptr if no parent
+    // 
+    TransformComponent* parent;
+
+    std::vector<TransformComponent*> children;
+
     // trivial constructor
     // TransformComponent();
 
@@ -53,13 +60,22 @@ class TransformComponent: public BaseComponent<TransformComponent> {
     // therefore we store it here to avoid matrix multiplcation/math
     glm::mat4x4 rotScaleMatrix;
 
+    // true if rot/scale (or that of its parent) has changed and needs to be recalculated
+    bool dirtyRotScale;
+
+    void MakeChildrenDirty();
+    void MakeChildrenMoved();
+
     // normals shouldn't be scaled or rotated so they need their own matrix; TODO potential optimizations?
     glm::mat3 normalMatrix;
 
-    // SAS needs to access moved variable
+    // SAS needs to access the variable "moved"
     friend class SpatialAccelerationStructure; 
+
+    // used for physics/sas optimizations, set to true when it's been moved and then set to false after it recalculates AABBs
     bool moved;
-    glm::dvec3 position_;
+    glm::dvec3 globalPosition;
+    glm::dvec3 localPosition_;
     glm::quat rotation_;
     glm::vec3 scale_; 
 };

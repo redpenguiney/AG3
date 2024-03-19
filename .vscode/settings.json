@@ -75,5 +75,6 @@
         "xtree": "cpp"
     },
     "clangd.checkUpdates": false,
-    "cmake.sourceDirectory": "C:/Users/ilike/Desktop/C++ Stuff/AG3-1/external_headers/GLM"
+    "cmake.sourceDirectory": "C:/Users/ilike/Desktop/C++ Stuff/AG3-1/external_headers/GLM",
+    "dotnet.defaultSolution": "disable"
 }
