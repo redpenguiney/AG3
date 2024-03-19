@@ -6,38 +6,45 @@ void TransformComponent::Init() {
     position_ = {0, 0, 0};
     rotScaleMatrix = glm::identity<glm::mat4x4>();
     normalMatrix = glm::identity<glm::mat3x3>();
+
+    parent = nullptr;
+    children = {};
 }
 
 void TransformComponent::Destroy() {}
 
-void TransformComponent::MakeChildrenDirty() {
-    for (auto & c: children) {
-        c->dirtyRotScale = true;
-        c->moved = true;
-        c->MakeChildrenDirty();
-    }
-}
+// void TransformComponent::MakeChildrenDirty() {
+//     for (auto & c: children) {
+//         c->dirtyRotScale = true;
+//         c->moved = true;
+//         c->MakeChildrenDirty();
+//     }
+// }
 
-void TransformComponent::MakeChildrenMoved() {
-    for (auto & c: children) {
-        c->moved = true;
-        c->MakeChildrenMoved();
-    }
-}
+// void TransformComponent::MakeChildrenMoved() {
+//     for (auto & c: children) {
+//         c->moved = true;
+//         c->MakeChildrenMoved();
+//     }
+// }
 
 void TransformComponent::SetPos(glm::dvec3 pos) {
+    for (auto & c: children) {
+        c->SetPos(pos - position);
+    }
     position_ = pos;
     moved = true;
-    MakeChildrenMoved();
+    
 }
 
 void TransformComponent::SetRot(glm::quat rot) {
-    rotation_ = rot;
-    dirtyRotScale = true;
-    moved = true;
     for (auto & c: children) {
         c->MakeChildrenDirty();
     }
+    rotation_ = rot;
+    dirtyRotScale = true;
+    moved = true;
+    
 }
 
 void TransformComponent::SetScl(glm::vec3 scl) {

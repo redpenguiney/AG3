@@ -11,9 +11,9 @@
 class TransformComponent: public BaseComponent<TransformComponent> {
     public:
 
-    const glm::dvec3& position = localPosition_; // allows public read only access to rotation
-    const glm::quat& rotation = rotation_;// allows public read only access to rotation
-    const glm::vec3& scale = scale_; // allows public read only access to scale
+    const glm::dvec3& position = position_; // Returns global (in world space) position of the object. allows public read only access to position
+    const glm::quat& rotation = rotation_;// Returns global (in world space) rotation of the object. allows public read only access to rotation
+    const glm::vec3& scale = scale_; // Returns global (in world space) scale of the object. allows public read only access to scale
 
     // Called when a gameobject is given this component.
     void Init();
@@ -61,10 +61,10 @@ class TransformComponent: public BaseComponent<TransformComponent> {
     glm::mat4x4 rotScaleMatrix;
 
     // true if rot/scale (or that of its parent) has changed and needs to be recalculated
-    bool dirtyRotScale;
+    // bool dirtyRotScale;
 
-    void MakeChildrenDirty();
-    void MakeChildrenMoved();
+    // void MakeChildrenDirty();
+    // void MakeChildrenMoved();
 
     // normals shouldn't be scaled or rotated so they need their own matrix; TODO potential optimizations?
     glm::mat3 normalMatrix;
@@ -74,8 +74,8 @@ class TransformComponent: public BaseComponent<TransformComponent> {
 
     // used for physics/sas optimizations, set to true when it's been moved and then set to false after it recalculates AABBs
     bool moved;
-    glm::dvec3 globalPosition;
-    glm::dvec3 localPosition_;
+    // position, rotation, and scale are all global.
+    glm::dvec3 position_;
     glm::quat rotation_;
     glm::vec3 scale_; 
 };
