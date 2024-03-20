@@ -10,11 +10,7 @@
 // Transform components store position/rotation/scale, they use a transform hierarchy (know that using it excessively carries a performance cost)
 class TransformComponent: public BaseComponent<TransformComponent> {
     public:
-    enum GuiScaleMode {
-        XX,
-        XY,
-        YY
-    };
+    
 
     const glm::dvec3& Position() const; // Returns global (in world space) position of the object.
     const glm::quat& Rotation() const;// Returns global (in world space) rotation of the object. 
