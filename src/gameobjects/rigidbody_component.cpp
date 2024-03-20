@@ -33,12 +33,12 @@ void RigidbodyComponent::SetMass(float newMass) {
 
 // whyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 glm::mat3x3 RigidbodyComponent::GetInverseGlobalMomentOfInertia(const TransformComponent &transform) {
-    auto rotMat = glm::toMat3(transform.rotation());
+    auto rotMat = glm::toMat3(transform.Rotation());
     // return glm::inverse(localMomentOfInertia);
     return glm::inverse((rotMat) * (localMomentOfInertia));
     // return rotMat * localMomentOfInertia;
     // return glm::transpose(glm::inverse(rotMat)) * glm::inverse(localMomentOfInertia) * glm::inverse(rotMat);
-    // return glm::toMat4(transform.rotation());
+    // return glm::toMat4(transform.rotation);
 }
 
 // fyi position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)

@@ -306,7 +306,7 @@ void GraphicsEngine::UpdateLights() {
         TransformComponent& transform = *std::get<1>(tuple);
 
         if (pointLight.live) {
-            glm::vec3 relCamPos = (transform.position() - (debugFreecamEnabled ? debugFreecamPos : camera.position));
+            glm::vec3 relCamPos = (transform.Position() - (debugFreecamEnabled ? debugFreecamPos : camera.position));
             // std::printf("rel pos = %f %f %f %f\n", relCamPos.x, relCamPos.y, relCamPos.z, pointLight.Range());
             auto info = PointLightInfo {
                 .colorAndRange = glm::vec4(pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range()),

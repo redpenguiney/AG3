@@ -273,7 +273,7 @@ SatFacesResult SatFaces(
 
         // make sure normal faces out of collider 1 because somehow it wasn't???
         glm::dvec3 pointOnPlaneInWorldSpace = transform1.GetPhysicsModelMatrix() * glm::dvec4(face1.second.at(0), 1);
-        if (glm::dot(glm::dvec3(normalInWorldSpace), pointOnPlaneInWorldSpace - transform1.position()) < 0) {
+        if (glm::dot(glm::dvec3(normalInWorldSpace), pointOnPlaneInWorldSpace - transform1.Position()) < 0) {
             normalInWorldSpace *= -1;
             // std::cout << "bruh we had to switch???\n";
         }
@@ -367,7 +367,7 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
 
         // flip normal if needed so normal faces away from the face
         // TODO: needed??
-        if (glm::dot(glm::dvec3(planeNormal), v1 - referenceTransform.position()) < 0) {
+        if (glm::dot(glm::dvec3(planeNormal), v1 - referenceTransform.Position()) < 0) {
             planeNormal *= -1;
             // std::cout << "UH OH FLIPPING\n";
         }
@@ -514,7 +514,7 @@ std::optional<CollisionInfo> FindContact(
     
     double farthestEdgeDistance = -FLT_MAX;
     glm::vec3 farthestEdgeNormal(0,0,0);
-    glm::dvec3 farthestEdge1Origin, farthestEdge1Direction, farthestEdge2Origin, farthestEdge2Direction;
+    glm::dvec3 farthestEdge1Origin(0, 0, 0), farthestEdge1Direction(0, 0, 0), farthestEdge2Origin(0, 0, 0), farthestEdge2Direction(0, 0, 0);
 
     for (auto & edge1: collider1.physicsMesh->meshes.at(0).edges) {
         // std::cout << " Edge1 is " << glm::to_string(edge1.first) << " to " << glm::to_string(edge1.second) << ".\n";
@@ -536,12 +536,12 @@ std::optional<CollisionInfo> FindContact(
             // make sure all normals go out of collider1, so the sign of our distance calculations is consistent
             // TODO:
                 // transform1 and 2 are both wrong
-            if (glm::dot(normalInWorldSpace, glm::vec3(edge1OriginWorld - transform1.position())) < 0.0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
+            if (glm::dot(normalInWorldSpace, glm::vec3(edge1OriginWorld - transform1.Position())) < 0.0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
                 // std::cout << "\tFlipped normal.\n";
                 normalInWorldSpace *= -1;
             }
             else {
-                // std::cout << "\tDid not flip, dot product was " << glm::dot(normalInWorldSpace, glm::vec3(edge1OriginWorld - transform1.position())) << ".\n";
+                // std::cout << "\tDid not flip, dot product was " << glm::dot(normalInWorldSpace, glm::vec3(edge1OriginWorld - transform1.Position())) << ".\n";
             }
 
             // often times the edge pair will create a normal that is the same as a face normal, in which case we can skip it.
@@ -609,7 +609,7 @@ std::optional<CollisionInfo> FindContact(
         // std::cout << "FACE2 COLLISION\n";
         return CollisionInfo {.collisionNormal = -farthestNormal, .contactPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform2, transform1, collider1)};
         break;
-        case EdgeCollision:
+        {case EdgeCollision:
         // std::cout << "EDGE COLLISION\n";
         // std::printf("Edge is %f vs face %f", farthestEdgeDistance, farthestDistance);
         // There are two edges colliding in this case. Contact point is average of closest point on edge1 to edge2 and closest point on edge2 to edge1.
@@ -638,10 +638,14 @@ std::optional<CollisionInfo> FindContact(
         assert(!std::isnan(closestPointOnEdge2ToEdge1.z));  
 
         return CollisionInfo {.collisionNormal = farthestNormal, .contactPoints = {{point, abs(farthestEdgeDistance)}}};
-        break;
+        break;}
+        default:
+        // shut up compiler warning for reaching end of non-void function
+        std::cout << "GJK at line " << __LINE__ << " has messed up hard.\n";
+        abort();
     }
 
-    assert(false); // shut up compiler warning for reaching end of non-void function
+
 }   
 
 //  EPA algorithm, used to get collision normals/penetration depth, explained here: https://winter.dev/articles/epa-algorithm
@@ -867,7 +871,7 @@ std::optional<CollisionInfo> IsColliding(
     const SpatialAccelerationStructure::ColliderComponent& collider2
 ) 
 {
-    // std::cout << "HI: testing collision between #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
+    // std::cout << "HI: testing collision between #1 = " << glm::to_string(transform1.Position()) << " and #2 = " << glm::to_string(transform2.Position()) << "\n";
     // first dvec3 in each array is actual simplex point on the minkoskwi difference, the other 2 are the collider points whose difference is that point, we need those for contact points
     std::vector<std::array<glm::dvec3, 3>> simplex;
 
@@ -943,7 +947,7 @@ std::optional<CollisionInfo> IsColliding(
 
                 // return EPA(simplex, transform1, collider1, transform2, collider2);
                 // std::cout << "THERE IS A COLLISION\n";
-                // std::cout << "Positions are #1 = " << glm::to_string(transform1.position()) << " and #2 = " << glm::to_string(transform2.position()) << "\n";
+                // std::cout << "Positions are #1 = " << glm::to_string(transform1.Position()) << " and #2 = " << glm::to_string(transform2.Position()) << "\n";
                 auto result = FindContact(transform1, collider1, transform2, collider2);
                 if (!result) {
                     std::cout << "SAT and GJK disagreed, uh oh.\n";

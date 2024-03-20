@@ -64,7 +64,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             // float totalMultiplier = 0;
             // for (auto & [contactPoint, penetration]: collisionTestResult->contactPoints) {
             //     // auto seperationVector = collisionTestResult->collisionNormal * (otherRigidbody ? 0.5 * penetration : penetration);
-            //     // DebugPlacePointOnPosition({transform.position() + seperationVector}, {1, 0.2, 0.2, 1.0});
+            //     // DebugPlacePointOnPosition({transform.Position() + seperationVector}, {1, 0.2, 0.2, 1.0});
                 
 
                 
@@ -77,10 +77,10 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             //     // glm::vec3 contactPointInObjectSpace = glm::dvec3(glm::inverse(transform.GetPhysicsModelMatrix()) * glm::dvec4(averageContactPoint, 1)); // TODO: might need to use whole inverted matrix
                 
                 
-            //     glm::vec3 contactPointInObjectSpace = contactPoint - transform.position();
+            //     glm::vec3 contactPointInObjectSpace = contactPoint - transform.Position();
 
             //     glm::dvec3 velocityAtContactPoint = rigidbody.velocity + rigidbody.VelocityAtPoint(contactPointInObjectSpace);
-            //     glm::vec3 contactPointInOtherObjectSpace = contactPoint - otherTransform->position(); // TODO: might need to use whole inverted matrix
+            //     glm::vec3 contactPointInOtherObjectSpace = contactPoint - otherTransform->position; // TODO: might need to use whole inverted matrix
             //     // glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity :  glm::dvec3(0, 0, 0);
             //     glm::dvec3 velocityAtOtherContactPoint = otherRigidbody ?  (otherRigidbody->velocity + otherRigidbody->VelocityAtPoint(contactPointInOtherObjectSpace)) : glm::dvec3(0, 0, 0);
 
@@ -107,11 +107,11 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
 
             // std::cout << "Total reduced mass was " << totalMultiplier << ".\n";
             // averagePenetration = std::max(0, averagePenetration + 0.01)''
-            // std::cout << "Object is at " << glm::to_string(transform.position()) << "\n";
+            // std::cout << "Object is at " << glm::to_string(transform.Position()) << "\n";
             // std::cout << "COLLISION!!! normal is " << glm::to_string(collisionTestResult->collisionNormal) << " world position " << glm::to_string(collisionTestResult->hitPoints.back().first) << " distance " << averagePenetration << "\n"; 
             const double LINEAR_SLOP = 0.0;
             auto seperationVector = -normal * ((otherRigidbody ? 0.5 * averagePenetration : averagePenetration) - LINEAR_SLOP);
-                // DebugPlacePointOnPosition({transform.position() + seperationVector}, {1, 0.2, 0.2, 1.0});
+                // DebugPlacePointOnPosition({transform.Position() + seperationVector}, {1, 0.2, 0.2, 1.0});
             seperations.emplace_back(std::make_pair(&transform, seperationVector));
 
                 
@@ -122,10 +122,10 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                 // glm::vec3 contactPointInObjectSpace = glm::dvec3(glm::inverse(transform.GetPhysicsModelMatrix()) * glm::dvec4(averageContactPoint, 1)); // TODO: might need to use whole inverted matrix
                 
                 
-            glm::vec3 posRelToContact = (transform.position() - averageContactPoint);
+            glm::vec3 posRelToContact = (transform.Position() - averageContactPoint);
 
             glm::dvec3 velocityAtContactPoint = rigidbody.velocity + rigidbody.VelocityAtPoint(posRelToContact);
-            glm::vec3 otherPosRelToContact = (otherTransform->position() - averageContactPoint); // TODO: might need to use whole inverted matrix
+            glm::vec3 otherPosRelToContact = (otherTransform->Position() - averageContactPoint); // TODO: might need to use whole inverted matrix
             // glm::dvec3 velocityAtOtherContactPoint = otherColliderPtr->GetGameObject()->rigidbodyComponent ? otherColliderPtr->GetGameObject()->rigidbodyComponent->velocity :  glm::dvec3(0, 0, 0);
             glm::dvec3 velocityAtOtherContactPoint = otherRigidbody ?  (otherRigidbody->velocity + otherRigidbody->VelocityAtPoint(otherPosRelToContact)) : glm::dvec3(0, 0, 0);
 
@@ -243,7 +243,7 @@ void PhysicsEngine::Step(const double timestep) {
             rigidbody.accumulatedTorque = {0, 0, 0};
 
             if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {
-                transform.SetPos(transform.position() + rigidbody.velocity * timestep);
+                transform.SetPos(transform.Position() + rigidbody.velocity * timestep);
             }
            
             if (rigidbody.angularVelocity != glm::vec3(0, 0, 0)) {
@@ -252,7 +252,7 @@ void PhysicsEngine::Step(const double timestep) {
                 glm::quat QuatAroundZ = glm::angleAxis( rigidbody.angularVelocity.z * (float)timestep, glm::vec3(0.0,0.0,1.0));
                 glm::quat finalOrientation = QuatAroundX * QuatAroundY * QuatAroundZ;
                 //std::cout << "velocity " << glm::to_string(rigidbody.localMomentOfInertia) << " so we at " << glm::to_string(QuatAroundX) << " \n";
-                transform.SetRot(transform.rotation() * finalOrientation);
+                transform.SetRot(transform.Rotation() * finalOrientation);
             }
         }
     }
@@ -275,6 +275,6 @@ void PhysicsEngine::Step(const double timestep) {
 
     // third pass, seperate colliding objects since we couldn't change positions in 2nd pass
     for (auto & [comp, offset]: separations) {
-        comp->SetPos(comp->position() + offset);
+        comp->SetPos(comp->Position() + offset);
     }
 }

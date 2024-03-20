@@ -563,12 +563,12 @@ void SpatialAccelerationStructure::ColliderComponent::RecalculateAABB(const Tran
         
         // TODO: maybe fat factor should be added instead of multiplied?
         min *= AABB_FAT_FACTOR;
-        min *= glm::compMax(colliderTransform.scale());
+        min *= glm::compMax(colliderTransform.scale);
         max *= AABB_FAT_FACTOR;
-        max *= glm::compMax(colliderTransform.scale());
+        max *= glm::compMax(colliderTransform.scale);
 
-        min += colliderTransform.position();
-        max += colliderTransform.position();
+        min += colliderTransform.Position();
+        max += colliderTransform.Position();
         aabb = AABB(min, max);
     }
     else {

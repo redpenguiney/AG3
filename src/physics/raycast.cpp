@@ -46,7 +46,7 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
                 
                 
                 // TODO rework physics_mesh.cpp so that triangles have clockwise winding; in the meantime we have to check normals because sometimes they backwards
-                if (glm::dot(normal, trianglePoints[0] - obj->transformComponent->position()) < 0) {
+                if (glm::dot(normal, trianglePoints[0] - obj->transformComponent->Position()) < 0) {
                     normal *= -1;
                 }
 

@@ -63,19 +63,20 @@ int main(int numArgs, char *argPtrs[]) {
         floor->name = "ah yes the floor here is made of floor";
     }
 
-    {
-        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-        params.meshId = m->meshId;
-        params.materialId = brickMaterial->id;
-        auto wall1 = ComponentRegistry::NewGameObject(params);
+    GameobjectCreateParams wallParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        wallParams.meshId = m->meshId;
+        wallParams.materialId = brickMaterial->id;
+        auto wall1 = ComponentRegistry::NewGameObject(wallParams);
         wall1->transformComponent->SetPos({4, 4, 0});
         wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
         wall1->colliderComponent->elasticity = 1.0;
         wall1->transformComponent->SetScl({1, 8, 8});
-        wall1->renderComponent->SetColor({1, 1, 1, 1});
+        wall1->renderComponent->SetColor({0, 1, 1, 1});
         wall1->renderComponent->SetTextureZ(brickTextureZ);
         wall1->name = "wall";
-        auto wall2 = ComponentRegistry::NewGameObject(params);
+    {
+        
+        auto wall2 = ComponentRegistry::NewGameObject(wallParams);
         wall2->transformComponent->SetPos({-4, 4, 0});
         wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
         wall2->colliderComponent->elasticity = 1.0;
@@ -83,7 +84,7 @@ int main(int numArgs, char *argPtrs[]) {
         wall2->renderComponent->SetColor({1, 1, 1, 1.0});
         wall2->renderComponent->SetTextureZ(brickTextureZ);
         wall2->name = "wall";
-        auto wall3 = ComponentRegistry::NewGameObject(params);
+        auto wall3 = ComponentRegistry::NewGameObject(wallParams);
         wall3->transformComponent->SetPos({0, 4, 4});
         wall3->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
         wall3->colliderComponent->elasticity = 1.0;
@@ -91,7 +92,7 @@ int main(int numArgs, char *argPtrs[]) {
         wall3->renderComponent->SetColor({1, 1, 1, 1});
         wall3->renderComponent->SetTextureZ(brickTextureZ);
         wall3->name = "wall";
-        auto wall4 = ComponentRegistry::NewGameObject(params);
+        auto wall4 = ComponentRegistry::NewGameObject(wallParams);
         wall4->transformComponent->SetPos({0, 4, -4});
         wall4->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
         wall4->colliderComponent->elasticity = 1.0;
@@ -99,6 +100,13 @@ int main(int numArgs, char *argPtrs[]) {
         wall4->renderComponent->SetColor({1, 1, 1, 1.0});
         wall4->renderComponent->SetTextureZ(brickTextureZ);
         wall4->name = "wall";
+
+        wall2->transformComponent->SetParent(*wall1->transformComponent);
+        wall3->transformComponent->SetParent(*wall2->transformComponent);
+        wall4->transformComponent->SetParent(*wall3->transformComponent);
+
+        // wall1->transformComponent->SetRot(wall1->transformComponent->Rotation() * glm::quat(glm::vec3(0.0, glm::radians(15.0), 0.0)));
+        // wall1->transformComponent->SetScl({1, 1, 3});
     }
 
     auto skyboxFaces = vector<std::string>(
@@ -149,7 +157,7 @@ int main(int numArgs, char *argPtrs[]) {
         params.materialId = 0;
         auto coolLight = ComponentRegistry::NewGameObject(params);
         coolLight->renderComponent->SetTextureZ(-1);
-        coolLight->transformComponent->SetPos({5, 5, 5});
+        coolLight->transformComponent->SetPos({0, 5, 0});
         coolLight->pointLightComponent->SetRange(200);
         coolLight->pointLightComponent->SetColor({1, 1, 1});
     }
@@ -212,6 +220,10 @@ int main(int numArgs, char *argPtrs[]) {
     std::string ttt = "a";
     while (!GE.ShouldClose()) 
     {
+        wall1->transformComponent->SetRot(wall1->transformComponent->Rotation() * glm::quat(glm::vec3(0.0, glm::radians(1.0), 0.0)));
+        wall1->transformComponent->SetScl(wall1->transformComponent->Scale() + glm::vec3(0.05, 0.05, 0.05));
+        wall1->transformComponent->SetPos(wall1->transformComponent->Position() + glm::dvec3 {0.1, 0.0, 0.0});
+
         accum += 1;
         if (accum == 180) {
             accum = 0;
@@ -261,7 +273,7 @@ int main(int numArgs, char *argPtrs[]) {
             if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
                 
                 castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
-                //castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position() + castResult.hitNormal * 0.02);
+                //castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position + castResult.hitNormal * 0.02);
             }
             else {
                 // std::cout << "LMB_DOWN but not hitting anything.\n";
@@ -282,6 +294,7 @@ int main(int numArgs, char *argPtrs[]) {
         // printf("Rendering scene.\n");
         GE.RenderScene();
 
+        
 
         UpdateLifetimes();
 
@@ -291,7 +304,7 @@ int main(int numArgs, char *argPtrs[]) {
         // printf("Flipping buffers.\n");
         GE.window.FlipBuffers();
 
-        // if (g->transformComponent->position().y <= 1.0) {
+        // if (g->transformComponent->position.y <= 1.0) {
         //     while (true) {}
         // }
 
