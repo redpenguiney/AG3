@@ -185,7 +185,7 @@ int main(int numArgs, char *argPtrs[]) {
         std::cout << "Textmesh id = "  << textMesh->meshId << ".\n";  
         GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
         params.meshId = textMesh->meshId;
-        params.shaderId = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl")->shaderProgramId;
+        params.shaderId = GE.defaultGuiShaderProgram->shaderProgramId;
         params.materialId = arialFont.second->id;
         auto text = ComponentRegistry::NewGameObject(params);
         text->renderComponent->SetTextureZ(arialFont.first);

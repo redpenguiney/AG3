@@ -49,6 +49,9 @@ class GraphicsEngine {
     // Default shader program used for new RenderComponents. You can freely change this with no issues (I think??? TODO what happens).
     std::shared_ptr<ShaderProgram> defaultShaderProgram;
 
+    // Default shader program used when creating instances of the Gui class. Should be able to freely change this with no issues (TODO verify)
+    std::shared_ptr<ShaderProgram> defaultGuiShaderProgram;
+
     // freecam is just a thing for debugging
     bool debugFreecamEnabled = false;
     glm::dvec3 debugFreecamPos = {0, 0, 0};

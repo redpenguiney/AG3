@@ -70,7 +70,7 @@ struct MeshVertexFormat {
     // Returns a simple mesh vertex format that should work for normal people doing normal things in 3D.
     static MeshVertexFormat Default(bool instancedColor = true, bool instancedTextureZ = true);
 
-    // Returns a simple mesh vertex format that should work for normal people doing normal things with GUI.
+    // Returns a simple mesh vertex format that should work for normal people doing normal things with GUI. Just XYZ UV.
     static MeshVertexFormat DefaultGui();
 
     // Takes a VAO and sets its noninstanced vertex attributes using VertexAttribPointer().
