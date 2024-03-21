@@ -5,6 +5,13 @@
 
 Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::shared_ptr<ShaderProgram> guiShader) {
     
+    GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    objectParams.materialId = (guiMaterial.has_value() ? 0: guiMaterial->second->id);
+    objectParams.meshId = Mesh::Square()->meshId;
+    objectParams.shaderId = guiShader->shaderProgramId;
+
+    object = ComponentRegistry::NewGameObject(objectParams);
+
     guiScaleMode = ScaleXY;
     anchorPoint = {0, 0};
 
@@ -36,16 +43,22 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
         });
     }
 
-    GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    UpdateGuiTransform();
+    UpdateGuiGraphics();
+    UpdateGuiText();
+}
 
-    std::vector<GLfloat> squareVerts = {
-        -1.0, -1.0, 0.0,   0.0, 0.0, 
-         1.0, -1.0, 0.0,   1.0, 0.0,
-         1.0,  1.0, 0.0,   1.0, 1.0,
-        -1.0,  1.0, 0.0,   0.0, 1.0,
-         };
+void Gui::UpdateGuiGraphics() {
 
-    objectParams.materialId = (guiMaterial.has_value() ? 0: guiMaterial->second->id);
-    objectParams.meshId = nononoyoucantdothisMesh::FromVertices(squareVerts, {0, 1, 2, 1, 2, 3}, false, MeshVertexFormat::DefaultGui())->meshId;
-    object = ComponentRegistry::NewGameObject(objectParams);
+}
+
+void Gui::UpdateGuiText() {
+    assert(guiTextInfo.has_value());
+
+    auto & textMesh = Mesh::Get(guiTextInfo->object->renderComponent->meshId);
+    auto [vers, inds] = textMesh->StartModifying();
+    TextMeshFromText(guiTextInfo->text, guiTextInfo->fontMaterial->fontMapConstAccess.value(), textMesh->vertexFormat, vers, inds);
+    textMesh->StopModifying(true);
+    // guiTextInfo->object->transformComponent->SetScl(textMesh->originalSize * 0.01f);
+    ttt += 'a';
 }

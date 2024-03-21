@@ -23,6 +23,18 @@ typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::ve
     return vector.at(index);
 }
 
+std::shared_ptr<Mesh> Square() {
+    static std::vector<GLfloat> squareVerts = {
+        -1.0, -1.0, 0.0,   0.0, 0.0, 
+         1.0, -1.0, 0.0,   1.0, 0.0,
+         1.0,  1.0, 0.0,   1.0, 1.0,
+        -1.0,  1.0, 0.0,   0.0, 1.0,
+         };
+
+    static auto m = Mesh::FromVertices(squareVerts, {0, 1, 2, 1, 2, 3}, false, MeshVertexFormat::DefaultGui());
+    return m;
+}
+
 void TextMeshFromText(const std::string &text, const Texture &font, const MeshVertexFormat& vertexFormat, std::vector<GLfloat>& vertices, std::vector<GLuint>& indices) {
     GLfloat currentX = 0;
     GLfloat currentY = 0;

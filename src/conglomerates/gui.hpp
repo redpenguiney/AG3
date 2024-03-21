@@ -37,14 +37,14 @@ class Gui {
     glm::vec2 offsetPos;
 
 
-    // % of the screen on each axis. (0, 0) is the center of the screen, screen is in interval [-0.5, 0.5].
+    // % of the screen on each axis. (0, 0) is the center of the screen, screen is in interval [-1, 1].
     glm::vec2 scalePos;
-
-    // % of the screen on each axis. (0, 0) is the center of the screen, screen is in interval [-0.5, 0.5].
-    glm::vec2 scaleSize;
 
     // Offset size in pixels
     glm::vec2 offsetSize;
+
+    // % of the screen on each axis. (0, 0) is the center of the screen, screen is in interval [-1, 1].
+    glm::vec2 scaleSize;
 
     enum {
         ScaleXX,

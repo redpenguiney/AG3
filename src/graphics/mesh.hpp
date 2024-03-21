@@ -121,6 +121,9 @@ class Mesh {
     // Must only be called after a call to StartModifying().
     void StopModifying(bool normalizeSize);
 
+    // returns a square for gui meshes
+    static std::shared_ptr<Mesh> Square();
+
     static std::shared_ptr<Mesh>& Get(unsigned int meshId);
 
     // verts must be organized in accordance with the given meshVertexFormat.
