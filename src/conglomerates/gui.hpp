@@ -30,6 +30,9 @@ class Gui {
     // around center of the gui
     float rotation;
 
+    // lower number = rendered on top
+    float zLevel;
+
     // The point (in object space) that offset + scale pos are setting the position of.
     glm::vec2 anchorPoint;
 

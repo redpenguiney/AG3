@@ -1,5 +1,6 @@
 #include "gui.hpp"
 #include <cassert>
+#include <cstdlib>
 #include <memory>
 #include <vector>
 
@@ -19,6 +20,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     scalePos = {0, 0};
 
     rotation = 0;
+    zLevel = 0;
 
     offsetSize = {0, 0};
     scaleSize = {0, 0};
@@ -47,9 +49,38 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     UpdateGuiGraphics();
     UpdateGuiText();
 }
+void Gui::UpdateGuiTransform() {
+    glm::vec2 windowResolution;
+    if (guiScaleMode == ScaleXX) {
+        windowResolution.x = GraphicsEngine::Get().window.width;
+        windowResolution.y = GraphicsEngine::Get().window.width;
+    }
+    else if (guiScaleMode == ScaleXY) {
+        windowResolution.x = GraphicsEngine::Get().window.width;
+        windowResolution.y = GraphicsEngine::Get().window.height;
+    }
+    else if (guiScaleMode == ScaleYY) {
+        windowResolution.x = GraphicsEngine::Get().window.height;
+        windowResolution.y = GraphicsEngine::Get().window.height;
+    }
+    else {
+        std::cout << "Invalid guiScaleMode. Aborting.\n";
+        abort();
+    }
+
+    glm::vec2 size = scaleSize + (offsetSize/windowResolution);
+    glm::vec2 anchorPointPosition = scalePos + (offsetPos/windowResolution);
+    glm::vec2 centerPosition = anchorPointPosition + (anchorPoint * size);
+
+    object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel));
+    if (guiTextInfo.has_value()) {
+        guiTextInfo->object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel - 0.01));
+    }
+}
 
 void Gui::UpdateGuiGraphics() {
-
+    object->renderComponent->SetColor(rgba);
+    object->renderComponent->SetTextureZ(materialLayer.value_or(-1.0));
 }
 
 void Gui::UpdateGuiText() {
@@ -59,6 +90,4 @@ void Gui::UpdateGuiText() {
     auto [vers, inds] = textMesh->StartModifying();
     TextMeshFromText(guiTextInfo->text, guiTextInfo->fontMaterial->fontMapConstAccess.value(), textMesh->vertexFormat, vers, inds);
     textMesh->StopModifying(true);
-    // guiTextInfo->object->transformComponent->SetScl(textMesh->originalSize * 0.01f);
-    ttt += 'a';
 }
