@@ -18,6 +18,7 @@
 #include "lua/lua_handler.hpp"
 #include "gameobjects/lifetime.hpp"
 #include "network/client.hpp"
+#include "conglomerates/gui.hpp"
 
 using namespace std;
 
@@ -218,6 +219,9 @@ int main(int numArgs, char *argPtrs[]) {
 
     unsigned int accum = 0;
     std::string ttt = "a";
+
+    auto ui = Gui();
+
     while (!GE.ShouldClose()) 
     {
         wall1->transformComponent->SetRot(wall1->transformComponent->Rotation() * glm::quat(glm::vec3(0.0, glm::radians(1.0), 0.0)));

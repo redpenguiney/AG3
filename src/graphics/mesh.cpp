@@ -23,7 +23,7 @@ typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::ve
     return vector.at(index);
 }
 
-std::shared_ptr<Mesh> Square() {
+std::shared_ptr<Mesh> Mesh::Square() {
     static std::vector<GLfloat> squareVerts = {
         -1.0, -1.0, 0.0,   0.0, 0.0, 
          1.0, -1.0, 0.0,   1.0, 0.0,

@@ -5,12 +5,12 @@
 #include <vector>
 
 Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::shared_ptr<ShaderProgram> guiShader) {
-    
+    std::cout << "a.\n";
     GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
     objectParams.materialId = (guiMaterial.has_value() ? 0: guiMaterial->second->id);
     objectParams.meshId = Mesh::Square()->meshId;
     objectParams.shaderId = guiShader->shaderProgramId;
-
+    std::cout << "b\n";
     object = ComponentRegistry::NewGameObject(objectParams);
 
     guiScaleMode = ScaleXY;
@@ -28,6 +28,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     rgba = {1, 1, 1, 1};
 
     if (haveText) {
+        std::cout << "Adding text.\n";
         assert(fontMaterial.has_value() && fontMaterial->second->HasFontMap());
 
         GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
@@ -47,10 +48,14 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
 
     UpdateGuiTransform();
     UpdateGuiGraphics();
-    UpdateGuiText();
+    if (haveText) {
+        UpdateGuiText();
+    }
+    
 }
 void Gui::UpdateGuiTransform() {
     glm::vec2 windowResolution;
+    
     if (guiScaleMode == ScaleXX) {
         windowResolution.x = GraphicsEngine::Get().window.width;
         windowResolution.y = GraphicsEngine::Get().window.width;
@@ -67,14 +72,18 @@ void Gui::UpdateGuiTransform() {
         std::cout << "Invalid guiScaleMode. Aborting.\n";
         abort();
     }
+    
 
     glm::vec2 size = scaleSize + (offsetSize/windowResolution);
+    object->transformComponent->SetScl(glm::vec3(size.x, size.y, 1));
+
     glm::vec2 anchorPointPosition = scalePos + (offsetPos/windowResolution);
     glm::vec2 centerPosition = anchorPointPosition + (anchorPoint * size);
 
     object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel));
     if (guiTextInfo.has_value()) {
         guiTextInfo->object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel - 0.01));
+        
     }
 }
 
