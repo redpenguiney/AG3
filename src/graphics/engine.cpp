@@ -224,7 +224,7 @@ void GraphicsEngine::RenderScene() {
 
     
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
-    // glEnable(GL_CULL_FACE); // backface culling
+    glEnable(GL_CULL_FACE); // backface culling
 
     // tell opengl how to do transparency
     glEnable(GL_BLEND); 
@@ -249,6 +249,7 @@ void GraphicsEngine::RenderScene() {
                 shader->Uniform("normalMappingEnabled", material->HasNormalMap());
                 shader->Uniform("parallaxMappingEnabled", material->HasDisplacementMap());
                 shader->Uniform("colorMappingEnabled", material->HasColorMap());
+
             }
             
             for (auto & [poolId, pool] : map2) {
@@ -325,24 +326,24 @@ void GraphicsEngine::UpdateLights() {
     *(GLuint*)(pointLightDataBuffer.Data()) = lightCount;
 }
 
-void GraphicsEngine::SetColor(const MeshLocation& location, const glm::vec4& rgba) {
-    assert(location.initialized);
-    meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetColor(location.poolSlot, location.poolInstance, rgba);
+void GraphicsEngine::SetColor(const RenderComponent& comp, const glm::vec4& rgba) {
+    assert(comp.meshpoolId != -1);
+    meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetColor(comp.meshpoolSlot, comp.meshpoolInstance, rgba);
 }
 
-void GraphicsEngine::SetModelMatrix(const MeshLocation& location, const glm::mat4x4& model) {
-    assert(location.initialized);
-    meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetModelMatrix(location.poolSlot, location.poolInstance, model);
+void GraphicsEngine::SetModelMatrix(const RenderComponent& comp, const glm::mat4x4& model) {
+    assert(comp.meshpoolId != -1);
+    meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetModelMatrix(comp.meshpoolSlot, comp.meshpoolInstance, model);
 }
 
-void GraphicsEngine::SetNormalMatrix(const MeshLocation& location, const glm::mat3x3& normal) {
-    assert(location.initialized);
-    meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetNormalMatrix(location.poolSlot, location.poolInstance, normal);
+void GraphicsEngine::SetNormalMatrix(const RenderComponent& comp, const glm::mat3x3& normal) {
+    assert(comp.meshpoolId != -1);
+    meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetNormalMatrix(comp.meshpoolSlot, comp.meshpoolInstance, normal);
 }
 
-void GraphicsEngine::SetTextureZ(const MeshLocation& location, const float textureZ) {
-    assert(location.initialized);
-    meshpools[location.shaderProgramId][location.materialId][location.poolId]->SetTextureZ(location.poolSlot, location.poolInstance, textureZ);
+void GraphicsEngine::SetTextureZ(const RenderComponent& comp, const float textureZ) {
+    assert(comp.meshpoolId != -1);
+    meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetTextureZ(comp.meshpoolSlot, comp.meshpoolInstance, textureZ);
 }
 
 void GraphicsEngine::UpdateMeshpools() {
@@ -395,11 +396,11 @@ void GraphicsEngine::UpdateRenderComponents() {
             //     abort();
             // }
             // TODO: we only need to call SetNormalMatrix() when the object is rotated
-            SetNormalMatrix(renderComp.meshLocation, transformComp.GetNormalMatrix()); 
-            SetModelMatrix(renderComp.meshLocation, transformComp.GetGraphicsModelMatrix(cameraPos));
+            SetNormalMatrix(renderComp, transformComp.GetNormalMatrix()); 
+            SetModelMatrix(renderComp, transformComp.GetGraphicsModelMatrix(cameraPos));
             
-            if (renderComp.textureZChanged > 0) {renderComp.textureZChanged -= 1; SetTextureZ(renderComp.meshLocation, renderComp.textureZ);}
-            if (renderComp.colorChanged > 0) {renderComp.colorChanged -= 1; SetColor(renderComp.meshLocation, renderComp.color);}
+            if (renderComp.textureZChanged > 0) {renderComp.textureZChanged -= 1; SetTextureZ(renderComp, renderComp.textureZ);}
+            if (renderComp.colorChanged > 0) {renderComp.colorChanged -= 1; SetColor(renderComp, renderComp.color);}
         }
     });
 
@@ -416,11 +417,11 @@ void GraphicsEngine::UpdateRenderComponents() {
             //     abort();
             // }
             // TODO: we only need to call SetNormalMatrix() when the object is rotated
-            SetNormalMatrix(renderCompNoFO.meshLocation, transformComp.GetNormalMatrix()); 
-            SetModelMatrix(renderCompNoFO.meshLocation, transformComp.GetGraphicsModelMatrix({0, 0, 0}));
+            SetNormalMatrix(renderCompNoFO, transformComp.GetNormalMatrix()); 
+            SetModelMatrix(renderCompNoFO, transformComp.GetGraphicsModelMatrix({0, 0, 0}));
             
-            if (renderCompNoFO.textureZChanged > 0) {renderCompNoFO.textureZChanged -= 1; SetTextureZ(renderCompNoFO.meshLocation, renderCompNoFO.textureZ);}
-            if (renderCompNoFO.colorChanged > 0) {renderCompNoFO.colorChanged -= 1; SetColor(renderCompNoFO.meshLocation, renderCompNoFO.color);}
+            if (renderCompNoFO.textureZChanged > 0) {renderCompNoFO.textureZChanged -= 1; SetTextureZ(renderCompNoFO, renderCompNoFO.textureZ);}
+            if (renderCompNoFO.colorChanged > 0) {renderCompNoFO.colorChanged -= 1; SetColor(renderCompNoFO, renderCompNoFO.color);}
         }
     });
 
@@ -472,7 +473,7 @@ void GraphicsEngine::AddCachedMeshes() {
     for (auto & [shaderId, map1] : renderComponentsToAdd) {
         for (auto & [textureId, map2] : map1) {
             for (auto & [meshId, components] : map2) {
-                std::cout << "\tInfo: " << meshId << " " << textureId << " " << shaderId << " size " << meshLocations.size() << "\n";
+                std::cout << "\tInfo: " << meshId << " " << textureId << " " << shaderId << " size " << renderComponentsToAdd.size() << "\n";
 
                 std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
                 const unsigned int verticesNBytes = m->vertices.size() * sizeof(GLfloat);
@@ -498,19 +499,20 @@ void GraphicsEngine::AddCachedMeshes() {
                 }
                 std::cout << "\tmesh pool id is " << bestPoolId << "\n"; 
 
-                auto objectPositions = meshpools.at(shaderId).at(textureId).at(bestPoolId)->AddObject(meshId, meshLocations.size());
+                auto objectPositions = meshpools.at(shaderId).at(textureId).at(bestPoolId)->AddObject(meshId, components.size());
                 std::cout << "\tAdded.\n";
-                for (unsigned int i = 0; i < components.size(); i++) {
-                    components.at(i)->poolId = bestPoolId;
-                    components[i]->poolSlot = objectPositions[i].first;
-                    components[i]->poolInstance = objectPositions[i].second;
-                    components[i]->initialized = true;
+                for (unsigned int i = 0; i < components.size(); i++) { // todo: use iterator here???
+                    components.at(i)->meshpoolId = bestPoolId;
+                    components[i]->meshpoolSlot = objectPositions[i].first;
+                    components[i]->meshpoolInstance = objectPositions[i].second;
                     //std::cout  << "Initalized mesh location " << (meshLocations[i]) << ".\n";
+
+                    if (m->dynamic) {
+                        dynamicMeshUsers[meshId].push_back(components[i]);
+                    }
                 }
 
-                if (m->dynamic) {
-                    dynamicMeshUsers[meshId].push_back(this);
-                }
+                
             } 
         }
     }
@@ -541,7 +543,7 @@ void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int ma
 
     // std::cout << "Initialized RenderComponent with mesh locatino at " << &meshLocation << " and pool at " << pool << "\n.";
 
-    Get().AddObject(shader_id, materialId, mesh_id, &meshLocation); 
+    Get().AddObject(shader_id, materialId, mesh_id, this); 
 
 };
 
@@ -563,20 +565,20 @@ void GraphicsEngine::RenderComponent::Destroy() {
 
     // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from GraphicsEngine::meshesToAdd
     // meshLocation will still have its shaderProgramId and textureId set tho immediately by AddObject
-    unsigned int shaderId = meshLocation.shaderProgramId, textureId = meshLocation.materialId;
-    if (!meshLocation.initialized) { 
-        auto & vec = Get().meshesToAdd.at(shaderId).at(textureId).at(meshId);
+    unsigned int shaderId = shaderProgramId, textureId = materialId;
+    if (meshpoolId == -1) { 
+        auto & vec = Get().renderComponentsToAdd.at(shaderId).at(textureId).at(meshId);
         int index = 0;
         for (auto & ptr : vec) {
-            if (ptr == &meshLocation) {
+            if (ptr == this) {
                 break;
             }
             index++;
         }
-        vec.erase(vec.begin() + index);
+        vec.erase(vec.begin() + index); // todo: pop erase
     }
     else { // otherwise just remove object from graphics engine
-        Get().meshpools[shaderId][textureId][meshLocation.poolId]->RemoveObject(meshLocation.poolSlot, meshLocation.poolInstance);
+        Get().meshpools[shaderId][textureId][meshpoolId]->RemoveObject(meshpoolSlot, meshpoolInstance);
     }
 }
 

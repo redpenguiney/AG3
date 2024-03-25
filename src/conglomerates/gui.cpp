@@ -30,13 +30,13 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     offsetSize = {0, 0};
     scaleSize = {0.5, 0.5};
 
-    rgba = {1, 1, 1, 1};
+    rgba = {1, 1, 1, 0};
 
     if (haveText) {
         assert(fontMaterial.has_value() && fontMaterial->second->HasFontMap());
 
         GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentNoFOBitIndex});
-        textObjectParams.materialId = 0;
+        textObjectParams.materialId = fontMaterial->second->id;
         textObjectParams.shaderId = guiShader->shaderProgramId;
         textObjectParams.meshId = Mesh::FromText("TEXT", *fontMaterial->second->fontMapConstAccess)->meshId;
 
@@ -108,7 +108,8 @@ void Gui::UpdateGuiTransform() {
     object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel));
     if (guiTextInfo.has_value()) {
         guiTextInfo->object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel - 0.01));
-        
+        guiTextInfo->object->transformComponent->SetRot(glm::angleAxis(rotation, glm::vec3 {0.0f, 0.0f, 1.0f}));
+        guiTextInfo->object->transformComponent->SetScl(glm::vec3(size.x, size.y, 1));
     }
 }
 
@@ -128,5 +129,5 @@ void Gui::UpdateGuiText() {
     auto & textMesh = Mesh::Get(guiTextInfo->object->renderComponent->meshId);
     auto [vers, inds] = textMesh->StartModifying();
     TextMeshFromText(guiTextInfo->text, guiTextInfo->fontMaterial->fontMapConstAccess.value(), textMesh->vertexFormat, vers, inds);
-    textMesh->StopModifying(true);
+    textMesh->StopModifying(false);
 }

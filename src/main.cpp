@@ -27,6 +27,9 @@ using namespace std;
 int main(int numArgs, const char *argPtrs[]) {
     std::printf("Main function reached.\n");
 
+    // TODO
+    // atexit(void (*)() __attribute__((cdecl)))
+
     // TODO: shouldn't actually matter if these lines exist, and if it does fix that please
     auto & GE = GraphicsEngine::Get();
     auto & PE = PhysicsEngine::Get();
@@ -219,7 +222,7 @@ int main(int numArgs, const char *argPtrs[]) {
         auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
         ttfParams.fontHeight = 60;
         ttfParams.format = Texture::Grayscale_8Bit;
-        auto [arialLayer, arialFont] = Material::New({ttfParams, TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap}}, Texture::Texture2D);
+        auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D);
 
         Gui ui(true, std::make_optional(std::make_pair(arialLayer, arialFont)));
         ui.scaleSize = {0.5, 0.05};
@@ -228,8 +231,8 @@ int main(int numArgs, const char *argPtrs[]) {
         ui.scalePos = {0.0, -1.0};
         ui.anchorPoint = {0.0, -1.0};
 
-        // ui.GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
-        // ui.UpdateGuiText();
+        ui.GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
+        ui.UpdateGuiText();
         ui.UpdateGuiTransform();
         
 

@@ -38,7 +38,7 @@ void main()
         font = texture(fontMap, fragmentTexCoords).r;
     }
 
-    if (colorTx.a * font < 0.1) {
+    if (colorTx.a * fragmentColor.a * font < 0.1) {
         discard;
     };
 
