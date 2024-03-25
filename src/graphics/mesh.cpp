@@ -31,7 +31,7 @@ std::shared_ptr<Mesh> Mesh::Square() {
         -1.0,  1.0, 0.0,   0.0, 1.0,
          };
 
-    static auto m = Mesh::FromVertices(squareVerts, {0, 1, 2, 1, 2, 3}, false, MeshVertexFormat::DefaultGui());
+    static auto m = Mesh::FromVertices(squareVerts, {0, 1, 2, 0, 2, 3}, false, MeshVertexFormat::DefaultGui(), 1.0, false);
     return m;
 }
 
@@ -553,26 +553,34 @@ void Mesh::StopModifying(bool normalizeSize) {
 
     std::vector<unsigned int> modifiedMeshpoolIds; // make sure we don't waste perf. resetting the same meshpool multiple times
 
-    // For every object that uses a dynamic mesh...
-    for (auto & [id, renderComponent] : GraphicsEngine::Get().dynamicMeshUsers) {
+    // For every object that uses this dynamic mesh...
+    if (GraphicsEngine::Get().dynamicMeshUsers.contains(meshId)) {
+        for (auto & renderComponent : GraphicsEngine::Get().dynamicMeshUsers.at(meshId)) {
 
-        if ((int)id == meshId) { // if this mesh is that dynamic mesh...
-            Meshpool& pool = *GraphicsEngine::Get().meshpools.at(renderComponent->meshLocation.shaderProgramId).at(renderComponent->meshLocation.materialId).at(renderComponent->meshLocation.poolId);
+            // if the object hasn't been added to a meshpool yet (because it was created this frame), we needn't do anything.
+            if (renderComponent->meshpoolId == -1) {
+                continue;
+            }
 
+            std::cout << "Using " << renderComponent->shaderProgramId << " " << renderComponent->materialId << " " << renderComponent->meshpoolId << ".\n";
+            Meshpool& pool = *GraphicsEngine::Get().meshpools.at(renderComponent->shaderProgramId).at(renderComponent->materialId).at(renderComponent->meshpoolId);
+
+
+            
             // If the vertex/index counts didn't change enough to make the mesh not fit in the pool, just refill the meshpool's slot.
             std::cout << "Pool holds " << pool.meshVerticesSize << "bytes, but the mesh is " << vertices.size() * sizeof(GLfloat) << "bytes.\n";
             if (pool.meshVerticesSize >= vertices.size() * sizeof(GLfloat) && pool.meshIndicesSize >= indices.size() * sizeof(GLuint)) {
 
                 // if we already did that, move onto the next object.
-                if (std::find(modifiedMeshpoolIds.begin(), modifiedMeshpoolIds.end(), renderComponent->meshLocation.poolId) != modifiedMeshpoolIds.end()) {
+                if (std::find(modifiedMeshpoolIds.begin(), modifiedMeshpoolIds.end(), renderComponent->meshpoolId) != modifiedMeshpoolIds.end()) {
                     continue;
                 }
 
                 std::cout << "Filling slot for dynamic mesh update.\n";
 
                 // instanceCount argument is meaningless when modifying == true.
-                pool.FillSlot(meshId, renderComponent->meshLocation.poolSlot, 0, true);
-                modifiedMeshpoolIds.push_back(renderComponent->meshLocation.poolSlot);
+                pool.FillSlot(meshId, renderComponent->meshpoolSlot, 0, true);
+                modifiedMeshpoolIds.push_back(renderComponent->meshpoolSlot);
             }
 
             // Otherwise, we have to remove every object using this mesh/meshpool combo from its meshpool, and find a new pool for it.
@@ -582,10 +590,11 @@ void Mesh::StopModifying(bool normalizeSize) {
 
                 std::cout << "Removing/readding object for dynamic mesh update.\n";
 
-                pool.RemoveObject(renderComponent->meshLocation.poolSlot, renderComponent->meshLocation.poolInstance);
-                GraphicsEngine::Get().AddObject(renderComponent->meshLocation.shaderProgramId, renderComponent->meshLocation.materialId, meshId, &renderComponent->meshLocation);
+                pool.RemoveObject(renderComponent->meshpoolSlot, renderComponent->meshpoolInstance);
+                GraphicsEngine::Get().AddObject(renderComponent->shaderProgramId, renderComponent->materialId, meshId, renderComponent);
             }
-        }
+            }
     }
+    
     
 }

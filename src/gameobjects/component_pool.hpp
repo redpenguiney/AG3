@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <deque>
 #include <iostream>
+#include <memory>
 #include <type_traits>
 #include <vector>
 #include <iterator> 
@@ -59,7 +60,7 @@ T* ComponentPool<T>::GetNew() {
         if (firstAvailable[poolIndex] == nullptr) {continue;} // if the pool is full go to the next one
 
         foundObject = firstAvailable[poolIndex];
-        firstAvailable[poolIndex] = foundObject->next;
+        firstAvailable[poolIndex] = (T*)(foundObject->next);
 
         break;
     }
@@ -70,7 +71,7 @@ T* ComponentPool<T>::GetNew() {
         AddPool();
         foundObject = firstAvailable.back();
         //std::cout << "Vec back is " << firstAvailable.back() << " and it holds " << firstAvailable.size() << ".\n";
-        firstAvailable.back() = foundObject->next;
+        firstAvailable.back() =  (T*)(foundObject->next);
         
         //std::cout << "Had to expand component pool, returning " << foundObject << "\n";
     }
@@ -114,7 +115,7 @@ void ComponentPool<T>::AddPool() {
 
     for (unsigned int i = 0; i < COMPONENTS_PER_PAGE; i++) {
         firstPool[i].componentPoolId = index;
-        firstPool[i].pool = this;
+        firstPool[i].SetPool(this);
         firstPool[i].live = false;
     }
     

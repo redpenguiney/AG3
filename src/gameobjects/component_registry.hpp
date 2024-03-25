@@ -31,7 +31,8 @@ namespace ComponentRegistry {
         RenderComponentBitIndex = 1,
         ColliderComponentBitIndex = 2,
         RigidbodyComponentBitIndex = 3,
-        PointlightComponentBitIndex = 4
+        PointlightComponentBitIndex = 4,
+        RenderComponentNoFOBitIndex = 5
     };
 
     // How many different component classes there are. 
@@ -48,6 +49,9 @@ template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<
 }
 template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<GraphicsEngine::RenderComponent>() {
     return ComponentRegistry::RenderComponentBitIndex;
+}
+template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<GraphicsEngine::RenderComponentNoFO>() {
+    return ComponentRegistry::RenderComponentNoFOBitIndex;
 }
 template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<SpatialAccelerationStructure::ColliderComponent>() {
     return ComponentRegistry::ColliderComponentBitIndex;
@@ -153,9 +157,10 @@ class GameObject {
     // If this is null, this gameobject will not be synced between server/client.
     std::optional<GameObjectNetworkData> networkData;
 
-    // TODO: any way to avoid not storing ptrs for components we don't have?
+    // TODO: avoid not storing ptrs for components we don't have
     ComponentHandle<TransformComponent> transformComponent;
     ComponentHandle<GraphicsEngine::RenderComponent> renderComponent;
+    // ComponentHandle<GraphicsEngine::RenderComponentNoFO> renderComponentNoFO; these two components have exact same size and methods and you can only have one of them so why bother
     ComponentHandle<RigidbodyComponent> rigidbodyComponent;
     ComponentHandle<SpatialAccelerationStructure::ColliderComponent> colliderComponent;
     ComponentHandle<PointLightComponent> pointLightComponent;
@@ -379,6 +384,9 @@ namespace ComponentRegistry {
         }
         if constexpr((std::is_same_v<GraphicsEngine::RenderComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::RenderComponentBitIndex);
+        }
+        if constexpr((std::is_same_v<GraphicsEngine::RenderComponentNoFO, Args> || ...)) {
+            indices.push_back(ComponentRegistry::RenderComponentNoFOBitIndex);
         }
         if constexpr((std::is_same_v<SpatialAccelerationStructure::ColliderComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::ColliderComponentBitIndex);

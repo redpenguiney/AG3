@@ -3,7 +3,9 @@
 #include<cstdio>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "../external_headers/GLM/gtx/string_cast.hpp"
@@ -22,7 +24,7 @@
 
 using namespace std;
 
-int main(int numArgs, char *argPtrs[]) {
+int main(int numArgs, const char *argPtrs[]) {
     std::printf("Main function reached.\n");
 
     // TODO: shouldn't actually matter if these lines exist, and if it does fix that please
@@ -173,28 +175,24 @@ int main(int numArgs, char *argPtrs[]) {
         coolLight->pointLightComponent->SetColor({1, 1, 1});
     }
 
-    // { // text rendering stuff
-        auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
-        ttfParams.fontHeight = 60;
-        ttfParams.format = Texture::Grayscale_8Bit;
-        auto arialFont = Material::New({ttfParams, TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap}}, Texture::Texture2D);
+    // // { // text rendering stuff
+    //     
+    //     auto textMesh = Mesh::FromText(
+    //         // "abcdefghijklmnopqrstuvwxyz\nABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    //         "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ",
+    //         arialFont.second->fontMapConstAccess.value());
+    //     std::cout << "Textmesh id = "  << textMesh->meshId << ".\n";  
+    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    //     params.meshId = textMesh->meshId;
+    //     params.shaderId = GE.defaultGuiShaderProgram->shaderProgramId;
+    //     params.materialId = arialFont.second->id;
+    //     auto text = ComponentRegistry::NewGameObject(params);
+    //     text->renderComponent->SetTextureZ(arialFont.first);
+    //     text->transformComponent->SetPos({0, 15, 5.0});
+    //     text->transformComponent->SetScl(textMesh->originalSize * 0.01f);
+    //     text->transformComponent->SetRot(glm::quat(glm::vec3(0.0, 0.0, glm::radians(180.0))));
 
-        auto textMesh = Mesh::FromText(
-            // "abcdefghijklmnopqrstuvwxyz\nABCDEFGHIJKLMNOPQRSTUVWXYZ",
-            "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ",
-            arialFont.second->fontMapConstAccess.value());
-        std::cout << "Textmesh id = "  << textMesh->meshId << ".\n";  
-        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
-        params.meshId = textMesh->meshId;
-        params.shaderId = GE.defaultGuiShaderProgram->shaderProgramId;
-        params.materialId = arialFont.second->id;
-        auto text = ComponentRegistry::NewGameObject(params);
-        text->renderComponent->SetTextureZ(arialFont.first);
-        text->transformComponent->SetPos({0, 15, 5.0});
-        text->transformComponent->SetScl(textMesh->originalSize * 0.01f);
-        text->transformComponent->SetRot(glm::quat(glm::vec3(0.0, 0.0, glm::radians(180.0))));
-
-    // }
+    // // }
     
     
     GE.debugFreecamEnabled = true;
@@ -217,26 +215,32 @@ int main(int numArgs, char *argPtrs[]) {
 
     bool physicsPaused = false;
 
-    unsigned int accum = 0;
-    std::string ttt = "a";
+    {
+        auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
+        ttfParams.fontHeight = 60;
+        ttfParams.format = Texture::Grayscale_8Bit;
+        auto [arialLayer, arialFont] = Material::New({ttfParams, TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap}}, Texture::Texture2D);
 
-    auto ui = Gui();
+        Gui ui(true, std::make_optional(std::make_pair(arialLayer, arialFont)));
+        ui.scaleSize = {0.5, 0.05};
+        ui.guiScaleMode = Gui::ScaleXX;
+        ui.offsetPos = {0.0, 10.0};
+        ui.scalePos = {0.0, -1.0};
+        ui.anchorPoint = {0.0, -1.0};
+
+        // ui.GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
+        // ui.UpdateGuiText();
+        ui.UpdateGuiTransform();
+        
+
+    }
 
     while (!GE.ShouldClose()) 
     {
-        wall1->transformComponent->SetRot(wall1->transformComponent->Rotation() * glm::quat(glm::vec3(0.0, glm::radians(1.0), 0.0)));
-        wall1->transformComponent->SetScl(wall1->transformComponent->Scale() + glm::vec3(0.05, 0.05, 0.05));
-        wall1->transformComponent->SetPos(wall1->transformComponent->Position() + glm::dvec3 {0.1, 0.0, 0.0});
+        // wall1->transformComponent->SetRot(wall1->transformComponent->Rotation() * glm::quat(glm::vec3(0.0, glm::radians(1.0), 0.0)));
+        // // wall1->transformComponent->SetScl(wall1->transformComponent->Scale() + glm::vec3(0.05, 0.05, 0.05));
+        // wall1->transformComponent->SetPos(wall1->transformComponent->Position() + glm::dvec3 {0.1, 0.0, 0.0});
 
-        accum += 1;
-        if (accum == 180) {
-            accum = 0;
-            auto [vers, inds] = textMesh->StartModifying();
-            TextMeshFromText(ttt, arialFont.second->fontMapConstAccess.value(), textMesh->vertexFormat, vers, inds);
-            textMesh->StopModifying(true);
-            text->transformComponent->SetScl(textMesh->originalSize * 0.01f);
-            ttt += 'a';
-        }
         // std::printf("ok %f %f \n", GE.debugFreecamPitch, GE.debugFreecamYaw);
         double currentTime = Time();
         double elapsedTime = currentTime - previousTime;

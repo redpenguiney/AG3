@@ -43,8 +43,8 @@ void TransformComponent::Destroy() {}
 //     }
 // }
 
-TransformComponent& TransformComponent::GetParent() {
-    return *parent;
+TransformComponent* TransformComponent::GetParent() {
+    return parent;
 }
 
 void TransformComponent::SetParent(TransformComponent& newParent) {

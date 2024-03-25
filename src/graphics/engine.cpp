@@ -62,7 +62,7 @@ screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, scre
     skyboxMaterial = nullptr;
 
     defaultShaderProgram = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl");
-    defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl");
+    defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", {}, false);
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
 
@@ -224,7 +224,7 @@ void GraphicsEngine::RenderScene() {
 
     
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
-    glEnable(GL_CULL_FACE); // backface culling
+    // glEnable(GL_CULL_FACE); // backface culling
 
     // tell opengl how to do transparency
     glEnable(GL_BLEND); 
@@ -364,7 +364,7 @@ void GraphicsEngine::UpdateRenderComponents() {
     
     auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
 
-    // Get components of all gameobjects that have a transform and point light component
+    // Get components of all gameobjects that have a transform and render component
     auto components = ComponentRegistry::GetSystemComponents<RenderComponent, TransformComponent>();
     
     // for (auto & tuple: components) {
@@ -400,6 +400,27 @@ void GraphicsEngine::UpdateRenderComponents() {
             
             if (renderComp.textureZChanged > 0) {renderComp.textureZChanged -= 1; SetTextureZ(renderComp.meshLocation, renderComp.textureZ);}
             if (renderComp.colorChanged > 0) {renderComp.colorChanged -= 1; SetColor(renderComp.meshLocation, renderComp.color);}
+        }
+    });
+
+    // Get components of all gameobjects that have a transform and no floating origin render component
+    auto components2 = ComponentRegistry::GetSystemComponents<RenderComponentNoFO, TransformComponent>();
+    std::for_each(std::execution::par, components2.begin(), components2.end(), [this](std::tuple<RenderComponentNoFO*, TransformComponent*>& tuple) {
+        auto & renderCompNoFO = *std::get<0>(tuple);
+        auto & transformComp = *std::get<1>(tuple);
+        if (renderCompNoFO.live) {
+            
+            //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
+            // if (renderComp.componentPoolId != i) {
+            //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
+            //     abort();
+            // }
+            // TODO: we only need to call SetNormalMatrix() when the object is rotated
+            SetNormalMatrix(renderCompNoFO.meshLocation, transformComp.GetNormalMatrix()); 
+            SetModelMatrix(renderCompNoFO.meshLocation, transformComp.GetGraphicsModelMatrix({0, 0, 0}));
+            
+            if (renderCompNoFO.textureZChanged > 0) {renderCompNoFO.textureZChanged -= 1; SetTextureZ(renderCompNoFO.meshLocation, renderCompNoFO.textureZ);}
+            if (renderCompNoFO.colorChanged > 0) {renderCompNoFO.colorChanged -= 1; SetColor(renderCompNoFO.meshLocation, renderCompNoFO.color);}
         }
     });
 
@@ -444,13 +465,13 @@ glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
 }
 
 void GraphicsEngine::AddCachedMeshes() {
-    if (meshesToAdd.size() > 0) {
-        std::cout << "There are " << meshesToAdd.size() << " to add.\n";
+    if (renderComponentsToAdd.size() > 0) {
+        std::cout << "There are " << renderComponentsToAdd.size() << " to add.\n";
     }
     
-    for (auto & [shaderId, map1] : meshesToAdd) {
+    for (auto & [shaderId, map1] : renderComponentsToAdd) {
         for (auto & [textureId, map2] : map1) {
-            for (auto & [meshId, meshLocations] : map2) {
+            for (auto & [meshId, components] : map2) {
                 std::cout << "\tInfo: " << meshId << " " << textureId << " " << shaderId << " size " << meshLocations.size() << "\n";
 
                 std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
@@ -479,28 +500,30 @@ void GraphicsEngine::AddCachedMeshes() {
 
                 auto objectPositions = meshpools.at(shaderId).at(textureId).at(bestPoolId)->AddObject(meshId, meshLocations.size());
                 std::cout << "\tAdded.\n";
-                for (unsigned int i = 0; i < meshLocations.size(); i++) {
-                    meshLocations.at(i)->poolId = bestPoolId;
-                    meshLocations[i]->poolSlot = objectPositions[i].first;
-                    meshLocations[i]->poolInstance = objectPositions[i].second;
-                    meshLocations[i]->initialized = true;
+                for (unsigned int i = 0; i < components.size(); i++) {
+                    components.at(i)->poolId = bestPoolId;
+                    components[i]->poolSlot = objectPositions[i].first;
+                    components[i]->poolInstance = objectPositions[i].second;
+                    components[i]->initialized = true;
                     //std::cout  << "Initalized mesh location " << (meshLocations[i]) << ".\n";
+                }
+
+                if (m->dynamic) {
+                    dynamicMeshUsers[meshId].push_back(this);
                 }
             } 
         }
     }
     // TODO: instead of clearing the entire thing do something else
     // TODO: why did i write the above comment? clearing is fine???
-    meshesToAdd.clear();
+    renderComponentsToAdd.clear();
 }
 
-void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, MeshLocation* meshLocation) {
-    meshLocation->shaderProgramId = shaderId;
-    meshLocation->materialId = materialId;
-    meshesToAdd[shaderId][materialId][meshId].push_back(meshLocation);
+void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, RenderComponent* component) {
+    renderComponentsToAdd[shaderId][materialId][meshId].push_back(component);
 }
 
-void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int materialId, unsigned int shader_id) {
+void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int material_id, unsigned int shader_id) {
     assert(live);
     assert(mesh_id != 0);
 
@@ -510,13 +533,11 @@ void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int ma
 
     colorChanged = (Mesh::Get(meshId)->vertexFormat.attributes.color->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
     textureZChanged = (Mesh::Get(meshId)->vertexFormat.attributes.textureZ->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
-    if (Mesh::Get(meshId)->dynamic) {
-        GraphicsEngine::Get().dynamicMeshUsers.emplace(meshId, this);
-    }
 
-    meshLocation.materialId = materialId;
-    meshLocation.shaderProgramId = shader_id;
-    meshLocation.initialized = false;
+    materialId = material_id;
+    shaderProgramId = shader_id;
+    meshpoolId = -1;
+    meshpoolInstance = -1;
 
     // std::cout << "Initialized RenderComponent with mesh locatino at " << &meshLocation << " and pool at " << pool << "\n.";
 
@@ -528,7 +549,16 @@ void GraphicsEngine::RenderComponent::Destroy() {
     assert(live == true);
 
     if (Mesh::Get(meshId)->dynamic) {
-        GraphicsEngine::Get().dynamicMeshUsers.erase(meshId);
+        unsigned int i = 0;
+        for (auto & component : GraphicsEngine::Get().dynamicMeshUsers.at(meshId)) {
+            if (this == component) {
+                GraphicsEngine::Get().dynamicMeshUsers.at(meshId).at(i) = GraphicsEngine::Get().dynamicMeshUsers.at(meshId).back();
+                GraphicsEngine::Get().dynamicMeshUsers.at(meshId).pop_back();
+                break;
+            }
+            i++;
+        }
+       
     }
 
     // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from GraphicsEngine::meshesToAdd
@@ -567,3 +597,6 @@ void GraphicsEngine::RenderComponent::SetTextureZ(const float z) {
     textureZ = z;
 }
 
+GraphicsEngine::RenderComponentNoFO::RenderComponentNoFO() {
+
+}

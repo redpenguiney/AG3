@@ -23,4 +23,10 @@ struct BaseComponent {
     T* next; // pointer to next available component in pool
     unsigned int componentPoolId; // index into pools vector
     ComponentPool<T>* pool; // TODO: could probably find a way to get rid of the index if we have this?
+
+    // exists to let RenderComponentNoFO avoid type safety.
+    // void* should be ptr to component pool
+    void SetPool(void* p) {
+        pool = (ComponentPool<T>*)p;
+    }
 };

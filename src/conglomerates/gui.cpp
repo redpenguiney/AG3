@@ -1,16 +1,21 @@
 #include "gui.hpp"
 #include <cassert>
-#include <cstdlib>
-#include <memory>
 #include <vector>
+#include "../../external_headers/GLM/gtx/string_cast.hpp"
+
+std::vector<Gui*> listOfGuis;
+void Gui::UpdateGuiForNewWindowResolution() {
+    for (auto & ui: listOfGuis) {
+        ui->UpdateGuiTransform();
+    }
+}
 
 Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::shared_ptr<ShaderProgram> guiShader) {
-    std::cout << "a.\n";
-    GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
-    objectParams.materialId = (guiMaterial.has_value() ? 0: guiMaterial->second->id);
+    GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentNoFOBitIndex});
+
+    objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : 0);
     objectParams.meshId = Mesh::Square()->meshId;
     objectParams.shaderId = guiShader->shaderProgramId;
-    std::cout << "b\n";
     object = ComponentRegistry::NewGameObject(objectParams);
 
     guiScaleMode = ScaleXY;
@@ -23,15 +28,14 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     zLevel = 0;
 
     offsetSize = {0, 0};
-    scaleSize = {0, 0};
+    scaleSize = {0.5, 0.5};
 
     rgba = {1, 1, 1, 1};
 
     if (haveText) {
-        std::cout << "Adding text.\n";
         assert(fontMaterial.has_value() && fontMaterial->second->HasFontMap());
 
-        GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+        GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentNoFOBitIndex});
         textObjectParams.materialId = 0;
         textObjectParams.shaderId = guiShader->shaderProgramId;
         textObjectParams.meshId = Mesh::FromText("TEXT", *fontMaterial->second->fontMapConstAccess)->meshId;
@@ -52,9 +56,24 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
         UpdateGuiText();
     }
     
+    listOfGuis.push_back(this);
 }
+
+Gui::~Gui() {
+    unsigned int i = 0;
+    for (auto & ui: listOfGuis) {
+        if (ui == this) {
+            // fast erase
+            listOfGuis.at(i) = listOfGuis.back();
+            listOfGuis.pop_back();
+        }
+        i += 1;
+    }
+}
+
 void Gui::UpdateGuiTransform() {
     glm::vec2 windowResolution;
+    glm::vec2 realWindowResolution = {GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height};
     
     if (guiScaleMode == ScaleXX) {
         windowResolution.x = GraphicsEngine::Get().window.width;
@@ -71,20 +90,31 @@ void Gui::UpdateGuiTransform() {
     else {
         std::cout << "Invalid guiScaleMode. Aborting.\n";
         abort();
+    }    
+
+    if (object->transformComponent->GetParent() != nullptr) {
+        windowResolution *= glm::vec2 {object->transformComponent->GetParent()->Scale().x, object->transformComponent->GetParent()->Scale().y};
     }
-    
 
-    glm::vec2 size = scaleSize + (offsetSize/windowResolution);
+    glm::vec2 size = (scaleSize / realWindowResolution * windowResolution) + (offsetSize/realWindowResolution);
     object->transformComponent->SetScl(glm::vec3(size.x, size.y, 1));
+    
+    object->transformComponent->SetRot(glm::angleAxis(rotation, glm::vec3 {0.0f, 0.0f, 1.0f}));
 
-    glm::vec2 anchorPointPosition = scalePos + (offsetPos/windowResolution);
-    glm::vec2 centerPosition = anchorPointPosition + (anchorPoint * size);
+    glm::vec2 anchorPointPosition = scalePos + (offsetPos/realWindowResolution);
+    glm::vec2 centerPosition = anchorPointPosition - (anchorPoint * size);
+    // std::cout << "Center pos is " << glm::to_string(centerPosition) << ".\n";
 
     object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel));
     if (guiTextInfo.has_value()) {
         guiTextInfo->object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel - 0.01));
         
     }
+}
+
+Gui::GuiTextInfo& Gui::GetTextInfo() {
+    assert(guiTextInfo.has_value());
+    return *guiTextInfo;
 }
 
 void Gui::UpdateGuiGraphics() {

@@ -267,8 +267,8 @@ glTextureIndex(textureIndex)
 
         // fill texture with glyphs and calculate uvs
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // make sure we don't segfault
-        unsigned int currentX = 0;
-        unsigned int currentY = 0;
+        int currentX = 0;
+        int currentY = 0;
         for (auto & [character, glyph] : *fontGlyphs) {
 
             // see if there's room for another character on this row, and if not, move to the next row    

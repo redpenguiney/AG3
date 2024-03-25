@@ -18,17 +18,17 @@
 #include "renderable_mesh.hpp"
 #include "framebuffer.hpp"
 
-struct MeshLocation {
-    unsigned int poolId; // uuid of the meshpool 
-    unsigned int poolSlot;
-    unsigned int poolInstance;
-    unsigned int materialId;
-    unsigned int shaderProgramId;
-    bool initialized;
-    MeshLocation() {
-        initialized = false;
-    }
-};
+// struct MeshLocation {
+//     unsigned int poolId; // uuid of the meshpool 
+//     unsigned int poolSlot;
+//     unsigned int poolInstance;
+//     unsigned int materialId;
+//     unsigned int shaderProgramId;
+//     bool initialized;
+//     MeshLocation() {
+//         initialized = false;
+//     }
+// };
 
 // Handles graphics, obviously.
 class GraphicsEngine {
@@ -109,7 +109,12 @@ class GraphicsEngine {
         int colorChanged;
         int textureZChanged;
 
-        MeshLocation meshLocation;
+        // MeshLocation meshLocation;
+        unsigned int shaderProgramId, materialId;
+
+        // -1 before being initialized
+        int meshpoolId, meshpoolSlot, meshpoolInstance;
+
         friend class GraphicsEngine;
 
         // mesh.cpp needs to access mesh location sorry
@@ -120,12 +125,32 @@ class GraphicsEngine {
         RenderComponent();
     };
 
+    // Identical to a RenderComponent in every way, except that it doesn't use floating origin. Not a bool flag on a normal render component bc i like premature optimization.
+    class RenderComponentNoFO: public RenderComponent {
+        public:
+        // TODO: implicit conversion to normal rendercomponent because they do the exact same things?
+        
+        private:
+
+        //private constructor to enforce usage of object pool
+        friend class ComponentPool<RenderComponentNoFO>;
+        RenderComponentNoFO();
+
+        // exists to let RenderComponentNoFO avoid type safety.
+        // void* should be ptr to component pool
+        void SetPool(void* p) {
+            pool = (ComponentPool<RenderComponent>*)p;
+        }
+    };
+
+    static_assert(sizeof(RenderComponent) == sizeof(RenderComponentNoFO), "These classes need the exact same memory layout or i'll be sad.\n");
+
     std::shared_ptr<Material> GetDefaultMaterial(); // TODO
 
     // Render components that use a dynamic mesh add themselves to this unordered map (and remove themselves on destruction).
     // Key is mesh id, value is ptr to rendercomponent which uses that mesh.
     // Needed so that mesh.cpp can access the meshpools being used by objects with dynamic meshes, in order to apply changes made to those dynamic meshes to the GPU.
-    std::unordered_map<unsigned int, RenderComponent*> dynamicMeshUsers;
+    std::unordered_map<unsigned int, std::vector<RenderComponent*>> dynamicMeshUsers;
 
     private:
 
@@ -168,7 +193,7 @@ class GraphicsEngine {
     // Cache of meshes to add when addCachedMeshes is called. 
     // Used so that instead of adding 1 mesh to a meshpool 1000 times, we just add 1000 instances of a mesh to meshpool once to make creating renderable objects faster.
     // Keys go like meshesToAdd[shaderId][textureId][meshId] = vector of pointers to MeshLocations stored in RenderComponents.
-    std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::vector<MeshLocation*>>>> meshesToAdd;
+    std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::vector<RenderComponent*>>>> renderComponentsToAdd;
 
     GraphicsEngine();
     ~GraphicsEngine();
@@ -185,17 +210,17 @@ class GraphicsEngine {
     void AddCachedMeshes();
     void UpdateMeshpools();
 
-    void SetColor(const MeshLocation& location, const glm::vec4& rgba);
-    void SetModelMatrix(const MeshLocation& location, const glm::mat4x4& model);
-    void SetNormalMatrix(const MeshLocation& location, const glm::mat3x3& normal);
+    void SetColor(const RenderComponent& component, const glm::vec4& rgba);
+    void SetModelMatrix(const RenderComponent& component, const glm::mat4x4& model);
+    void SetNormalMatrix(const RenderComponent& component, const glm::mat3x3& normal);
 
     // set to -1.0 for no texture
-    void SetTextureZ(const MeshLocation& location, const float textureZ);
+    void SetTextureZ(const RenderComponent& component, const float textureZ);
 
     // Returns a drawId used to modify the mesh later on.
     // Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.
     // Contents of MeshLocation are undefined until addCachedMeshes() is called, except for textureId, shaderProgramId, and initialized.
     // Before addChachedMeshes is called, meshLocation->initialized == false and after == true
-    void AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, MeshLocation* meshLocation);
+    void AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, RenderComponent* component);
 };
 

@@ -48,8 +48,8 @@ class TransformComponent: public BaseComponent<TransformComponent> {
     
     void SetParent(TransformComponent& newParent);
 
-    // Returns the parent. Don't hold onto this reference, as when the transform component gets deleted you're in trouble.
-    TransformComponent& GetParent();
+    // Returns the parent. Don't hold onto this pointer, as when the transform component gets deleted you're in trouble.
+    TransformComponent* GetParent();
 
     private:
     // after changing scale or rotation, we need to update the rot/scale matrix

@@ -12,6 +12,9 @@
 // Everything this does, you could just do yourself with rendercomponents + transformcomponents if you want, all this does is call functions on/set values of render/transform components when UpdateGuiTransform()/UpdateGuiGraphics() is called.
 class Gui {
     public:
+    // window.cpp calls this when the window resolution changes to handle stuff.
+    static void UpdateGuiForNewWindowResolution();
+
     struct GuiTextInfo {
         glm::vec4 rgba;
         unsigned int textHeight;
@@ -25,7 +28,13 @@ class Gui {
 
     Gui(bool haveText = false, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial = std::nullopt, std::shared_ptr<ShaderProgram> guiShader = GraphicsEngine::Get().defaultGuiShaderProgram);
 
-    GuiTextInfo& getTextInfo();
+    ~Gui();
+
+    // don't copy or move ples
+    Gui(const Gui&) = delete;
+    Gui(const Gui&&) = delete;
+
+    GuiTextInfo& GetTextInfo();
 
     // around center of the gui
     float rotation;

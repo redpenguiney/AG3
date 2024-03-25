@@ -42,7 +42,7 @@ void main()
         discard;
     };
 
-    vec4 color = fragmentColor * colorTx;
+    vec4 color = fragmentColor;
     color.a *= font;
     Output = color;
 };
