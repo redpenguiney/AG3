@@ -272,7 +272,7 @@ glTextureIndex(textureIndex)
         for (auto & [character, glyph] : *fontGlyphs) {
 
             // see if there's room for another character on this row, and if not, move to the next row    
-            if ((currentX + glyph.width + 1) >= maxWidth) {
+            if (int(currentX + glyph.width + 1) >= maxWidth) {
                 currentY += greatestHeight;
                 currentX = 0;
             }

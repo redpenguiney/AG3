@@ -13,6 +13,7 @@ void Gui::UpdateGuiForNewWindowResolution() {
 Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::shared_ptr<ShaderProgram> guiShader) {
     GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentNoFOBitIndex});
 
+    std::cout << "Gui has value = " << guiMaterial.has_value() << " font is " << fontMaterial.has_value() << ".\n";
     objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : 0);
     objectParams.meshId = Mesh::Square()->meshId;
     objectParams.shaderId = guiShader->shaderProgramId;
@@ -30,7 +31,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     offsetSize = {0, 0};
     scaleSize = {0.5, 0.5};
 
-    rgba = {1, 1, 1, 0};
+    rgba = {1, 1, 1, 1};
 
     if (haveText) {
         assert(fontMaterial.has_value() && fontMaterial->second->HasFontMap());
@@ -38,10 +39,15 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
         GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentNoFOBitIndex});
         textObjectParams.materialId = fontMaterial->second->id;
         textObjectParams.shaderId = guiShader->shaderProgramId;
-        textObjectParams.meshId = Mesh::FromText("TEXT", *fontMaterial->second->fontMapConstAccess)->meshId;
+        auto textMesh = Mesh::FromText("Text", *fontMaterial->second->fontMapConstAccess);
+        // std::cout << "Text mesh verts: ";
+        // for (auto & v: textMesh->vertices) {
+        //     std::
+        // } 
+        textObjectParams.meshId = textMesh->meshId;
 
         guiTextInfo.emplace(GuiTextInfo {
-            .rgba = {0, 0, 0, 1},
+            .rgba = {1, 0, 0, 1},
             .textHeight = 12,
             .text = "Text",
             .object = ComponentRegistry::NewGameObject(textObjectParams),
