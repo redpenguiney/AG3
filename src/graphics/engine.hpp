@@ -86,6 +86,7 @@ class GraphicsEngine {
 
         // not const because object pool, don't actually change this
         unsigned int meshId;
+        unsigned int shaderProgramId, materialId;
 
         // called to initialize when given to a gameobject
         void Init(unsigned int mesh_id, unsigned int materialId, unsigned int shader_id = Get().defaultShaderProgram->shaderProgramId);
@@ -110,7 +111,7 @@ class GraphicsEngine {
         int textureZChanged;
 
         // MeshLocation meshLocation;
-        unsigned int shaderProgramId, materialId;
+        
 
         // -1 before being initialized
         int meshpoolId, meshpoolSlot, meshpoolInstance;

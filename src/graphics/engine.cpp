@@ -91,6 +91,7 @@ GraphicsEngine::~GraphicsEngine() {
     }
 
     delete skybox;
+    std::cout << "Deleted.\n";
 }
 
 bool GraphicsEngine::IsTextureInUse(unsigned int textureId) { 

@@ -24,11 +24,17 @@
 
 using namespace std;
 
+double timeAtWhichExitProcessStarted = 0;
+
+void AtExit() {
+    LogElapsed(timeAtWhichExitProcessStarted, "Exit process elapsed ");
+    printf("Program ran successfully. Exiting.\n");
+}
+
 int main(int numArgs, const char *argPtrs[]) {
     std::printf("Main function reached.\n");
 
-    // TODO
-    // atexit(void (*)() __attribute__((cdecl)))
+    atexit(AtExit);
 
     // TODO: shouldn't actually matter if these lines exist, and if it does fix that please
     auto & GE = GraphicsEngine::Get();
@@ -204,20 +210,6 @@ int main(int numArgs, const char *argPtrs[]) {
     glPointSize(8.0); // debug thing, ignore
     glLineWidth(2.0);
 
-    printf("Starting main loop.\n");
-
-    // The mainloop uses a fixed physics timestep, but renders as much as possible
-    // TODO: right now rendering extrapolates positions for rigidbodies, we could possibly do interpolation??? would require storing old positions tho so idk
-    // TODO: options for other mainloops
-    // TODO: max framerate option in leiu of vsync
-    const double SIMULATION_TIMESTEP = 1.0/60.0; // number of seconds simulation is stepped by every frame
-
-    const unsigned int N_PHYSICS_ITERATIONS = 1; // bigger number = higher quality physics simulation, although do we ever want this? what about just increase sim timestep?
-    double previousTime = Time();
-    double physicsLag = 0.0; // how many seconds behind the simulation is. Before rendering, we check if lag is > SIMULATION_TIMESTEP in ms and if so, simulate stuff.
-
-    bool physicsPaused = false;
-
     {
         auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
         ttfParams.fontHeight = 60;
@@ -237,6 +229,22 @@ int main(int numArgs, const char *argPtrs[]) {
         
 
     }
+
+    printf("Starting main loop.\n");
+
+    // The mainloop uses a fixed physics timestep, but renders as much as possible
+    // TODO: right now rendering extrapolates positions for rigidbodies, we could possibly do interpolation??? would require storing old positions tho so idk
+    // TODO: options for other mainloops
+    // TODO: max framerate option in leiu of vsync
+    const double SIMULATION_TIMESTEP = 1.0/60.0; // number of seconds simulation is stepped by every frame
+
+    const unsigned int N_PHYSICS_ITERATIONS = 1; // bigger number = higher quality physics simulation, although do we ever want this? what about just increase sim timestep?
+    double previousTime = Time();
+    double physicsLag = 0.0; // how many seconds behind the simulation is. Before rendering, we check if lag is > SIMULATION_TIMESTEP in ms and if so, simulate stuff.
+
+    bool physicsPaused = false;
+
+    
 
     while (!GE.ShouldClose()) 
     {
@@ -325,14 +333,12 @@ int main(int numArgs, const char *argPtrs[]) {
         // LogElapsed(currentTime, "Frame elapsed");
 
     }
+
+    timeAtWhichExitProcessStarted = Time();
     printf("Beginning exit process.\n");
 
-    auto start = Time();
-
     // It's very important that this function runs before GE, SAS, etc. are destroyed, and it's very important that other shared_ptrs to gameobjects outside of the GAMEOBJECTS map are gone (meaning lua needs to be deleted before this code runs)
+    // TODO: register at exit instead?
     ComponentRegistry::CleanupComponents(); printf("Cleaned up all gameobjects.\n");
-
-    LogElapsed(start, "Exit process elapsed ");
-    printf("Program ran successfully (unless someone's destructor crashes after this print statement). Exiting.\n");
     return EXIT_SUCCESS;
 }

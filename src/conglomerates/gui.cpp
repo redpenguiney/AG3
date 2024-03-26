@@ -54,12 +54,15 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
             .fontMaterial = fontMaterial->second,
             .fontMaterialLayer = fontMaterial->first
         });
+
+        std::cout << "Object in gui has matid" << guiTextInfo->object->renderComponent->materialId << ".\n"; 
+        std::cout << "Object in back has matid" << object->renderComponent->materialId << ".\n"; 
     }
 
     UpdateGuiTransform();
     UpdateGuiGraphics();
     if (haveText) {
-        UpdateGuiText();
+        // UpdateGuiText();
     }
     
     listOfGuis.push_back(this);
