@@ -122,7 +122,7 @@ std::vector<std::pair<unsigned int, unsigned int>> Meshpool::AddObject(const uns
         for (unsigned int i = start; i < start + std::min(count, meshInstanceCapacity); i++) {
             objLocations.push_back(std::make_pair(slot, i));
         }
-        std::cout << "\tSet objLocations.\n";
+        // std::cout << "\tSet objLocations.\n";
 
         //drawCommands[slot].instanceCount = std::min(count, instanceCapacity);
         count -= std::min(count, meshInstanceCapacity);

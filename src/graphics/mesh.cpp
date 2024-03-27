@@ -25,10 +25,10 @@ typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::ve
 
 std::shared_ptr<Mesh> Mesh::Square() {
     static std::vector<GLfloat> squareVerts = {
-        -1.0, -1.0, 0.0,   0.0, 0.0, 
-         1.0, -1.0, 0.0,   1.0, 0.0,
-         1.0,  1.0, 0.0,   1.0, 1.0,
-        -1.0,  1.0, 0.0,   0.0, 1.0,
+        -1.0, -1.0,   0.0, 0.0, 
+         1.0, -1.0,   1.0, 0.0,
+         1.0,  1.0,   1.0, 1.0,
+        -1.0,  1.0,   0.0, 1.0,
          };
 
     static auto m = Mesh::FromVertices(squareVerts, {0, 1, 2, 0, 2, 3}, false, MeshVertexFormat::DefaultGui(), 1.0, false);
@@ -66,6 +66,7 @@ void TextMeshFromText(const std::string &text, const Texture &font, const MeshVe
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = characterX;
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = characterY + height;
         if (vertexFormat.attributes.position->nFloats > 2) {
+            assert(false);
             vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
         }
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.leftUv;
@@ -76,6 +77,7 @@ void TextMeshFromText(const std::string &text, const Texture &font, const MeshVe
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = characterX + width;
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = characterY + height;
         if (vertexFormat.attributes.position->nFloats > 2) {
+            assert(false);
             vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
         }
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.rightUv;
@@ -87,6 +89,7 @@ void TextMeshFromText(const std::string &text, const Texture &font, const MeshVe
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = characterX + width;
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = characterY;
         if (vertexFormat.attributes.position->nFloats > 2) {
+            assert(false);
             vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
         }
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.rightUv;
@@ -99,6 +102,7 @@ void TextMeshFromText(const std::string &text, const Texture &font, const MeshVe
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = characterX;
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = characterY;
         if (vertexFormat.attributes.position->nFloats > 2) {
+            assert(false);
             vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
         }
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.leftUv;
@@ -147,14 +151,13 @@ MeshVertexFormat MeshVertexFormat::Default(bool instancedColor, bool instancedTe
     };
 }
 
-// noninstanced (XYZ, TextureXY).
-    // (z is so gui has layers)
+// noninstanced (XY, TextureXY).
 // instanced: model matrix, normal matrix (so texture can be rotated w/o problems), rgba, textureZ
 MeshVertexFormat MeshVertexFormat::DefaultGui() {
     return MeshVertexFormat {
         .attributes = {
-            .position = VertexAttribute {.offset = 0, .nFloats = 3, .instanced = false},
-            .textureUV = VertexAttribute {.offset = sizeof(glm::vec3), .nFloats = 2, .instanced = false},   
+            .position = VertexAttribute {.offset = 0, .nFloats = 2, .instanced = false},
+            .textureUV = VertexAttribute {.offset = sizeof(glm::vec2), .nFloats = 2, .instanced = false},   
             .textureZ = VertexAttribute {.offset = (sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + sizeof(glm::vec4)), .nFloats = 1, .instanced = true},
             .color = VertexAttribute {.offset = sizeof(glm::mat4x4) + sizeof(glm::mat3x3), .nFloats = 4, .instanced = true}, 
             .modelMatrix = VertexAttribute {.offset = 0, .nFloats = 16, .instanced = true},
@@ -212,7 +215,6 @@ bool MeshVertexFormat::operator==(const MeshVertexFormat& other) const {
 }
 
 void MeshVertexFormat::SetNonInstancedVaoVertexAttributes(GLuint& vaoId, unsigned int instancedSize, unsigned int nonInstancedSize) const {
-    std::cout << "Noninstanced:\n";
     // std::cout << "Pos:\n";
     HandleAttribute(vaoId, attributes.position, MeshVertexFormat::POS_ATTRIBUTE_NAME, false, instancedSize, nonInstancedSize);
     // std::cout << "Color:\n"; 
@@ -232,7 +234,6 @@ void MeshVertexFormat::SetNonInstancedVaoVertexAttributes(GLuint& vaoId, unsigne
 }
 
 void MeshVertexFormat::SetInstancedVaoVertexAttributes(GLuint& vaoId, unsigned int instancedSize, unsigned int nonInstancedSize) const {
-    std::cout << "Instanced:\n";
     // std::cout << "Position:\n";
     HandleAttribute(vaoId, attributes.position, MeshVertexFormat::POS_ATTRIBUTE_NAME, true, instancedSize, nonInstancedSize);
     // std::cout << "Color:\n";
@@ -412,8 +413,6 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
         }
     }
 
-    std::cout << "Mesh has " << vertices.size() << " floats in its vertices, and each vertex should be " << meshVertexFormat.GetNonInstancedVertexSize()/4 << "floats.\n";
-
     // calculate tangent vectors
     if (meshVertexFormat.attributes.tangent.has_value() && meshVertexFormat.attributes.tangent->instanced == false) {
 
@@ -551,7 +550,7 @@ void Mesh::StopModifying(bool normalizeSize) {
 
     // keep in mind that same mesh could be in multiple different meshpools because different materials/shaders 
 
-    std::vector<unsigned int> modifiedMeshpoolIds; // make sure we don't waste perf. resetting the same meshpool multiple times
+    std::vector<std::pair<unsigned int, unsigned int>> modifiedMeshpoolIds; // pairs of <poolid, poolslot> make sure we don't waste perf. resetting the same meshpool multiple times
 
     // For every object that uses this dynamic mesh...
     if (GraphicsEngine::Get().dynamicMeshUsers.contains(meshId)) {
@@ -572,7 +571,7 @@ void Mesh::StopModifying(bool normalizeSize) {
             if (pool.meshVerticesSize >= vertices.size() * sizeof(GLfloat) && pool.meshIndicesSize >= indices.size() * sizeof(GLuint)) {
 
                 // if we already did that, move onto the next object.
-                if (std::find(modifiedMeshpoolIds.begin(), modifiedMeshpoolIds.end(), renderComponent->meshpoolId) != modifiedMeshpoolIds.end()) {
+                if (std::find(modifiedMeshpoolIds.begin(), modifiedMeshpoolIds.end(), std::make_pair<unsigned int, unsigned int>(renderComponent->meshpoolId, renderComponent->meshpoolSlot)) != modifiedMeshpoolIds.end()) {
                     continue;
                 }
 
@@ -580,12 +579,13 @@ void Mesh::StopModifying(bool normalizeSize) {
 
                 // instanceCount argument is meaningless when modifying == true.
                 pool.FillSlot(meshId, renderComponent->meshpoolSlot, 0, true);
-                modifiedMeshpoolIds.push_back(renderComponent->meshpoolSlot);
+                modifiedMeshpoolIds.push_back({renderComponent->meshpoolId, renderComponent->meshpoolSlot});
             }
 
             // Otherwise, we have to remove every object using this mesh/meshpool combo from its meshpool, and find a new pool for it.
             else {
                 // todo: could potentially do some crazy optimization here by manually wiping the mesh from the pool then directly setting pool ids for new pool?
+                // TODO: making component no longer in a meshpool could break stuff that calls methods of rendercomponent before it's readded
                 // low priority in any case
 
                 std::cout << "Removing/readding object for dynamic mesh update.\n";

@@ -31,7 +31,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     offsetSize = {0, 0};
     scaleSize = {0.5, 0.5};
 
-    rgba = {1, 1, 1, 1};
+    rgba = {1, 0, 0, 0};
 
     if (haveText) {
         assert(fontMaterial.has_value() && fontMaterial->second->HasFontMap());
@@ -39,15 +39,16 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
         GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentNoFOBitIndex});
         textObjectParams.materialId = fontMaterial->second->id;
         textObjectParams.shaderId = guiShader->shaderProgramId;
-        auto textMesh = Mesh::FromText("Text", *fontMaterial->second->fontMapConstAccess);
-        // std::cout << "Text mesh verts: ";
-        // for (auto & v: textMesh->vertices) {
-        //     std::
-        // } 
+        auto textMesh = Mesh::FromText("Text", fontMaterial->second->fontMapConstAccess.value());
+        std::cout << "Text mesh indices: ";
+        for (auto & v: textMesh->indices) {
+            std::cout << v << ", ";
+        } 
+        std::cout << ".\n";
         textObjectParams.meshId = textMesh->meshId;
 
         guiTextInfo.emplace(GuiTextInfo {
-            .rgba = {1, 0, 0, 1},
+            .rgba = {0, 0, 1, 1},
             .textHeight = 12,
             .text = "Text",
             .object = ComponentRegistry::NewGameObject(textObjectParams),
@@ -62,7 +63,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     UpdateGuiTransform();
     UpdateGuiGraphics();
     if (haveText) {
-        // UpdateGuiText();
+        UpdateGuiText();
     }
     
     listOfGuis.push_back(this);
@@ -130,6 +131,11 @@ Gui::GuiTextInfo& Gui::GetTextInfo() {
 void Gui::UpdateGuiGraphics() {
     object->renderComponent->SetColor(rgba);
     object->renderComponent->SetTextureZ(materialLayer.value_or(-1.0));
+     
+     if (guiTextInfo.has_value()) {
+        guiTextInfo->object->renderComponent->SetColor(guiTextInfo->rgba);
+        guiTextInfo->object->renderComponent->SetTextureZ(guiTextInfo->fontMaterialLayer);
+     }
 }
 
 void Gui::UpdateGuiText() {

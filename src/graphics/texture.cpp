@@ -80,14 +80,11 @@ glTextureIndex(textureIndex)
 
     if (usage != Texture::FontMap) { // For textures that aren't a font, we use stbi_image.h to load the files and then figure all the formatting and what not.
 
-       std::cout << "Requiring " << NChannelsFromFormat(params.format) << " channels.\n";
         int lastWidth = 0, lastHeight = 0, lastNChannels = 0;
         for (auto & path: params.texturePaths) {
             // use stbi_image.h to load file
-            std::cout << "Loading \"" << path << "\".\n";
             imageDatas.push_back(stbi_load(path.c_str(), &width, &height, &nChannels, NChannelsFromFormat(params.format)));
             // TODO: we don't throw an error if we put in a one channel image (for example) and wanted 3 channels, we just create 2 more channels, is that ok?
-            std::cout << "We want a minimum of " << NChannelsFromFormat(params.format) << " and we got " << nChannels << ".\n"; 
             nChannels = std::max(nChannels, (int)NChannelsFromFormat(params.format)); // apparently nChannels is set to the amount that the original image had, even if we asked for (and recieved) extra channels, so this makes sure it has the right value
             if (imageDatas.back() == nullptr) { // error check
                 std::printf("STBI failed to load %s because %s", path.c_str(), stbi_failure_reason());
@@ -116,13 +113,13 @@ glTextureIndex(textureIndex)
         unsigned int sourceFormat;
         switch (nChannels) {
         case 4:
-        sourceFormat = GL_RGBA; std::cout << "src picked rgba\n";
+        sourceFormat = GL_RGBA; //std::cout << "src picked rgba\n";
         break;
         case 3:
-        sourceFormat = GL_RGB; std::cout << "src picked rgb\n";
+        sourceFormat = GL_RGB;// std::cout << "src picked rgb\n";
         break;
         case 1:
-        sourceFormat = GL_RED; std::cout << "src picked grayscale\n";
+        sourceFormat = GL_RED; //std::cout << "src picked grayscale\n";
         break;
         default:
         std::cout << "texture.cpp: uh what the \n";
@@ -134,13 +131,13 @@ glTextureIndex(textureIndex)
         if (params.format == Texture::Auto_8Bit) {
             switch (nChannels) {
             case 4:
-            internalFormat = Texture::RGBA_8Bit; std::cout << "auto picked rgba\n";
+            internalFormat = Texture::RGBA_8Bit; //std::cout << "auto picked rgba\n";
             break;
             case 3:
-            internalFormat = Texture::RGB_8Bit; std::cout << "auto picked rgb\n";
+            internalFormat = Texture::RGB_8Bit;// std::cout << "auto picked rgb\n";
             break;
             case 1:
-            internalFormat = Texture::Grayscale_8Bit; std::cout << "auto picked grayscale\n";
+            internalFormat = Texture::Grayscale_8Bit;// std::cout << "auto picked grayscale\n";
             break;
             default:
             std::cout << "texture.cpp: uh what the \n";
@@ -151,34 +148,24 @@ glTextureIndex(textureIndex)
 
         // TODO: there was a crash when loading a 3-channel jpeg to create a grayscale texture
         // generate OpenGL texture object and put image data in it
-        std::cout << " gene\n";
         glGenTextures(1, &glTextureId);
 
         // std::cout << "Textuhhuhuhuhuure data: ";
         // for (unsigned int i = 0; i < width; i++) {
         //     std:: cout << (int)(imageDatas.back()[i]) << " ";
         // }
-        std::cout << "\n";
-        std::cout << " binding.\n";
         Use();
         // glBindTexture(bindingLocation, glTextureId);
         if (type == Texture::Texture2D) {
-            std::cout << "here we go!\n";
             depth = 1; 
-            std::printf("Ok so its %u %u %u %u %u %u, %i\n", glTextureId, internalFormat, sourceFormat, width, height, depth, nChannels);
-            std::cout << " gonna load " << (void*)imageDatas.back() << ".\n";
             // glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // TODO: this may be neccesary in certain situations??? further investigation neededd
             // glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
             // glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
             // glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-            std::cout << " pixels store i ed\n";
             glTexImage3D(bindingLocation, 0, internalFormat, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.back()); // put data in opengl
-            std::cout << "die\n"; 
         }
         else if (type == Texture::TextureCubemap) {
-            std::cout << "we do be cubing\n";
             depth = 1; 
-            std::printf("and so its %u %u %u %u %u %u, %i\n", glTextureId, internalFormat, sourceFormat, width, height, depth, nChannels);
             for (unsigned int i = 0; i < 6; i++) {
                 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, imageDatas.at(i));
             }
@@ -195,7 +182,6 @@ glTextureIndex(textureIndex)
             abort();
         }
 
-        std::cout << "freeing.\n";
         // free the data loaded by stbi
         for (auto & data: imageDatas) {
             stbi_image_free(data);

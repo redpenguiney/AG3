@@ -77,7 +77,7 @@ screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, scre
     // for (auto & v: skybox_boxmesh->vertices) {
     //     std::cout << v << ", ";
     // }
-    std::cout << "\n";
+    // std::cout << "\n";
     glDepthFunc(GL_LEQUAL); // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
 }
 
@@ -91,7 +91,6 @@ GraphicsEngine::~GraphicsEngine() {
     }
 
     delete skybox;
-    std::cout << "Deleted.\n";
 }
 
 bool GraphicsEngine::IsTextureInUse(unsigned int textureId) { 
@@ -241,17 +240,30 @@ void GraphicsEngine::RenderScene() {
         for (auto & [materialId, map2] : map1) {
             if (materialId == 0) { // 0 means no material
                 Material::Unbind();
+
+                shader->Uniform("specularMappingEnabled", false);
+                shader->Uniform("fontMappingEnabled", false);
+                shader->Uniform("normalMappingEnabled", false);
+                shader->Uniform("parallaxMappingEnabled", false);
+                shader->Uniform("colorMappingEnabled", false);
             }
             else {
+                
                 auto& material = Material::Get(materialId);
                 material->Use();
+
+                // if (materialId == 4) {
+                //     std::cout << "BINDING THING WITH FONTMAP.\n";
+                // }
+
                 shader->Uniform("specularMappingEnabled", material->HasSpecularMap());
                 shader->Uniform("fontMappingEnabled", material->HasFontMap());
                 shader->Uniform("normalMappingEnabled", material->HasNormalMap());
                 shader->Uniform("parallaxMappingEnabled", material->HasDisplacementMap());
                 shader->Uniform("colorMappingEnabled", material->HasColorMap());
-
             }
+
+            
             
             for (auto & [poolId, pool] : map2) {
                 pool->Draw();
@@ -468,13 +480,15 @@ glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
 
 void GraphicsEngine::AddCachedMeshes() {
     if (renderComponentsToAdd.size() > 0) {
-        std::cout << "There are " << renderComponentsToAdd.size() << " to add.\n";
+        // std::cout << "There are " << renderComponentsToAdd.size() << " to add.\n";
     }
     
     for (auto & [shaderId, map1] : renderComponentsToAdd) {
-        for (auto & [textureId, map2] : map1) {
+        for (auto & [materialId, map2] : map1) {
             for (auto & [meshId, components] : map2) {
-                std::cout << "\tInfo: " << meshId << " " << textureId << " " << shaderId << " size " << renderComponentsToAdd.size() << "\n";
+
+                
+                // std::cout << "\tInfo: " << meshId << " " << textureId << " " << shaderId << " size " << renderComponentsToAdd.size() << "\n";
 
                 std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
                 const unsigned int verticesNBytes = m->vertices.size() * sizeof(GLfloat);
@@ -484,7 +498,7 @@ void GraphicsEngine::AddCachedMeshes() {
                 // TODO: O(n) complexity might be an issue
                 int bestPoolScore = INT_MAX;
                 int bestPoolId = -1;
-                for (auto & [poolId, pool] : meshpools[shaderId][textureId]) {
+                for (auto & [poolId, pool] : meshpools[shaderId][materialId]) {
                     int score = pool->ScoreMeshFit(verticesNBytes, indicesNBytes, m->vertexFormat);
                     if (score == -1) {continue;} // this continues the inner loop which is what we want
                     if (score < bestPoolScore) {
@@ -494,15 +508,17 @@ void GraphicsEngine::AddCachedMeshes() {
                 }
 
                 if (bestPoolId == -1) { // if we didn't find a suitable pool just make one
-                    std::cout << "\tmust create pool for new mesh.\n";
+                    // std::cout << "\tmust create pool for new mesh.\n";
                     bestPoolId = lastPoolId++;
-                    meshpools[shaderId][textureId][bestPoolId] = new Meshpool(m->vertexFormat, m->vertices.size() * m->vertexFormat.GetNonInstancedVertexSize()/sizeof(GLfloat));
+                    meshpools[shaderId][materialId][bestPoolId] = new Meshpool(m->vertexFormat, m->vertices.size() * m->vertexFormat.GetNonInstancedVertexSize()/sizeof(GLfloat));
                 }
-                std::cout << "\tmesh pool id is " << bestPoolId << "\n"; 
+                // std::cout << "\tmesh pool id is " << bestPoolId << "\n"; 
 
-                auto objectPositions = meshpools.at(shaderId).at(textureId).at(bestPoolId)->AddObject(meshId, components.size());
-                std::cout << "\tAdded.\n";
+                auto objectPositions = meshpools.at(shaderId).at(materialId).at(bestPoolId)->AddObject(meshId, components.size());
+                // std::cout << "\tAdded.\n";
                 for (unsigned int i = 0; i < components.size(); i++) { // todo: use iterator here???
+                    std::cout << "Attention: rendercomponent with mat " << materialId << " has been placed in pool with id " << bestPoolId << "\n";
+
                     components.at(i)->meshpoolId = bestPoolId;
                     components[i]->meshpoolSlot = objectPositions[i].first;
                     components[i]->meshpoolInstance = objectPositions[i].second;
@@ -529,6 +545,8 @@ void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, u
 void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int material_id, unsigned int shader_id) {
     assert(live);
     assert(mesh_id != 0);
+
+    
 
     color = glm::vec4(1, 1, 1, 1);
     textureZ = -1.0;

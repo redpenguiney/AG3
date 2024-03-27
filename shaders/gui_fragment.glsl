@@ -12,20 +12,6 @@ layout(binding=0) uniform sampler2DArray colorMap; // note: this syntax not ok u
 uniform bool fontMappingEnabled;
 uniform bool colorMappingEnabled;
 
-struct pointLight {
-    vec4 colorAndRange; // w-coord is range, xyz is rgb
-    vec4 rel_pos; // w-coord is padding
-};
-
-layout(std430, binding = 1) buffer pointLightSSBO {
-    uint pointLightCount;
-    float stillPadding;
-    float morePaddingLol;
-    float alsoPadding;
-    pointLight pointLights[];
-};
-
-
 // TODO; to avoid color banding add dithering 
 void main()
 {   
