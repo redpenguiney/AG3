@@ -40,8 +40,9 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
         textObjectParams.materialId = fontMaterial->second->id;
         textObjectParams.shaderId = guiShader->shaderProgramId;
         auto textMesh = Mesh::FromText("Text", fontMaterial->second->fontMapConstAccess.value());
-        std::cout << "Text mesh indices: ";
-        for (auto & v: textMesh->indices) {
+        // auto textMesh = Mesh::Square();
+        std::cout << "Text mesh vertices: ";
+        for (auto & v: textMesh->vertices) {
             std::cout << v << ", ";
         } 
         std::cout << ".\n";
@@ -60,11 +61,11 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
         std::cout << "Object in back has matid" << object->renderComponent->materialId << ".\n"; 
     }
 
-    UpdateGuiTransform();
-    UpdateGuiGraphics();
     if (haveText) {
         UpdateGuiText();
     }
+    UpdateGuiGraphics();
+    UpdateGuiTransform();    
     
     listOfGuis.push_back(this);
 }
@@ -131,6 +132,8 @@ Gui::GuiTextInfo& Gui::GetTextInfo() {
 void Gui::UpdateGuiGraphics() {
     object->renderComponent->SetColor(rgba);
     object->renderComponent->SetTextureZ(materialLayer.value_or(-1.0));
+
+    assert(guiTextInfo->rgba.a == 1.0);
      
      if (guiTextInfo.has_value()) {
         guiTextInfo->object->renderComponent->SetColor(guiTextInfo->rgba);
@@ -141,8 +144,8 @@ void Gui::UpdateGuiGraphics() {
 void Gui::UpdateGuiText() {
     assert(guiTextInfo.has_value());
 
-    auto & textMesh = Mesh::Get(guiTextInfo->object->renderComponent->meshId);
-    auto [vers, inds] = textMesh->StartModifying();
-    TextMeshFromText(guiTextInfo->text, guiTextInfo->fontMaterial->fontMapConstAccess.value(), textMesh->vertexFormat, vers, inds);
-    textMesh->StopModifying(false);
+    // auto & textMesh = Mesh::Get(guiTextInfo->object->renderComponent->meshId);
+    // auto [vers, inds] = textMesh->StartModifying();
+    // TextMeshFromText(guiTextInfo->text, guiTextInfo->fontMaterial->fontMapConstAccess.value(), textMesh->vertexFormat, vers, inds);
+    // textMesh->StopModifying(false);
 }

@@ -22,7 +22,7 @@ out vec3 fragmentTexCoords;
 
 void main()
 {
-    gl_Position = modelMatrix * vec4(vertexPos.xy, 0.0, 1.0);
+    gl_Position =  vec4(vertexPos.xy, 0.0, 1.0);
     fragmentColor = vertexColor;
     fragmentTexCoords = vec3(textureXY, textureZ);
     //lightSpaceCoords = modelToLightSpace * model * vec4(vertexPos, 1.0);
