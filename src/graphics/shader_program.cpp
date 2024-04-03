@@ -53,17 +53,22 @@ Shader::~Shader() {
     glDeleteShader(shaderId);
 }
 
-void ShaderProgram::SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 cameraProjMatrixNoFloatingOrigin) {  
+void ShaderProgram::SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 cameraProjMatrixNoFloatingOrigin, glm::mat4x4 orthrographicMatrix) {  
     for (auto & [shaderId, shaderProgram] : LOADED_PROGRAMS) {
         (void)shaderId;
         if (shaderProgram->useCameraMatrix) { // make sure the shader program actually wants our camera/projection matrix
-            shaderProgram->Uniform("camera", (shaderProgram->useFloatingOrigin) ? cameraProjMatrix : cameraProjMatrixNoFloatingOrigin, false);
+            if (shaderProgram->useOrthro) {
+                shaderProgram->Uniform("camera", orthrographicMatrix, false);
+            }
+            else {
+                shaderProgram->Uniform("camera", (shaderProgram->useFloatingOrigin) ? cameraProjMatrix : cameraProjMatrixNoFloatingOrigin, false);
+            }
         }  
     }
 }
 
-std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool useCameraUniform, const bool useLightClusters) {
-    auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexPath, fragmentPath, additionalIncludedFiles, floatingOrigin, useCameraUniform, useLightClusters));
+std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool useCameraUniform, const bool useLightClusters, const bool orthrographicProjection) {
+    auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexPath, fragmentPath, additionalIncludedFiles, floatingOrigin, useCameraUniform, useLightClusters, orthrographicProjection));
     LOADED_PROGRAMS.emplace(ptr->programId, ptr);
     return ptr;
 }
@@ -130,8 +135,9 @@ void ShaderProgram::Use() {
     }
 }
 
-ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool useCameraUniform, const bool useLightClusters): 
+ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool useCameraUniform, const bool useLightClusters, const bool orthrographic): 
 useCameraMatrix(useCameraUniform),
+useOrthro(orthrographic),
 useFloatingOrigin(floatingOrigin),
 useClusteredLighting(useLightClusters),
 vertex(vertexPath, GL_VERTEX_SHADER, additionalIncludedFiles),

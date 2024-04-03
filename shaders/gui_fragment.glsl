@@ -31,5 +31,4 @@ void main()
     vec4 color = fragmentColor;
     color.a *= font;
     Output = color;
-    //Output = vec4(colorTx.a, fragmentColor.a, font, 1.0);
 };

@@ -226,9 +226,13 @@ glTextureIndex(textureIndex)
                 .height = face->glyph->bitmap.rows,
                 .advance = (unsigned int)((float)(face->glyph->advance.x)/64.0f), // advance is for some reason given in the dumbest imaginable units so must be converted
                 .bearingX = face->glyph->bitmap_left,
-                .bearingY = face->glyph->bitmap_top
+                .bearingY = face->glyph->bitmap_top,
                 // UVs are done later
             };
+
+            if (c == '\'') {
+                std::cout << "Character \' has height " << face->glyph->bitmap.rows << " and bearingY " << face->glyph->bitmap_top << ".\n";
+            }
             
             // when we call load_char for the next one, it will delete this char, so we just gonna memcpy it to a new void*
             void* newBuffer = operator new[](face->glyph->bitmap.width * face->glyph->bitmap.rows);

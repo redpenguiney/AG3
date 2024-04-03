@@ -207,24 +207,40 @@ int main(int numArgs, const char *argPtrs[]) {
     glPointSize(8.0); // debug thing, ignore
     glLineWidth(2.0);
 
+    Gui* ui;
     {
         auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
-        ttfParams.fontHeight = 60;
+        ttfParams.fontHeight = 16;
         ttfParams.format = Texture::Grayscale_8Bit;
-        auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D);
+        auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
 
-        Gui ui(true, std::make_optional(std::make_pair(arialLayer, arialFont)));
-        ui.scaleSize = {0.5, 0.05};
-        ui.guiScaleMode = Gui::ScaleXX;
-        ui.offsetPos = {0.0, 10.0};
-        ui.scalePos = {0.0, -1.0};
-        ui.anchorPoint = {0.0, -1.0};
+        ui = new Gui(true, std::make_optional(std::make_pair(arialLayer, arialFont)));
+        ui->scaleSize = {0.5, 0.15};
+        ui->guiScaleMode = Gui::ScaleXX;
+        ui->offsetPos = {0.0, 0.0};
+        ui->scalePos = {0.5, 0.5};
+        ui->anchorPoint = {0.0, 0.0};
 
-        // ui.GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
-        // ui.UpdateGuiText();
-        ui.UpdateGuiTransform();
+        // ui->GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
+        ui->GetTextInfo().text = "Tga appbHb kok wjijj wa abcdefghijk eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+        ui->GetTextInfo().topMargin = 0;
+        ui->GetTextInfo().bottomMargin = 0;
+        ui->GetTextInfo().lineHeight = 1.0;
+        ui->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+        ui->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+        ui->UpdateGuiText();
+        ui->UpdateGuiTransform();
         
+        // Gui ui2(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
+        // ui2.scaleSize = {0.25, 0.05};
+        // ui2.guiScaleMode = Gui::ScaleXX;
+        // ui2.offsetPos = {0.0, 0.0};
+        // ui2.scalePos = {0.75, 0.0};
+        // ui2.anchorPoint = {0.0, -1.0};   
 
+        // ui2.rgba = {1.0, 0.5, 0.0, 1.0};
+        // ui2.UpdateGuiGraphics();
+        // ui2.UpdateGuiTransform();
     }
 
     printf("Starting main loop.\n");
@@ -235,7 +251,7 @@ int main(int numArgs, const char *argPtrs[]) {
     // TODO: max framerate option in leiu of vsync
     const double SIMULATION_TIMESTEP = 1.0/60.0; // number of seconds simulation is stepped by every frame
 
-    const unsigned int N_PHYSICS_ITERATIONS = 1; // bigger number = higher quality physics simulation, although do we ever want this? what about just increase sim timestep?
+    const unsigned int N_PHYSICS_ITERATIONS = 1; // bigger number = higher quality physics simulation, although do we ever want this? what about just decrease sim timestep?
     double previousTime = Time();
     double physicsLag = 0.0; // how many seconds behind the simulation is. Before rendering, we check if lag is > SIMULATION_TIMESTEP in ms and if so, simulate stuff.
 
@@ -331,10 +347,14 @@ int main(int numArgs, const char *argPtrs[]) {
 
     }
 
+    std::cout << "It go bye bye now.\n";
+
+    delete ui;
+
     timeAtWhichExitProcessStarted = Time();
     printf("Beginning exit process.\n");
 
-    // It's very important that this function runs before GE, SAS, etc. are destroyed, and it's very important that other shared_ptrs to gameobjects outside of the GAMEOBJECTS map are gone (meaning lua needs to be deleted before this code runs)
+    // It's very important that this function runs before GE, SAS, etc. are destroyed, and it's very important that other shared_ptrs to gameobjects outside of the GAMEOBJECTS map are gone (meaning lua needs to be deleted before this code runs) so that all gameobjects are destructed before the things they need to destruct themselves (GE, PE, etc.) are destructed
     // TODO: register at exit instead?
     ComponentRegistry::CleanupComponents(); printf("Cleaned up all gameobjects.\n");
     return EXIT_SUCCESS;

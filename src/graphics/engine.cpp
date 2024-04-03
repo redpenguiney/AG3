@@ -62,7 +62,7 @@ screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, scre
     skyboxMaterial = nullptr;
 
     defaultShaderProgram = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl");
-    defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", {}, false);
+    defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", {}, false, true, false, true);
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
 
@@ -214,7 +214,7 @@ void GraphicsEngine::RenderScene() {
     glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
     glm::mat4x4 cameraMatrixNoFloatingOrigin = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamPos : (glm::vec3) -camera.position);
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
-    ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin);
+    ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin, glm::ortho(0.0f, float(window.width), 0.0f, float(window.height), -1.0f, 1.0f));
 
     // Draw the world onto a framebuffer so we can draw the contents of that framebuffer onto the screen with a postprocessing shader.
     UpdateMainFramebuffer();
@@ -517,8 +517,6 @@ void GraphicsEngine::AddCachedMeshes() {
                 auto objectPositions = meshpools.at(shaderId).at(materialId).at(bestPoolId)->AddObject(meshId, components.size());
                 // std::cout << "\tAdded.\n";
                 for (unsigned int i = 0; i < components.size(); i++) { // todo: use iterator here???
-                    std::cout << "Attention: rendercomponent with mat " << materialId << " has been placed in pool with id " << bestPoolId << "\n";
-
                     components.at(i)->meshpoolId = bestPoolId;
                     components[i]->meshpoolSlot = objectPositions[i].first;
                     components[i]->meshpoolInstance = objectPositions[i].second;

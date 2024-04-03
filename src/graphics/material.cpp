@@ -17,15 +17,16 @@ std::shared_ptr<Material>& Material::Get(unsigned int materialId) {
 }
 
 // TODO: needs to try to append to existing material
-std::pair<float, std::shared_ptr<Material>> Material::New(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type) {
-    auto ptr = std::shared_ptr<Material>(new Material(textureParams, type));
+std::pair<float, std::shared_ptr<Material>> Material::New(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask) {
+    auto ptr = std::shared_ptr<Material>(new Material(textureParams, type, depthMask));
     MATERIALS[ptr->id] = ptr;
     return std::make_pair(0, ptr);
 }
 
-Material::Material(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type): 
+Material::Material(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask): 
 id(LAST_MATERIAL_ID++),
 materialType(type),
+depthMaskEnabled(depthMask),
 colorMap(std::nullopt),
 normalMap(std::nullopt),
 specularMap(std::nullopt),
@@ -85,6 +86,8 @@ void Material::Use() {
     if (normalMap) normalMap->Use();
     if (displacementMap) displacementMap->Use();
     if (fontMap) fontMap->Use();
+
+    glDepthMask(depthMaskEnabled);
 }
 
 // TODO: this feels bad.

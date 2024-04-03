@@ -132,12 +132,15 @@ void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 void Window::ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindowHeight) { // called on window resize
     // Tell OpenGL to draw to the whole screen
     glViewport(0, 0, newWindowWidth, newWindowHeight);
-    
-    // tell Guis to readjust themselves
-    Gui::UpdateGuiForNewWindowResolution();
 
-    width = newWindowWidth;
-    height = newWindowHeight;
+    if (newWindowWidth != 0 && newWindowHeight != 0) {
+        width = newWindowWidth;
+        height = newWindowHeight;
+
+        // tell Guis to readjust themselves
+        Gui::UpdateGuiForNewWindowResolution();
+    }
+    
 }
 
 

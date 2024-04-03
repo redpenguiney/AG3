@@ -16,11 +16,27 @@ class Gui {
     static void UpdateGuiForNewWindowResolution();
 
     struct GuiTextInfo {
+
         glm::vec4 rgba;
-        unsigned int textHeight;
+
+        // TODO: I DONT THINK THIS ACTUALLY DOES ANYTHING YET
+        // unsigned int textHeight;
+
+        // multiplier; 1 is single spaced, 2 is MLA double spaced, etc.
+        GLfloat lineHeight;
+
+        // in pixels
+        GLfloat leftMargin, rightMargin, topMargin, bottomMargin;
+
+        HorizontalAlignMode horizontalAlignment;
+        VerticalAlignMode verticalAlignment;
+
         std::string text;
+
         std::shared_ptr<GameObject> object;
+
         std::shared_ptr<Material> fontMaterial;
+
         float fontMaterialLayer; 
     };
 
@@ -47,7 +63,6 @@ class Gui {
 
     // Offset position in pixels
     glm::vec2 offsetPos;
-
 
     // % of the screen on each axis. (0, 0) is the center of the screen, screen is in interval [-1, 1].
     glm::vec2 scalePos;
@@ -76,6 +91,9 @@ class Gui {
 
     // Call after modifying any graphics related (not text-related and not pos/rot/scl) variables to actually apply those changes to the gui's transform.
     void UpdateGuiGraphics();
+
+    // get size of the gui in pixels
+    glm::vec2 GetPixelSize();
 
     private:
     std::optional<GuiTextInfo> guiTextInfo;

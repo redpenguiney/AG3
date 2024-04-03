@@ -9,6 +9,7 @@
 
 // TODO: we need to get textures to actually tile
 // TODO: BINDLESS TEXTURE SUPPORT would be awesome
+// TODO: enum class instead of enum
 
 struct TextureCreateParams;
 
@@ -26,6 +27,7 @@ struct Glyph {
     GLfloat rightUv; // X texture coordinate for right side of glyph on the rasterized font's texture atlas
     GLfloat topUv; // Y texture coordinate for top side of glyph on the rasterized font's texture atlas
     GLfloat bottomUv; // Y texture coordinate for bottom side of glyph on the rasterized font's texture atlas
+
 };
 
 class Framebuffer;
@@ -114,7 +116,7 @@ class Texture {
     const std::optional<std::unordered_map<char, Glyph>>& glyphs = fontGlyphs; 
 
     // distance between each line, if it is a font texture
-    const unsigned int lineSpacing;
+    const GLfloat lineSpacing;
 
     private:
     int width, height, depth, nChannels; // if the texture is not an array texture or a 3d texture, depth = 1

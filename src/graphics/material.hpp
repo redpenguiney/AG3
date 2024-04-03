@@ -28,6 +28,9 @@ class Material {
     bool HasDisplacementMap();
     bool HasFontMap();
 
+    // if false, things drawn with this material won't write to the depth buffer. Should be true unless you're doing something weird with transparency, like fonts.
+    const bool depthMaskEnabled;
+
     // Returns a ptr to the material with the given id.
     static std::shared_ptr<Material>& Get(const unsigned int id);
 
@@ -45,7 +48,7 @@ class Material {
     // Returns a pair of (textureZ, ptr to the created material).
     // Take care that any shaders you use with this material actually use the requested color/normal/specular.
     // TODO: default normal/specular option?
-    static std::pair<float, std::shared_ptr<Material>> New(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type);
+    static std::pair<float, std::shared_ptr<Material>> New(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask = true);
 
     //~Material(); implicit destructor fine
     
@@ -61,7 +64,7 @@ class Material {
     std::optional<float> TryAppendLayer(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type);
 
     static inline unsigned int LAST_MATERIAL_ID = 1;
-    Material(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type);
+    Material(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask);
 
     std::optional<Texture> colorMap;
     std::optional<Texture> normalMap; 

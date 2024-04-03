@@ -85,8 +85,28 @@ struct MeshVertexFormat {
     bool operator==(const MeshVertexFormat& other) const;
 };
 
+enum class HorizontalAlignMode {
+    Left,
+    Center,
+    Right
+};
+
+enum class VerticalAlignMode{
+    Top,
+    Center,
+    Bottom
+};
+
+struct TextMeshCreateParams {
+    GLfloat leftMargin, rightMargin, topMargin, bottomMargin; // in pixels, 0 is the center of the ui text is being put on. top and bottom margin are only respected for top and bottom vertical alignment respectively.
+    GLfloat lineHeightMultiplier; // 1 is single spaced, 2 is double spaced, etc.
+    HorizontalAlignMode horizontalAlignMode;
+    VerticalAlignMode verticalAlignMode;
+    bool wrapText = true;
+};
+
 // sets vertices/indices to contain the right stuff, not normalized.
-void TextMeshFromText(const std::string &text, const Texture &font, const MeshVertexFormat& vertexFormat, std::vector<GLfloat>& vertices, std::vector<GLuint>& indices);
+void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreateParams& params, const MeshVertexFormat& vertexFormat, std::vector<GLfloat>& vertices, std::vector<GLuint>& indices);
 
 // TODO: MAKE DYNAMIC MESHES UNUSABLE WHILE THEY ARE BEING MODIFIED
 class Mesh {
@@ -141,9 +161,9 @@ class Mesh {
     // normalizeSize should ALWAYS be true unless you're creating a mesh (like the screen quad or skybox mesh) for internal usage
     static std::shared_ptr<Mesh> FromFile(const std::string& path, const MeshVertexFormat& meshVertexFormat = MeshVertexFormat::Default(), float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024, bool normalizeSize = true, const bool isDynamic = false);
     
-    // Creates a mesh for the given text in the given font.
-    // Texture must be a font.
-    static std::shared_ptr<Mesh> FromText(const std::string& text, const Texture& font, const MeshVertexFormat& meshVertexFormat = MeshVertexFormat::DefaultGui(), const bool isDynamic = true);
+    // Creates a mesh for use in text/gui.
+    // Modify the mesh with TextMeshFromText() to actually set text and what not.
+    static std::shared_ptr<Mesh> Text(const MeshVertexFormat& meshVertexFormat = MeshVertexFormat::DefaultGui());
     
     static void Unload(int meshId);
 

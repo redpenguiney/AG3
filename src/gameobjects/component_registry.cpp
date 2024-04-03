@@ -96,7 +96,7 @@ namespace ComponentRegistry {
 
 void GameObject::Destroy() {
     if (!ComponentRegistry::GAMEOBJECTS.contains(this)) {
-        std::cout << "Error: Destroy() was called on the same gameobject twice. Please don't.\n";
+        std::cout << "Error: Destroy() was called on the same gameobject twice, or this gameobject is otherwise invalid. Please don't.\n";
         abort();
     }
     ComponentRegistry::GAMEOBJECTS.erase(this);
@@ -110,7 +110,6 @@ void GameObject::Destroy() {
 GameObject::~GameObject() {
     
     //std::cout << "Destroying.\n";
-   // Destroy(); The only way the destructor could have been called if someone already called this so why bother.
     
 };
 

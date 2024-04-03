@@ -1,5 +1,6 @@
 #include "camera.hpp"
 #include <cassert>
+#include <iostream>
 
 Camera::Camera() {
     fieldOfView = 70;

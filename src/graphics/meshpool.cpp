@@ -1,5 +1,6 @@
 #include "../../external_headers/GLEW/glew.h"
-#include "../../external_headers/GLM/glm.hpp"
+#include "../../external_headers/GLM/vec3.hpp"
+#include "../../external_headers/GLM/gtx/string_cast.hpp"
 #include "../debug/debug.hpp"
 #include <cassert>
 #include <cstdio>
@@ -244,7 +245,7 @@ void Meshpool::Draw() {
     indexBuffer.Bind();
     indirectDrawBuffer.Bind();
     //double start1 = Time();
-   // glMultiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, 0, drawCount, 0); TODO: GET INDIRECT DRAWING TO WORK
+   // glMultiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, 0, drawCount, 0); // TODO: GET INDIRECT DRAWING TO WORK
     for (auto & command: drawCommands) {
         if (command.count == 0) {continue;}
         glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance + (instancedVertexBuffer.GetOffset()/instancedVertexSize));
@@ -333,7 +334,7 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     auto vertices = &mesh->vertices;
     auto indices = &mesh->indices;
 
-    // std::cout << "\tWe gonna copy!\n";
+    // std::cout << "\tWe gonna copy for meshid " << meshId << "!\n";
     // literally just memcpy into the buffers
     // std::cout << "\tOk so dst " << (void*)vertexBuffer.Data() << " slot " << slot << " mVS " << meshVerticesSize << " src " << vertices->data() << " count " << vertices->size() << " size " << nonInstancedVertexSize << "\n";
     memcpy(vertexBuffer.Data() + (slot * meshVerticesSize), vertices->data(), vertices->size() * sizeof(GLfloat) /*vertexSize*/);
