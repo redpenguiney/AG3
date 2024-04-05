@@ -2,7 +2,6 @@
 #include "base_component.hpp"
 #include "../../external_headers/GLM/ext.hpp"
 #include "../../external_headers/GLM/gtx/quaternion.hpp"
-#include <cstdio>
 #include <vector>
 
 // TODO: use doubles in matrices for physics???

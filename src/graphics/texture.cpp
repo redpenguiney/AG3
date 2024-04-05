@@ -63,7 +63,7 @@ Texture::Texture(const TextureCreateParams& params, const GLuint textureIndex, c
 format(params.format),
 type(textureType),
 usage(params.usage),
-lineSpacing(params.fontHeight),
+lineSpacing(params.fontHeight), // TODO: get line spacing from face->height instead
 bindingLocation(TextureBindingLocationFromType(textureType)),
 glTextureIndex(textureIndex)
 {
@@ -192,6 +192,7 @@ glTextureIndex(textureIndex)
         assert(params.format == TextureFormat::Grayscale_8Bit);
 
         // TODO: optimization needed probably
+        // TODO: apparently theres an stb_freetype library that might be better suited for this
 
         // make sure freetype libraryexists and was initialized successfully.
         FT_Library ft;

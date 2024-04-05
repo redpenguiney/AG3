@@ -97,15 +97,8 @@ void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreat
                 }
                 
             }
-            else if (word == " ") {
-                
-                if (std::next(it) != words.end() && *std::next(it) != "\n") {
-                    // std::cout << "Space!\n";
-                    wrappedText.push_back(' ');
-                }
-                else {
-                    // std::cout << "Skipped space.\n";
-                }
+            else if (word == " " && (std::next(it) == words.end() || *std::next(it) == "\n")) {
+                // std::cout << "Skipped space.\n";
             }
             else {
                 GLfloat wordLength = 0;

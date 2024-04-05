@@ -7,6 +7,8 @@
 #include <optional>
 #include <utility>
 
+// TODO: parenting, 3d 
+
 // Basically a wrapper for the transform and render components that handles stuff for you when doing gui.
 // Doesn't need to be super fast.
 // Everything this does, you could just do yourself with rendercomponents + transformcomponents if you want, all this does is call functions on/set values of render/transform components when UpdateGuiTransform()/UpdateGuiGraphics() is called.

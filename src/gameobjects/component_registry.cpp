@@ -46,6 +46,7 @@ namespace ComponentRegistry {
                 [RigidbodyComponentBitIndex] = params.requestedComponents[RigidbodyComponentBitIndex] ? new ComponentPool<RigidbodyComponent>() : nullptr,
                 [PointlightComponentBitIndex] = params.requestedComponents[PointlightComponentBitIndex] ? new ComponentPool<PointLightComponent>() : nullptr,
                 [RenderComponentNoFOBitIndex] = params.requestedComponents[RenderComponentNoFOBitIndex] ? new ComponentPool<GraphicsEngine::RenderComponentNoFO>() : nullptr,
+                [AudioPlayerComponentBitIndex] = params.requestedComponents[AudioPlayerComponentBitIndex] ? new ComponentPool<AudioPlayerComponent>() : nullptr
             }};
             //std::cout << "RENDER COMP POOL PAGE AT " << ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets[params.requestedComponents][RenderComponentBitIndex]))->pools[0] << "\n";
         }
@@ -72,6 +73,9 @@ namespace ComponentRegistry {
                 break;
                 case PointlightComponentBitIndex:
                 components[i] = ((ComponentPool<PointLightComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+                break;
+                case AudioPlayerComponentBitIndex:
+                components[i] = ((ComponentPool<AudioPlayerComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
                 break;
                 default:
                 std::printf("you goofy goober you didn't make a case here for index %u\n", i);
@@ -105,6 +109,7 @@ void GameObject::Destroy() {
     colliderComponent.Clear();
     rigidbodyComponent.Clear();
     pointLightComponent.Clear();
+    audioPlayerComponent.Clear();
 }
 
 GameObject::~GameObject() {
@@ -119,7 +124,8 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     renderComponent((GraphicsEngine::RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] ? (GraphicsEngine::RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] : (GraphicsEngine::RenderComponentNoFO*)components[ComponentRegistry::RenderComponentNoFOBitIndex]),  
     rigidbodyComponent((RigidbodyComponent*)components[ComponentRegistry::RigidbodyComponentBitIndex]),
     colliderComponent((SpatialAccelerationStructure::ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex]),
-    pointLightComponent((PointLightComponent*)components[ComponentRegistry::PointlightComponentBitIndex])
+    pointLightComponent((PointLightComponent*)components[ComponentRegistry::PointlightComponentBitIndex]),
+    audioPlayerComponent((AudioPlayerComponent*)components[ComponentRegistry::AudioPlayerComponentBitIndex])
 {
     assert(transformComponent); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
     transformComponent->Init();
@@ -140,5 +146,6 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     };
     if (rigidbodyComponent) {rigidbodyComponent->Init();}
     if (pointLightComponent) {pointLightComponent->Init();}
+    if (audioPlayerComponent) {audioPlayerComponent->Init(this, params.sound);}
     name = "GameObject";
 };

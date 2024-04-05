@@ -21,6 +21,7 @@
 #include "../physics/spatial_acceleration_structure.hpp"
 #include "pointlight_component.hpp"
 #include "rigidbody_component.hpp"
+#include "audio_player_component.hpp"
 #include <optional>
 
 struct GameobjectCreateParams;
@@ -32,10 +33,11 @@ namespace ComponentRegistry {
         ColliderComponentBitIndex = 2,
         RigidbodyComponentBitIndex = 3,
         PointlightComponentBitIndex = 4,
-        RenderComponentNoFOBitIndex = 5
+        RenderComponentNoFOBitIndex = 5,
+        AudioPlayerComponentBitIndex = 6,
     };
 
-    // How many different component classes there are. 
+    // How many different component classes there are. (can be greater just not less)
     static inline const unsigned int N_COMPONENT_TYPES = 8; 
 
     // Returns a new game object with the given components.
@@ -62,18 +64,24 @@ template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<
 template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<PointLightComponent>() {
     return ComponentRegistry::PointlightComponentBitIndex;
 }
+template<> constexpr inline ComponentRegistry::ComponentBitIndex indexFromClass<AudioPlayerComponent>() {
+    return ComponentRegistry::AudioPlayerComponentBitIndex;
+}
 
 struct GameobjectCreateParams {
     unsigned int physMeshId; // set to 0 (default) if you want automatically generated (requires meshId in that case); ignore if no collider
     unsigned int meshId; // ignore if not rendering
     unsigned int materialId; // defaults to 0 for no material. ignore if not rendering
     unsigned int shaderId; // defaults to 0 for default shader. ignore if not rendering
+    
+    std::optional<std::shared_ptr<Sound>> sound; // for audio player components
 
     GameobjectCreateParams(const std::vector<ComponentRegistry::ComponentBitIndex> componentList):
     physMeshId(0),
     meshId(0),
     materialId(0),
-    shaderId(0)
+    shaderId(0),
+    sound(std::nullopt)
     {
         // bitset defaults to all false so we good
         for (auto & i : componentList) {
@@ -164,6 +172,7 @@ class GameObject {
     ComponentHandle<RigidbodyComponent> rigidbodyComponent;
     ComponentHandle<SpatialAccelerationStructure::ColliderComponent> colliderComponent;
     ComponentHandle<PointLightComponent> pointLightComponent;
+    ComponentHandle<AudioPlayerComponent> audioPlayerComponent;
 
     ~GameObject();
 
@@ -396,6 +405,9 @@ namespace ComponentRegistry {
         }
         if constexpr((std::is_same_v<PointLightComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::PointlightComponentBitIndex);
+        }
+        if constexpr((std::is_same_v<AudioPlayerComponent, Args> || ...)) {
+            indices.push_back(ComponentRegistry::AudioPlayerComponentBitIndex);
         }
         return indices;
     }

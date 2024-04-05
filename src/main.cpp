@@ -22,26 +22,45 @@
 #include "network/client.hpp"
 #include "conglomerates/gui.hpp"
 
+#include "audio/engine.hpp"
+#include "audio/sound.hpp"
+
+#include "debug/log.hpp"
+
 using namespace std;
 
 double timeAtWhichExitProcessStarted = 0;
 
 void AtExit() {
     LogElapsed(timeAtWhichExitProcessStarted, "Exit process elapsed ");
-    printf("Program ran successfully. Exiting.\n");
+    DebugLogInfo("Program ran successfully. Exiting.");
 }
 
 int main(int numArgs, const char *argPtrs[]) {
-    std::printf("Main function reached.\n");
+    DebugLogInfo("Main function reached.");
 
     atexit(AtExit);
 
     // TODO: shouldn't actually matter if these lines exist, and if it does fix that please
     auto & GE = GraphicsEngine::Get();
     auto & PE = PhysicsEngine::Get();
-    // auto & LUA = LuaHandler::Get();
-    // LUA.RunString("print(\"Hello!\")");
+    auto & AE = AudioEngine::Get();
+    auto & LUA = LuaHandler::Get();
+    // LUA.RunString("print(\"Hello from lua!\")");
+    LUA.RunFile("../scripts/test.lua");
     //GE.camera.position.y = 3;
+
+    auto garticSound = Sound::New("../sounds/garticphone.wav");
+    {
+        auto params = GameobjectCreateParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::AudioPlayerComponentBitIndex});
+        params.sound = garticSound;
+        auto soundSounder = ComponentRegistry::NewGameObject(params);
+        soundSounder->audioPlayerComponent->looped = true;
+        soundSounder->audioPlayerComponent->positional = true;
+        soundSounder->audioPlayerComponent->volume = 0.15;
+        soundSounder->audioPlayerComponent->pitch = 0.5;
+        soundSounder->audioPlayerComponent->Play();
+    }
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
     auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
@@ -54,20 +73,20 @@ int main(int numArgs, const char *argPtrs[]) {
         // TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
         }, Texture::Texture2D);
 
-    // {
-    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    //     params.meshId = m->meshId;
-    //     params.materialId = grassMaterial->id;
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = grassMaterial->id;
 
-    //     auto floor = ComponentRegistry::NewGameObject(params);
-    //     floor->transformComponent->SetPos({0, 0, 0});
-    //     floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(5.0)});
-    //     floor->colliderComponent->elasticity = 0.9;
-    //     floor->transformComponent->SetScl({100, 1, 100});
-    //     floor->renderComponent->SetColor({0, 1, 0, 0.5});
-    //     floor->renderComponent->SetTextureZ(grassTextureZ);
-    //     floor->name = "ah yes the floor here is made of floor";
-    // }
+        auto floor = ComponentRegistry::NewGameObject(params);
+        floor->transformComponent->SetPos({0, 0, 0});
+        floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(0.0)});
+        floor->colliderComponent->elasticity = 0.9;
+        floor->transformComponent->SetScl({10, 1, 10});
+        floor->renderComponent->SetColor({0, 1, 0, 0.5});
+        floor->renderComponent->SetTextureZ(grassTextureZ);
+        floor->name = "ah yes the floor here is made of floor";
+    }
 
     // GameobjectCreateParams wallParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
     //     wallParams.meshId = m->meshId;
@@ -133,40 +152,40 @@ int main(int numArgs, const char *argPtrs[]) {
     GE.debugFreecamPos = glm::vec3(0, 15, 0);
     
     
-    // // int nObjs = 0;
-    // // for (int x = 0; x < 1; x++) {
-    // //     for (int y = 0; y < 1; y++) {
-    // //         for (int z = 0; z < 1; z++) {
-    // //             GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
-    // //             params.meshId = m->meshId;
-    // //             params.materialId = brickMaterial->id;
-    // //             auto g = ComponentRegistry::NewGameObject(params);
-    // //             g->transformComponent->SetPos({x * 3,1.5 + y * 3, z * 3});
-    // //             g->colliderComponent->elasticity = 0.8;
-    // //             g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), 0.0, glm::radians(0.0))));
-    // //             // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
-    // //             // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
-    // //             g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
-    // //             g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-    // //             g->renderComponent->SetTextureZ(brickTextureZ);
-    // //             g->name = std::string("Gameobject #") + to_string(nObjs);
-    // //             nObjs++;
-    // //         } 
-    // //     }
-    // // }
+    int nObjs = 0;
+    for (int x = 0; x < 1; x++) {
+        for (int y = 0; y < 1; y++) {
+            for (int z = 0; z < 1; z++) {
+                GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
+                params.meshId = m->meshId;
+                params.materialId = brickMaterial->id;
+                auto g = ComponentRegistry::NewGameObject(params);
+                g->transformComponent->SetPos({x * 3,1.5 + y * 3, z * 3});
+                g->colliderComponent->elasticity = 0.8;
+                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), 0.0, glm::radians(0.0))));
+                // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
+                // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
+                g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
+                g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
+                g->renderComponent->SetTextureZ(brickTextureZ);
+                g->name = std::string("Gameobject #") + to_string(nObjs);
+                nObjs++;
+            } 
+        }
+    }
 
     
-    // // make light
-    // {
-    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    //     params.meshId = m->meshId;
-    //     params.materialId = 0;
-    //     auto coolLight = ComponentRegistry::NewGameObject(params);
-    //     coolLight->renderComponent->SetTextureZ(-1);
-    //     coolLight->transformComponent->SetPos({0, 5, 0});
-    //     coolLight->pointLightComponent->SetRange(200);
-    //     coolLight->pointLightComponent->SetColor({1, 1, 1});
-    // }
+    // make light
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = 0;
+        auto coolLight = ComponentRegistry::NewGameObject(params);
+        coolLight->renderComponent->SetTextureZ(-1);
+        coolLight->transformComponent->SetPos({0, 5, 0});
+        coolLight->pointLightComponent->SetRange(200);
+        coolLight->pointLightComponent->SetColor({1, 1, 1});
+    }
     // {
     //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
     //     params.meshId = m->meshId;
@@ -207,43 +226,43 @@ int main(int numArgs, const char *argPtrs[]) {
     glPointSize(8.0); // debug thing, ignore
     glLineWidth(2.0);
 
-    Gui* ui;
-    {
-        auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
-        ttfParams.fontHeight = 16;
-        ttfParams.format = Texture::Grayscale_8Bit;
-        auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
+    // Gui* ui;
+    // {
+    //     auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
+    //     ttfParams.fontHeight = 16;
+    //     ttfParams.format = Texture::Grayscale_8Bit;
+    //     auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
 
-        ui = new Gui(true, std::make_optional(std::make_pair(arialLayer, arialFont)));
-        ui->scaleSize = {0.5, 0.15};
-        ui->guiScaleMode = Gui::ScaleXX;
-        ui->offsetPos = {0.0, 0.0};
-        ui->scalePos = {0.5, 0.5};
-        ui->anchorPoint = {0.0, 0.0};
+    //     ui = new Gui(true, std::make_optional(std::make_pair(arialLayer, arialFont)));
+    //     ui->scaleSize = {0.5, 0.15};
+    //     ui->guiScaleMode = Gui::ScaleXX;
+    //     ui->offsetPos = {0.0, 0.0};
+    //     ui->scalePos = {0.5, 0.5};
+    //     ui->anchorPoint = {0.0, 0.0};
 
-        // ui->GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
-        ui->GetTextInfo().text = "Tga appbHb kok wjijj wa abcdefghijk eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
-        ui->GetTextInfo().topMargin = 0;
-        ui->GetTextInfo().bottomMargin = 0;
-        ui->GetTextInfo().lineHeight = 1.0;
-        ui->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
-        ui->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
-        ui->UpdateGuiText();
-        ui->UpdateGuiTransform();
+    //     ui->GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
+    //     // ui->GetTextInfo().text = "Tga appbHb kok wjijj wa abcdefghijk eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    //     ui->GetTextInfo().topMargin = 0;
+    //     ui->GetTextInfo().bottomMargin = 0;
+    //     ui->GetTextInfo().lineHeight = 1.0;
+    //     ui->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+    //     ui->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+    //     ui->UpdateGuiText();
+    //     ui->UpdateGuiTransform();
         
-        // Gui ui2(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
-        // ui2.scaleSize = {0.25, 0.05};
-        // ui2.guiScaleMode = Gui::ScaleXX;
-        // ui2.offsetPos = {0.0, 0.0};
-        // ui2.scalePos = {0.75, 0.0};
-        // ui2.anchorPoint = {0.0, -1.0};   
+    //     // Gui ui2(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
+    //     // ui2.scaleSize = {0.25, 0.05};
+    //     // ui2.guiScaleMode = Gui::ScaleXX;
+    //     // ui2.offsetPos = {0.0, 0.0};
+    //     // ui2.scalePos = {0.75, 0.0};
+    //     // ui2.anchorPoint = {0.0, -1.0};   
 
-        // ui2.rgba = {1.0, 0.5, 0.0, 1.0};
-        // ui2.UpdateGuiGraphics();
-        // ui2.UpdateGuiTransform();
-    }
+    //     // ui2.rgba = {1.0, 0.5, 0.0, 1.0};
+    //     // ui2.UpdateGuiGraphics();
+    //     // ui2.UpdateGuiTransform();
+    // }
 
-    printf("Starting main loop.\n");
+    DebugLogInfo("Starting main loop.");
 
     // The mainloop uses a fixed physics timestep, but renders as much as possible
     // TODO: right now rendering extrapolates positions for rigidbodies, we could possibly do interpolation??? would require storing old positions tho so idk
@@ -255,7 +274,7 @@ int main(int numArgs, const char *argPtrs[]) {
     double previousTime = Time();
     double physicsLag = 0.0; // how many seconds behind the simulation is. Before rendering, we check if lag is > SIMULATION_TIMESTEP in ms and if so, simulate stuff.
 
-    bool physicsPaused = false;
+    bool physicsPaused = true;
 
     
 
@@ -323,10 +342,10 @@ int main(int numArgs, const char *argPtrs[]) {
             GE.window.SetMouseLocked(!GE.window.mouseLocked);
         }
         
+        AE.Update();
+
         // printf("Rendering scene.\n");
         GE.RenderScene();
-
-        
 
         UpdateLifetimes();
 
@@ -347,15 +366,14 @@ int main(int numArgs, const char *argPtrs[]) {
 
     }
 
-    std::cout << "It go bye bye now.\n";
-
-    delete ui;
+    // delete ui;
 
     timeAtWhichExitProcessStarted = Time();
-    printf("Beginning exit process.\n");
+    DebugLogInfo("Beginning exit process.");
 
     // It's very important that this function runs before GE, SAS, etc. are destroyed, and it's very important that other shared_ptrs to gameobjects outside of the GAMEOBJECTS map are gone (meaning lua needs to be deleted before this code runs) so that all gameobjects are destructed before the things they need to destruct themselves (GE, PE, etc.) are destructed
     // TODO: register at exit instead?
-    ComponentRegistry::CleanupComponents(); printf("Cleaned up all gameobjects.\n");
+    ComponentRegistry::CleanupComponents(); 
+    DebugLogInfo("Cleaned up all gameobjects.");
     return EXIT_SUCCESS;
 }

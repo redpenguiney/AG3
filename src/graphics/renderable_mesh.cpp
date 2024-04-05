@@ -5,7 +5,6 @@
 RenderableMesh::RenderableMesh(std::shared_ptr<Mesh> mesh) {
     assert(mesh->dynamic == false);
     // assert(mesh->vertexFormat.attributes.color->instanced && mesh->vertexFormat.attributes.textureZ->instanced); // don't make the vertices have this stuff please i don't want to add vertex attributes for that
-    std::cout << "nonInstanced vertex size = " << mesh->nonInstancedVertexSize << ".\n";
     indexCount = mesh->indices.size();
 
     glGenVertexArrays(1, &vao);
