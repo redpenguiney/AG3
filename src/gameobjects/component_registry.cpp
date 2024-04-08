@@ -33,6 +33,8 @@ protected_make_shared( Args&&... args )
 namespace ComponentRegistry { 
 
     std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params) {
+        std::cout << "Recievied request to construct gameobject with params mesh id = " << params.meshId << ".\n"; 
+
         if (params.requestedComponents[RenderComponentBitIndex]) { 
             assert(!params.requestedComponents[RenderComponentNoFOBitIndex]); // Can't have both kinds of render components.
         }
@@ -118,6 +120,10 @@ GameObject::~GameObject() {
     
 };
 
+TransformComponent* GameObject::LuaGetTransform() {
+    return transformComponent.GetPtr();
+}
+
 GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):
     // a way to make this less verbose and more type safe would be nice
     transformComponent((TransformComponent*)components[ComponentRegistry::TransformComponentBitIndex]),
@@ -127,9 +133,13 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     pointLightComponent((PointLightComponent*)components[ComponentRegistry::PointlightComponentBitIndex]),
     audioPlayerComponent((AudioPlayerComponent*)components[ComponentRegistry::AudioPlayerComponentBitIndex])
 {
+    
     assert(transformComponent); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
     transformComponent->Init();
-    if (renderComponent) {renderComponent->Init(params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);}
+    if (renderComponent) {
+        assert(Mesh::Get(params.meshId)); // verify that we were given a valid meshId
+        renderComponent->Init(params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
+    }
     if (colliderComponent) {
         std::shared_ptr<PhysicsMesh> physMesh;
         if (params.physMeshId == 0) {

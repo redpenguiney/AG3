@@ -46,23 +46,23 @@ int main(int numArgs, const char *argPtrs[]) {
     auto & PE = PhysicsEngine::Get();
     auto & AE = AudioEngine::Get();
     auto & LUA = LuaHandler::Get();
-    // LUA.RunString("print(\"Hello from lua!\")");
     LUA.RunFile("../scripts/test.lua");
     //GE.camera.position.y = 3;
 
-    auto garticSound = Sound::New("../sounds/garticphone.wav");
-    {
-        auto params = GameobjectCreateParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::AudioPlayerComponentBitIndex});
-        params.sound = garticSound;
-        auto soundSounder = ComponentRegistry::NewGameObject(params);
-        soundSounder->audioPlayerComponent->looped = true;
-        soundSounder->audioPlayerComponent->positional = true;
-        soundSounder->audioPlayerComponent->volume = 0.15;
-        soundSounder->audioPlayerComponent->pitch = 0.5;
-        soundSounder->audioPlayerComponent->Play();
-    }
+    // auto garticSound = Sound::New("../sounds/garticphone.wav");
+    // {
+    //     auto params = GameobjectCreateParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::AudioPlayerComponentBitIndex});
+    //     params.sound = garticSound;
+    //     auto soundSounder = ComponentRegistry::NewGameObject(params);
+    //     soundSounder->audioPlayerComponent->looped = true;
+    //     soundSounder->audioPlayerComponent->positional = true;
+    //     soundSounder->audioPlayerComponent->volume = 0.15;
+    //     soundSounder->audioPlayerComponent->pitch = 0.5;
+    //     soundSounder->audioPlayerComponent->Play();
+    // }
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
+    
     auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
 
     //std::printf("ITS %u %u\n", m->meshId, grassMaterial->id);
@@ -73,20 +73,20 @@ int main(int numArgs, const char *argPtrs[]) {
         // TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
         }, Texture::Texture2D);
 
-    {
-        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-        params.meshId = m->meshId;
-        params.materialId = grassMaterial->id;
+    // {
+    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+    //     params.meshId = m->meshId;
+    //     params.materialId = grassMaterial->id;
 
-        auto floor = ComponentRegistry::NewGameObject(params);
-        floor->transformComponent->SetPos({0, 0, 0});
-        floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(0.0)});
-        floor->colliderComponent->elasticity = 0.9;
-        floor->transformComponent->SetScl({10, 1, 10});
-        floor->renderComponent->SetColor({0, 1, 0, 0.5});
-        floor->renderComponent->SetTextureZ(grassTextureZ);
-        floor->name = "ah yes the floor here is made of floor";
-    }
+    //     auto floor = ComponentRegistry::NewGameObject(params);
+    //     floor->transformComponent->SetPos({0, 0, 0});
+    //     floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(0.0)});
+    //     floor->colliderComponent->elasticity = 0.9;
+    //     floor->transformComponent->SetScl({10, 1, 10});
+    //     floor->renderComponent->SetColor({0, 1, 0, 0.5});
+    //     floor->renderComponent->SetTextureZ(grassTextureZ);
+    //     floor->name = "ah yes the floor here is made of floor";
+    // }
 
     // GameobjectCreateParams wallParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
     //     wallParams.meshId = m->meshId;
@@ -152,40 +152,40 @@ int main(int numArgs, const char *argPtrs[]) {
     GE.debugFreecamPos = glm::vec3(0, 15, 0);
     
     
-    int nObjs = 0;
-    for (int x = 0; x < 1; x++) {
-        for (int y = 0; y < 1; y++) {
-            for (int z = 0; z < 1; z++) {
-                GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
-                params.meshId = m->meshId;
-                params.materialId = brickMaterial->id;
-                auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({x * 3,1.5 + y * 3, z * 3});
-                g->colliderComponent->elasticity = 0.8;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), 0.0, glm::radians(0.0))));
-                // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
-                // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
-                g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
-                g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-                g->renderComponent->SetTextureZ(brickTextureZ);
-                g->name = std::string("Gameobject #") + to_string(nObjs);
-                nObjs++;
-            } 
-        }
-    }
+    // int nObjs = 0;
+    // for (int x = 0; x < 1; x++) {
+    //     for (int y = 0; y < 1; y++) {
+    //         for (int z = 0; z < 1; z++) {
+    //             GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
+    //             params.meshId = m->meshId;
+    //             params.materialId = brickMaterial->id;
+    //             auto g = ComponentRegistry::NewGameObject(params);
+    //             g->transformComponent->SetPos({x * 3,1.5 + y * 3, z * 3});
+    //             g->colliderComponent->elasticity = 0.8;
+    //             g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), 0.0, glm::radians(0.0))));
+    //             // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
+    //             // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
+    //             g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
+    //             g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
+    //             g->renderComponent->SetTextureZ(brickTextureZ);
+    //             g->name = std::string("Gameobject #") + to_string(nObjs);
+    //             nObjs++;
+    //         } 
+    //     }
+    // }
 
     
-    // make light
-    {
-        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-        params.meshId = m->meshId;
-        params.materialId = 0;
-        auto coolLight = ComponentRegistry::NewGameObject(params);
-        coolLight->renderComponent->SetTextureZ(-1);
-        coolLight->transformComponent->SetPos({0, 5, 0});
-        coolLight->pointLightComponent->SetRange(200);
-        coolLight->pointLightComponent->SetColor({1, 1, 1});
-    }
+    // // make light
+    // {
+    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+    //     params.meshId = m->meshId;
+    //     params.materialId = 0;
+    //     auto coolLight = ComponentRegistry::NewGameObject(params);
+    //     coolLight->renderComponent->SetTextureZ(-1);
+    //     coolLight->transformComponent->SetPos({0, 5, 0});
+    //     coolLight->pointLightComponent->SetRange(200);
+    //     coolLight->pointLightComponent->SetColor({1, 1, 1});
+    // }
     // {
     //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
     //     params.meshId = m->meshId;
@@ -293,6 +293,9 @@ int main(int numArgs, const char *argPtrs[]) {
         // printf("Processing events.\n");
         GE.window.Update(); // event processing
 
+        LUA.OnFrameBegin();
+        LUA.PrePhysicsCallbacks();
+
         if (physicsLag >= SIMULATION_TIMESTEP) { // make sure stepping simulation won't put it ahead of realtime
             // printf("Updating SAS.\n");
 
@@ -311,6 +314,8 @@ int main(int numArgs, const char *argPtrs[]) {
             
             physicsLag -= SIMULATION_TIMESTEP;
         }
+
+        LUA.PostPhysicsCallbacks();
         
 
         // printf("Doing a little raycasting.\n");
@@ -332,6 +337,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
         }
 
+
         if (PRESS_BEGAN_KEYS[GLFW_KEY_SPACE]) {
             physicsPaused = !physicsPaused;
         }
@@ -345,6 +351,7 @@ int main(int numArgs, const char *argPtrs[]) {
         AE.Update();
 
         // printf("Rendering scene.\n");
+        LUA.PreRenderCallbacks();
         GE.RenderScene();
 
         UpdateLifetimes();
@@ -354,6 +361,7 @@ int main(int numArgs, const char *argPtrs[]) {
         // could/should we do something to try and do physics or something while GPU Working? or are we already? 
         // printf("Flipping buffers.\n");
         GE.window.FlipBuffers();
+        LUA.PostRenderCallbacks();
 
         // if (g->transformComponent->position.y <= 1.0) {
         //     while (true) {}

@@ -174,6 +174,8 @@ class GameObject {
     ComponentHandle<PointLightComponent> pointLightComponent;
     ComponentHandle<AudioPlayerComponent> audioPlayerComponent;
 
+    TransformComponent* LuaGetTransform();
+
     ~GameObject();
 
     // Destroys all components of the gameobject, sets all component handles to nullptr.

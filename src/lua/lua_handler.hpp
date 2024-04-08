@@ -12,7 +12,15 @@ class LuaHandler {
     void RunString(const std::string source);
     void RunFile(const std::string scriptPath);
 
+    void PreRenderCallbacks();
+    void PrePhysicsCallbacks();
+    void PostRenderCallbacks();
+    void PostPhysicsCallbacks();
+
+    void OnFrameBegin();
+
     private:
+
     LuaHandler();
     ~LuaHandler();
 };

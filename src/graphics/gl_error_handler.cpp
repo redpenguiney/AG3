@@ -1,7 +1,7 @@
 #pragma once
 #include "../../external_headers/GLEW/glew.h"
 #include <cstdio>
-#include <cstdlib>
+#include "../debug/log.hpp"
 
 // OpenGL automatically calls this for warnings/errors if GL_DEBUG_OUTPUT is enabled
 // See window.cpp for GL_DEBUG_OUTPUT is setup
@@ -17,16 +17,10 @@ void GLAPIENTRY MessageCallback( GLenum source,
       return; // Shaders do their own checking for compile errors, and checking here won't give us the nature of the compile error, just the fact that one occurred.
   }
   if (type == GL_DEBUG_TYPE_ERROR && (severity == GL_DEBUG_SEVERITY_MEDIUM || severity == GL_DEBUG_SEVERITY_HIGH)) {
-      fprintf( stderr, "\nFATAL OPENGL ERROR: %s type = 0x%x, severity = 0x%x, message = %s\n",
-           ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-            type, severity, message );
-      std::printf("\nAborting.\n");
+      DebugLogError("Fatal OpenGL error: type ", type, ", severity ", severity, ", message \"", message, "\".\nAborting.");
       abort();
   }
   else if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
-      fprintf( stderr, "\n Minor OpenGL debug thingy: %s type = 0x%x, severity = 0x%x, message = %s \n",
-           ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
-            type, severity, message );
-
+      DebugLogInfo("Minor OpenGL error: type ", type, ", severity ", severity, ", message \"", message, "\".");
   }
 }

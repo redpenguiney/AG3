@@ -144,6 +144,7 @@ class Mesh {
     // returns a square for gui meshes
     static std::shared_ptr<Mesh> Square();
 
+    static bool IsValidForGameObject(unsigned int meshId);
     static std::shared_ptr<Mesh>& Get(unsigned int meshId);
 
     // verts must be organized in accordance with the given meshVertexFormat.

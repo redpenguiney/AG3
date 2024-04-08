@@ -5,6 +5,7 @@
 #define DEBUG_ASSERT_ENABLED
 #include <iostream>
 #include "../utility/utility.hpp"
+#include "log.hpp"
 inline void DebugLogLineReached(const char *file, int line){
     #ifdef LOG_LINE_REACHED
     std::cout << "\n Line " << line << " in file " << file << " was reached successfully.";
@@ -24,5 +25,5 @@ inline void DebugLogLineReached(const char *file, int line){
 
 // prints time between start and now
 inline void LogElapsed(double start, std::string message = "\nElapsed ") {
-    std::cout << message << (Time() - start) << "ms.\n";
+    DebugLogInfo(message, (Time() - start), "ms.");
 }

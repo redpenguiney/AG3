@@ -16,6 +16,7 @@
 #include "../utility/let_me_hash_a_tuple.cpp"
 #include "engine.hpp"
 #include <list>
+#include "../debug/log.hpp"
 
 // TODO: this file takes too long to compile
 
@@ -23,9 +24,13 @@
 template<typename T>
 typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::vector<T>& vector) {
     if (vector.size() <= index) {
-        vector.resize(index + 1, 6.66);
+        vector.resize(index + 1, 6.66); // 6.66 is chosen so that uninitialized values are easy to see when debugging
     }
     return vector.at(index);
+}
+
+bool Mesh::IsValidForGameObject(unsigned int meshId) {
+    return LOADED_MESHES.count(meshId) && LOADED_MESHES.at(meshId)->instancedVertexSize > 0;
 }
 
 std::shared_ptr<Mesh> Mesh::Square() {
@@ -701,6 +706,8 @@ wasCreatedFromText(fromText),
 meshVertices(verts),
 meshIndices(indies)
 {
+    DebugLogInfo("Created mesh with id ", meshId);
+
     if (normalizePositions) {
         NormalizePositions();
     }

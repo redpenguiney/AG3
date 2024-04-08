@@ -11,7 +11,7 @@
 // TODO: use GL_SHORT for indices in meshpools where there are fewer than 65536 indices (wait is that even possible)
 
 Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat, unsigned int numVertices): 
-    instancedVertexSize(meshVertexFormat.GetInstancedVertexSize()),
+    instancedVertexSize((assert(meshVertexFormat.GetInstancedVertexSize() > 0), meshVertexFormat.GetInstancedVertexSize())), // this is use of comma operator to do sanity check because we had bad values in ehre somehow
     nonInstancedVertexSize(meshVertexFormat.GetNonInstancedVertexSize()), 
     meshVerticesSize(((((int)std::pow(2, 1 + (int)std::log2(numVertices * nonInstancedVertexSize))) + nonInstancedVertexSize - 1)/nonInstancedVertexSize) * nonInstancedVertexSize), // makes meshVerticesSize a power of two rounded to the nearest multiple of vertexSize (must be multiple of vertexSize for OpenGL base vertex argument to work)
     meshIndicesSize(meshVerticesSize),
