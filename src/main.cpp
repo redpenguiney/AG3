@@ -161,8 +161,8 @@ int main(int numArgs, const char *argPtrs[]) {
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({x * 3,1.5 + y * 3, z * 3});
-                g->colliderComponent->elasticity = 0.8;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(15.0), 0.0, glm::radians(15.0))));
+                g->colliderComponent->elasticity = 0.0;
+                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), 0.0, glm::radians(15.0))));
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
@@ -182,7 +182,7 @@ int main(int numArgs, const char *argPtrs[]) {
         params.materialId = 0;
         auto coolLight = ComponentRegistry::NewGameObject(params);
         coolLight->renderComponent->SetTextureZ(-1);
-        coolLight->transformComponent->SetPos({0, 5, 0});
+        coolLight->transformComponent->SetPos({8, 5, 0});
         coolLight->pointLightComponent->SetRange(200);
         coolLight->pointLightComponent->SetColor({1, 1, 1});
     }
