@@ -33,8 +33,6 @@ protected_make_shared( Args&&... args )
 namespace ComponentRegistry { 
 
     std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params) {
-        std::cout << "Recievied request to construct gameobject with params mesh id = " << params.meshId << ".\n"; 
-
         if (params.requestedComponents[RenderComponentBitIndex]) { 
             assert(!params.requestedComponents[RenderComponentNoFOBitIndex]); // Can't have both kinds of render components.
         }

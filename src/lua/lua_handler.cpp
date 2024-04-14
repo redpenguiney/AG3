@@ -135,8 +135,7 @@ void LuaHandler::RunFile(const std::string scriptPath) {
     // TODO: would this technically allow the equivalent of SQL injection? probably
     // RunString("coroutine.resume(coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end))");
     // RunString("result, message = pcall(function() require(\"__IGNORE\", \"" + scriptPath + "\") end) if not result then error(message) end");
-    // RunString("coroutine.wrap(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)()");
-    LUA_STATE->safe_script_file(scriptPath, sol::script_pass_on_error);
+    RunString("coroutine.wrap(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)()");
 }
 
 LuaHandler::~LuaHandler() {
