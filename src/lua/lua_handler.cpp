@@ -30,17 +30,17 @@ LuaHandler& LuaHandler::Get() {
     return lh;
 }
 
-// int ExceptionHandler(lua_State* L, sol::optional<const std::exception&> maybe_exception, sol::string_view description) {
-//     DebugLogError("Lua exception handler was called.");
-//     if (maybe_exception) {
-//         DebugLogError("While attempting to run lua file:\n", maybe_exception->what());
-//     }
-//     else {
-//         DebugLogError("While attempting to run lua file (specific exception unavailable):\n", description.data());
-//     }   
+int ExceptionHandler(lua_State* L, sol::optional<const std::exception&> maybe_exception, sol::string_view description) {
+    DebugLogError("Lua exception handler was called.");
+    if (maybe_exception) {
+        DebugLogError("While attempting to run lua file:\n", maybe_exception->what());
+    }
+    else {
+        DebugLogError("While attempting to run lua file (specific exception unavailable):\n", description.data());
+    }   
 
-//     return sol::stack::push(L, description);
-// }
+    return sol::stack::push(L, description);
+}
 
 void Wait(float time, sol::thread thread) {
     std::cout << "Wait for " << time << ".\n";
@@ -65,7 +65,7 @@ LuaHandler::LuaHandler() {
     LUA_STATE->open_libraries(sol::lib::base, sol::lib::os, sol::lib::math, sol::lib::table, sol::lib::coroutine, sol::lib::string);
 
     // say stuff when lua does sad face error
-    // LUA_STATE->set_exception_handler(ExceptionHandler);
+    LUA_STATE->set_exception_handler(ExceptionHandler);
     
     // expose our stuff to lua
     // engines
@@ -74,7 +74,7 @@ LuaHandler::LuaHandler() {
     // waiting: very important
     LUA_STATE->set("__C_WAIT", &Wait);
     LUA_STATE->require_script("Wait", 
-    "function Wait(time) print(\"ok\") __C_WAIT(time, coroutine.running()) print(\"yielding\") coroutine.yield() print(\"okkk\?\?!\?\?!\") end return Wait");
+    "function Wait(time) print(\"kok\") print(\"yoielding\") coroutine.yieeseseield() print(\"okkk\?\?!\?\?!\") end return Wait");
 
     // requiring other files
     // notably, because sol is weird, require() returns nothing and instead sets the given variable name to whatever require() returns.
@@ -135,7 +135,8 @@ void LuaHandler::RunFile(const std::string scriptPath) {
     // TODO: would this technically allow the equivalent of SQL injection? probably
     // RunString("coroutine.resume(coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end))");
     // RunString("result, message = pcall(function() require(\"__IGNORE\", \"" + scriptPath + "\") end) if not result then error(message) end");
-    RunString("coroutine.wrap(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)()");
+    // RunString("coroutine.wrap(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)()");
+    LUA_STATE->safe_script_file(scriptPath, sol::script_pass_on_error);
 }
 
 LuaHandler::~LuaHandler() {

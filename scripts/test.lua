@@ -21,7 +21,7 @@ print(vec3.z)
 transform.position = vec3 * vec3
 transform.position = vec3 * 1.0
 transform.rotation = Quat.new(Vec3f.new(0.0, 3.14/8.0, 0.0))
-
+-- coroutine.yield()
 print("here we go");
 for i = 0, 10 do
     print(i)
