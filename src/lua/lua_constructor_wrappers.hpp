@@ -37,9 +37,9 @@ std::string toString(A a) {
 template<typename vecT, typename scalarT> 
 void SetupVecUsertype(sol::state* state, const char* typeName) {
     auto vecUsertype = state->new_usertype<vecT>(typeName, sol::constructors<vecT(), vecT(double), vecT(float), vecT(double, double, double), vecT(float, float, float), vecT(glm::dvec3), vecT(glm::vec3)>());
-    vecUsertype["x"] = &vecT::x;
-    vecUsertype["y"] = &vecT::y;
-    vecUsertype["z"] = &vecT::z;
+    vecUsertype["x"] = sol::readonly(&vecT::x);
+    vecUsertype["y"] = sol::readonly(&vecT::y);
+    vecUsertype["z"] = sol::readonly(&vecT::z);
     vecUsertype["__mul"] = sol::overload(multiply<vecT, scalarT>, multiply<vecT, vecT>);
     vecUsertype["__div"] = sol::overload(division<vecT, scalarT>, division<vecT, vecT>);
     vecUsertype["__add"] = sol::overload(add<vecT, scalarT>, add<vecT, vecT>);

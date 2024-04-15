@@ -34,9 +34,10 @@ void RigidbodyComponent::SetMass(float newMass) {
 // whyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
 glm::mat3x3 RigidbodyComponent::GetInverseGlobalMomentOfInertia(const TransformComponent &transform) {
     auto rotMat = glm::toMat3(transform.Rotation());
-    std::cout << "Local inverse moment is " << glm::to_string(glm::inverse(localMomentOfInertia)) << ", global inverse moment is " << glm::to_string(rotMat * glm::inverse(localMomentOfInertia))  << "\n";
+    // std::cout << "Local inverse moment is " << glm::to_string(glm::inverse(localMomentOfInertia)) << ", global inverse moment is " << glm::to_string(rotMat * glm::inverse(localMomentOfInertia))  << "\n";
     // return glm::inverse(rotMat * localMomentOfInertia); CONFIRMED WRONG
     return rotMat * glm::inverse(localMomentOfInertia);
+    // return glm::inverse(localMomentOfInertia);
     // return rotMat * localMomentOfInertia;
     // return glm::inverse(rotMat * localMomentOfInertia * glm::transpose(rotMat));
     // return glm::transpose(glm::inverse(rotMat)) * glm::inverse(localMomentOfInertia) * glm::inverse(rotMat);

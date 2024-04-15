@@ -221,7 +221,6 @@ void GraphicsEngine::RenderScene() {
     mainFramebuffer->Bind();
 
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
-
     
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling

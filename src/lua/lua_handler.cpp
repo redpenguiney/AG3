@@ -1,8 +1,12 @@
-#define DEBUG_LUA
-#ifdef DEBUG_LUA
-#define SOL_ALL_SAFETIES_ON 1
-#endif
+// #define DEBUG_LUA
+// #ifdef DEBUG_LUA
+// #define SOL_ALL_SAFETIES_ON 1
+// #define 
+// #endif
 
+#ifndef SOL_ALL_SAFETIES_ON 
+#error bruh
+#endif
 
 #include "lua_handler.hpp"
 // #define SOL_USE_LUA_HPP
@@ -65,7 +69,8 @@ LuaHandler::LuaHandler() {
     LUA_STATE->open_libraries(sol::lib::base, sol::lib::os, sol::lib::math, sol::lib::table, sol::lib::coroutine, sol::lib::string);
 
     // say stuff when lua does sad face error
-    LUA_STATE->set_exception_handler(ExceptionHandler);
+    LUA_STATE->set_exception_handler(&ExceptionHandler);
+    // sol::protected_function::set_default_handler(ExceptionHandler);
     
     // expose our stuff to lua
     // engines
@@ -74,7 +79,7 @@ LuaHandler::LuaHandler() {
     // waiting: very important
     LUA_STATE->set("__C_WAIT", &Wait);
     LUA_STATE->require_script("Wait", 
-    "function Wait(time) print(\"kok\") print(\"yoielding\") coroutine.yieeseseield() print(\"okkk\?\?!\?\?!\") end return Wait");
+    "function Wait(time) print(\"kok\") print(\"yoielding\") coroutine.yield() print(\"okkk\?\?!\?\?!\") end return Wait");
 
     // requiring other files
     // notably, because sol is weird, require() returns nothing and instead sets the given variable name to whatever require() returns.
@@ -124,9 +129,7 @@ LuaHandler::LuaHandler() {
 void LuaHandler::RunString(const std::string source) {
     
     auto result = LUA_STATE->safe_script(source, &sol::script_pass_on_error);
-    if (!result.valid()) {
-        DebugLogError("Lua script error:\n\t", sol::error(result).what());
-    }
+    
 }
 
 void LuaHandler::RunFile(const std::string scriptPath) {
@@ -135,7 +138,10 @@ void LuaHandler::RunFile(const std::string scriptPath) {
     // TODO: would this technically allow the equivalent of SQL injection? probably
     // RunString("coroutine.resume(coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end))");
     // RunString("result, message = pcall(function() require(\"__IGNORE\", \"" + scriptPath + "\") end) if not result then error(message) end");
-    RunString("coroutine.wrap(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)()");
+
+    // RunString("coroutine.wrap(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)()");
+
+    auto result = LUA_STATE->safe_script_file(scriptPath, &sol::script_pass_on_error);
 }
 
 LuaHandler::~LuaHandler() {

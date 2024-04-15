@@ -2,16 +2,16 @@ print("hola from lua!!!")
 print("Graphics engine is "..tostring(GE))
 
 print("Enum is " .. tostring(Enum));
-print("Enum.ComponentBitIndex.RenderNoFO = " .. tostring(Enum.ComponentBitIndex.RenderNoFloatingOrigin))
+print("Enum.ComponentBitIndex.RenderNoFO = " .. tostring(Enum.ComponentBitIndex.Rigidbody))
 
 
 -- todo: you can put garbage values in here without consequences
-local params = GameObjectCreateParams.new({Enum.ComponentBitIndex.Transform, Enum.ComponentBitIndex.Render})
-params.meshId = 2
+local params = GameObjectCreateParams.new({Enum.ComponentBitIndex.Transform, Enum.ComponentBitIndex.Render, Enum.ComponentBitIndex.Rigidbody})
+params.meshId = 3
 
 local go = GameObject.new(params)
 
-local vec3 = Vec3d.new(0, 0, 3)
+local vec3 = Vec3d.new(0, 2, 3)
 print(go.transform);
 local transform = go.transform;
 print(transform);
@@ -24,7 +24,7 @@ transform.rotation = Quat.new(Vec3f.new(0.0, 3.14/8.0, 0.0))
 -- coroutine.yield()
 print("here we go");
 for i = 0, 10 do
-    print(i)
+    priint(i)
     Wait(1)
 end
 

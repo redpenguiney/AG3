@@ -6,4 +6,4 @@ sources = ['../external_headers/lua/onelua.cpp', 'audio/sound.cpp', 'audio/engin
 
 incdir = include_directories('../external_headers/sol2/include', '../external_headers/lua', '../subprojects/freetype/include')
 
-srclib = static_library('srclib', sources, include_directories: incdir, dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep], cpp_args: ['-O3', '-Wshadow', '-Wall'])
+srclib = static_library('srclib', sources, include_directories: incdir, dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep], cpp_args: ['-O3', '-Wshadow', '-Wall', '-DSOL_ALL_SAFETIES_ON=1', '-DSOL_EXCEPTIONS_SAFE_PROPAGATION=1'])
