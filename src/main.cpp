@@ -164,7 +164,7 @@ int main(int numArgs, const char *argPtrs[]) {
                 auto g = ComponentRegistry::NewGameObject(params);
                 g->transformComponent->SetPos({0 + x * 3,1.5 + y * 3, 0 + z * 3});
                 g->colliderComponent->elasticity = 0.0;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), glm::radians(0.0), glm::radians(15.0))));
+                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), glm::radians(0.0), glm::radians(45.0))));
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
@@ -307,10 +307,11 @@ int main(int numArgs, const char *argPtrs[]) {
                 // physicsPaused = true;
                 // printf("Stepping PE.\n");
                 for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
-                    PE.Step(SIMULATION_TIMESTEP/2.0);
-                    PE.Step(SIMULATION_TIMESTEP/4.0);
-                    PE.Step(SIMULATION_TIMESTEP/8.0);
-                    PE.Step(SIMULATION_TIMESTEP/8.0);
+                    // PE.Step(SIMULATION_TIMESTEP/2.0);
+                    // PE.Step(SIMULATION_TIMESTEP/4.0);
+                    // PE.Step(SIMULATION_TIMESTEP/8.0);
+                    // PE.Step(SIMULATION_TIMESTEP/8.0);
+                    PE.Step(SIMULATION_TIMESTEP);
                 }
             }
             

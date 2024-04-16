@@ -55,7 +55,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                 // std::cout << "One point is " << glm::to_string(p.first) << ".\n";
                 averageContactPoint += p.first;
                 averagePenetration += p.second;
-                DebugPlacePointOnPosition({p.first + p.second}, {0.5, 0.0, 0.0, 1.0});
+                DebugPlacePointOnPosition({p.first + glm::dvec3(normal) * p.second}, {0.5, 0.0, 0.0, 1.0});
             }
             averageContactPoint /= collisionTestResult->contactPoints.size();
             averagePenetration /= collisionTestResult->contactPoints.size();
@@ -109,7 +109,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                 float friction = otherColliderPtr->friction * collider.friction;
                 glm::vec3 relVelocityAlongPlane = glm::vec3(glm::vec3(rigidbody.velocity) + glm::cross(d1, rigidbody.angularVelocity)) - (normal * relVelocityAlongNormal);
                 if (glm::length(relVelocityAlongPlane) != 0) {
-                        glm::vec3 tangent = glm::normalize(relVelocityAlongPlane);
+                    glm::vec3 tangent = glm::normalize(relVelocityAlongPlane);
 
                     glm::vec3 txd1 = glm::cross(tangent, d1);
                     // glm::vec3 txd2 = glm::cross(tangent, d2);
@@ -118,17 +118,19 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                     float frictionImpulse = friction * reducedMass;
 
                     // check if friction is strong enough to reverse the object's speed and if so, set speed to 0 instead so we don't start going backwards due to friction
-                    if (glm::length(relVelocityAlongPlane) < glm::length(tangent * frictionImpulse * rigidbody.InverseMass())) {
+                    if (glm::length(relVelocityAlongPlane) < frictionImpulse * rigidbody.InverseMass()) {
                         DebugLogInfo("Friction totally stopped the object.");
-                        rigidbody.accumulatedForce = -relVelocityAlongPlane / rigidbody.InverseMass();
+                        rigidbody.accumulatedForce = -relVelocityAlongPlane * rigidbody.InverseMass();
                     }
                     else {
                         DebugLogInfo("Applying force with tangent ", glm::to_string(tangent), " and friction impulse ", frictionImpulse, ". Rel. tangent velocity was ", glm::to_string(relVelocityAlongPlane));
                         rigidbody.accumulatedForce -= tangent * frictionImpulse;
                     }
+
+                    // rigidbody.accumulatedTorque += glm::cross(-d1, tangent) * frictionImpulse;
                 }
                 
-            //     rigidbody.accumulatedTorque += glm::cross(-d1, normal) * frictionImpulse;
+                
             // }
             // std::cout << "Accumulated force is now " << glm::to_string(rigidbody.accumulatedForce) << ". Impulse is " << impulse << ". Reduced mass is " << reducedMass << ".\n";
             }
