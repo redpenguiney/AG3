@@ -98,8 +98,6 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                 float elasticity = otherColliderPtr->elasticity * collider.elasticity;
                 float elasticityTerm = -(1 + elasticity);
                 
-                
-                
                 float impulse = elasticityTerm * relVelocityAlongNormal * reducedMass;
 
                 rigidbody.accumulatedForce += normal * impulse;
@@ -107,17 +105,17 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             }
 
             // friction impulse
-            // {
-            //     float friction = otherColliderPtr->friction * collider.friction;
-            //     glm::vec3 relVelocityAlongPlane = glm::vec3(rigidbody.velocity) - (normal * relVelocityAlongNormal);
-            //     glm::vec3 tangent = glm::normalize(tangent);
+            {
+                float friction = otherColliderPtr->friction * collider.friction;
+                glm::vec3 relVelocityAlongPlane = glm::vec3(rigidbody.velocity) - (normal * relVelocityAlongNormal);
+                glm::vec3 tangent = glm::normalize(tangent);
 
-            //     glm::vec3 txd1 = glm::cross(tangent, d1);
-            //     // glm::vec3 txd2 = glm::cross(tangent, d2);
+                glm::vec3 txd1 = glm::cross(tangent, d1);
+                // glm::vec3 txd2 = glm::cross(tangent, d2);
     
-            //     float reducedMass = 1.0 / (rigidbody.InverseMass() + glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1));
-            //     float frictionImpulse = friction * normalForce;
-            // }
+                float reducedMass = 1.0 / (rigidbody.InverseMass() + glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1));
+                float frictionImpulse = friction * normalForce;
+            }
             // std::cout << "Accumulated force is now " << glm::to_string(rigidbody.accumulatedForce) << ". Impulse is " << impulse << ". Reduced mass is " << reducedMass << ".\n";
             // }
 
