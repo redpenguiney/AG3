@@ -307,11 +307,11 @@ int main(int numArgs, const char *argPtrs[]) {
                 // physicsPaused = true;
                 // printf("Stepping PE.\n");
                 for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
-                    // PE.Step(SIMULATION_TIMESTEP/2.0);
-                    // PE.Step(SIMULATION_TIMESTEP/4.0);
-                    // PE.Step(SIMULATION_TIMESTEP/8.0);
-                    // PE.Step(SIMULATION_TIMESTEP/8.0);
-                    PE.Step(SIMULATION_TIMESTEP);
+                    PE.Step(SIMULATION_TIMESTEP/2.0);
+                    PE.Step(SIMULATION_TIMESTEP/4.0);
+                    PE.Step(SIMULATION_TIMESTEP/8.0);
+                    PE.Step(SIMULATION_TIMESTEP/8.0);
+                    // PE.Step(SIMULATION_TIMESTEP);
                 }
             }
             

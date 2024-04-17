@@ -55,7 +55,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                 // std::cout << "One point is " << glm::to_string(p.first) << ".\n";
                 averageContactPoint += p.first;
                 averagePenetration += p.second;
-                DebugPlacePointOnPosition({p.first + glm::dvec3(normal) * p.second}, {0.5, 0.0, 0.0, 1.0});
+                DebugPlacePointOnPosition({p.first}, {0.5, 0.0, 0.0, 1.0});
             }
             averageContactPoint /= collisionTestResult->contactPoints.size();
             averagePenetration /= collisionTestResult->contactPoints.size();
@@ -67,6 +67,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
             // and this https://physics.stackexchange.com/questions/743172/simulating-rigid-body-collisions-in-3d
             // also this source looks useful https://gafferongames.com/post/collision_response_and_coulomb_friction/
             // and this https://gamedev.stackexchange.com/questions/131219/rigid-body-physics-resolution-causing-never-ending-bouncing-and-jittering?rq=1
+            // http://www.chrishecker.com/Rigid_Body_Dynamics
 
             // seperate colliding objects
             const double LINEAR_SLOP = 0.0;
@@ -89,7 +90,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
 
                 float reducedMass = 1.0 / (rigidbody.InverseMass() + glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1));
                 if (reducedMass > rigidbody.InverseMass()) {
-                    DebugLogError("Calculated reduced mass of ", reducedMass, " (1/", 1.0/reducedMass , "). n = ", glm::to_string(normal), " d1 = ", glm::to_string(d1), " nxd1 = ", glm::to_string(nxd1), " mmoi*nxd1 = ", glm::to_string(rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1), " dotting that yields ", glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1));
+                    DebugLogError("Calculated reduced contact mass of ", reducedMass, " (1/", 1.0/reducedMass , "). n = ", glm::to_string(normal), " d1 = ", glm::to_string(d1), " nxd1 = ", glm::to_string(nxd1), " mmoi*nxd1 = ", glm::to_string(rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1), " dotting that yields ", glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1));
                 }
 
                 // assert(reducedMass <= rigidbody.InverseMass());
@@ -115,6 +116,10 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                     // glm::vec3 txd2 = glm::cross(tangent, d2);
         
                     float reducedMass = 1.0 / (rigidbody.InverseMass() + glm::dot(txd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1));
+                    if (reducedMass > rigidbody.InverseMass()) {
+                        DebugLogError("Calculated reduced friction mass of ", reducedMass, " (1/", 1.0/reducedMass , "). t = ", glm::to_string(tangent), " d1 = ", glm::to_string(d1), " txd1 = ", glm::to_string(txd1), " mmoi*txd1 = ", glm::to_string(rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1), " dotting that yields ", glm::dot(txd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1));
+                    }
+                    
                     float frictionImpulse = friction * reducedMass;
 
                     // check if friction is strong enough to reverse the object's speed and if so, set speed to 0 instead so we don't start going backwards due to friction
@@ -125,9 +130,10 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                     else {
                         DebugLogInfo("Applying force with tangent ", glm::to_string(tangent), " and friction impulse ", frictionImpulse, ". Rel. tangent velocity was ", glm::to_string(relVelocityAlongPlane));
                         rigidbody.accumulatedForce -= tangent * frictionImpulse;
+                        rigidbody.accumulatedTorque -= glm::cross(-d1, tangent) * frictionImpulse;
                     }
 
-                    // rigidbody.accumulatedTorque += glm::cross(-d1, tangent) * frictionImpulse;
+                    
                 }
                 
                 
