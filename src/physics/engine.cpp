@@ -126,12 +126,12 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                     // check if friction is strong enough to reverse the object's speed and if so, set speed to 0 instead so we don't start going backwards due to friction
                     if (glm::length(relVelocityAlongPlane) < frictionImpulse * rigidbody.InverseMass()) {
                         DebugLogInfo("Friction totally stopped the object.");
-                        rigidbody.accumulatedForce += -relVelocityAlongPlane * rigidbody.InverseMass();
+                        rigidbody.accumulatedForce += -relVelocityAlongPlane / rigidbody.InverseMass();
                     }
                     else {
                         DebugLogInfo("Applying force with tangent ", glm::to_string(tangent), " and friction impulse ", frictionImpulse, ". Rel. tangent velocity was ", glm::to_string(relVelocityAlongPlane));
                         rigidbody.accumulatedForce -= tangent * frictionImpulse;
-                        rigidbody.accumulatedTorque -= glm::cross(-d1, tangent) * frictionImpulse;
+                        rigidbody.accumulatedTorque += glm::cross(-d1, tangent) * frictionImpulse;
                     }
 
                     
