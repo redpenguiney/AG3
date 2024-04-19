@@ -131,7 +131,7 @@ void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent&
                     else {
                         DebugLogInfo("Applying force with tangent ", glm::to_string(tangent), " and friction impulse ", frictionImpulse, ". Rel. tangent velocity was ", glm::to_string(relVelocityAlongPlane), " torque axis ", glm::to_string(glm::cross(d1, tangent)));
                         rigidbody.accumulatedForce -= tangent * frictionImpulse;
-                        rigidbody.accumulatedTorque += glm::cross(-d1, tangent) * frictionImpulse;
+                        rigidbody.accumulatedTorque -= glm::cross(normal, tangent) * frictionImpulse;
                     }
 
                     

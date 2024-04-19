@@ -15,7 +15,14 @@ void Gui::UpdateGuiForNewWindowResolution() {
     }
 }
 
-Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::shared_ptr<ShaderProgram> guiShader) {
+std::vector<Gui*> listOfBillboardGuis;
+void Gui::UpdateBillboardGuis() {
+    for (auto & ui: listOfBillboardGuis) {
+        ui->UpdateGuiTransform();
+    }
+}
+
+Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<BillboardGuiInfo> billboardGuiInfo, std::shared_ptr<ShaderProgram> guiShader) {
     GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentNoFOBitIndex});
 
     objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : 0);
@@ -64,7 +71,11 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
             .fontMaterialLayer = fontMaterial->first
         });
 
+        
+
     }
+
+    billboardInfo = billboardGuiInfo;
 
     if (haveText) {
         UpdateGuiText();
@@ -73,6 +84,9 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     UpdateGuiTransform();    
     
     listOfGuis.push_back(this);
+    if (billboardInfo.has_value()) {
+        listOfBillboardGuis.push_back(this);
+    }
 }
 
 Gui::~Gui() {
@@ -87,6 +101,21 @@ Gui::~Gui() {
         }
         i += 1;
     }
+
+    if (billboardInfo) {
+        i = 0;
+        for (auto & ui: listOfBillboardGuis) {
+            if (ui == this) {
+                // fast erase
+                listOfBillboardGuis.at(i) = listOfBillboardGuis.back();
+                listOfBillboardGuis.pop_back();
+                
+                break;
+            }
+            i += 1;
+        }
+    }
+    
 
     object->Destroy();
     if (guiTextInfo.has_value()) {
@@ -109,6 +138,10 @@ void Gui::UpdateGuiTransform() {
     // std::cout << "Center pos is " << glm::to_string(centerPosition) << ".\n";
     // std::cout << "Size is " << glm::to_string(size) << ".\n";
 
+    if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
+        
+    }
+
     object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel));
     if (guiTextInfo.has_value()) {
         guiTextInfo->object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel + 0.01));
@@ -120,6 +153,11 @@ void Gui::UpdateGuiTransform() {
 Gui::GuiTextInfo& Gui::GetTextInfo() {
     assert(guiTextInfo.has_value());
     return *guiTextInfo;
+}
+
+Gui::BillboardGuiInfo& Gui::GetBillboardInfo() {
+    assert(billboardInfo.has_value());
+    return *billboardInfo;
 }
 
 void Gui::UpdateGuiGraphics() {

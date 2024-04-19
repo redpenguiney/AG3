@@ -56,14 +56,12 @@ Shader::~Shader() {
 void ShaderProgram::SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 cameraProjMatrixNoFloatingOrigin, glm::mat4x4 orthrographicMatrix) {  
     for (auto & [shaderId, shaderProgram] : LOADED_PROGRAMS) {
         (void)shaderId;
-        if (shaderProgram->useCameraMatrix) { // make sure the shader program actually wants our camera/projection matrix
-            if (shaderProgram->useOrthro) {
-                shaderProgram->Uniform("camera", orthrographicMatrix, false);
-            }
-            else {
-                shaderProgram->Uniform("camera", (shaderProgram->useFloatingOrigin) ? cameraProjMatrix : cameraProjMatrixNoFloatingOrigin, false);
-            }
-        }  
+        if (shaderProgram->useOrthro) { // make sure the shader program actually wants our camera/projection matrix
+            shaderProgram->Uniform("orthro", orthrographicMatrix, false);
+        }
+        if (shaderProgram->usePerspective) {
+            shaderProgram->Uniform("perspective", (shaderProgram->useFloatingOrigin) ? cameraProjMatrix : cameraProjMatrixNoFloatingOrigin, false);
+        }
     }
 }
 
@@ -135,8 +133,8 @@ void ShaderProgram::Use() {
     }
 }
 
-ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool useCameraUniform, const bool useLightClusters, const bool orthrographic): 
-useCameraMatrix(useCameraUniform),
+ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool perspectiveProjection, const bool useLightClusters, const bool orthrographic): 
+usePerspective(perspectiveProjection),
 useOrthro(orthrographic),
 useFloatingOrigin(floatingOrigin),
 useClusteredLighting(useLightClusters),

@@ -16,8 +16,8 @@ layout(location=6) in mat4 modelMatrix;
 layout(location=10) in mat3 normalMatrix;
 // locations 10-12 are part of normalMatrix
 
-// camera has projection matrix and camera matrix
-uniform mat4 camera;
+// perspective has projection matrix and camera matrix
+uniform mat4 perspective;
 uniform mat4 modelToLightSpace;
 
 uniform bool normalMappingEnabled;
@@ -34,7 +34,7 @@ void main()
 {
     gl_Position = modelMatrix * vec4(vertexPos, 1.0);
     cameraToFragmentPosition = gl_Position.xyz;
-    gl_Position = camera * gl_Position;
+    gl_Position = perspective * gl_Position;
     fragmentColor = vertexColor;
     fragmentNormal = normalize(normalMatrix * vertexNormal);
     fragmentTexCoords = vec3(textureXY, textureZ);

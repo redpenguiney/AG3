@@ -7,7 +7,7 @@ layout(location=2) in mat4 modelMatrix;
 
 out vec4 fragmentColor;
 
-uniform mat4 camera;
+uniform mat4 perspective;
 
 void main()
 {

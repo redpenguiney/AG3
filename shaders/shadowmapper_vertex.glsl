@@ -2,7 +2,7 @@
 layout (location = 0) in vec3 aPos;
 layout (location = 4) in mat4 model;
 
-uniform mat4 projection;
+uniform mat4 perspective;
 uniform mat4 camera;
 //layout (std430, binding=3) buffer model_array
 //{

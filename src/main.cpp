@@ -355,6 +355,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
         // printf("Rendering scene.\n");
         LUA.PreRenderCallbacks();
+        Gui::UpdateBillboardGuis();
         GE.RenderScene();
 
         UpdateLifetimes();

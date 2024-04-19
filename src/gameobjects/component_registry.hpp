@@ -41,6 +41,7 @@ namespace ComponentRegistry {
     static inline const unsigned int N_COMPONENT_TYPES = 8; 
 
     // Returns a new game object with the given components.
+    // TODO: return weak_ptr instead?
     std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params);
 }
 

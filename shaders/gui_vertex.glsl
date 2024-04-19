@@ -15,14 +15,15 @@ layout(location=10) in mat3 normalMatrix;
 // locations 10-12 are part of normalMatrix
 
 // (orthrographic projection)
-uniform mat4 camera;
+uniform mat4 orthro;
+uniform mat4 perspective;
 
 out vec4 fragmentColor;
 out vec3 fragmentTexCoords;
 
 void main()
 {
-    gl_Position = camera * modelMatrix * vec4(vertexPos.xy, 0.0, 1.0);
+    gl_Position = orthro * modelMatrix * vec4(vertexPos.xy, 0.0, 1.0);
     fragmentColor = vertexColor;
     fragmentTexCoords = vec3(textureXY, textureZ);
 }          

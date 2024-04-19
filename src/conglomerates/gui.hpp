@@ -16,6 +16,7 @@ class Gui {
     public:
     // window.cpp calls this when the window resolution changes to handle stuff.
     static void UpdateGuiForNewWindowResolution();
+    static void UpdateBillboardGuis();
 
     struct GuiTextInfo {
 
@@ -42,9 +43,26 @@ class Gui {
         float fontMaterialLayer; 
     };
 
+    struct BillboardGuiInfo {
+        // Makes the gui get smaller when it's far away if true.
+        bool scaleWithDistance;
+
+        // TODO: REQUIRES 3D VERTEX POS FOR GUI
+        // if nullopt, gui will always face camera and obey rotation.
+        std::optional<glm::quat> rotation;
+
+        // Billboard position will be projected onto followObject's position every frame if this is true. (so the gui will always appear on top of followObject).
+        // If the gui's position isn't the origin, it is treated as an offset.
+        std::weak_ptr<GameObject> followObject;
+
+        // TODO: ACTUALLY KINDA COMPLICATED WHEN YOU HAVE MULTIPLE GUIS INVOLVED
+        // if true, other gameobjects in front of this gui will cover it up
+        // bool occludable;
+    };
+    
     std::shared_ptr<GameObject> object;
 
-    Gui(bool haveText = false, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial = std::nullopt, std::shared_ptr<ShaderProgram> guiShader = GraphicsEngine::Get().defaultGuiShaderProgram);
+    Gui(bool haveText = false, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial = std::nullopt, std::optional<BillboardGuiInfo> billboardInfo = std::nullopt, std::shared_ptr<ShaderProgram> guiShader = GraphicsEngine::Get().defaultGuiShaderProgram);
 
     ~Gui();
 
@@ -53,6 +71,7 @@ class Gui {
     Gui(const Gui&&) = delete;
 
     GuiTextInfo& GetTextInfo();
+    BillboardGuiInfo& GetBillboardInfo();
 
     // around center of the gui
     float rotation;
@@ -98,6 +117,10 @@ class Gui {
     glm::vec2 GetPixelSize();
 
     private:
+    // If not nullopt, the gui has text
     std::optional<GuiTextInfo> guiTextInfo;
+
+    // If not nullopt, will make the gui basically 3d
+    std::optional<BillboardGuiInfo> billboardInfo;
     
 };
