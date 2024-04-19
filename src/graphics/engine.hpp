@@ -52,6 +52,9 @@ class GraphicsEngine {
     // Default shader program used when creating instances of the Gui class. Should be able to freely change this with no issues (TODO verify)
     std::shared_ptr<ShaderProgram> defaultGuiShaderProgram;
 
+    // Same as defaultGuiShaderProgram, but for billboard uis. Should be able to freely change this with no issues (TODO verify)
+    std::shared_ptr<ShaderProgram> defaultBillboardGuiShaderProgram;
+
     // freecam is just a thing for debugging
     bool debugFreecamEnabled = false;
     glm::dvec3 debugFreecamPos = {0, 0, 0};

@@ -47,7 +47,6 @@ class Gui {
         // Makes the gui get smaller when it's far away if true.
         bool scaleWithDistance;
 
-        // TODO: REQUIRES 3D VERTEX POS FOR GUI
         // if nullopt, gui will always face camera and obey rotation.
         std::optional<glm::quat> rotation;
 

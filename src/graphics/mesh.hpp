@@ -33,7 +33,7 @@ struct VertexAttribute {
 
 // Describes which vertex attributes a mesh has, which of them are instanced, and in what order they are in.
 struct MeshVertexFormat {
-    const static inline unsigned int N_ATTRIBUTES = 8;
+    const static inline unsigned int N_ATTRIBUTES = 9;
     
     union { // this cursed union lets us either refer to vertex attributes by name, or iterate through them using the member vertexAttributes[]
         struct { // BRUH I HAD TO NAME THE STRUCT MID C++ IS MID
@@ -45,6 +45,7 @@ struct MeshVertexFormat {
             std::optional<VertexAttribute> normalMatrix; // (will be all zeroes if not instanced, you must give it a value yourself which is TODO impossible) normal matrix is like model matrix, but is 3x3 and for normals since it would be bad if a normal got scaled/translated  
             std::optional<VertexAttribute> normal; // lighting needs to know normals
             std::optional<VertexAttribute> tangent; // atangent vector is perpendicular to the normal and lies along the face of a triangle, used for normal/parallax mapping
+            std::optional<VertexAttribute> arbitrary1;
         } attributes;
 
         std::optional<VertexAttribute> vertexAttributes[N_ATTRIBUTES];
@@ -60,6 +61,7 @@ struct MeshVertexFormat {
     /// model matrix takes up slots 7, 8, and 9 too because only one vec4 per attribute
     static inline const GLuint NORMAL_MATRIX_ATTRIBUTE_NAME = 10; 
     // normal matrix takes up slots 11 and 12 too for the same reason
+    static inline const GLuint ARBITRARY_ATTRIBUTE_1_NAME = 13;
 
     // returns combined size in bytes of each non-instanced vertex attribute for one vertex
     unsigned int GetNonInstancedVertexSize() const;

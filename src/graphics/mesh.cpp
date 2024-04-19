@@ -1,4 +1,5 @@
 #include "mesh.hpp"
+#include "graphics/mesh.hpp"
 #include "texture.hpp"
 #include <cassert>
 #include <cstdio>
@@ -155,13 +156,11 @@ void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreat
     std::vector<GLfloat> lineStartOffsets;
     {
         GLfloat lineWidth = 0;
-        unsigned int i = 0;
         for (auto it = text.begin(); it != text.end(); it++) {
 
             const char& c = *it;
 
             if (c == '\n') {
-                i++;
 
                 switch (params.horizontalAlignMode) {
                 case HorizontalAlignMode::Center:
@@ -285,7 +284,7 @@ void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreat
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = (characterX);
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = (characterY + height);
         if (vertexFormat.attributes.position->nFloats > 2) {
-            assert(false);
+            // assert(false);
             vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
         }
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.leftUv;
@@ -295,7 +294,7 @@ void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreat
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = (characterX);
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = (characterY);
         if (vertexFormat.attributes.position->nFloats > 2) {
-            assert(false);
+            // assert(false);
             vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
         }
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.leftUv;
@@ -306,7 +305,7 @@ void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreat
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = (characterX + width);
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = (characterY);
         if (vertexFormat.attributes.position->nFloats > 2) {
-            assert(false);
+            // assert(false);
             vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
         }
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.rightUv;
@@ -316,7 +315,7 @@ void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreat
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat), vertices) = (characterX + width);
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 1, vertices) = (characterY + height);
         if (vertexFormat.attributes.position->nFloats > 2) {
-            assert(false);
+            // assert(false);
             vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.position->offset/sizeof(GLfloat) + 2, vertices) = 0;
         }
         vectorAtExpanding(vertexIndex * vertexSize + vertexFormat.attributes.textureUV->offset/sizeof(GLfloat), vertices) = glyph.rightUv;
@@ -369,14 +368,15 @@ MeshVertexFormat MeshVertexFormat::Default(bool instancedColor, bool instancedTe
 MeshVertexFormat MeshVertexFormat::DefaultGui() {
     return MeshVertexFormat {
         .attributes = {
-            .position = VertexAttribute {.offset = 0, .nFloats = 2, .instanced = false},
-            .textureUV = VertexAttribute {.offset = sizeof(glm::vec2), .nFloats = 2, .instanced = false},   
+            .position = VertexAttribute {.offset = 0, .nFloats = 3, .instanced = false},
+            .textureUV = VertexAttribute {.offset = sizeof(glm::vec3), .nFloats = 2, .instanced = false},   
             .textureZ = VertexAttribute {.offset = (sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + sizeof(glm::vec4)), .nFloats = 1, .instanced = true},
             .color = VertexAttribute {.offset = sizeof(glm::mat4x4) + sizeof(glm::mat3x3), .nFloats = 4, .instanced = true}, 
             .modelMatrix = VertexAttribute {.offset = 0, .nFloats = 16, .instanced = true},
             .normalMatrix = VertexAttribute {.offset = sizeof(glm::mat4x4), .nFloats = 9, .instanced = true},
             .normal = std::nullopt,   
             .tangent = std::nullopt,
+            .arbitrary1 = std::nullopt //VertexAttribute {.offset = sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + sizeof(glm::vec4) + sizeof(float), .nFloats = 1, .instanced = true}
         }
     };
 }

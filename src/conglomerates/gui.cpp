@@ -138,13 +138,15 @@ void Gui::UpdateGuiTransform() {
     // std::cout << "Center pos is " << glm::to_string(centerPosition) << ".\n";
     // std::cout << "Size is " << glm::to_string(size) << ".\n";
 
+    glm::vec3 realPosition(centerPosition.x, centerPosition.y, zLevel);
+
     if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
-        
+        realPosition = billboardInfo->followObject.lock()->transformComponent->Position();
     }
 
     object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel));
     if (guiTextInfo.has_value()) {
-        guiTextInfo->object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel + 0.01));
+        guiTextInfo->object->transformComponent->SetPos(realPosition + glm::vec3(0, 0, zLevel + 0.01));
         guiTextInfo->object->transformComponent->SetRot(glm::angleAxis(rotation + (float)glm::radians(180.0), glm::vec3 {0.0f, 0.0f, 1.0f}) * glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
         // guiTextInfo->object->transformComponent->SetScl(glm::vec3(size.x, size.y, 1));
     }
