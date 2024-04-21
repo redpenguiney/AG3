@@ -11,6 +11,7 @@
 #include <atomic>
 #include <string>
 #include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
+#include "../debug/log.hpp"
 
 class Texture;
 
@@ -50,6 +51,33 @@ struct MeshVertexFormat {
 
         std::optional<VertexAttribute> vertexAttributes[N_ATTRIBUTES];
     };
+
+    // TODO: might be slow
+    static unsigned int AttributeIndexFromAttributeName(unsigned int name) {
+        switch (name) {
+        case POS_ATTRIBUTE_NAME:
+        return 0;
+        case TEXTURE_UV_ATTRIBUTE_NAME:
+        return 1;
+        case TEXTURE_Z_ATTRIBUTE_NAME:
+        return 2;
+        case COLOR_ATTRIBUTE_NAME:
+        return 3;
+        case MODEL_MATRIX_ATTRIBUTE_NAME:
+        return 4;
+        case NORMAL_MATRIX_ATTRIBUTE_NAME:
+        return 5;
+        case NORMAL_ATTRIBUTE_NAME:
+        return 6;
+        case TANGENT_ATTRIBUTE_NAME:
+        return 7;
+        case ARBITRARY_ATTRIBUTE_1_NAME:
+        return 8;
+        default:
+        DebugLogError("YOU FOOL, ", name, " IS NO VALID ATTRIBUTE NAME");
+        abort();
+        }
+    }
     
     static inline const GLuint POS_ATTRIBUTE_NAME = 0;
     static inline const GLuint COLOR_ATTRIBUTE_NAME = 1;

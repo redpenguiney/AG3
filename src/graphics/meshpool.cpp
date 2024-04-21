@@ -175,38 +175,64 @@ void Meshpool::RemoveObject(const unsigned int slot, const unsigned int instance
     //LogElapsed(t);
 }
 
-void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4& rgba) {
+// void Meshpool::SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4& rgba) {
+//     // make sure this instance slot hasn't been deleted
+//     if (slotInstanceSpaces.count(slot)) {
+//         assert(!slotInstanceSpaces[slot].count(instanceId));
+//     }
+
+//     assert(vertexFormat.attributes.color->instanced == true);
+//     glm::vec4* colorLocation = (glm::vec4*)(vertexFormat.attributes.color->offset + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
+
+//     // make sure we don't segfault 
+//     assert((char*)colorLocation + sizeof(glm::vec4) <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
+//     assert((char*)colorLocation >= instancedVertexBuffer.Data());
+    
+//     memcpy(colorLocation, &rgba, vertexFormat.attributes.color->nFloats * sizeof(GLfloat));
+//     // *colorLocation = rgba;
+// }
+
+// void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ) {
+//     // make sure this instance slot hasn't been deleted
+//     if (slotInstanceSpaces.count(slot)) {
+//         assert(!slotInstanceSpaces[slot].count(instanceId));
+//     }
+    
+//     assert(vertexFormat.attributes.textureZ->instanced == true);
+//     float* textureZLocation = (float*)(vertexFormat.attributes.textureZ->offset + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
+
+//     // make sure we don't segfault 
+//     assert((char*)textureZLocation + sizeof(float) <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
+//     assert((char*)textureZLocation >= instancedVertexBuffer.Data());
+    
+//     *textureZLocation = textureZ;
+// }
+
+template <unsigned int nFloats>
+void Meshpool::SetInstancedVertexAttribute(const unsigned int slot, const unsigned int instanceId, const unsigned int attributeName, const glm::vec<nFloats, float>& value) {
     // make sure this instance slot hasn't been deleted
     if (slotInstanceSpaces.count(slot)) {
         assert(!slotInstanceSpaces[slot].count(instanceId));
     }
-
-    assert(vertexFormat.attributes.color->instanced == true);
-    glm::vec4* colorLocation = (glm::vec4*)(vertexFormat.attributes.color->offset + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
+    
+    DebugLogInfo("Name = ", attributeName);
+    assert(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)].has_value());
+    assert(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)]->instanced == true);
+    assert(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)]->nFloats == nFloats);
+    float* attributeLocation = (float*)(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)]->offset + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
 
     // make sure we don't segfault 
-    assert((char*)colorLocation + sizeof(glm::vec4) <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
-    assert((char*)colorLocation >= instancedVertexBuffer.Data());
+    assert((char*)attributeLocation + vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)]->nFloats * sizeof(GLfloat) <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
+    assert((char*)attributeLocation >= instancedVertexBuffer.Data());
     
-    memcpy(colorLocation, &rgba, vertexFormat.attributes.color->nFloats * sizeof(GLfloat));
-    // *colorLocation = rgba;
+    memcpy(attributeLocation, &value, sizeof(value));
 }
 
-void Meshpool::SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ) {
-    // make sure this instance slot hasn't been deleted
-    if (slotInstanceSpaces.count(slot)) {
-        assert(!slotInstanceSpaces[slot].count(instanceId));
-    }
-    
-    assert(vertexFormat.attributes.textureZ->instanced == true);
-    float* textureZLocation = (float*)(vertexFormat.attributes.textureZ->offset + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));
-
-    // make sure we don't segfault 
-    assert((char*)textureZLocation + sizeof(float) <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
-    assert((char*)textureZLocation >= instancedVertexBuffer.Data());
-    
-    *textureZLocation = textureZ;
-}
+// explicit template instantiations
+template void Meshpool::SetInstancedVertexAttribute<4>(const unsigned int slot, const unsigned int instanceId, const unsigned int attributeName, const glm::vec4&);
+template void Meshpool::SetInstancedVertexAttribute<3>(const unsigned int slot, const unsigned int instanceId, const unsigned int attributeName, const glm::vec3&);
+template void Meshpool::SetInstancedVertexAttribute<2>(const unsigned int slot, const unsigned int instanceId, const unsigned int attributeName, const glm::vec2&);
+template void Meshpool::SetInstancedVertexAttribute<1>(const unsigned int slot, const unsigned int instanceId, const unsigned int attributeName, const glm::vec1&);
 
 void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4& matrix) {
     // make sure this instance slot hasn't been deleted

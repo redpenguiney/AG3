@@ -1,10 +1,6 @@
 #include "engine.hpp"
 #include <algorithm>
 #include <cassert>
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include <pstl/glue_execution_defs.h>
 #include <tuple>
 #include <execution>
 #include <vector>
@@ -339,10 +335,10 @@ void GraphicsEngine::UpdateLights() {
     *(GLuint*)(pointLightDataBuffer.Data()) = lightCount;
 }
 
-void GraphicsEngine::SetColor(const RenderComponent& comp, const glm::vec4& rgba) {
-    assert(comp.meshpoolId != -1);
-    meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetColor(comp.meshpoolSlot, comp.meshpoolInstance, rgba);
-}
+// void GraphicsEngine::SetColor(const RenderComponent& comp, const glm::vec4& rgba) {
+//     assert(comp.meshpoolId != -1);
+//     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetColor(comp.meshpoolSlot, comp.meshpoolInstance, rgba);
+// }
 
 void GraphicsEngine::SetModelMatrix(const RenderComponent& comp, const glm::mat4x4& model) {
     assert(comp.meshpoolId != -1);
@@ -354,10 +350,15 @@ void GraphicsEngine::SetNormalMatrix(const RenderComponent& comp, const glm::mat
     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetNormalMatrix(comp.meshpoolSlot, comp.meshpoolInstance, normal);
 }
 
-void GraphicsEngine::SetTextureZ(const RenderComponent& comp, const float textureZ) {
-    assert(comp.meshpoolId != -1);
-    meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetTextureZ(comp.meshpoolSlot, comp.meshpoolInstance, textureZ);
-}
+// void GraphicsEngine::SetTextureZ(const RenderComponent& comp, const float textureZ) {
+//     assert(comp.meshpoolId != -1);
+//     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetTextureZ(comp.meshpoolSlot, comp.meshpoolInstance, textureZ);
+// }
+
+// void GraphicsEngine::SetArbitrary1(const RenderComponent& comp, const float arb) {
+//     assert(comp.meshpoolId != -1);
+//     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetArbitrary1(comp.meshpoolSlot, comp.meshpoolInstance, arb);
+// }
 
 void GraphicsEngine::UpdateMeshpools() {
     for (auto & [shaderId, map1] : meshpools) {
@@ -398,6 +399,95 @@ void GraphicsEngine::UpdateRenderComponents() {
     //         if (renderComp.colorChanged > 0) {renderComp.colorChanged -= 1; SetColor(renderComp.meshLocation, renderComp.color);}
     //     }
     // }
+
+    std::vector<unsigned int> indicesToRemove;
+
+    // SETTING INSTANCED VERTEX ATTRIBUTES (color, textureZ, etc.)
+        // but not model/normal matrix; those are done in the next part bc every render component gets a different one, every frame.
+        // TODO: unless floating origin in which case this system would be good for them
+    // vec4
+    unsigned int i = 0;
+    for (auto & [renderComp, attributeName, value, timesRemainingToUpdate]: Instanced4ComponentVertexAttributeUpdates) {
+        if (renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
+            meshpools[renderComp->shaderProgramId][renderComp->materialId][renderComp->meshpoolId]->SetInstancedVertexAttribute<4>(renderComp->meshpoolSlot, renderComp->meshpoolInstance, attributeName, value);
+            timesRemainingToUpdate -= 1;
+            if (timesRemainingToUpdate == 0) {
+                indicesToRemove.push_back(i);
+            }
+            i++;
+        }
+        
+        
+    }
+
+    for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
+        Instanced4ComponentVertexAttributeUpdates[*it] = Instanced4ComponentVertexAttributeUpdates.back();
+        Instanced4ComponentVertexAttributeUpdates.pop_back();
+    }  
+    indicesToRemove.clear();
+
+    // vec3
+    i = 0;
+    for (auto & [renderComp, attributeName, value, timesRemainingToUpdate]: Instanced3ComponentVertexAttributeUpdates) {
+        if (renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
+            meshpools[renderComp->shaderProgramId][renderComp->materialId][renderComp->meshpoolId]->SetInstancedVertexAttribute<3>(renderComp->meshpoolSlot, renderComp->meshpoolInstance, attributeName, value);
+            timesRemainingToUpdate -= 1;
+            if (timesRemainingToUpdate == 0) {
+                indicesToRemove.push_back(i);
+            }
+        }
+        
+        
+
+        i++;
+    }
+
+    for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
+        Instanced3ComponentVertexAttributeUpdates[*it] = Instanced3ComponentVertexAttributeUpdates.back();
+        Instanced3ComponentVertexAttributeUpdates.pop_back();
+    }  
+    indicesToRemove.clear();
+
+    // vec2
+    i = 0;
+    for (auto & [renderComp, attributeName, value, timesRemainingToUpdate]: Instanced2ComponentVertexAttributeUpdates) {
+        if (renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
+            meshpools[renderComp->shaderProgramId][renderComp->materialId][renderComp->meshpoolId]->SetInstancedVertexAttribute<2>(renderComp->meshpoolSlot, renderComp->meshpoolInstance, attributeName, value);
+            timesRemainingToUpdate -= 1;
+            if (timesRemainingToUpdate == 0) {
+                indicesToRemove.push_back(i);
+            }
+        }
+        
+
+        i++;
+    }
+
+    for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
+        Instanced2ComponentVertexAttributeUpdates[*it] = Instanced2ComponentVertexAttributeUpdates.back();
+        Instanced2ComponentVertexAttributeUpdates.pop_back();
+    }  
+    indicesToRemove.clear();
+
+    // vec1
+    i = 0;
+    for (auto & [renderComp, attributeName, value, timesRemainingToUpdate]: Instanced1ComponentVertexAttributeUpdates) {
+        if (renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
+            meshpools[renderComp->shaderProgramId][renderComp->materialId][renderComp->meshpoolId]->SetInstancedVertexAttribute<1>(renderComp->meshpoolSlot, renderComp->meshpoolInstance, attributeName, value);
+            timesRemainingToUpdate -= 1;
+            if (timesRemainingToUpdate == 0) {
+                indicesToRemove.push_back(i);
+            }
+        }
+        
+
+        i++;
+    }
+
+    for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
+        Instanced1ComponentVertexAttributeUpdates[*it] = Instanced1ComponentVertexAttributeUpdates.back();
+        Instanced1ComponentVertexAttributeUpdates.pop_back();
+    }  
     
     std::for_each(std::execution::par, components.begin(), components.end(), [this, &cameraPos](std::tuple<RenderComponent*, TransformComponent*>& tuple) {
         auto & renderComp = *std::get<0>(tuple);
@@ -411,9 +501,6 @@ void GraphicsEngine::UpdateRenderComponents() {
             // TODO: we only need to call SetNormalMatrix() when the object is rotated
             SetNormalMatrix(renderComp, transformComp.GetNormalMatrix()); 
             SetModelMatrix(renderComp, transformComp.GetGraphicsModelMatrix(cameraPos));
-            
-            if (renderComp.textureZChanged > 0) {renderComp.textureZChanged -= 1; SetTextureZ(renderComp, renderComp.textureZ);}
-            if (renderComp.colorChanged > 0) {renderComp.colorChanged -= 1; SetColor(renderComp, renderComp.color);}
         }
     });
 
@@ -433,8 +520,8 @@ void GraphicsEngine::UpdateRenderComponents() {
             SetNormalMatrix(renderCompNoFO, transformComp.GetNormalMatrix()); 
             SetModelMatrix(renderCompNoFO, transformComp.GetGraphicsModelMatrix({0, 0, 0}));
             
-            if (renderCompNoFO.textureZChanged > 0) {renderCompNoFO.textureZChanged -= 1; SetTextureZ(renderCompNoFO, renderCompNoFO.textureZ);}
-            if (renderCompNoFO.colorChanged > 0) {renderCompNoFO.colorChanged -= 1; SetColor(renderCompNoFO, renderCompNoFO.color);}
+            // if (renderCompNoFO.textureZChanged > 0) {renderCompNoFO.textureZChanged -= 1; SetTextureZ(renderCompNoFO, renderCompNoFO.textureZ);}
+            // if (renderCompNoFO.colorChanged > 0) {renderCompNoFO.colorChanged -= 1; SetColor(renderCompNoFO, renderCompNoFO.color);}
         }
     });
 
@@ -546,12 +633,14 @@ void GraphicsEngine::RenderComponent::Init(unsigned int mesh_id, unsigned int ma
 
     
 
-    color = glm::vec4(1, 1, 1, 1);
-    textureZ = -1.0;
+    // color = glm::vec4(1, 1, 1, 1);
+    // textureZ = -1.0;
     meshId = mesh_id;
 
-    colorChanged = (Mesh::Get(meshId)->vertexFormat.attributes.color->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
-    textureZChanged = (Mesh::Get(meshId)->vertexFormat.attributes.textureZ->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+    SetColor(glm::vec4(1, 1, 1, 1));
+    SetTextureZ(-1.0);
+    // colorChanged = (Mesh::Get(meshId)->vertexFormat.attributes.color->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
+    // textureZChanged = (Mesh::Get(meshId)->vertexFormat.attributes.textureZ->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
 
     materialId = material_id;
     shaderProgramId = shader_id;
@@ -603,17 +692,42 @@ GraphicsEngine::RenderComponent::RenderComponent() {
 
 }
 
-void GraphicsEngine::RenderComponent::SetColor(const glm::vec4& rgba) {
-    assert(colorChanged != -1); // color must be instanced
-    colorChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
-    color = rgba;
+void GraphicsEngine::RenderComponent::SetInstancedVertexAttribute(const unsigned int attributeName, const float& value) {
+    // todo: this is dumb type stuff for different nFloats values
+    GraphicsEngine::Get().Instanced1ComponentVertexAttributeUpdates.push_back(std::make_tuple(this, attributeName, glm::vec1(value), INSTANCED_VERTEX_BUFFERING_FACTOR));
 }
 
-// set to -1.0 for no texture
-void GraphicsEngine::RenderComponent::SetTextureZ(const float z) {
-    assert(textureZChanged != -1); // textureZ must be instanced
-    textureZChanged = INSTANCED_VERTEX_BUFFERING_FACTOR;
-    textureZ = z;
+void GraphicsEngine::RenderComponent::SetInstancedVertexAttribute(const unsigned int attributeName, const glm::vec2& value) {
+    // todo: this is dumb type stuff for different nFloats values
+    GraphicsEngine::Get().Instanced2ComponentVertexAttributeUpdates.push_back(std::make_tuple(this, attributeName, value, INSTANCED_VERTEX_BUFFERING_FACTOR));
+}
+
+void GraphicsEngine::RenderComponent::SetInstancedVertexAttribute(const unsigned int attributeName, const glm::vec3& value) {
+    // todo: this is dumb type stuff for different nFloats values
+    GraphicsEngine::Get().Instanced3ComponentVertexAttributeUpdates.push_back(std::make_tuple(this, attributeName, value, INSTANCED_VERTEX_BUFFERING_FACTOR));
+}
+
+void GraphicsEngine::RenderComponent::SetInstancedVertexAttribute(const unsigned int attributeName, const glm::vec4& value) {
+    // todo: this is dumb type stuff for different nFloats values
+    GraphicsEngine::Get().Instanced4ComponentVertexAttributeUpdates.push_back(std::make_tuple(this, attributeName, value, INSTANCED_VERTEX_BUFFERING_FACTOR));
+}
+
+glm::dvec3 GraphicsEngine::CameraPosition() {
+    if (debugFreecamEnabled) {
+        return debugFreecamPos;
+    }
+    else {
+        return camera.position;
+    }
+}
+
+glm::quat GraphicsEngine::CameraRotation() {
+    if (debugFreecamEnabled) {
+        return glm::dquat(glm::rotate(glm::rotate(glm::identity<glm::dmat4x4>(), glm::radians(debugFreecamPitch), glm::dvec3(1, 0, 0)), glm::radians(debugFreecamYaw), glm::dvec3(0, 1, 0)));
+    }
+    else {
+        return camera.rotation;
+    }
 }
 
 GraphicsEngine::RenderComponentNoFO::RenderComponentNoFO() {

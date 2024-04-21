@@ -14,8 +14,6 @@ layout(location=6) in mat4 modelMatrix;
 layout(location=10) in mat3 normalMatrix;
 // locations 10-12 are part of normalMatrix
 
-layout(location=13) in float doBillboard; 
-
 // (orthrographic projection)
 uniform mat4 orthro;
 uniform mat4 perspective;
@@ -27,7 +25,6 @@ void main()
 {
 
     gl_Position = orthro * modelMatrix * vec4(vertexPos, 1.0);
-    gl_Position.z = 0.0;
    
     fragmentColor = vertexColor;
     fragmentTexCoords = vec3(textureXY, textureZ);

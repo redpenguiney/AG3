@@ -31,22 +31,26 @@ class Meshpool {
     void RemoveObject(const unsigned int slot, const unsigned int instanceId); 
 
     // Makes the given instance use the given normal matrix.
-    // Will abort if mesh uses per-vertex normal matrix instead of per-instance normal matrix.
+    // Will abort if mesh uses per-vertex normal matrix instead of per-instance normal matrix. (though who would do that???)
     void SetNormalMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat3x3& normal);
 
     // Makes the given instance use the given model matrix.
-    // Will abort if mesh uses per-vertex model matrix instead of per-instance model matrix.
+    // Will abort if mesh uses per-vertex model matrix instead of per-instance model matrix. (though who would do that???)
     void SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4& model);
 
-    // Makes the given instance the given textureZ.
-    // Will abort if mesh uses per-vertex textureZ instead of per-instance textureZ.
-    void SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ);
+    // // Makes the given instance the given textureZ. Internally just makes the equivalent call to SetInstancedVertexAttribute().
+    // // Will abort if mesh uses per-vertex textureZ instead of per-instance textureZ.
+    // void SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ);
 
-    // Makes the given instance the given color.
-    // Will abort if mesh uses per-vertex color instead of per-instance color.
-    // If the mesh's vertex format has fewer than 4 color channels, that's okay, it will only use the ones it needs.
-    void SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4& rgba);
-    
+    // // Makes the given instance the given color. Internally just makes the equivalent call to SetInstancedVertexAttribute().
+    // // Will abort if mesh uses per-vertex color instead of per-instance color.
+    // void SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4& rgba);
+
+    // Set the given instanced vertex attribute of the given instance to the given value.
+    // Will abort if nFloats does not match the mesh's vertex format or if the vertex attribute is not instanced.
+    template<unsigned int nFloats>
+    void SetInstancedVertexAttribute(const unsigned int slot, const unsigned int instanceId, const unsigned int attributeName, const glm::vec<nFloats, float>& value);
+
     //std::tuple<GLfloat*, const unsigned int> ModifyVertices(const unsigned int meshId);
     void Draw();
     void Update();

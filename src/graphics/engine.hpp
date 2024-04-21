@@ -63,7 +63,13 @@ class GraphicsEngine {
     double debugFreecamSpeed = 0;
     static const inline double debugFreecamAcceleration = 0.01;
 
-    // Be advised. If you're tryna get camera position/orientation while using debugfreecam, you might want to use debugFreecamPitch/Yaw/Pos instead
+    // Returns camera position if debug freecam is disabled, otherwise returns debugFreecamPos.
+    glm::dvec3 CameraPosition();
+
+    // Returns camera rotation if debug freecam is disabled, otherwise returns debug freecam rotation as quaternion.
+    glm::quat CameraRotation();
+
+    // Be advised. If you're tryna get camera position/orientation regardless of whether debugfreecam is enabled, use the GetCameraRot/GetCameraPos methods instead.
     Camera camera;
     Window window = Window(720, 720); // handles windowing, interfaces with GLFW in general
 
@@ -92,26 +98,38 @@ class GraphicsEngine {
         unsigned int shaderProgramId, materialId;
 
         // called to initialize when given to a gameobject
-        void Init(unsigned int mesh_id, unsigned int materialId, unsigned int shader_id = Get().defaultShaderProgram->shaderProgramId);
+        void Init(unsigned int meshId, unsigned int materialId, unsigned int shaderId = Get().defaultShaderProgram->shaderProgramId);
 
         // call before returning to pool
         void Destroy();
 
-        // We have both GraphicsEngine::SetColor() and RenderComponent::SetColor() because people may want to set color immediately, but GraphicsEngine::SetColor()
-        //      expects the meshLocation to be initialized and because we cache mesh creation that doesn't happen until RenderScene() is called.
-        void SetColor(const glm::vec4& rgba);
-        void SetTextureZ(const float textureZ);
+        // Sets the instanced vertex attribute (which depends on the mesh, but could be color, textureZ, etc.)
+        // Note: setting color, textureZ, etc. is complicated because A. needs to be fast for all meshes that have different instanced vertex attributes B. multibuffering means that to set color, one must set color 3 times over 3 frames C. we can't set those things until the render component gets its meshpool, and for perf reasons we cache mesh creation so that doesn't happen until RenderScene() is called.
+        void SetInstancedVertexAttribute(const unsigned int attributeName, const glm::vec4& value);
+
+        // Sets the instanced vertex attribute (which depends on the mesh, but could be color, textureZ, etc.)
+        // Note: setting color, textureZ, etc. is complicated because A. needs to be fast for all meshes that have different instanced vertex attributes B. multibuffering means that to set color, one must set color 3 times over 3 frames C. we can't set those things until the render component gets its meshpool, and for perf reasons we cache mesh creation so that doesn't happen until RenderScene() is called.
+        void SetInstancedVertexAttribute(const unsigned int attributeName, const glm::vec3& value);
+
+        // Sets the instanced vertex attribute (which depends on the mesh, but could be color, textureZ, etc.)
+        // Note: setting color, textureZ, etc. is complicated because A. needs to be fast for all meshes that have different instanced vertex attributes B. multibuffering means that to set color, one must set color 3 times over 3 frames C. we can't set those things until the render component gets its meshpool, and for perf reasons we cache mesh creation so that doesn't happen until RenderScene() is called.
+        void SetInstancedVertexAttribute(const unsigned int attributeName, const glm::vec2& value);
+
+        // Sets the instanced vertex attribute (which depends on the mesh, but could be color, textureZ, etc.)
+        // Note: setting color, textureZ, etc. is complicated because A. needs to be fast for all meshes that have different instanced vertex attributes B. multibuffering means that to set color, one must set color 3 times over 3 frames C. we can't set those things until the render component gets its meshpool, and for perf reasons we cache mesh creation so that doesn't happen until RenderScene() is called.
+        void SetInstancedVertexAttribute(const unsigned int attributeName, const float& value);
+
+        // Equivalent to SetInstancedVertexAttribute() with the correct args
+        void SetColor(const glm::vec4& color) {SetInstancedVertexAttribute(MeshVertexFormat::COLOR_ATTRIBUTE_NAME, color);}
+
+        // Equivalent to SetInstancedVertexAttribute() with the correct args
+        void SetTextureZ(const float textureZ) {SetInstancedVertexAttribute(MeshVertexFormat::TEXTURE_Z_ATTRIBUTE_NAME, textureZ);}
 
         private:
 
-        // TODO: getters for color and textureZ
-        glm::vec4 color;
-        float textureZ;
-
-        // We want to avoid sending color/textureZ to the gpu every frame if we only change it once, but due to multiple buffering we got to set it for every buffer sub section, doing one each frame. Value is the amount of frames we need to set color/textureZ for still.
-        // -1 if not instanced
-        int colorChanged;
-        int textureZChanged;
+        // TODO: getters for color, textureZ, etc. Should have a pointer that leads to that data so it doesn't get interleaved with the more hotly used data
+        // glm::vec4 color;
+        // float textureZ;
 
         // MeshLocation meshLocation;
         
@@ -199,6 +217,13 @@ class GraphicsEngine {
     // Keys go like meshesToAdd[shaderId][textureId][meshId] = vector of pointers to MeshLocations stored in RenderComponents.
     std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::vector<RenderComponent*>>>> renderComponentsToAdd;
 
+    // Keeps track of rendercomponents whose instanced vertex attributes (color, textureZ, etc.) need to be updated.
+    // Each tuple is <componentToUpdate, attributeName, value, timesRemainingToUpdate>.
+    std::vector<std::tuple<RenderComponent*, unsigned int, glm::vec4, unsigned int>> Instanced4ComponentVertexAttributeUpdates;
+    std::vector<std::tuple<RenderComponent*, unsigned int, glm::vec3, unsigned int>> Instanced3ComponentVertexAttributeUpdates;
+    std::vector<std::tuple<RenderComponent*, unsigned int, glm::vec2, unsigned int>> Instanced2ComponentVertexAttributeUpdates;
+    std::vector<std::tuple<RenderComponent*, unsigned int, glm::vec1, unsigned int>> Instanced1ComponentVertexAttributeUpdates;
+
     GraphicsEngine();
     ~GraphicsEngine();
 
@@ -214,12 +239,14 @@ class GraphicsEngine {
     void AddCachedMeshes();
     void UpdateMeshpools();
 
-    void SetColor(const RenderComponent& component, const glm::vec4& rgba);
+    // void SetColor(const RenderComponent& component, const glm::vec4& rgba);
     void SetModelMatrix(const RenderComponent& component, const glm::mat4x4& model);
     void SetNormalMatrix(const RenderComponent& component, const glm::mat3x3& normal);
 
+    // void SetArbitrary1(const RenderComponent& component, const float arb);
+
     // set to -1.0 for no texture
-    void SetTextureZ(const RenderComponent& component, const float textureZ);
+    // void SetTextureZ(const RenderComponent& component, const float textureZ);
 
     // Returns a drawId used to modify the mesh later on.
     // Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.

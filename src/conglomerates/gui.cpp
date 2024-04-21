@@ -23,7 +23,7 @@ void Gui::UpdateBillboardGuis() {
 }
 
 Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<BillboardGuiInfo> billboardGuiInfo, std::shared_ptr<ShaderProgram> guiShader) {
-    GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentNoFOBitIndex});
+    GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, billboardGuiInfo ? ComponentRegistry::RenderComponentBitIndex : ComponentRegistry::RenderComponentNoFOBitIndex});
 
     objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : 0);
     objectParams.meshId = Mesh::Square()->meshId;
@@ -47,7 +47,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     if (haveText) {
         assert(fontMaterial.has_value() && fontMaterial->second->HasFontMap());
 
-        GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentNoFOBitIndex});
+        GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, billboardGuiInfo ? ComponentRegistry::RenderComponentBitIndex : ComponentRegistry::RenderComponentNoFOBitIndex});
         textObjectParams.materialId = fontMaterial->second->id;
         textObjectParams.shaderId = guiShader->shaderProgramId;
         auto textMesh = Mesh::Text();
@@ -128,15 +128,20 @@ void Gui::UpdateGuiTransform() {
     // std::cout << "Res = " << glm::to_string(realWindowResolution) << ".\n";
 
     glm::vec2 size = GetPixelSize();
+    if (billboardInfo.has_value()) {
+        size *= 0.01;
+    }
 
     object->transformComponent->SetScl(glm::vec3(size.x, size.y, 1));
     
-    object->transformComponent->SetRot(glm::angleAxis(rotation, glm::vec3 {0.0f, 0.0f, 1.0f}));
+    
 
     glm::vec2 anchorPointPosition = scalePos * realWindowResolution + offsetPos;
     glm::vec2 centerPosition = anchorPointPosition - (anchorPoint * size);
     // std::cout << "Center pos is " << glm::to_string(centerPosition) << ".\n";
     // std::cout << "Size is " << glm::to_string(size) << ".\n";
+
+    
 
     glm::vec3 realPosition(centerPosition.x, centerPosition.y, zLevel);
 
@@ -144,12 +149,34 @@ void Gui::UpdateGuiTransform() {
         realPosition = billboardInfo->followObject.lock()->transformComponent->Position();
     }
 
-    object->transformComponent->SetPos(glm::vec3(centerPosition.x, centerPosition.y, zLevel));
-    if (guiTextInfo.has_value()) {
-        guiTextInfo->object->transformComponent->SetPos(realPosition + glm::vec3(0, 0, zLevel + 0.01));
-        guiTextInfo->object->transformComponent->SetRot(glm::angleAxis(rotation + (float)glm::radians(180.0), glm::vec3 {0.0f, 0.0f, 1.0f}) * glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
-        // guiTextInfo->object->transformComponent->SetScl(glm::vec3(size.x, size.y, 1));
+    object->transformComponent->SetPos(realPosition);
+    // object->transformComponent->SetPos({0.0, 5.0, 0.0});
+
+    glm::quat rot = glm::angleAxis(rotation + (float)glm::radians(180.0), glm::vec3 {0.0f, 0.0f, 1.0f});
+    glm::quat textRot = rot * glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    if (billboardInfo.has_value()) {
+        
+        if (billboardInfo->rotation.has_value()) {
+            rot = billboardInfo->rotation.value() * rot;
+            textRot = billboardInfo->rotation.value() * textRot;
+        }
+        else {
+            rot = glm::inverse(glm::quat(glm::lookAt(GraphicsEngine::Get().CameraPosition(), glm::dvec3(realPosition), glm::dvec3(0.0, 1.0, 0.0)))) * rot;
+            textRot = glm::inverse(glm::quat(glm::lookAt(GraphicsEngine::Get().CameraPosition(), glm::dvec3(realPosition), glm::dvec3(0.0, 1.0, 0.0)))) * textRot;
+        }
+
     }
+
+    object->transformComponent->SetRot(rot);
+
+    if (guiTextInfo.has_value()) {
+        // guiTextInfo->object->transformComponent->SetPos({0.0, 5.0, 0.0});
+        guiTextInfo->object->transformComponent->SetPos(realPosition);
+        guiTextInfo->object->transformComponent->SetRot(textRot);
+        guiTextInfo->object->transformComponent->SetScl(glm::vec3(0.01, 0.01, 1));
+    }
+
+
 }
 
 Gui::GuiTextInfo& Gui::GetTextInfo() {
@@ -165,11 +192,13 @@ Gui::BillboardGuiInfo& Gui::GetBillboardInfo() {
 void Gui::UpdateGuiGraphics() {
     object->renderComponent->SetColor(rgba);
     object->renderComponent->SetTextureZ(materialLayer.value_or(-1.0));
+    object->renderComponent->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel);
      
-     if (guiTextInfo.has_value()) {
+    if (guiTextInfo.has_value()) {
+        guiTextInfo->object->renderComponent->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel - 0.01);
         guiTextInfo->object->renderComponent->SetColor(guiTextInfo->rgba);
         guiTextInfo->object->renderComponent->SetTextureZ(guiTextInfo->fontMaterialLayer);
-     }
+    }
 }
 
 // TODO: better way?

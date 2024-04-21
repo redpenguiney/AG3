@@ -36,10 +36,10 @@ bool Mesh::IsValidForGameObject(unsigned int meshId) {
 
 std::shared_ptr<Mesh> Mesh::Square() {
     static std::vector<GLfloat> squareVerts = {
-        -0.5, -0.5,   0.0, 0.0, 
-         0.5, -0.5,   1.0, 0.0,
-         0.5,  0.5,   1.0, 1.0,
-        -0.5,  0.5,   0.0, 1.0,
+        -0.5, -0.5, 0.0,   0.0, 0.0, 
+         0.5, -0.5, 0.0,   1.0, 0.0,
+         0.5,  0.5, 0.0,   1.0, 1.0,
+        -0.5,  0.5, 0.0,   0.0, 1.0,
          };
 
     static auto m = Mesh::FromVertices(squareVerts, {0, 1, 2, 0, 2, 3}, false, MeshVertexFormat::DefaultGui(), 1.0, false);
@@ -363,7 +363,7 @@ MeshVertexFormat MeshVertexFormat::Default(bool instancedColor, bool instancedTe
     };
 }
 
-// noninstanced (XY, TextureXY).
+// noninstanced (XYZ, TextureXY).
 // instanced: model matrix, normal matrix (so texture can be rotated w/o problems), rgba, textureZ
 MeshVertexFormat MeshVertexFormat::DefaultGui() {
     return MeshVertexFormat {
@@ -376,7 +376,7 @@ MeshVertexFormat MeshVertexFormat::DefaultGui() {
             .normalMatrix = VertexAttribute {.offset = sizeof(glm::mat4x4), .nFloats = 9, .instanced = true},
             .normal = std::nullopt,   
             .tangent = std::nullopt,
-            .arbitrary1 = std::nullopt //VertexAttribute {.offset = sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + sizeof(glm::vec4) + sizeof(float), .nFloats = 1, .instanced = true}
+            .arbitrary1 = VertexAttribute {.offset = sizeof(glm::mat4x4) + sizeof(glm::mat3x3) + sizeof(glm::vec4) + sizeof(float), .nFloats = 1, .instanced = true}
         }
     };
 }

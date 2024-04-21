@@ -238,7 +238,11 @@ int main(int numArgs, const char *argPtrs[]) {
         ttfParams.format = Texture::Grayscale_8Bit;
         auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
 
-        ui = new Gui(true, std::make_optional(std::make_pair(arialLayer, arialFont)), std::nullopt, Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), GraphicsEngine::Get().defaultBillboardGuiShaderProgram);
+        ui = new Gui(true, 
+        std::make_optional(std::make_pair(arialLayer, arialFont)), 
+        std::nullopt, 
+        Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), 
+        GraphicsEngine::Get().defaultBillboardGuiShaderProgram);
         ui->scaleSize = {0.5, 0.15};
         ui->guiScaleMode = Gui::ScaleXX;
         ui->offsetPos = {0.0, 0.0};

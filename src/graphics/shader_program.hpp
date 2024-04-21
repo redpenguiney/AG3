@@ -44,6 +44,7 @@ class ShaderProgram {
     const bool useOrthro; // if true, the uniform mat4 "orthro" in this program's vertex shader will automatically be set to an orthrographic projection matrix.
     const bool useFloatingOrigin; // if true, camera translation will be done in the shader instead of with doubles on the gpu
     const bool useClusteredLighting; // if true, the ssbo "clusters" in this program's vertex & fragment shaders will be automatically bound
+    // const std::optional<Framebuffer> RenderTo; TODO: for stuff like viewport frames. things rendered with this shader will be rendered onto the framebuffer contained in the optional, or onto the main framebuffer if it's nullopt.
 
     // TODO: the graphics engine should really just do this itself. 
     // Passes projection/camera matrix to shaders that have useCameraMatrix == true.
