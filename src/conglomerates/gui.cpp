@@ -134,9 +134,12 @@ void Gui::UpdateGuiTransform() {
 
     object->transformComponent->SetScl(glm::vec3(size.x, size.y, 1));
     
-    
+    glm::vec2 modifiedScalePos = scalePos;
+    if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
+        modifiedScalePos += GraphicsEngine::Get().camera.ProjectToWorld(glm::vec2)
+    }
 
-    glm::vec2 anchorPointPosition = scalePos * realWindowResolution + offsetPos;
+    glm::vec2 anchorPointPosition = modifiedScalePos * realWindowResolution + offsetPos;
     glm::vec2 centerPosition = anchorPointPosition - (anchorPoint * size);
     // std::cout << "Center pos is " << glm::to_string(centerPosition) << ".\n";
     // std::cout << "Size is " << glm::to_string(size) << ".\n";
@@ -145,27 +148,27 @@ void Gui::UpdateGuiTransform() {
 
     glm::vec3 realPosition(centerPosition.x, centerPosition.y, zLevel);
 
-    if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
-        realPosition = billboardInfo->followObject.lock()->transformComponent->Position();
-    }
+    // if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
+    //     realPosition = billboardInfo->followObject.lock()->transformComponent->Position();
+    // }
 
     object->transformComponent->SetPos(realPosition);
     // object->transformComponent->SetPos({0.0, 5.0, 0.0});
 
     glm::quat rot = glm::angleAxis(rotation + (float)glm::radians(180.0), glm::vec3 {0.0f, 0.0f, 1.0f});
     glm::quat textRot = rot * glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    if (billboardInfo.has_value()) {
+    // if (billboardInfo.has_value()) {
         
-        if (billboardInfo->rotation.has_value()) {
-            rot = billboardInfo->rotation.value() * rot;
-            textRot = billboardInfo->rotation.value() * textRot;
-        }
-        else {
-            rot = glm::inverse(glm::quat(glm::lookAt(GraphicsEngine::Get().CameraPosition(), glm::dvec3(realPosition), glm::dvec3(0.0, 1.0, 0.0)))) * rot;
-            textRot = glm::inverse(glm::quat(glm::lookAt(GraphicsEngine::Get().CameraPosition(), glm::dvec3(realPosition), glm::dvec3(0.0, 1.0, 0.0)))) * textRot;
-        }
+    //     if (billboardInfo->rotation.has_value()) {
+    //         rot = billboardInfo->rotation.value() * rot;
+    //         textRot = billboardInfo->rotation.value() * textRot;
+    //     }
+    //     else {
+    //         rot = glm::inverse(glm::quat(glm::lookAt(GraphicsEngine::Get().GetCurrentCamera().position, glm::dvec3(realPosition), glm::dvec3(0.0, 1.0, 0.0)))) * rot;
+    //         textRot = glm::inverse(glm::quat(glm::lookAt(GraphicsEngine::Get().CameraPosition(), glm::dvec3(realPosition), glm::dvec3(0.0, 1.0, 0.0)))) * textRot;
+    //     }
 
-    }
+    // }
 
     object->transformComponent->SetRot(rot);
 

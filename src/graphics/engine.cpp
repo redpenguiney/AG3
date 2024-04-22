@@ -129,14 +129,14 @@ void GraphicsEngine::DebugAxis() {
                                   0.0, 0.0, 0.0,   0.0, 0.0, 1.0,
                                   0.0, 0.0, 0.2, 0.0, 0.0, 1.0};
     
-    glm::vec3 cpos = debugFreecamEnabled ? debugFreecamPos: camera.position;
+    glm::vec3 cpos = GetCurrentCamera().position;
     glm::mat4x4 instancedVertexAttributes = {1, 0, 0, 0, 
                                                     0, 1, 0, 0,
                                                     0, 0, 1, 0,
                                                     cpos.x, cpos.y, cpos.z, 1}; // per object data. format is 4x4 model mat 
     // instancedVertexAttributes = (camera.GetProj((float)window.width/(float)window.height));
     glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
-    instancedVertexAttributes = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamPos : (glm::vec3) -camera.position);
+    instancedVertexAttributes = glm::translate(cameraMatrix, (glm::vec3) -GetCurrentCamera().position);
     GLuint vao, vbo, ivbo;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);

@@ -27,7 +27,7 @@ out vec3 fragmentTexCoords;
 void main()
 {
 
-    gl_Position = perspective * modelMatrix * vec4(vertexPos, 1.0);
+    gl_Position = orthro * modelMatrix * vec4(vertexPos, 1.0);
     gl_Position.z = arb1;
    
     fragmentColor = vertexColor;
