@@ -51,7 +51,6 @@ pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024
 screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, screenQuadVertexFormat, 1, false))
 {
     debugFreecamEnabled = false;
-    debugFreecamPos = {0.0, 0.0, 0.0};
     debugFreecamPitch = 0.0;
     debugFreecamYaw = 0.0;
 
@@ -550,6 +549,7 @@ glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
     debugFreecamPitch = std::max(-90.0, std::min(debugFreecamPitch, 90.0));
 
     glm::dquat rotation = glm::rotate(glm::rotate(glm::identity<glm::dmat4x4>(), glm::radians(debugFreecamPitch), glm::dvec3(1, 0, 0)), glm::radians(debugFreecamYaw), glm::dvec3(0, 1, 0));
+    debugFreecamCamera.rotation = rotation;
 
     // camera movement
     auto look = LookVector(glm::radians(debugFreecamPitch), glm::radians(debugFreecamYaw));
@@ -558,7 +558,7 @@ glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
     glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_D] - PRESSED_KEYS[GLFW_KEY_A]);
     glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_Q] - PRESSED_KEYS[GLFW_KEY_E]);
     glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_W] - PRESSED_KEYS[GLFW_KEY_S]);
-    debugFreecamPos += rightMovement + forwardMovement + upMovement;
+    debugFreecamCamera.position += rightMovement + forwardMovement + upMovement;
 
     
 
@@ -712,23 +712,23 @@ void GraphicsEngine::RenderComponent::SetInstancedVertexAttribute(const unsigned
     GraphicsEngine::Get().Instanced4ComponentVertexAttributeUpdates.push_back(std::make_tuple(this, attributeName, value, INSTANCED_VERTEX_BUFFERING_FACTOR));
 }
 
-glm::dvec3 GraphicsEngine::CameraPosition() {
-    if (debugFreecamEnabled) {
-        return debugFreecamPos;
-    }
-    else {
-        return camera.position;
-    }
-}
+// glm::dvec3 GraphicsEngine::CameraPosition() {
+//     if (debugFreecamEnabled) {
+//         return debugFreecamPos;
+//     }
+//     else {
+//         return camera.position;
+//     }
+// }
 
-glm::quat GraphicsEngine::CameraRotation() {
-    if (debugFreecamEnabled) {
-        return glm::dquat(glm::rotate(glm::rotate(glm::identity<glm::dmat4x4>(), glm::radians(debugFreecamPitch), glm::dvec3(1, 0, 0)), glm::radians(debugFreecamYaw), glm::dvec3(0, 1, 0)));
-    }
-    else {
-        return camera.rotation;
-    }
-}
+// glm::quat GraphicsEngine::CameraRotation() {
+//     if (debugFreecamEnabled) {
+//         return glm::dquat(glm::rotate(glm::rotate(glm::identity<glm::dmat4x4>(), glm::radians(debugFreecamPitch), glm::dvec3(1, 0, 0)), glm::radians(debugFreecamYaw), glm::dvec3(0, 1, 0)));
+//     }
+//     else {
+//         return camera.rotation;
+//     }
+// }
 
 GraphicsEngine::RenderComponentNoFO::RenderComponentNoFO() {
 

@@ -2,6 +2,7 @@
 #include <cassert>
 #include <vector>
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
+#include "graphics/engine.hpp"
 
 std::vector<Gui*> listOfGuis;
 void Gui::UpdateGuiForNewWindowResolution() {
@@ -136,7 +137,7 @@ void Gui::UpdateGuiTransform() {
     
     glm::vec2 modifiedScalePos = scalePos;
     if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
-        modifiedScalePos += GraphicsEngine::Get().camera.ProjectToWorld(glm::vec2)
+        modifiedScalePos += GraphicsEngine::Get().camera.ProjectToScreen(billboardInfo->followObject.lock()->transformComponent->Position(), GraphicsEngine::Get().window.Aspect());
     }
 
     glm::vec2 anchorPointPosition = modifiedScalePos * realWindowResolution + offsetPos;
@@ -146,7 +147,7 @@ void Gui::UpdateGuiTransform() {
 
     
 
-    glm::vec3 realPosition(centerPosition.x, centerPosition.y, zLevel);
+    glm::vec3 realPosition(centerPosition.x, centerPosition.y, 0.0);
 
     // if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
     //     realPosition = billboardInfo->followObject.lock()->transformComponent->Position();

@@ -33,6 +33,8 @@ class Window {
     Window(int widthh, int heightt);
     ~Window();
 
+    inline float Aspect() const {return float(width)/float(height);}
+
     // Processes user input
     void Update();
 
