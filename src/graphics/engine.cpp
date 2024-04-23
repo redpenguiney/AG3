@@ -89,6 +89,11 @@ GraphicsEngine::~GraphicsEngine() {
     delete skybox;
 }
 
+Camera& GraphicsEngine::GetCurrentCamera() {
+    return debugFreecamEnabled ? debugFreecamCamera : camera; 
+}
+
+
 bool GraphicsEngine::IsTextureInUse(unsigned int textureId) { 
     for (auto & [shaderId, map] : meshpools) {
         if (map.count(textureId)) {
@@ -134,7 +139,7 @@ void GraphicsEngine::DebugAxis() {
                                                     0, 0, 1, 0,
                                                     cpos.x, cpos.y, cpos.z, 1}; // per object data. format is 4x4 model mat 
     // instancedVertexAttributes = (camera.GetProj((float)window.width/(float)window.height));
-    glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
+    glm::mat4x4 cameraMatrix = GetCurrentCamera().GetCamera();
     instancedVertexAttributes = glm::translate(cameraMatrix, (glm::vec3) -GetCurrentCamera().position);
     GLuint vao, vbo, ivbo;
     glGenVertexArrays(1, &vao);
@@ -143,7 +148,6 @@ void GraphicsEngine::DebugAxis() {
     glGenBuffers(1, &vbo);
     glGenBuffers(1, &ivbo);
 
-    // auto frCam = glm::inverse((debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera());
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STREAM_DRAW);    
     glBindBuffer(GL_ARRAY_BUFFER, ivbo);
@@ -205,10 +209,15 @@ void GraphicsEngine::RenderScene() {
     UpdateLights();
     //CalculateLightingClusters();
 
+    if (debugFreecamEnabled) {
+        UpdateDebugFreecam();
+    }
+    
+
     // std::cout << "\tSetting uniforms.\n";
     // Update shaders with the camera's new rotation/projection
-    glm::mat4x4 cameraMatrix = (debugFreecamEnabled) ? UpdateDebugFreecam() : camera.GetCamera();
-    glm::mat4x4 cameraMatrixNoFloatingOrigin = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamPos : (glm::vec3) -camera.position);
+    glm::mat4x4 cameraMatrix = GetCurrentCamera().GetCamera();
+    glm::mat4x4 cameraMatrixNoFloatingOrigin = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamCamera.position : (glm::vec3) -GetCurrentCamera().position);
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin, glm::ortho(0.0f, float(window.width), 0.0f, float(window.height), -1.0f, 1.0f));
 
@@ -310,13 +319,16 @@ void GraphicsEngine::UpdateLights() {
     const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
     unsigned int lightCount = 0;
     unsigned int i = 0;
+
+    glm::dvec3 cameraPos = GetCurrentCamera().position;
+
     for (auto & tuple : components) {
 
         PointLightComponent& pointLight = *std::get<0>(tuple);
         TransformComponent& transform = *std::get<1>(tuple);
 
         if (pointLight.live) {
-            glm::vec3 relCamPos = (transform.Position() - (debugFreecamEnabled ? debugFreecamPos : camera.position));
+            glm::vec3 relCamPos = transform.Position() - cameraPos;
             // std::printf("rel pos = %f %f %f %f\n", relCamPos.x, relCamPos.y, relCamPos.z, pointLight.Range());
             auto info = PointLightInfo {
                 .colorAndRange = glm::vec4(pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range()),
@@ -376,7 +388,7 @@ void GraphicsEngine::UpdateMeshpools() {
 void GraphicsEngine::UpdateRenderComponents() {
     // auto start = Time();
     
-    auto cameraPos = (debugFreecamEnabled) ? debugFreecamPos : camera.position;
+    auto cameraPos = GetCurrentCamera().position;
 
     // Get components of all gameobjects that have a transform and render component
     auto components = ComponentRegistry::GetSystemComponents<RenderComponent, TransformComponent>();
@@ -527,7 +539,7 @@ void GraphicsEngine::UpdateRenderComponents() {
     // LogElapsed(start, "Rendercomp update elapsed ");
 }
 
-glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
+void GraphicsEngine::UpdateDebugFreecam() {
     assert(debugFreecamEnabled);
 
     // camera acceleration
@@ -559,10 +571,6 @@ glm::mat4x4 GraphicsEngine::UpdateDebugFreecam() {
     glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_Q] - PRESSED_KEYS[GLFW_KEY_E]);
     glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_W] - PRESSED_KEYS[GLFW_KEY_S]);
     debugFreecamCamera.position += rightMovement + forwardMovement + upMovement;
-
-    
-
-    return glm::mat4x4((glm::quat)rotation); 
 }
 
 void GraphicsEngine::AddCachedMeshes() {

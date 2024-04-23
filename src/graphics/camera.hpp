@@ -14,14 +14,16 @@ class Camera {
     // aspect is window width/height
     glm::mat4x4 GetProj(float aspect);
 
+    // Returns camera matrix, assuming that floating origin is in use.
     glm::mat4x4 GetCamera();
 
-    // Takes a point in world space and converts it into clip/screen space (the range [-1, 1]).
+    // Takes a point in world space and converts it into screen space (the range [0, 1]).
     // Used for stuff like making a health bar gui appear over an enemy's head
     // aspect is window width/height.
-    glm::vec2 ProjectToScreen(glm::dvec3, float aspect);
+    // returned z-coordinate will be outside the range [0, 1] if the point isn't within this camera's frustrum
+    glm::vec3 ProjectToScreen(glm::dvec3, float aspect);
 
-    // Takes a point in screen/clip space (the range [-1, 1]) and returns a normal vector facing into the screen.
+    // Takes a point in screen space (the range [0, 1]) and returns a normal vector facing into the screen.
     // aspect is window width/height.
     glm::vec3 ProjectToWorld(glm::vec2, float aspect);
 };

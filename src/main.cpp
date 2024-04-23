@@ -153,7 +153,7 @@ int main(int numArgs, const char *argPtrs[]) {
         GE.skyboxMaterial = sky_m_ptr;
         GE.skyboxMaterialLayer = index;
     }
-    GE.debugFreecamPos = glm::vec3(0, 15, 0);
+    GE.debugFreecamCamera.position = glm::dvec3(0, 15, 0);
     
     std::weak_ptr<GameObject> goWeakPtr;
     int nObjs = 0;
@@ -164,7 +164,7 @@ int main(int numArgs, const char *argPtrs[]) {
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = ComponentRegistry::NewGameObject(params);
-                g->transformComponent->SetPos({0 + x * 3,0.0 + y * 3, 0 + z * 3});
+                g->transformComponent->SetPos({0 + x * 3,3.0 + y * 3, 0 + z * 3});
                 g->colliderComponent->elasticity = 0.0;
                 g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), glm::radians(0.0), glm::radians(0.0))));
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
@@ -246,10 +246,12 @@ int main(int numArgs, const char *argPtrs[]) {
         ui->scaleSize = {0.5, 0.15};
         ui->guiScaleMode = Gui::ScaleXX;
         ui->offsetPos = {0.0, 0.0};
-        ui->scalePos = {0.5, 0.5};
+        // ui->scalePos = {0.5, 0.5};
         ui->anchorPoint = {0.0, 0.0};
+        ui->rgba.a = 0.0;
+        ui->GetTextInfo().rgba = {1.0, 1.0, 1.0, 1.0};
 
-        ui->GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
+        // ui->GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
         // ui->GetTextInfo().text = "Tga appbHb kok wjijj wa abcdefghijk eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
         ui->GetTextInfo().topMargin = 0;
         ui->GetTextInfo().bottomMargin = 0;
@@ -257,18 +259,19 @@ int main(int numArgs, const char *argPtrs[]) {
         ui->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
         ui->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
         ui->UpdateGuiText();
+        ui->UpdateGuiGraphics();
         ui->UpdateGuiTransform();
         
-        Gui ui2(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
-        ui2.scaleSize = {0.25, 0.05};
-        ui2.guiScaleMode = Gui::ScaleXX;
-        ui2.offsetPos = {0.0, 0.0};
-        ui2.scalePos = {0.75, 0.0};
-        ui2.anchorPoint = {0.0, -1.0};   
+        // Gui ui2(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
+        // ui2.scaleSize = {0.25, 0.05};
+        // ui2.guiScaleMode = Gui::ScaleXX;
+        // ui2.offsetPos = {0.0, 0.0};
+        // ui2.scalePos = {0.75, 0.0};
+        // ui2.anchorPoint = {0.0, -1.0};   
 
-        ui2.rgba = {1.0, 0.5, 0.0, 1.0};
-        ui2.UpdateGuiGraphics();
-        ui2.UpdateGuiTransform();
+        // ui2.rgba = {1.0, 0.5, 0.0, 1.0};
+        // ui2.UpdateGuiGraphics();
+        // ui2.UpdateGuiTransform();
     }
 
     DebugLogInfo("Starting main loop.");
@@ -320,6 +323,9 @@ int main(int numArgs, const char *argPtrs[]) {
                     PE.Step(SIMULATION_TIMESTEP/8.0);
                     // PE.Step(SIMULATION_TIMESTEP);
                 }
+
+                ui->GetTextInfo().text = glm::to_string(goWeakPtr.lock()->rigidbodyComponent->velocity);
+                ui->UpdateGuiText();
             }
             
             physicsLag -= SIMULATION_TIMESTEP;
@@ -330,7 +336,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
         // printf("Doing a little raycasting.\n");
         if (LMB_DOWN) {
-            auto castResult = Raycast(GE.debugFreecamPos, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
+            auto castResult = Raycast(GE.debugFreecamCamera.position, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
             
             if (castResult.hitObject != nullptr) {
                 // std::cout << "Hit object " << castResult.hitObject->name << ", normal is " << glm::to_string(castResult.hitNormal) << " \n";
@@ -385,7 +391,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
     }
 
-    // delete ui;
+    delete ui;
 
     timeAtWhichExitProcessStarted = Time();
     DebugLogInfo("Beginning exit process.");

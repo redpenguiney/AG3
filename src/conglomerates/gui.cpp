@@ -129,15 +129,17 @@ void Gui::UpdateGuiTransform() {
     // std::cout << "Res = " << glm::to_string(realWindowResolution) << ".\n";
 
     glm::vec2 size = GetPixelSize();
-    if (billboardInfo.has_value()) {
-        size *= 0.01;
-    }
+    // if (billboardInfo.has_value()) {
+    //     size *= 0.01;
+    // }
 
     object->transformComponent->SetScl(glm::vec3(size.x, size.y, 1));
     
     glm::vec2 modifiedScalePos = scalePos;
     if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
-        modifiedScalePos += GraphicsEngine::Get().camera.ProjectToScreen(billboardInfo->followObject.lock()->transformComponent->Position(), GraphicsEngine::Get().window.Aspect());
+        glm::vec3 projected = GraphicsEngine::Get().GetCurrentCamera().ProjectToScreen(billboardInfo->followObject.lock()->transformComponent->Position(), GraphicsEngine::Get().window.Aspect());
+        modifiedScalePos += glm::vec2(projected);
+        if (projected.z < 0 || projected.z > 1) {modifiedScalePos.x += 10000;}
     }
 
     glm::vec2 anchorPointPosition = modifiedScalePos * realWindowResolution + offsetPos;
@@ -177,7 +179,6 @@ void Gui::UpdateGuiTransform() {
         // guiTextInfo->object->transformComponent->SetPos({0.0, 5.0, 0.0});
         guiTextInfo->object->transformComponent->SetPos(realPosition);
         guiTextInfo->object->transformComponent->SetRot(textRot);
-        guiTextInfo->object->transformComponent->SetScl(glm::vec3(0.01, 0.01, 1));
     }
 
 

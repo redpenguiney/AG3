@@ -215,7 +215,6 @@ void Meshpool::SetInstancedVertexAttribute(const unsigned int slot, const unsign
         assert(!slotInstanceSpaces[slot].count(instanceId));
     }
     
-    DebugLogInfo("Name = ", attributeName);
     assert(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)].has_value());
     assert(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)]->instanced == true);
     assert(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)]->nFloats == nFloats);

@@ -231,8 +231,8 @@ class GraphicsEngine {
     void Update();
     void UpdateRenderComponents();
 
-    // updates the freecam based off user input (WASD and mouse) and then returns a camera matrix
-    glm::mat4x4 UpdateDebugFreecam();
+    // updates the freecam based off user input (WASD and mouse)
+    void UpdateDebugFreecam();
     void AddCachedMeshes();
     void UpdateMeshpools();
 
