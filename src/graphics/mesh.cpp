@@ -195,7 +195,6 @@ void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreat
             lineStartOffsets.push_back(params.rightMargin - lineWidth);
             break;
             }
-            std::cout << "Line has width of " << lineWidth << ", so starting at " << lineStartOffsets.back() << ".\n";
         }
     }
 
@@ -228,7 +227,6 @@ void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreat
             }
         }
 
-        std::cout << "TOP = " << topOfText << ", BOTTOM = " << bottomOfText << ".\n";
         // topToBottom = (topOfText - bottomOfText);
     }
  
@@ -767,8 +765,8 @@ void Mesh::StopModifying(bool normalizeSize) {
         NormalizePositions();
     }
 
-    std::cout << "MODIFICATION HALTED\n";
-    std::cout << "There are " << GraphicsEngine::Get().dynamicMeshUsers.size() << " dynamic mesh users.\n";
+    // std::cout << "MODIFICATION HALTED\n";
+    // std::cout << "There are " << GraphicsEngine::Get().dynamicMeshUsers.size() << " dynamic mesh users.\n";
 
     // keep in mind that same mesh could be in multiple different meshpools because different materials/shaders 
 
@@ -783,13 +781,13 @@ void Mesh::StopModifying(bool normalizeSize) {
                 continue;
             }
 
-            std::cout << "Using " << renderComponent->shaderProgramId << " " << renderComponent->materialId << " " << renderComponent->meshpoolId << ".\n";
+            // std::cout << "Using " << renderComponent->shaderProgramId << " " << renderComponent->materialId << " " << renderComponent->meshpoolId << ".\n";
             Meshpool& pool = *GraphicsEngine::Get().meshpools.at(renderComponent->shaderProgramId).at(renderComponent->materialId).at(renderComponent->meshpoolId);
 
 
             
             // If the vertex/index counts didn't change enough to make the mesh not fit in the pool, just refill the meshpool's slot.
-            std::cout << "Pool holds " << pool.meshVerticesSize << "bytes, but the mesh is " << vertices.size() * sizeof(GLfloat) << "bytes.\n";
+            // std::cout << "Pool holds " << pool.meshVerticesSize << "bytes, but the mesh is " << vertices.size() * sizeof(GLfloat) << "bytes.\n";
             if (pool.meshVerticesSize >= vertices.size() * sizeof(GLfloat) && pool.meshIndicesSize >= indices.size() * sizeof(GLuint)) {
 
                 // if we already did that, move onto the next object.
@@ -797,7 +795,7 @@ void Mesh::StopModifying(bool normalizeSize) {
                     continue;
                 }
 
-                std::cout << "Filling slot for dynamic mesh update.\n";
+                // std::cout << "Filling slot for dynamic mesh update.\n";
 
                 // instanceCount argument is meaningless when modifying == true.
                 pool.FillSlot(meshId, renderComponent->meshpoolSlot, 0, true);

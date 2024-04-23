@@ -6,9 +6,7 @@
 
 std::vector<Gui*> listOfGuis;
 void Gui::UpdateGuiForNewWindowResolution() {
-    std::cout << "UPDATEing " << listOfGuis.size() << ".\n";
     for (auto & ui: listOfGuis) {
-        std::cout << "UPDATE\n";
         if (ui->guiTextInfo.has_value()) {
             ui->UpdateGuiText();
         }

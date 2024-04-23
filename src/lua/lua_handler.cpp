@@ -4,6 +4,8 @@
 // #define 
 // #endif
 
+#include "debug/log.hpp"
+#include "sol/forward.hpp"
 #ifndef SOL_ALL_SAFETIES_ON 
 #error bruh
 #endif
@@ -129,7 +131,9 @@ LuaHandler::LuaHandler() {
 void LuaHandler::RunString(const std::string source) {
     
     auto result = LUA_STATE->safe_script(source, &sol::script_pass_on_error);
-    
+    if (!result.valid()) {
+        DebugLogError("Lua failed to run with error ");
+    }
 }
 
 void LuaHandler::RunFile(const std::string scriptPath) {
@@ -139,9 +143,14 @@ void LuaHandler::RunFile(const std::string scriptPath) {
     // RunString("coroutine.resume(coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end))");
     // RunString("result, message = pcall(function() require(\"__IGNORE\", \"" + scriptPath + "\") end) if not result then error(message) end");
 
-    // RunString("coroutine.wrap(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)()");
+    RunString("local __NEW_COROUTINE = coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)");
+    sol::coroutine routine = (*LUA_STATE)["__NEW_COROUTINE"];
+    routine();
+    // sol::thread coroutineRunner = sol::thread::create(LUA_STATE->lua_state());
+    // auto runnerView = coroutineRunner.thread_state();
+    // runnerView[]
 
-    auto result = LUA_STATE->safe_script_file(scriptPath, &sol::script_pass_on_error);
+    // auto result = LUA_STATE->safe_script_file(scriptPath, &sol::script_pass_on_error);
 }
 
 LuaHandler::~LuaHandler() {
