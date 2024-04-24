@@ -704,7 +704,6 @@ wasCreatedFromText(fromText),
 meshVertices(verts),
 meshIndices(indies)
 {
-    DebugLogInfo("Created mesh with id ", meshId);
 
     if (normalizePositions) {
         NormalizePositions();

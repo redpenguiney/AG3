@@ -65,7 +65,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
     
-    LUA.RunString("print(\"help\") uiaijij7^(*&^*(^12+{++++}))");
+    LUA.RunString("print(\"help from lua\")");
     LUA.RunFile("../scripts/test.lua");
 
     auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
@@ -324,8 +324,7 @@ int main(int numArgs, const char *argPtrs[]) {
                     // PE.Step(SIMULATION_TIMESTEP);
                 }
 
-                ui->GetTextInfo().text = glm::to_string(goWeakPtr.lock()->rigidbodyComponent->velocity);
-                ui->UpdateGuiText();
+                
             }
             
             physicsLag -= SIMULATION_TIMESTEP;
@@ -333,6 +332,8 @@ int main(int numArgs, const char *argPtrs[]) {
 
         LUA.PostPhysicsCallbacks();
         
+        ui->GetTextInfo().text = glm::to_string(goWeakPtr.lock()->rigidbodyComponent->velocity);
+        ui->UpdateGuiText();
 
         // printf("Doing a little raycasting.\n");
         if (LMB_DOWN) {

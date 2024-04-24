@@ -24,11 +24,14 @@ void main()
         font = texture(fontMap, fragmentTexCoords).r;
     }
 
-    if (colorTx.a * font < 0.1) {
+    
+
+    vec4 color = fragmentColor * colorTx;
+    color.a *= font;
+
+    if (color.a < 0.1) {
         discard;
     };
 
-    vec4 color = fragmentColor;
-    color.a *= font;
     Output = color;
 };

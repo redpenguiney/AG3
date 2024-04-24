@@ -36,22 +36,35 @@ LuaHandler& LuaHandler::Get() {
     return lh;
 }
 
-int ExceptionHandler(lua_State* L, sol::optional<const std::exception&> maybe_exception, sol::string_view description) {
-    DebugLogError("Lua exception handler was called.");
-    if (maybe_exception) {
-        DebugLogError("While attempting to run lua file:\n", maybe_exception->what());
+// int ExceptionHandler(lua_State* L, sol::optional<const std::exception&> maybe_exception, sol::string_view description) {
+//     DebugLogError("Lua exception handler was called.");
+//     if (maybe_exception) {
+//         DebugLogError("While attempting to run lua file:\n", maybe_exception->what());
+//     }
+//     else {
+//         DebugLogError("While attempting to run lua file (specific exception unavailable):\n", description.data());
+//     }   
+
+//     return sol::stack::push(L, description);
+// }
+
+// Returns true if the result is valid. Else, returns false and prints error messages
+bool HandleMaybeLuaError(const sol::protected_function_result& result, std::string fileNameOrSource) {
+    if (result.valid()) {
+        return true;
     }
     else {
-        DebugLogError("While attempting to run lua file (specific exception unavailable):\n", description.data());
-    }   
-
-    return sol::stack::push(L, description);
+        DebugLogError("While attemping to run lua \"", fileNameOrSource, "\":\n", sol::error(result).what());
+        return false;
+    }
 }
 
-void Wait(float time, sol::thread thread) {
+void Wait(sol::object lTime) {
+    assert(lTime.is<double>());
+    double time = lTime.as<double>();
     std::cout << "Wait for " << time << ".\n";
     // std::cout << "Coroutine type is " << (coroutine.get_type());
-    sol::coroutine coroutine = thread.as<sol::coroutine>();
+    sol::coroutine coroutine = (*LUA_STATE)["__MAIN_FUNC_"];
     std::cout << "conversion successful.\n";
     YIELDED_COROUTINES.push_back({coroutine, static_cast<long long>(time*60.0f)});
     std::cout << "a.\n";
@@ -71,7 +84,8 @@ LuaHandler::LuaHandler() {
     LUA_STATE->open_libraries(sol::lib::base, sol::lib::os, sol::lib::math, sol::lib::table, sol::lib::coroutine, sol::lib::string);
 
     // say stuff when lua does sad face error
-    LUA_STATE->set_exception_handler(&ExceptionHandler);
+    // sol::set_default_exception_handler(LUA_STATE->lua_state(), &ExceptionHandler);
+    // LUA_STATE->set_exception_handler(&ExceptionHandler);
     // sol::protected_function::set_default_handler(ExceptionHandler);
     
     // expose our stuff to lua
@@ -81,13 +95,13 @@ LuaHandler::LuaHandler() {
     // waiting: very important
     LUA_STATE->set("__C_WAIT", &Wait);
     LUA_STATE->require_script("Wait", 
-    "function Wait(time) print(\"kok\") print(\"yoielding\") coroutine.yield() print(\"okkk\?\?!\?\?!\") end return Wait");
+    "function Wait(time) print(\"kok\") __C_WAIT(1, coroutine.running()) print(\"yoielding\") coroutine.yield() print(\"okkk\?\?!\?\?!\") end return Wait");
 
-    // requiring other files
-    // notably, because sol is weird, require() returns nothing and instead sets the given variable name to whatever require() returns.
+    // // requiring other files
+    // // notably, because sol is weird, require() returns nothing and instead sets the given variable name to whatever require() returns.
     LUA_STATE->set("require", &Require); 
 
-    // enums
+    // // enums
     auto enumTable = LUA_STATE->create_table();
     enumTable.new_enum<ComponentRegistry::ComponentBitIndex, true>("ComponentBitIndex", {
             {"Transform", ComponentRegistry::TransformComponentBitIndex},
@@ -125,32 +139,38 @@ LuaHandler::LuaHandler() {
     auto gameObjectUsertype = LUA_STATE->new_usertype<GameObject>("GameObject", sol::factories(LuaGameobjectConstructor));
     gameObjectUsertype["transform"] = sol::property(&GameObject::LuaGetTransform);
 
-    // LUA_STATE->set_function("NewGameObject", ComponentRegistry::NewGameObject);
+    LUA_STATE->set_function("NewGameObject", ComponentRegistry::NewGameObject);
 }
 
 void LuaHandler::RunString(const std::string source) {
     
     auto result = LUA_STATE->safe_script(source, &sol::script_pass_on_error);
-    if (!result.valid()) {
-        DebugLogError("Lua failed to run with error ");
-    }
+    HandleMaybeLuaError(result, source);
 }
 
 void LuaHandler::RunFile(const std::string scriptPath) {
     // "safe" means it won't just throw if the script doesn't successfully run to completion
     // we need to actually wrap this call in a coroutine by requiring it 
     // TODO: would this technically allow the equivalent of SQL injection? probably
-    // RunString("coroutine.resume(coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end))");
+    // RunString("local success, message = coroutine.resume(coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)) if not success then print(\"Coroutine said\"..tostring(message)) end");
     // RunString("result, message = pcall(function() require(\"__IGNORE\", \"" + scriptPath + "\") end) if not result then error(message) end");
 
-    RunString("local __NEW_COROUTINE = coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)");
-    sol::coroutine routine = (*LUA_STATE)["__NEW_COROUTINE"];
-    routine();
+    // RunString("local __NEW_COROUTINE = coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)");
+    // sol::coroutine routine = (*LUA_STATE)["__NEW_COROUTINE"];
+    // auto result = routine();
+
     // sol::thread coroutineRunner = sol::thread::create(LUA_STATE->lua_state());
     // auto runnerView = coroutineRunner.thread_state();
     // runnerView[]
 
-    // auto result = LUA_STATE->safe_script_file(scriptPath, &sol::script_pass_on_error);
+    auto result = LUA_STATE->safe_script_file(scriptPath, &sol::script_pass_on_error);
+    if (HandleMaybeLuaError(result, scriptPath)) {
+        sol::coroutine co = (*LUA_STATE)["__MAIN_FUNC_"];
+        result = co();
+        HandleMaybeLuaError(result, scriptPath);
+    }
+    
+    
 }
 
 LuaHandler::~LuaHandler() {
@@ -166,7 +186,8 @@ void LuaHandler::OnFrameBegin() {
     for (auto & co: YIELDED_COROUTINES) {
         co.framesLeft -= 1;
         if (co.framesLeft == 0) {
-            // co.coroutine.;
+            // assert(co.coroutine.runnable());
+            sol::protected_function_result result = co.coroutine.call();
             indicesToRemove.push_back(i);
         } 
         i++;
