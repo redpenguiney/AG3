@@ -1,4 +1,4 @@
-function __MAIN_FUNC_ () 
+__MAIN_FUNC_ = function()
     print("hola from lua!!!")
     print("Graphics engine is "..tostring(GE))
 
@@ -31,6 +31,7 @@ function __MAIN_FUNC_ ()
 
     print("LUA WON!!!")
 end
+
 
 
 
