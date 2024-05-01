@@ -217,30 +217,30 @@ void LuaHandler::OnFrameBegin() {
 
     // resume waiting coroutines
 
-    std::vector<unsigned int> indicesToRemove;
-    unsigned int i = 0;
-    // for (auto & co: YIELDED_COROUTINES) {
-    sol::table tbl = (*LUA_STATE)["__YIELDED_CO_"] ;
-    for (auto & pair : tbl) {
-        sol::table co = pair.second.as<sol::table>();
-        sol::object framesLeft = co["frames"];
-        co["frames"] = framesLeft.as<double>() - 1;
-        if (framesLeft <= 0) {
-            // assert(co.coroutine.runnable());
-            DebugLogInfo("Getting pointer.");
-            DebugLogInfo("Running coroutine at ", co.coroutine.pointer());
-            while (co.coroutine.runnable()) {
-                // DebugLogInfo("run?");
-                RunLuaCoroutine(co.coroutine, std::string("??? on frame begin ???"));
-            }
+    // std::vector<unsigned int> indicesToRemove;
+    // unsigned int i = 0;
+    // // for (auto & co: YIELDED_COROUTINES) {
+    // sol::table tbl = (*LUA_STATE)["__YIELDED_CO_"] ;
+    // for (auto & pair : tbl) {
+    //     sol::table co = pair.second.as<sol::table>();
+    //     sol::object framesLeft = co["frames"];
+    //     co["frames"] = framesLeft.as<double>() - 1;
+    //     if (framesLeft <= 0) {
+    //         // assert(co.coroutine.runnable());
+    //         DebugLogInfo("Getting pointer.");
+    //         DebugLogInfo("Running coroutine at ", co.coroutine.pointer());
+    //         while (co.coroutine.runnable()) {
+    //             // DebugLogInfo("run?");
+    //             RunLuaCoroutine(co.coroutine, std::string("??? on frame begin ???"));
+    //         }
             
-        } 
-        i++;
-    }
+    //     } 
+    //     i++;
+    // }
 
-    for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
-        YIELDED_COROUTINES.erase(YIELDED_COROUTINES.begin() + *it);
-    }
+    // for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
+    //     YIELDED_COROUTINES.erase(YIELDED_COROUTINES.begin() + *it);
+    // }
 }
 
 void LuaHandler::PreRenderCallbacks() {

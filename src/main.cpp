@@ -29,6 +29,8 @@
 #include "src/gameobjects/component_registry.hpp"
 #include "src/graphics/engine.hpp"
 
+#include "modules/module.hpp"
+
 using namespace std;
 
 double timeAtWhichExitProcessStarted = 0;
@@ -39,6 +41,8 @@ void AtExit() {
 }
 
 int main(int numArgs, const char *argPtrs[]) {
+    Module::LoadModule("../plugins/test_plugin.dll");
+
     DebugLogInfo("Main function reached.");
 
     atexit(AtExit);
@@ -65,8 +69,8 @@ int main(int numArgs, const char *argPtrs[]) {
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
     
-    LUA.RunString("print(\"help from lua\")");
-    LUA.RunFile("../scripts/test.lua");
+    // LUA.RunString("print(\"help from lua\")");
+    // LUA.RunFile("../scripts/test.lua");
 
     auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
 
