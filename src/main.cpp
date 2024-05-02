@@ -41,7 +41,7 @@ void AtExit() {
 }
 
 int main(int numArgs, const char *argPtrs[]) {
-    Module::LoadModule("../plugins/test_plugin.dll");
+    
 
     DebugLogInfo("Main function reached.");
 
@@ -53,6 +53,8 @@ int main(int numArgs, const char *argPtrs[]) {
     auto & AE = AudioEngine::Get();
     auto & LUA = LuaHandler::Get();
     
+    Module::LoadModule("..\\modules\\test_module.dll");
+
     //GE.camera.position.y = 3;
 
     // auto garticSound = Sound::New("../sounds/garticphone.wav");

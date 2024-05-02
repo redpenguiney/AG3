@@ -1,21 +1,32 @@
 #include "module.hpp"
 #include "../debug/log.hpp"
+#include <coroutine>
 
-#if defined(__WIN64) || defined(__WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "windows.h"
 #else
 #error unsupported module platform
 #endif
 
-#if defined (__WIN64) || defined(__WIN32)
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 // returns nullptr if no function
 void* LoadFunc(const HMODULE& windowsModule, const char* funcName) {
     FARPROC functionAddress = GetProcAddress(windowsModule, funcName);
+    // DebugLogInfo("Func name ", funcName, " has proc address ", functionAddress);
     return (void*)functionAddress;
 }
 #else
 #error unsupported module platform
 #endif
+
+void Wait() {
+    co_await std::suspend_always {};
+}
+
+void Module::LoadModule(const char *filepath) {
+    auto module = Module(filepath);
+    LOADED_MODULES.push_back(std::move(module));
+}
 
 void Module::PrePhysics() {
     for (auto & module: LOADED_MODULES) {
@@ -42,16 +53,29 @@ void Module::PostRender() {
 }
 
 Module::Module(const char* filepath) {
-    #if defined(__WIN64) || defined(__WIN32)
+    #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     module = new HMODULE;
     *(HMODULE*)module = LoadLibrary(filepath);
-    if (!module) {
-        DebugLogError("Failed to load module, ", filepath);
+    if ((*(HMODULE*)module) == nullptr) {
+        LPVOID lpMsgBuf;
+        DWORD dw = GetLastError(); 
+
+        FormatMessage(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+            FORMAT_MESSAGE_FROM_SYSTEM |
+            FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL,
+            dw,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            (LPTSTR) &lpMsgBuf,
+            0, NULL );
+
+        DebugLogError("Failed to load module, ", filepath, "; ", (char*)lpMsgBuf);
     }
     auto init = LoadFunc(*(HMODULE*)module, "OnInit");
     if (init) {
         onInit = (void(*)())init;
-        (*onInit)();
+        
     }
     auto postRender = LoadFunc(*(HMODULE*)module, "OnPostRender");
     if (postRender) {
@@ -73,11 +97,17 @@ Module::Module(const char* filepath) {
     #error unsupported module platform
     #endif
 
-    
+    if (onInit.has_value()) {
+        (*onInit)();
+    }
 }
 
 Module::~Module() {
     (*onClose)();
+    #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     FreeLibrary(*(HMODULE*)module);
     delete (HMODULE*)module;
+    #else
+    #error unsupported module platform
+    #endif
 }

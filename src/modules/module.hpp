@@ -12,17 +12,15 @@ class Module {
     static void PostRender();
 
     // Module.onInit will be immediately called if it exists, so be careful
-    static void LoadModule(const char* filepath) {
-        auto module = Module(filepath);
-        LOADED_MODULES.push_back(std::move(module));
-    }
+    static void LoadModule(const char* filepath);
     
     Module(const Module&) = delete;
     constexpr Module(Module&&) = default;
     ~Module();
 
     private:
-    static std::list<Module> LOADED_MODULES;
+
+    static inline std::list<Module> LOADED_MODULES;
 
     Module(const char* filepath);
 
