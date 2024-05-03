@@ -36,6 +36,7 @@ using namespace std;
 double timeAtWhichExitProcessStarted = 0;
 
 void AtExit() {
+    Module::CloseAll();
     LogElapsed(timeAtWhichExitProcessStarted, "Exit process elapsed ");
     DebugLogInfo("Program ran successfully. Exiting.");
 }
@@ -313,6 +314,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
         LUA.OnFrameBegin();
         LUA.PrePhysicsCallbacks();
+        Module::PrePhysics();
 
         if (physicsLag >= SIMULATION_TIMESTEP) { // make sure stepping simulation won't put it ahead of realtime
             // printf("Updating SAS.\n");
@@ -337,6 +339,7 @@ int main(int numArgs, const char *argPtrs[]) {
         }
 
         LUA.PostPhysicsCallbacks();
+        Module::PostPhysics();
         
         ui->GetTextInfo().text = glm::to_string(goWeakPtr.lock()->rigidbodyComponent->velocity);
         ui->UpdateGuiText();
@@ -385,7 +388,9 @@ int main(int numArgs, const char *argPtrs[]) {
         // could/should we do something to try and do physics or something while GPU Working? or are we already? 
         // printf("Flipping buffers.\n");
         GE.window.FlipBuffers();
+
         LUA.PostRenderCallbacks();
+        Module::PostRender();
 
         // if (g->transformComponent->position.y <= 1.0) {
         //     while (true) {}

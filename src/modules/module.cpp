@@ -1,6 +1,8 @@
 #include "module.hpp"
 #include "../debug/log.hpp"
 #include <coroutine>
+#include "../external_headers/kelcoro/kelcoro.hpp"
+#include "debug/log.hpp"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "windows.h"
@@ -19,9 +21,25 @@ void* LoadFunc(const HMODULE& windowsModule, const char* funcName) {
 #error unsupported module platform
 #endif
 
-void Wait() {
-    co_await std::suspend_always {};
-}
+// class BasicCoroutine {
+// public:
+//     struct Promise {
+//         BasicCoroutine get_return_object() { return BasicCoroutine {}; }
+
+//         void unhandled_exception() noexcept { }
+
+//         void return_void() noexcept { }
+
+//         std::suspend_always initial_suspend() noexcept { return {}; }
+//         std::suspend_never final_suspend() noexcept { return {}; }
+//     };
+//     using promise_type = Promise;
+// };
+
+// BasicCoroutine Wait()
+// {
+//     co_await std::suspend_always {};
+// }
 
 void Module::LoadModule(const char *filepath) {
     auto module = Module(filepath);
@@ -51,6 +69,16 @@ void Module::PostRender() {
         }
     }
 }
+
+dd::channel<bool> RunHook(void(*func)()) {
+    DebugLogInfo("bet");
+    co_yield false;
+    DebugLogInfo("all in");
+    func();
+    co_return;
+}
+
+
 
 Module::Module(const char* filepath) {
     #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
@@ -98,8 +126,15 @@ Module::Module(const char* filepath) {
     #endif
 
     if (onInit.has_value()) {
-        (*onInit)();
+        
+        auto coroutine = RunHook(*onInit);
+
+        DebugLogInfo("co exited");
     }
+}
+
+void Module::CloseAll() {
+    LOADED_MODULES.clear();
 }
 
 Module::~Module() {

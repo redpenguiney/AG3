@@ -6,6 +6,11 @@ extern "C" {
 __declspec (dllexport) void OnInit() {
     std::cout << "OH YEAH LETS GO\n";
 }
+
+// __declspec (dllexport) void OnPreRender() {
+
+// }
+
 #endif
 
 }

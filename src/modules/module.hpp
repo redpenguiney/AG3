@@ -13,6 +13,7 @@ class Module {
 
     // Module.onInit will be immediately called if it exists, so be careful
     static void LoadModule(const char* filepath);
+    static void CloseAll();
     
     Module(const Module&) = delete;
     constexpr Module(Module&&) = default;
