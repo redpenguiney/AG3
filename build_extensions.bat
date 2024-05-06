@@ -1,3 +1,6 @@
-g++ -c modules/test_module.cpp
-move "test_module.o" "modules"
-g++ -shared -o modules/test_module.dll modules/test_module.o
+cd modules
+del test_module.o
+del test_module.dll
+g++ -c test_module.cpp -O3 -std=c++20
+g++ -shared -o test_module.dll test_module.o
+cd ../

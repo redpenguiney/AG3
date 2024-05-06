@@ -1,6 +1,5 @@
 #include "module.hpp"
 #include "../debug/log.hpp"
-#include "coroutine.hpp"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "windows.h"
@@ -48,19 +47,15 @@ void Module::PostRender() {
     }
 }
 
-std::list<Coroutine> runningCoroutines;
 
 void RunHook(void(*func)()) {
-    Coroutine f = [func]() -> Coroutine {
-        func();
-        co_return;
-    }();
-    f.resume();
+    func();
 }
 
 
 
 Module::Module(const char* filepath) {
+    module = nullptr;
     #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     module = new HMODULE;
     *(HMODULE*)module = LoadLibrary(filepath);
@@ -79,28 +74,32 @@ Module::Module(const char* filepath) {
             0, NULL );
 
         DebugLogError("Failed to load module, ", filepath, "; ", (char*)lpMsgBuf);
+        module = nullptr;
     }
-    auto init = LoadFunc(*(HMODULE*)module, "OnInit");
-    if (init) {
-        onInit = (void(*)())init;
-        
+    else {
+        auto init = LoadFunc(*(HMODULE*)module, "OnInit");
+        if (init) {
+            onInit = (void(*)())init;
+            
+        }
+        auto postRender = LoadFunc(*(HMODULE*)module, "OnPostRender");
+        if (postRender) {
+            onPostRender = (void(*)())postRender;
+        }
+        auto prePhys = LoadFunc(*(HMODULE*)module, "OnPrePhysics");
+        if (prePhys) {
+            onPrePhysics = (void(*)())prePhys;
+        }
+        auto postPhys = LoadFunc(*(HMODULE*)module, "OnPostPhysics");
+        if (postPhys) {
+            onPostPhysics = (void(*)())postPhys;
+        }
+        auto close = LoadFunc(*(HMODULE*)module, "OnClose");
+        if (close) {
+            onClose = (void(*)())close;
+        }
     }
-    auto postRender = LoadFunc(*(HMODULE*)module, "OnPostRender");
-    if (postRender) {
-        onPostRender = (void(*)())postRender;
-    }
-    auto prePhys = LoadFunc(*(HMODULE*)module, "OnPrePhysics");
-    if (prePhys) {
-        onPrePhysics = (void(*)())prePhys;
-    }
-    auto postPhys = LoadFunc(*(HMODULE*)module, "OnPostPhysics");
-    if (postPhys) {
-        onPostPhysics = (void(*)())postPhys;
-    }
-    auto close = LoadFunc(*(HMODULE*)module, "OnClose");
-    if (close) {
-        onClose = (void(*)())close;
-    }
+    
     #else
     #error unsupported module platform
     #endif
@@ -109,7 +108,6 @@ Module::Module(const char* filepath) {
         
         RunHook(*onInit);
 
-        DebugLogInfo("co exited");
     }
 }
 
@@ -119,10 +117,17 @@ void Module::CloseAll() {
 
 Module::~Module() {
     (*onClose)();
-    #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-    FreeLibrary(*(HMODULE*)module);
-    delete (HMODULE*)module;
-    #else
-    #error unsupported module platform
-    #endif
+    if (module != nullptr) {
+        
+        #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+    
+        FreeLibrary(*(HMODULE*)module);
+        delete (HMODULE*)module;
+
+        #else
+        #error unsupported module platform
+        #endif
+    }
+    
+    
 }
