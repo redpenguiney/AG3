@@ -29,81 +29,99 @@ protected_make_shared( Args&&... args )
 // template<typename ... PoolClasses>
 
 
-
-namespace ComponentRegistry { 
-
-    std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params) {
-        if (params.requestedComponents[RenderComponentBitIndex]) { 
-            assert(!params.requestedComponents[RenderComponentNoFOBitIndex]); // Can't have both kinds of render components.
-        }
-
-        // make sure there are the needed component pools for this kind of gameobject
-        if (!componentBuckets.count(params.requestedComponents)) {
-            componentBuckets[params.requestedComponents] = std::array<void*, N_COMPONENT_TYPES> {{
-                [TransformComponentBitIndex] = params.requestedComponents[TransformComponentBitIndex] ? new ComponentPool<TransformComponent>() : nullptr,
-                [RenderComponentBitIndex] = params.requestedComponents[RenderComponentBitIndex] ? new ComponentPool<GraphicsEngine::RenderComponent>() : nullptr,
-                [ColliderComponentBitIndex] = params.requestedComponents[ColliderComponentBitIndex] ? new ComponentPool<SpatialAccelerationStructure::ColliderComponent>() : nullptr,
-                [RigidbodyComponentBitIndex] = params.requestedComponents[RigidbodyComponentBitIndex] ? new ComponentPool<RigidbodyComponent>() : nullptr,
-                [PointlightComponentBitIndex] = params.requestedComponents[PointlightComponentBitIndex] ? new ComponentPool<PointLightComponent>() : nullptr,
-                [RenderComponentNoFOBitIndex] = params.requestedComponents[RenderComponentNoFOBitIndex] ? new ComponentPool<GraphicsEngine::RenderComponentNoFO>() : nullptr,
-                [AudioPlayerComponentBitIndex] = params.requestedComponents[AudioPlayerComponentBitIndex] ? new ComponentPool<AudioPlayerComponent>() : nullptr
-            }};
-            //std::cout << "RENDER COMP POOL PAGE AT " << ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets[params.requestedComponents][RenderComponentBitIndex]))->pools[0] << "\n";
-        }
-
-        // Get components for the gameobject
-        std::array<void*, N_COMPONENT_TYPES> components;
-        for (unsigned int i = 0; i < params.requestedComponents.size(); i++) {
-            if (params.requestedComponents[i] == true) { // if the gameobject wants this component
-                switch (i) {
-                case TransformComponentBitIndex:
-                components[i] = ((ComponentPool<TransformComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
-                break;
-                case RenderComponentBitIndex:
-                components[i] = ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
-                break;
-                case RenderComponentNoFOBitIndex:
-                components[i] = ((ComponentPool<GraphicsEngine::RenderComponentNoFO>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
-                break;
-                case ColliderComponentBitIndex:
-                components[i] = ((ComponentPool<SpatialAccelerationStructure::ColliderComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
-                break;
-                case RigidbodyComponentBitIndex:
-                components[i] = ((ComponentPool<RigidbodyComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
-                break;
-                case PointlightComponentBitIndex:
-                components[i] = ((ComponentPool<PointLightComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
-                break;
-                case AudioPlayerComponentBitIndex:
-                components[i] = ((ComponentPool<AudioPlayerComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
-                break;
-                default:
-                std::printf("you goofy goober you didn't make a case here for index %u\n", i);
-                abort();
-                break;
-                }
-            }
-            else {
-                components[i] = nullptr;
-            }
-        }
-
-        auto ptr = protected_make_shared<GameObject>(params, components);
-        GAMEOBJECTS[ptr.get()] = ptr;
-        return ptr;
+std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCreateParams& params) {
+    if (params.requestedComponents[RenderComponentBitIndex]) { 
+        assert(!params.requestedComponents[RenderComponentNoFOBitIndex]); // Can't have both kinds of render components.
     }
 
-    void CleanupComponents() {
-        GAMEOBJECTS.clear(); // no way its this simple
+    // make sure there are the needed component pools for this kind of gameobject
+    if (!componentBuckets.count(params.requestedComponents)) {
+        componentBuckets[params.requestedComponents] = std::array<void*, N_COMPONENT_TYPES> {{
+            [TransformComponentBitIndex] = params.requestedComponents[TransformComponentBitIndex] ? new ComponentPool<TransformComponent>() : nullptr,
+            [RenderComponentBitIndex] = params.requestedComponents[RenderComponentBitIndex] ? new ComponentPool<GraphicsEngine::RenderComponent>() : nullptr,
+            [ColliderComponentBitIndex] = params.requestedComponents[ColliderComponentBitIndex] ? new ComponentPool<SpatialAccelerationStructure::ColliderComponent>() : nullptr,
+            [RigidbodyComponentBitIndex] = params.requestedComponents[RigidbodyComponentBitIndex] ? new ComponentPool<RigidbodyComponent>() : nullptr,
+            [PointlightComponentBitIndex] = params.requestedComponents[PointlightComponentBitIndex] ? new ComponentPool<PointLightComponent>() : nullptr,
+            [RenderComponentNoFOBitIndex] = params.requestedComponents[RenderComponentNoFOBitIndex] ? new ComponentPool<GraphicsEngine::RenderComponentNoFO>() : nullptr,
+            [AudioPlayerComponentBitIndex] = params.requestedComponents[AudioPlayerComponentBitIndex] ? new ComponentPool<AudioPlayerComponent>() : nullptr
+        }};
+        //std::cout << "RENDER COMP POOL PAGE AT " << ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets[params.requestedComponents][RenderComponentBitIndex]))->pools[0] << "\n";
     }
-};
+
+    // Get components for the gameobject
+    std::array<void*, N_COMPONENT_TYPES> components;
+    for (unsigned int i = 0; i < params.requestedComponents.size(); i++) {
+        if (params.requestedComponents[i] == true) { // if the gameobject wants this component
+            switch (i) {
+            case TransformComponentBitIndex:
+            components[i] = ((ComponentPool<TransformComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            break;
+            case RenderComponentBitIndex:
+            components[i] = ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            break;
+            case RenderComponentNoFOBitIndex:
+            components[i] = ((ComponentPool<GraphicsEngine::RenderComponentNoFO>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            break;
+            case ColliderComponentBitIndex:
+            components[i] = ((ComponentPool<SpatialAccelerationStructure::ColliderComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            break;
+            case RigidbodyComponentBitIndex:
+            components[i] = ((ComponentPool<RigidbodyComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            break;
+            case PointlightComponentBitIndex:
+            components[i] = ((ComponentPool<PointLightComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            break;
+            case AudioPlayerComponentBitIndex:
+            components[i] = ((ComponentPool<AudioPlayerComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            break;
+            default:
+            std::printf("you goofy goober you didn't make a case here for index %u\n", i);
+            abort();
+            break;
+            }
+        }
+        else {
+            components[i] = nullptr;
+        }
+    }
+
+    auto ptr = protected_make_shared<GameObject>(params, components);
+    GAMEOBJECTS[ptr.get()] = ptr;
+    return ptr;
+
+}
+
+ComponentRegistry::ComponentRegistry() {
+
+}
+
+ComponentRegistry::~ComponentRegistry() {
+    GAMEOBJECTS.clear(); // no way its this simple
+}
+
+#ifdef IS_MODULE
+ComponentRegistry* _COMPONENT_REGISTRY_ = nullptr;
+void ComponentRegistry::SetModuleComponentRegistry(ComponentRegistry* reg) {
+    _COMPONENT_REGISTRY_ = reg;
+}
+#endif
+
+ComponentRegistry& ComponentRegistry::Get() {
+    #ifdef IS_MODULE
+    assert(_COMPONENT_REGISTRY_ != nullptr);
+    return *_COMPONENT_REGISTRY_
+    #else
+    static ComponentRegistry registry;
+    #endif
+    return registry;
+}
 
 void GameObject::Destroy() {
-    if (!ComponentRegistry::GAMEOBJECTS.contains(this)) {
+    if (!ComponentRegistry::Get().GAMEOBJECTS.contains(this)) {
         std::cout << "Error: Destroy() was called on the same gameobject twice, or this gameobject is otherwise invalid. Please don't.\n";
         abort();
     }
-    ComponentRegistry::GAMEOBJECTS.erase(this);
+    ComponentRegistry::Get().GAMEOBJECTS.erase(this);
     transformComponent.Clear();
     renderComponent.Clear();
     colliderComponent.Clear();

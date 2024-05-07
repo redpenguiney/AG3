@@ -53,7 +53,8 @@ int main(int numArgs, const char *argPtrs[]) {
     auto & PE = PhysicsEngine::Get();
     auto & AE = AudioEngine::Get();
     auto & LUA = LuaHandler::Get();
-    
+    auto & CR = ComponentRegistry::Get();
+
     Module::LoadModule("..\\modules\\libtest_module.dll");
 
 
@@ -184,9 +185,6 @@ int main(int numArgs, const char *argPtrs[]) {
     timeAtWhichExitProcessStarted = Time();
     DebugLogInfo("Beginning exit process.");
 
-    // It's very important that this function runs before GE, SAS, etc. are destroyed, and it's very important that other shared_ptrs to gameobjects outside of the GAMEOBJECTS map are gone (meaning lua needs to be deleted before this code runs) so that all gameobjects are destructed before the things they need to destruct themselves (GE, PE, etc.) are destructed
-    // TODO: register at exit instead?
-    ComponentRegistry::CleanupComponents(); 
     DebugLogInfo("Cleaned up all gameobjects.");
     return EXIT_SUCCESS;
 }

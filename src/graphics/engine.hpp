@@ -70,6 +70,13 @@ class GraphicsEngine {
     Camera debugFreecamCamera;
     Window window = Window(720, 720); // handles windowing, interfaces with GLFW in general
 
+    // When modules (shared libraries) get their copy of this code, they need to use a special version of GraphicsEngine::Get().
+    // This is so that both the module and the main executable have access to the same singleton. 
+    // The executable will provide each shared_library with a pointer to the graphics engine.
+    #ifdef IS_MODULE
+    static void SetModuleGraphicsEngine(GraphicsEngine* engine);
+    #endif
+
     static GraphicsEngine& Get();
 
     // Used by Texture to throw an error if someone tries to unload a texture being used

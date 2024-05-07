@@ -6,10 +6,23 @@
 #include <vector>
 #include "../gameobjects/pointlight_component.hpp"
 #include "../gameobjects/component_registry.hpp"
+#include "graphics/engine.hpp"
+
+#ifdef IS_MODULE
+GraphicsEngine* _GRAPHICS_ENGINE_ = nullptr;
+void GraphicsEngine::SetModuleGraphicsEngine(GraphicsEngine* eng) {
+    _GRAPHICS_ENGINE_ = eng;
+}
+#endif
 
 GraphicsEngine& GraphicsEngine::Get() {
+    #ifdef IS_MODULE
+    assert(_GRAPHICS_ENGINE_ != nullptr);
+    return *_GRAPHICS_ENGINE_;
+    #else
     static GraphicsEngine engine;
     return engine;
+    #endif
 }
 
 // thing we send to gpu to tell it about a light
@@ -311,7 +324,7 @@ void GraphicsEngine::DrawSkybox() {
 
 void GraphicsEngine::UpdateLights() {
     // Get components of all gameobjects that have a transform and point light component
-    auto components = ComponentRegistry::GetSystemComponents<PointLightComponent, TransformComponent>();
+    auto components = ComponentRegistry::Get().GetSystemComponents<PointLightComponent, TransformComponent>();
 
     
 
@@ -391,7 +404,7 @@ void GraphicsEngine::UpdateRenderComponents() {
     auto cameraPos = GetCurrentCamera().position;
 
     // Get components of all gameobjects that have a transform and render component
-    auto components = ComponentRegistry::GetSystemComponents<RenderComponent, TransformComponent>();
+    auto components = ComponentRegistry::Get().GetSystemComponents<RenderComponent, TransformComponent>();
     
     // for (auto & tuple: components) {
     //     auto & renderComp = *std::get<0>(tuple);
@@ -516,7 +529,7 @@ void GraphicsEngine::UpdateRenderComponents() {
     });
 
     // Get components of all gameobjects that have a transform and no floating origin render component
-    auto components2 = ComponentRegistry::GetSystemComponents<RenderComponentNoFO, TransformComponent>();
+    auto components2 = ComponentRegistry::Get().GetSystemComponents<RenderComponentNoFO, TransformComponent>();
     std::for_each(std::execution::par, components2.begin(), components2.end(), [this](std::tuple<RenderComponentNoFO*, TransformComponent*>& tuple) {
         auto & renderCompNoFO = *std::get<0>(tuple);
         auto & transformComp = *std::get<1>(tuple);

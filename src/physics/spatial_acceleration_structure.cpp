@@ -15,7 +15,7 @@
 void SpatialAccelerationStructure::Update() {
     //auto start = Time();
     // Get components of all gameobjects that have a transform and collider component
-    auto components = ComponentRegistry::GetSystemComponents<TransformComponent, ColliderComponent>();
+    auto components = ComponentRegistry::Get().GetSystemComponents<TransformComponent, ColliderComponent>();
 
     for (auto & tuple: components) {
         auto& colliderComp = *std::get<1>(tuple);
@@ -550,7 +550,7 @@ void SpatialAccelerationStructure::ColliderComponent::Destroy() {
 }
 
 std::shared_ptr<GameObject>& SpatialAccelerationStructure::ColliderComponent::GetGameObject() {
-    return ComponentRegistry::GAMEOBJECTS[gameobject];
+    return ComponentRegistry::Get().GAMEOBJECTS[gameobject];
 }
 
 // TODO: collider AABBs should be augmented to contain their motion over the next time increment.

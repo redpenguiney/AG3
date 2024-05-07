@@ -33,6 +33,4 @@ class Module {
 
     // void* to avoid inclusion of windows header, pointer to HMODULE (loaded dll) on windows, or to its equivalent on other operating systems
     void* internalModule;
-
-    
 };

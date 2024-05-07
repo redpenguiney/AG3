@@ -22,5 +22,5 @@ std::shared_ptr<GameObject> LuaGameobjectConstructor(sol::object args) {
     if (!Mesh::IsValidForGameObject(params.meshId)) {
         throw sol::error("Invalid mesh id given. Please use a real mesh that can actually be rendered.");
     }
-    return ComponentRegistry::NewGameObject(params);
+    return ComponentRegistry::Get().NewGameObject(params);
 }

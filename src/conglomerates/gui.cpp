@@ -27,7 +27,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : 0);
     objectParams.meshId = Mesh::Square()->meshId;
     objectParams.shaderId = guiShader->shaderProgramId;
-    object = ComponentRegistry::NewGameObject(objectParams);
+    object = ComponentRegistry::Get().NewGameObject(objectParams);
 
     guiScaleMode = ScaleXY;
     anchorPoint = {0, 0};
@@ -65,7 +65,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
             .horizontalAlignment = HorizontalAlignMode::Left,
             .verticalAlignment = VerticalAlignMode::Top,
             .text = "Text",
-            .object = ComponentRegistry::NewGameObject(textObjectParams),
+            .object = ComponentRegistry::Get().NewGameObject(textObjectParams),
             .fontMaterial = fontMaterial->second,
             .fontMaterialLayer = fontMaterial->first
         });

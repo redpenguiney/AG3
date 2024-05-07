@@ -39,7 +39,7 @@ AudioEngine::AudioEngine() {
 void AudioEngine::Update() {
 
 
-    for (auto & [audioPlayerComponent]: ComponentRegistry::GetSystemComponents<AudioPlayerComponent>()) {
+    for (auto & [audioPlayerComponent]: ComponentRegistry::Get().GetSystemComponents<AudioPlayerComponent>()) {
         audioPlayerComponent->Update(microphonePosition);
     }
 }

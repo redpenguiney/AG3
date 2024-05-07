@@ -19,10 +19,9 @@ void* LoadFunc(const HMODULE& windowsModule, const char* funcName) {
 #endif
 
 void Module::LoadModule(const char *filepath) {
-    auto modu = Module(filepath);
-    LOADED_MODULES.push_back(std::move(modu));
-    
-    modu.internalModule = nullptr; // prevent destructor from deleting modu.internalModule when modu is copied into LOADED_MODUELS
+    auto module = Module(filepath);
+    LOADED_MODULES.push_back(std::move(module));
+    module.internalModule = nullptr; // when module gets copied, this local variable will call its destructor and delete internal module against our will if we don't set this
 }
 
 void Module::PrePhysics() {
@@ -118,15 +117,9 @@ void Module::CloseAll() {
 }
 
 Module::~Module() {
-    DebugLogInfo("Destructor on module was called, internal hmodule is at ", internalModule);
-
+    (*onClose)();
     if (internalModule != nullptr) {
         
-        if (onClose.has_value()) {
-            (*onClose)();
-        }
-        
-
         #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     
         FreeLibrary(*(HMODULE*)internalModule);

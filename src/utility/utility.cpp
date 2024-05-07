@@ -17,7 +17,7 @@ void DebugPlacePointOnPosition(glm::dvec3 position, glm::vec4 color) {
     static auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
     params.meshId = m->meshId;
-    auto g = ComponentRegistry::NewGameObject(params);
+    auto g = ComponentRegistry::Get().NewGameObject(params);
     g->transformComponent->SetPos(position);
     g->transformComponent->SetScl({0.1, 0.1, 0.1});
     g->renderComponent->SetColor(color);
