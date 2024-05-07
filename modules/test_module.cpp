@@ -1,3 +1,6 @@
+#include "gameobjects/component_registry.hpp"
+#define IS_MODULE
+
 #include <vector>
 
 #include "../src/graphics/engine.hpp"
@@ -19,6 +22,7 @@
 #include "../src/gameobjects/component_registry.hpp"
 #include "../src/graphics/engine.hpp"
 #include "../external_headers/GLM/gtx/string_cast.hpp"
+#include "graphics/engine.hpp"
 
 Gui* ui;
 std::weak_ptr<GameObject> goWeakPtr;
@@ -26,10 +30,28 @@ std::weak_ptr<GameObject> goWeakPtr;
 extern "C" {
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+
+__declspec (dllexport) void SetGraphicsEngine(GraphicsEngine* engine) {
+    GraphicsEngine::SetModuleGraphicsEngine(engine);
+}
+// __declspec (dllexport) void SetSpatialAccelerationStructure(GraphicsEngine* engine) {
+//     GraphicsEngine::SetModuleGraphicsEngine(engine);
+// }
+// __declspec (dllexport) void SetPhysicsEngine(GraphicsEngine* engine) {
+//     GraphicsEngine::SetModuleGraphicsEngine(engine);
+// }
+// __declspec (dllexport) void SetAudioEngine(GraphicsEngine* engine) {
+//     GraphicsEngine::SetModuleGraphicsEngine(engine);
+// }
+__declspec (dllexport) void SetComponentRegistry(ComponentRegistry* cr) {
+    ComponentRegistry::SetModuleComponentRegistry(cr);
+}
+
 __declspec (dllexport) void OnInit() {
     std::cout << "OH YEAH LETS GO\n";
 
     auto & GE = GraphicsEngine::Get();
+    auto & CR = ComponentRegistry::Get();
     // auto & PE = PhysicsEngine::Get();
     // auto & AE = AudioEngine::Get();
     // auto & LUA = LuaHandler::Get();
@@ -67,7 +89,7 @@ __declspec (dllexport) void OnInit() {
         params.meshId = m->meshId;
         params.materialId = grassMaterial->id;
 
-        auto floor = ComponentRegistry::NewGameObject(params);
+        auto floor = CR.NewGameObject(params);
         floor->transformComponent->SetPos({0, 0, 0});
         floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(0.0)});
         floor->colliderComponent->elasticity = 0.9;
@@ -148,7 +170,7 @@ __declspec (dllexport) void OnInit() {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
-                auto g = ComponentRegistry::NewGameObject(params);
+                auto g = CR.NewGameObject(params);
                 g->transformComponent->SetPos({0 + x * 3,3.0 + y * 3, 0 + z * 3});
                 g->colliderComponent->elasticity = 0.0;
                 g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), glm::radians(0.0), glm::radians(0.0))));
@@ -170,7 +192,7 @@ __declspec (dllexport) void OnInit() {
         GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
         params.meshId = m->meshId;
         params.materialId = 0;
-        auto coolLight = ComponentRegistry::NewGameObject(params);
+        auto coolLight = CR.NewGameObject(params);
         coolLight->renderComponent->SetTextureZ(-1);
         coolLight->transformComponent->SetPos({8, 5, 0});
         coolLight->pointLightComponent->SetRange(200);

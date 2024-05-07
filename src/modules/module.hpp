@@ -32,5 +32,5 @@ class Module {
     std::optional<void(*)()> onClose;
 
     // void* to avoid inclusion of windows header, pointer to HMODULE (loaded dll) on windows, or to its equivalent on other operating systems
-    void* module;
+    void* internalModule;
 };

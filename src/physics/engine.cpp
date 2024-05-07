@@ -172,7 +172,7 @@ void PhysicsEngine::Step(const double timestep) {
     
 
     // iterate through all sets of colliderComponent + rigidBodyComponent + transformComponent
-    auto components = ComponentRegistry::GetSystemComponents<TransformComponent, SpatialAccelerationStructure::ColliderComponent, RigidbodyComponent>();
+    auto components = ComponentRegistry::Get().GetSystemComponents<TransformComponent, SpatialAccelerationStructure::ColliderComponent, RigidbodyComponent>();
 
     // first pass, apply gravity, convert applied force to velocity, apply drag, and move everything by its velocity
     for (auto & tuple: components) {

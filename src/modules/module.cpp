@@ -21,6 +21,7 @@ void* LoadFunc(const HMODULE& windowsModule, const char* funcName) {
 void Module::LoadModule(const char *filepath) {
     auto module = Module(filepath);
     LOADED_MODULES.push_back(std::move(module));
+    module.internalModule = nullptr; // when module gets copied, this local variable will call its destructor and delete internal module against our will if we don't set this
 }
 
 void Module::PrePhysics() {
@@ -55,11 +56,11 @@ void RunHook(void(*func)()) {
 
 
 Module::Module(const char* filepath) {
-    module = nullptr;
+    internalModule = nullptr;
     #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-    module = new HMODULE;
-    *(HMODULE*)module = LoadLibrary(filepath);
-    if ((*(HMODULE*)module) == nullptr) {
+    internalModule = new HMODULE;
+    *(HMODULE*)internalModule = LoadLibrary(filepath);
+    if ((*(HMODULE*)internalModule) == nullptr) {
         LPVOID lpMsgBuf;
         DWORD dw = GetLastError(); 
 
@@ -74,27 +75,27 @@ Module::Module(const char* filepath) {
             0, NULL );
 
         DebugLogError("Failed to load module, ", filepath, "; ", (char*)lpMsgBuf);
-        module = nullptr;
+        internalModule = nullptr;
     }
     else {
-        auto init = LoadFunc(*(HMODULE*)module, "OnInit");
+        auto init = LoadFunc(*(HMODULE*)internalModule, "OnInit");
         if (init) {
             onInit = (void(*)())init;
             
         }
-        auto postRender = LoadFunc(*(HMODULE*)module, "OnPostRender");
+        auto postRender = LoadFunc(*(HMODULE*)internalModule, "OnPostRender");
         if (postRender) {
             onPostRender = (void(*)())postRender;
         }
-        auto prePhys = LoadFunc(*(HMODULE*)module, "OnPrePhysics");
+        auto prePhys = LoadFunc(*(HMODULE*)internalModule, "OnPrePhysics");
         if (prePhys) {
             onPrePhysics = (void(*)())prePhys;
         }
-        auto postPhys = LoadFunc(*(HMODULE*)module, "OnPostPhysics");
+        auto postPhys = LoadFunc(*(HMODULE*)internalModule, "OnPostPhysics");
         if (postPhys) {
             onPostPhysics = (void(*)())postPhys;
         }
-        auto close = LoadFunc(*(HMODULE*)module, "OnClose");
+        auto close = LoadFunc(*(HMODULE*)internalModule, "OnClose");
         if (close) {
             onClose = (void(*)())close;
         }
@@ -116,13 +117,14 @@ void Module::CloseAll() {
 }
 
 Module::~Module() {
-    (*onClose)();
-    if (module != nullptr) {
-        
+    
+    if (internalModule != nullptr) {
+        (*onClose)();
+
         #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     
-        FreeLibrary(*(HMODULE*)module);
-        delete (HMODULE*)module;
+        FreeLibrary(*(HMODULE*)internalModule);
+        delete (HMODULE*)internalModule;
 
         #else
         #error unsupported module platform
