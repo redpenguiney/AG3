@@ -54,7 +54,7 @@ int main(int numArgs, const char *argPtrs[]) {
     auto & AE = AudioEngine::Get();
     auto & LUA = LuaHandler::Get();
     
-    Module::LoadModule("..\\modules\\test_module.dll");
+    Module::LoadModule("..\\modules\\libtest_module.dll");
 
 
 

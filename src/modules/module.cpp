@@ -19,30 +19,32 @@ void* LoadFunc(const HMODULE& windowsModule, const char* funcName) {
 #endif
 
 void Module::LoadModule(const char *filepath) {
-    auto module = Module(filepath);
-    LOADED_MODULES.push_back(std::move(module));
+    auto modu = Module(filepath);
+    LOADED_MODULES.push_back(std::move(modu));
+    
+    modu.internalModule = nullptr; // prevent destructor from deleting modu.internalModule when modu is copied into LOADED_MODUELS
 }
 
 void Module::PrePhysics() {
-    for (auto & module: LOADED_MODULES) {
-        if (module.onPrePhysics.has_value()) {
-            (*(module.onPrePhysics))();
+    for (auto & internalModule: LOADED_MODULES) {
+        if (internalModule.onPrePhysics.has_value()) {
+            (*(internalModule.onPrePhysics))();
         }
     }
 }
 
 void Module::PostPhysics() {
-    for (auto & module: LOADED_MODULES) {
-        if (module.onPostPhysics.has_value()) {
-            (*(module.onPostPhysics))();
+    for (auto & internalModule: LOADED_MODULES) {
+        if (internalModule.onPostPhysics.has_value()) {
+            (*(internalModule.onPostPhysics))();
         }
     }
 }
 
 void Module::PostRender() {
-    for (auto & module: LOADED_MODULES) {
-        if (module.onPostRender.has_value()) {
-            (*(module.onPostRender))();
+    for (auto & internalModule: LOADED_MODULES) {
+        if (internalModule.onPostRender.has_value()) {
+            (*(internalModule.onPostRender))();
         }
     }
 }
@@ -55,11 +57,11 @@ void RunHook(void(*func)()) {
 
 
 Module::Module(const char* filepath) {
-    module = nullptr;
+    internalModule = nullptr;
     #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-    module = new HMODULE;
-    *(HMODULE*)module = LoadLibrary(filepath);
-    if ((*(HMODULE*)module) == nullptr) {
+    internalModule = new HMODULE;
+    *(HMODULE*)internalModule = LoadLibrary(filepath);
+    if ((*(HMODULE*)internalModule) == nullptr) {
         LPVOID lpMsgBuf;
         DWORD dw = GetLastError(); 
 
@@ -74,27 +76,27 @@ Module::Module(const char* filepath) {
             0, NULL );
 
         DebugLogError("Failed to load module, ", filepath, "; ", (char*)lpMsgBuf);
-        module = nullptr;
+        internalModule = nullptr;
     }
     else {
-        auto init = LoadFunc(*(HMODULE*)module, "OnInit");
+        auto init = LoadFunc(*(HMODULE*)internalModule, "OnInit");
         if (init) {
             onInit = (void(*)())init;
             
         }
-        auto postRender = LoadFunc(*(HMODULE*)module, "OnPostRender");
+        auto postRender = LoadFunc(*(HMODULE*)internalModule, "OnPostRender");
         if (postRender) {
             onPostRender = (void(*)())postRender;
         }
-        auto prePhys = LoadFunc(*(HMODULE*)module, "OnPrePhysics");
+        auto prePhys = LoadFunc(*(HMODULE*)internalModule, "OnPrePhysics");
         if (prePhys) {
             onPrePhysics = (void(*)())prePhys;
         }
-        auto postPhys = LoadFunc(*(HMODULE*)module, "OnPostPhysics");
+        auto postPhys = LoadFunc(*(HMODULE*)internalModule, "OnPostPhysics");
         if (postPhys) {
             onPostPhysics = (void(*)())postPhys;
         }
-        auto close = LoadFunc(*(HMODULE*)module, "OnClose");
+        auto close = LoadFunc(*(HMODULE*)internalModule, "OnClose");
         if (close) {
             onClose = (void(*)())close;
         }
@@ -116,18 +118,24 @@ void Module::CloseAll() {
 }
 
 Module::~Module() {
-    (*onClose)();
-    if (module != nullptr) {
+    DebugLogInfo("Destructor on module was called, internal hmodule is at ", internalModule);
+
+    if (internalModule != nullptr) {
         
+        if (onClose.has_value()) {
+            (*onClose)();
+        }
+        
+
         #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     
-        FreeLibrary(*(HMODULE*)module);
-        delete (HMODULE*)module;
+        FreeLibrary(*(HMODULE*)internalModule);
+        delete (HMODULE*)internalModule;
 
         #else
         #error unsupported module platform
         #endif
     }
     
-    
+    DebugLogInfo("Destructor on module was finished, internal hmodule is at ", internalModule);
 }

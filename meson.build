@@ -14,6 +14,7 @@ openalsoft_dep = subproject('openal-soft').get_variable('openal_dep')
 
 subdir('src')
 
+test_ext = shared_library('test_module', sources: 'modules/test_module.cpp', link_with: srclib, dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep, openalsoft_dep])
 e = executable('AG3', 'src/main.cpp', link_with: srclib, dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep, openalsoft_dep])
-test_ext = shared_library('test_module', link_with: srclib)
+
 test('er', e)
