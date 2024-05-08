@@ -55,7 +55,7 @@ int main(int numArgs, const char *argPtrs[]) {
     auto & LUA = LuaHandler::Get(); DebugLogInfo("4");
     auto & CR = ComponentRegistry::Get(); DebugLogInfo("5");
 
-    // Module::LoadModule("..\\modules\\libtest_module.dll");
+    Module::LoadModule("..\\modules\\libtest_module.dll");
 
 
 

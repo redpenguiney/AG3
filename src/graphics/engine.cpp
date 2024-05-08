@@ -18,12 +18,9 @@ void GraphicsEngine::SetModuleGraphicsEngine(GraphicsEngine* eng) {
 GraphicsEngine& GraphicsEngine::Get() {
     #ifdef IS_MODULE
     assert(_GRAPHICS_ENGINE_ != nullptr);
-    DebugLogInfo("Requested grahpics engine from module, returning ", _GRAPHICS_ENGINE_);
     return *_GRAPHICS_ENGINE_;
     #else
-    DebugLogLineReached();
     static GraphicsEngine engine;
-    DebugLogInfo("Requested graphics engine, returning ", &engine);
     return engine;
     #endif
 }
@@ -63,7 +60,6 @@ const std::vector<GLuint> screenQuadIndices = {
 };
 
 GraphicsEngine::GraphicsEngine():
-LAST_MESH_ID(0), 
 pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)),
 screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, screenQuadVertexFormat, 1, false))
 {
@@ -80,6 +76,7 @@ DebugLogLineReached();
     defaultBillboardGuiShaderProgram = ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", {}, true, true, false, true);
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
+    crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
 DebugLogLineReached();
     auto skybox_boxmesh = Mesh::FromFile("../models/skybox.obj", MeshVertexFormat::Default(), -1.0, 1.0, 1, false);
     skybox = new RenderableMesh(skybox_boxmesh);
@@ -142,7 +139,7 @@ void GraphicsEngine::UpdateMainFramebuffer() {
 }
 
 void GraphicsEngine::DebugAxis() {
-    static auto crummyDebugShader =  ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
+
     crummyDebugShader->Use();
     // TODO: i literally made the renderablemesh class for this sort of thing, use it
     // xyz, rgb

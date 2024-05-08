@@ -151,12 +151,6 @@ class GraphicsEngine {
         RenderComponent();
     };
 
-    // TODO: put these somewhere better.
-    // These were originally private static variables in mesh.hpp, but that didn't work well with the introduction of modules/dlls so now it's here. Don't touch.
-    std::atomic<unsigned int> LAST_MESH_ID = {1};
-    std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
-    tinyobj::ObjReader OBJ_LOADER;
-
     // Identical to a RenderComponent in every way, except that it doesn't use floating origin. Not a bool flag on a normal render component bc i like premature optimization.
     class RenderComponentNoFO: public RenderComponent {
         public:
@@ -183,6 +177,9 @@ class GraphicsEngine {
     // Key is mesh id, value is ptr to rendercomponent which uses that mesh.
     // Needed so that mesh.cpp can access the meshpools being used by objects with dynamic meshes, in order to apply changes made to those dynamic meshes to the GPU.
     std::unordered_map<unsigned int, std::vector<RenderComponent*>> dynamicMeshUsers;
+
+    // used by various debug features, can probably change freely with no isses (TODO check) 
+    std::shared_ptr<ShaderProgram> crummyDebugShader;
 
     private:
 

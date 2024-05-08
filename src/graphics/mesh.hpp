@@ -15,7 +15,47 @@
 
 class Texture;
 
+class Mesh;
+class Material;
+class ShaderProgram;
+class PhysicsMesh;
 
+// These were originally private static variables in mesh.hpp and material.hpp, but that didn't work well with the introduction of modules/dlls so now it's here.
+// Only for internal use by mesh.cpp. The public Get() method is for transferring to modules.
+class MeshGlobals {
+    
+    public:
+
+    // When modules (shared libraries) get their copy of this code, they need to use a special version of Mesh::Get().
+    // This is so that both the module and the main executable have access to the same globals. 
+    // The executable will provide each shared_library with a pointer to MeshGlobals.
+    #ifdef IS_MODULE
+    static void SetModuleMeshGlobals(MeshGlobals* globals);
+    #endif
+    
+    static MeshGlobals& Get();
+
+    private:
+    std::atomic<unsigned int> LAST_MESH_ID = {1}; // used to give each mesh a unique uuid
+    std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
+    tinyobj::ObjReader OBJ_LOADER;
+    friend class Mesh;
+
+    unsigned int LAST_MATERIAL_ID = 1; // used to give each material a unique uuid TODO: why this one not atomic but the others are
+    std::unordered_map<unsigned int,  std::shared_ptr<Material>> MATERIALS;
+    friend class Material;
+
+    GLuint LOADED_PROGRAM_ID = 0; // id of the currently loaded shader program
+    std::unordered_map<unsigned int, std::shared_ptr<ShaderProgram>> LOADED_PROGRAMS; 
+    friend class ShaderProgram;
+
+    std::atomic<unsigned int> LAST_PHYS_MESH_ID = {1}; // used to give each physmesh a unique uuid
+    std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> LOADED_PHYS_MESHES; 
+    std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> MESHES_TO_PHYS_MESHES; 
+    friend class PhysicsMesh;
+    
+    MeshGlobals();
+};
 
 // Something a vertex has; color, position, normal, etc.
 struct VertexAttribute {

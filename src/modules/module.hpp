@@ -9,10 +9,13 @@ class ComponentRegistry;
 class PhysicsEngine;
 class SpatialAccelerationStructure;
 class AudioEngine;
+class MeshGlobals;
 
 extern "C" {
     struct ModulesGlobalsPointers {
         GraphicsEngine* GE;
+        MeshGlobals* MG;
+        GuiGlobals* GG;
         ComponentRegistry* CR;
         PhysicsEngine* PE;
         SpatialAccelerationStructure* SAS;

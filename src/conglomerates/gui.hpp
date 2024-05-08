@@ -7,7 +7,11 @@
 #include <optional>
 #include <utility>
 
-// TODO: parenting, 3d 
+class GuiGlobals {
+
+};
+
+// TODO: parenting probably doesn't work
 
 // Basically a wrapper for the transform and render components that handles stuff for you when doing gui.
 // Doesn't need to be super fast.

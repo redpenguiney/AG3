@@ -14,7 +14,8 @@ glm::dvec3 LookVector(double pitch, double yaw) {
 }
 
 void DebugPlacePointOnPosition(glm::dvec3 position, glm::vec4 color) {
-    static auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
+    // TODO: cache filename so stuff like this isn't so bad
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
     params.meshId = m->meshId;
     auto g = ComponentRegistry::Get().NewGameObject(params);

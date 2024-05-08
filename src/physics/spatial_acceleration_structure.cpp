@@ -2,6 +2,7 @@
 #include "../gameobjects/component_registry.hpp"
 #include <array>
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
+#include "graphics/engine.hpp"
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -187,12 +188,12 @@ void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode con
     
 
 void SpatialAccelerationStructure::DebugVisualize() {
-    static auto crummyDebugShader =  ShaderProgram::New("../shaders/debug_simple_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
+    auto & crummyDebugShader = GraphicsEngine::Get().crummyDebugShader;
     crummyDebugShader->Use();
 
-    const static auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default());
-    const static auto& vertices = m->vertices; // remember, its xyz, uv, normal, tangent tho we only bothering with xyz
-    const static auto& indices = m->indices;
+    const auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default());
+    const auto& vertices = m->vertices; // remember, its xyz, uv, normal, tangent tho we only bothering with xyz
+    const auto& indices = m->indices;
 
     
     std::vector<float> instancedVertexAttributes; // per object data. format is 4x4 model mat, rgba, 4x4 model mat, rgba...

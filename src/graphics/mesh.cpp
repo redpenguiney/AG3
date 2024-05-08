@@ -21,6 +21,26 @@
 
 // TODO: this file takes too long to compile
 
+#ifdef IS_MODULE
+MeshGlobals* _MESH_GLOBALS = nullptr;
+void MeshGlobals::SetModuleMeshGlobals(MeshGlobals* globals) {
+    _MESH_GLOBALS = globals;
+}
+#endif
+
+MeshGlobals& MeshGlobals::Get() {
+    #ifdef IS_MODULE
+    assert(_MESH_GLOBALS != nullptr);
+    return *_MESH_GLOBALS;
+    #else
+    DebugLogLineReached();
+    static MeshGlobals globals;
+    return globals;
+    #endif
+}
+
+MeshGlobals::MeshGlobals() {}
+
 // helper thing for Mesh::FromFile() and TextMeshFromText() that will expand the vector so that it contains index if needed, then return vector.at(index)
 template<typename T>
 typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::vector<T>& vector) {
@@ -31,17 +51,18 @@ typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::ve
 }
 
 bool Mesh::IsValidForGameObject(unsigned int meshId) {
-    return GraphicsEngine::Get().LOADED_MESHES.count(meshId) && GraphicsEngine::Get().LOADED_MESHES.at(meshId)->instancedVertexSize > 0;
+    return MeshGlobals::Get().LOADED_MESHES.count(meshId) && MeshGlobals::Get().LOADED_MESHES.at(meshId)->instancedVertexSize > 0;
 }
 
 std::shared_ptr<Mesh> Mesh::Square() {
-    static std::vector<GLfloat> squareVerts = {
+    const static std::vector<GLfloat> squareVerts = {
         -0.5, -0.5, 0.0,   0.0, 0.0, 
          0.5, -0.5, 0.0,   1.0, 0.0,
          0.5,  0.5, 0.0,   1.0, 1.0,
         -0.5,  0.5, 0.0,   0.0, 1.0,
          };
 
+    // IF IT DOESN"T WORK LOOK HERE, i think this static variable is okay
     static auto m = Mesh::FromVertices(squareVerts, {0, 1, 2, 0, 2, 3}, false, MeshVertexFormat::DefaultGui(), 1.0, false);
     return m;
 }
@@ -465,8 +486,8 @@ void MeshVertexFormat::SetInstancedVaoVertexAttributes(GLuint& vaoId, unsigned i
 
 // engine calls this to get mesh from an object's meshId
 std::shared_ptr<Mesh>& Mesh::Get(unsigned int meshId) {
-    assert(GraphicsEngine::Get().LOADED_MESHES.count(meshId) != 0 && "Mesh::Get() was given an invalid meshId.");
-    return GraphicsEngine::Get().LOADED_MESHES[meshId];
+    assert(MeshGlobals::Get().LOADED_MESHES.count(meshId) != 0 && "Mesh::Get() was given an invalid meshId.");
+    return MeshGlobals::Get().LOADED_MESHES[meshId];
 }
 
 // // Scales the vertex positions by the given 
@@ -475,15 +496,9 @@ std::shared_ptr<Mesh>& Mesh::Get(unsigned int meshId) {
 // }
 
 std::shared_ptr<Mesh> Mesh::FromVertices(const std::vector<GLfloat>& verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizeSize) {
-    DebugLogLineReached();
-    auto & GE = GraphicsEngine::Get();
-    DebugLogLineReached();
-    unsigned int meshId = GE.LAST_MESH_ID; // (creating a mesh increments this)
-    DebugLogLineReached();
+    unsigned int meshId = MeshGlobals::Get().LAST_MESH_ID; // (creating a mesh increments this)
     auto ptr = std::shared_ptr<Mesh>(new Mesh(verts, indies, isDynamic, meshVertexFormat, expectedCount, normalizeSize));
-    DebugLogLineReached();
-    GraphicsEngine::Get().LOADED_MESHES[meshId] = ptr;
-    DebugLogLineReached();
+    MeshGlobals::Get().LOADED_MESHES[meshId] = ptr;
     return ptr;
 }
 
@@ -511,9 +526,9 @@ std::shared_ptr<Mesh> Mesh::FromVertices(const std::vector<GLfloat>& verts, cons
 // }
 
 std::shared_ptr<Mesh> Mesh::Text(const MeshVertexFormat& meshVertexFormat) {
-    unsigned int i = GraphicsEngine::Get().LAST_MESH_ID;
+    unsigned int i = MeshGlobals::Get().LAST_MESH_ID;
     auto ptr = std::shared_ptr<Mesh>(new Mesh(Mesh::Square()->meshVertices, Mesh::Square()->meshIndices, true, meshVertexFormat, 1, false, true));
-    GraphicsEngine::Get().LOADED_MESHES[i] = ptr;
+    MeshGlobals::Get().LOADED_MESHES[i] = ptr;
     return ptr;
 }
 
@@ -522,17 +537,17 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
     auto config = tinyobj::ObjReaderConfig();
     config.triangulate = true;
     config.vertex_color = !meshVertexFormat.attributes.color->instanced;
-    bool success = GraphicsEngine::Get().OBJ_LOADER.ParseFromFile(path, config);
+    bool success = MeshGlobals::Get().OBJ_LOADER.ParseFromFile(path, config);
     if (!success) {
-        std::printf("Mesh::FromFile failed to load %s because %s", path.c_str(), GraphicsEngine::Get().OBJ_LOADER.Error().c_str());
+        std::printf("Mesh::FromFile failed to load %s because %s", path.c_str(), MeshGlobals::Get().OBJ_LOADER.Error().c_str());
         abort();
     }
 
     auto nFloatsPerVertex = meshVertexFormat.GetNonInstancedVertexSize()/sizeof(GLfloat);
 
-    auto shape = GraphicsEngine::Get().OBJ_LOADER.GetShapes().at(0);
+    auto shape = MeshGlobals::Get().OBJ_LOADER.GetShapes().at(0);
     //auto material = OBJ_LOADER.GetMaterials().at(0);
-    auto attrib = GraphicsEngine::Get().OBJ_LOADER.GetAttrib();
+    auto attrib = MeshGlobals::Get().OBJ_LOADER.GetAttrib();
 
     std::vector<GLfloat> & positions = attrib.vertices;
     std::vector<GLfloat> & texcoordsXY = attrib.texcoords;
@@ -685,9 +700,9 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
         }
     }
     
-    unsigned int meshId = GraphicsEngine::Get().LAST_MESH_ID; // (creating a mesh increments this)
+    unsigned int meshId = MeshGlobals::Get().LAST_MESH_ID; // (creating a mesh increments this)
     auto ptr = std::shared_ptr<Mesh>(new Mesh(vertices, indices, isDynamic, meshVertexFormat, expectedCount, normalizeSize));
-    GraphicsEngine::Get().LOADED_MESHES[meshId] = ptr;
+    MeshGlobals::Get().LOADED_MESHES[meshId] = ptr;
     return ptr;
 }
 
@@ -695,13 +710,13 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
 // you CAN unload a mesh while objects are using it without any issues - a copy of that mesh is still on the gpu.
 // you only need to call this function if you are (like for procedural terrain) dynamically loading new meshes
 void Mesh::Unload(int meshId) {
-    assert(GraphicsEngine::Get().LOADED_MESHES.count(meshId) != 0 && "Mesh::Unload() was given an invalid meshId.");
-    GraphicsEngine::Get().LOADED_MESHES.erase(meshId);
+    assert(MeshGlobals::Get().LOADED_MESHES.count(meshId) != 0 && "Mesh::Unload() was given an invalid meshId.");
+    MeshGlobals::Get().LOADED_MESHES.erase(meshId);
 }
 
 Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizePositions, bool fromText):
 dynamic(isDynamic),
-meshId(GraphicsEngine::Get().LAST_MESH_ID++),
+meshId(MeshGlobals::Get().LAST_MESH_ID++),
 instanceCount(expectedCount),
 nonInstancedVertexSize(meshVertexFormat.GetNonInstancedVertexSize()),
 instancedVertexSize(meshVertexFormat.GetInstancedVertexSize()),

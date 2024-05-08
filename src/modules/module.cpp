@@ -111,6 +111,7 @@ Module::Module(const char* filepath) {
              auto castedLoadGlobals = (void(*)(ModulesGlobalsPointers))loadGlobals;
              castedLoadGlobals(ModulesGlobalsPointers {
                 .GE = &GraphicsEngine::Get(),
+                .MG = &MeshGlobals::Get(),
                 .CR = &ComponentRegistry::Get(),
                 .PE = &PhysicsEngine::Get(),
                 .SAS = &SpatialAccelerationStructure::Get(),  

@@ -47,7 +47,4 @@ class PhysicsMesh {
     private:
     PhysicsMesh(std::shared_ptr<Mesh>& mesh);
 
-    inline static std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> LOADED_PHYS_MESHES; 
-    inline static std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> MESHES_TO_PHYS_MESHES; 
-    inline static std::atomic<unsigned int> LAST_PHYS_MESH_ID = {1};
 };

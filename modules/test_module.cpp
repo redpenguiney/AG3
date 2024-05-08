@@ -37,13 +37,14 @@ extern "C" {
 __declspec (dllexport) void LoadGlobals(ModulesGlobalsPointers globals) {
     ComponentRegistry::SetModuleComponentRegistry(globals.CR);
     GraphicsEngine::SetModuleGraphicsEngine(globals.GE);
+    MeshGlobals::SetModuleMeshGlobals(globals.MG);
 }
 
 __declspec (dllexport) void OnInit() {
     std::cout << "OH YEAH LETS GO\n";
 
-    // auto & GE = GraphicsEngine::Get();
-    // auto & CR = ComponentRegistry::Get();
+    auto & GE = GraphicsEngine::Get();
+    auto & CR = ComponentRegistry::Get();
     // auto & PE = PhysicsEngine::Get();
     // auto & AE = AudioEngine::Get();
     // auto & LUA = LuaHandler::Get();
@@ -62,34 +63,34 @@ __declspec (dllexport) void OnInit() {
     //     soundSounder->audioPlayerComponent->Play();
     // }
 
-    // auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
     
     // // LUA.RunString("print(\"help from lua\")");
     // // LUA.RunFile("../scripts/test.lua");
 
-    // auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
+    auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
 
-    // auto [brickTextureZ, brickMaterial] = Material::New({
-    //     TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap}, 
-    //     TextureCreateParams {{"../textures/ambientcg_bricks085/roughness.jpg",}, Texture::SpecularMap}, 
-    //     TextureCreateParams {{"../textures/ambientcg_bricks085/normal_gl.jpg",}, Texture::NormalMap}, 
-    //     // TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
-    //     }, Texture::Texture2D);
+    auto [brickTextureZ, brickMaterial] = Material::New({
+        TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap}, 
+        TextureCreateParams {{"../textures/ambientcg_bricks085/roughness.jpg",}, Texture::SpecularMap}, 
+        TextureCreateParams {{"../textures/ambientcg_bricks085/normal_gl.jpg",}, Texture::NormalMap}, 
+        // TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
+        }, Texture::Texture2D);
 
-    // {
-    //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    //     params.meshId = m->meshId;
-    //     params.materialId = grassMaterial->id;
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = grassMaterial->id;
 
-    //     auto floor = CR.NewGameObject(params);
-    //     floor->transformComponent->SetPos({0, 0, 0});
-    //     floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(0.0)});
-    //     floor->colliderComponent->elasticity = 0.9;
-    //     floor->transformComponent->SetScl({10, 1, 10});
-    //     floor->renderComponent->SetColor({0, 1, 0, 1.0});
-    //     floor->renderComponent->SetTextureZ(grassTextureZ);
-    //     floor->name = "ah yes the floor here is made of floor";
-    // }
+        auto floor = CR.NewGameObject(params);
+        floor->transformComponent->SetPos({0, 0, 0});
+        floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(0.0)});
+        floor->colliderComponent->elasticity = 0.9;
+        floor->transformComponent->SetScl({10, 1, 10});
+        floor->renderComponent->SetColor({0, 1, 0, 1.0});
+        floor->renderComponent->SetTextureZ(grassTextureZ);
+        floor->name = "ah yes the floor here is made of floor";
+    }
 
     // GameobjectCreateParams wallParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
     //     wallParams.meshId = m->meshId;
@@ -224,8 +225,8 @@ __declspec (dllexport) void OnInit() {
     }
     
     
-    // GE.debugFreecamEnabled = true;
-    // GE.window.SetMouseLocked(true);
+    GE.debugFreecamEnabled = true;
+    GE.window.SetMouseLocked(true);
     
     // glPointSize(8.0); // debug thing, ignore
     // glLineWidth(2.0);

@@ -63,7 +63,6 @@ class Material {
     // If not, it returns std::nullopt.
     std::optional<float> TryAppendLayer(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type);
 
-    static inline unsigned int LAST_MATERIAL_ID = 1;
     Material(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask);
 
     std::optional<Texture> colorMap;
@@ -72,5 +71,4 @@ class Material {
     std::optional<Texture> displacementMap;
     std::optional<Texture> fontMap;
 
-    inline static std::unordered_map<unsigned int,  std::shared_ptr<Material>> MATERIALS;
 };

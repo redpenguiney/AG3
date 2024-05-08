@@ -1,4 +1,5 @@
 #include "material.hpp"
+#include "graphics/mesh.hpp"
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
@@ -7,24 +8,24 @@
 #include <process.h>
 
 void Material::Destroy(const unsigned int id) {
-    assert(MATERIALS.count(id));
-    MATERIALS.erase(id);
+    assert(MeshGlobals::Get().MATERIALS.count(id));
+    MeshGlobals::Get().MATERIALS.erase(id);
 }
 
 std::shared_ptr<Material>& Material::Get(unsigned int materialId) {
-    assert(MATERIALS.count(materialId));
-    return MATERIALS.at(materialId);
+    assert(MeshGlobals::Get().MATERIALS.count(materialId));
+    return MeshGlobals::Get().MATERIALS.at(materialId);
 }
 
 // TODO: needs to try to append to existing material
 std::pair<float, std::shared_ptr<Material>> Material::New(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask) {
     auto ptr = std::shared_ptr<Material>(new Material(textureParams, type, depthMask));
-    MATERIALS[ptr->id] = ptr;
+    MeshGlobals::Get().MATERIALS[ptr->id] = ptr;
     return std::make_pair(0, ptr);
 }
 
 Material::Material(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask): 
-id(LAST_MATERIAL_ID++),
+id(MeshGlobals::Get().LAST_MATERIAL_ID++),
 materialType(type),
 depthMaskEnabled(depthMask),
 colorMap(std::nullopt),

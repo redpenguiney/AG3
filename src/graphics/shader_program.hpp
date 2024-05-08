@@ -80,13 +80,13 @@ class ShaderProgram {
     void Use();
 
     private:
-    static inline GLuint LOADED_PROGRAM_ID = 0;
+    
     GLuint programId;
     Shader vertex; // processes each vertex 
     Shader fragment; // processes each fragment/pixel
     // TODO: tesselation, geometry, maybe even compute shaders
     std::unordered_map<std::string, int> uniform_locations; // used to set uniform variables
-    inline static std::unordered_map<unsigned int, std::shared_ptr<ShaderProgram>> LOADED_PROGRAMS; 
+    
 
     ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool usePerspective, const bool useLightClusters, const bool orthrographic);
     ShaderProgram(const char* computePath);

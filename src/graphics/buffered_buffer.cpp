@@ -6,12 +6,11 @@
 #include <cwchar>
 #include <iostream>
 
-// bufferCount is no buffering (1), double buffering (2) or triple buffering (3).
+// bufferCount is no buffering (1), double buffering (2) or triple buffering (3). or higher, i guess.
 BufferedBuffer::BufferedBuffer(GLenum bindingLocation, const unsigned int bufferCount, GLuint initalSize): 
 bufferBindingLocation(bindingLocation),
 numBuffers(bufferCount)
 {
-    DebugLogLineReached();
     // assert(initalSize != 0);
     currentBuffer = 0;
     size = 0;
@@ -23,7 +22,6 @@ numBuffers(bufferCount)
     for (unsigned int i = 0; i < numBuffers; i++) {
         sync[i] = 0;
     }
-    DebugLogLineReached();
 }
 
 BufferedBuffer::~BufferedBuffer() {
@@ -43,6 +41,7 @@ void BufferedBuffer::Update() {
 
     // Wait for the GPU to be finished with the new section of the buffer (triple buffering means this shouldn't happen much).
     if (sync[currentBuffer] != 0) {
+        // TODO: WHY DID WE COMMENT OUT THE SYNC HERE?? THAT SEEMS KINDA IMPORTANT LOW KEY
         //std::printf("\nSync status was %x", glClientWaitSync(sync[currentBuffer], GL_SYNC_FLUSH_COMMANDS_BIT, SYNC_TIMEOUT));
     }
 }
