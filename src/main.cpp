@@ -46,16 +46,16 @@ int main(int numArgs, const char *argPtrs[]) {
 
     DebugLogInfo("Main function reached.");
 
-    atexit(AtExit);
+    atexit(AtExit); DebugLogInfo("0");
 
     // TODO: shouldn't actually matter if these lines exist, and if it does fix that please
-    auto & GE = GraphicsEngine::Get();
-    auto & PE = PhysicsEngine::Get();
-    auto & AE = AudioEngine::Get();
-    auto & LUA = LuaHandler::Get();
-    auto & CR = ComponentRegistry::Get();
+    auto & GE = GraphicsEngine::Get(); DebugLogInfo("1");
+    auto & PE = PhysicsEngine::Get(); DebugLogInfo("2");
+    auto & AE = AudioEngine::Get(); DebugLogInfo("3");
+    auto & LUA = LuaHandler::Get(); DebugLogInfo("4");
+    auto & CR = ComponentRegistry::Get(); DebugLogInfo("5");
 
-    Module::LoadModule("..\\modules\\libtest_module.dll");
+    // Module::LoadModule("..\\modules\\libtest_module.dll");
 
 
 
@@ -122,7 +122,7 @@ int main(int numArgs, const char *argPtrs[]) {
         
 
         // printf("Doing a little raycasting.\n");
-        if (LMB_DOWN) {
+        if (GE.window.LMB_DOWN) {
             auto castResult = Raycast(GE.debugFreecamCamera.position, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
             
             if (castResult.hitObject != nullptr) {
@@ -141,13 +141,13 @@ int main(int numArgs, const char *argPtrs[]) {
         }
 
 
-        if (PRESS_BEGAN_KEYS[GLFW_KEY_SPACE]) {
+        if (GE.window.PRESS_BEGAN_KEYS[GLFW_KEY_SPACE]) {
             physicsPaused = !physicsPaused;
         }
-        if (PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
+        if (GE.window.PRESS_BEGAN_KEYS[GLFW_KEY_ESCAPE]) {
             GE.window.Close();
         }
-        if (PRESS_BEGAN_KEYS[GLFW_KEY_TAB]) {
+        if (GE.window.PRESS_BEGAN_KEYS[GLFW_KEY_TAB]) {
             GE.window.SetMouseLocked(!GE.window.mouseLocked);
         }
         

@@ -151,6 +151,12 @@ class GraphicsEngine {
         RenderComponent();
     };
 
+    // TODO: put these somewhere better.
+    // These were originally private static variables in mesh.hpp, but that didn't work well with the introduction of modules/dlls so now it's here. Don't touch.
+    std::atomic<unsigned int> LAST_MESH_ID = {1};
+    std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
+    tinyobj::ObjReader OBJ_LOADER;
+
     // Identical to a RenderComponent in every way, except that it doesn't use floating origin. Not a bool flag on a normal render component bc i like premature optimization.
     class RenderComponentNoFO: public RenderComponent {
         public:

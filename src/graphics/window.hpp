@@ -4,28 +4,12 @@
 #include "../../external_headers/GLM/ext.hpp"
 #include <unordered_map>
 
-// User input stuff.
-// index is key enums provided by GLFW
-// TODO: these maps are def not thread safe, probably needs a rwlock
-inline std::unordered_map<unsigned int, bool> PRESSED_KEYS;
-inline std::unordered_map<unsigned int, bool> PRESS_BEGAN_KEYS;
-inline std::unordered_map<unsigned int, bool> PRESS_ENDED_KEYS;
 
-inline bool LMB_DOWN;
-inline bool RMB_DOWN;
-inline bool LMB_BEGAN;
-inline bool RMB_BEGAN;
-inline bool LMB_ENDED;
-inline bool RMB_ENDED;
-
-// TODO: RAW MOUSE option
-inline glm::dvec2 MOUSE_POS;
-inline glm::dvec2 MOUSE_DELTA; // how much mouse has moved since last frame
 
 class Window {
     public:
-    static inline unsigned int width = 0;
-    static inline unsigned int height = 0;
+    unsigned int width = 0;
+    unsigned int height = 0;
     bool mouseLocked;
 
     Window() = delete; 
@@ -33,7 +17,7 @@ class Window {
     Window(int widthh, int heightt);
     ~Window();
 
-    inline float Aspect() const {return float(width)/float(height);}
+    float Aspect() const {return float(width)/float(height);}
 
     // Processes user input
     void Update();
@@ -50,6 +34,24 @@ class Window {
 
     
     void SetMouseLocked(bool locked);
+
+    // User input stuff.
+    // index is key enums provided by GLFW
+    // TODO: these maps are def not thread safe, probably needs a rwlock
+    std::unordered_map<unsigned int, bool> PRESSED_KEYS;
+    std::unordered_map<unsigned int, bool> PRESS_BEGAN_KEYS;
+    std::unordered_map<unsigned int, bool> PRESS_ENDED_KEYS;
+
+    bool LMB_DOWN;
+    bool RMB_DOWN;
+    bool LMB_BEGAN;
+    bool RMB_BEGAN;
+    bool LMB_ENDED;
+    bool RMB_ENDED;
+
+    // TODO: RAW MOUSE option
+    glm::dvec2 MOUSE_POS;
+    glm::dvec2 MOUSE_DELTA; // how much mouse has moved since last frame
 
     private:
     GLFWwindow* glfwWindow;

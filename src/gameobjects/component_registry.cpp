@@ -109,11 +109,11 @@ void ComponentRegistry::SetModuleComponentRegistry(ComponentRegistry* reg) {
 ComponentRegistry& ComponentRegistry::Get() {
     #ifdef IS_MODULE
     assert(_COMPONENT_REGISTRY_ != nullptr);
-    return *_COMPONENT_REGISTRY_
+    return *_COMPONENT_REGISTRY_;
     #else
     static ComponentRegistry registry;
-    #endif
     return registry;
+    #endif
 }
 
 void GameObject::Destroy() {

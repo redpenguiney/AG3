@@ -48,8 +48,11 @@ Window::Window(int widthh, int heightt) {
     // See gl_error_handler, just prints opengl errors to console automatically
     // todo: disable on release builds for performance
     glEnable(GL_DEBUG_OUTPUT);
+    DebugLogLineReached();
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // make sure it actually prints out the errors on the thread that created the error so you actually get a useful stack trace
+    DebugLogLineReached();
     glDebugMessageCallback(MessageCallback, 0);
+    DebugLogLineReached();
 };
 
 Window::~Window() {
@@ -96,35 +99,35 @@ void Window::SetMouseLocked(bool locked) {
 // GLFW calls these functions automatically 
 void Window::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS) {
-        PRESS_BEGAN_KEYS[key] = true;
-        PRESSED_KEYS[key] = true;
+        GraphicsEngine::Get().window.PRESS_BEGAN_KEYS[key] = true;
+        GraphicsEngine::Get().window.PRESSED_KEYS[key] = true;
     }
     else if (action == GLFW_RELEASE) {
-        PRESS_ENDED_KEYS[key] = true;
-        PRESSED_KEYS[key] = false;
+        GraphicsEngine::Get().window.PRESS_ENDED_KEYS[key] = true;
+        GraphicsEngine::Get().window.PRESSED_KEYS[key] = false;
     }
 } 
 
 void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_1) {
         if (action == GLFW_RELEASE) {
-            LMB_DOWN = false;
-            LMB_ENDED = true;
+            GraphicsEngine::Get().window.LMB_DOWN = false;
+            GraphicsEngine::Get().window.LMB_ENDED = true;
         }
         else if (action == GLFW_PRESS) {
-            LMB_DOWN = true;
-            LMB_BEGAN = true;
+            GraphicsEngine::Get().window.LMB_DOWN = true;
+            GraphicsEngine::Get().window.LMB_BEGAN = true;
 
         }
     }
     else if (button == GLFW_MOUSE_BUTTON_2) {
         if (action == GLFW_RELEASE) {
-            RMB_DOWN = false;
-            RMB_ENDED = true;
+            GraphicsEngine::Get().window.RMB_DOWN = false;
+            GraphicsEngine::Get().window.RMB_ENDED = true;
         }
         else if (action == GLFW_PRESS) {
-            RMB_DOWN = true;
-            RMB_BEGAN = true;
+            GraphicsEngine::Get().window.RMB_DOWN = true;
+            GraphicsEngine::Get().window.RMB_BEGAN = true;
         }
     }
 }
@@ -134,8 +137,8 @@ void Window::ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindo
     glViewport(0, 0, newWindowWidth, newWindowHeight);
 
     if (newWindowWidth != 0 && newWindowHeight != 0) {
-        width = newWindowWidth;
-        height = newWindowHeight;
+        GraphicsEngine::Get().window.width = newWindowWidth;
+        GraphicsEngine::Get().window.height = newWindowHeight;
 
         // tell Guis to readjust themselves
         Gui::UpdateGuiForNewWindowResolution();

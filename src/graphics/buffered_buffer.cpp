@@ -1,4 +1,5 @@
 #include "buffered_buffer.hpp"
+#include "debug/debug.hpp"
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
@@ -10,6 +11,7 @@ BufferedBuffer::BufferedBuffer(GLenum bindingLocation, const unsigned int buffer
 bufferBindingLocation(bindingLocation),
 numBuffers(bufferCount)
 {
+    DebugLogLineReached();
     // assert(initalSize != 0);
     currentBuffer = 0;
     size = 0;
@@ -21,6 +23,7 @@ numBuffers(bufferCount)
     for (unsigned int i = 0; i < numBuffers; i++) {
         sync[i] = 0;
     }
+    DebugLogLineReached();
 }
 
 BufferedBuffer::~BufferedBuffer() {

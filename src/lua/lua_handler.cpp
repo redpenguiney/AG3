@@ -146,7 +146,7 @@ LuaHandler::LuaHandler() {
     auto gameObjectUsertype = LUA_STATE->new_usertype<GameObject>("GameObject", sol::factories(LuaGameobjectConstructor));
     gameObjectUsertype["transform"] = sol::property(&GameObject::LuaGetTransform);
 
-    LUA_STATE->set_function("NewGameObject", ComponentRegistry::NewGameObject);
+    // LUA_STATE->set_function("NewGameObject", ComponentRegistry::NewGameObject);
 }
 
 void LuaHandler::RunString(const std::string source) {

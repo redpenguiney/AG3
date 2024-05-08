@@ -8,7 +8,7 @@
 #include "log.hpp"
 inline void DebugLogLineReached(const char *file, int line){
     #ifdef LOG_LINE_REACHED
-    std::cout << "\n Line " << line << " in file " << file << " was reached successfully.";
+    std::cout << "\nLine " << line << " in file " << file << " was reached successfully.";
     #endif
 }
 #define DebugLogLineReached() DebugLogLineReached(__FILE__, __LINE__)

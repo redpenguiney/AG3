@@ -18,9 +18,12 @@ void GraphicsEngine::SetModuleGraphicsEngine(GraphicsEngine* eng) {
 GraphicsEngine& GraphicsEngine::Get() {
     #ifdef IS_MODULE
     assert(_GRAPHICS_ENGINE_ != nullptr);
+    DebugLogInfo("Requested grahpics engine from module, returning ", _GRAPHICS_ENGINE_);
     return *_GRAPHICS_ENGINE_;
     #else
+    DebugLogLineReached();
     static GraphicsEngine engine;
+    DebugLogInfo("Requested graphics engine, returning ", &engine);
     return engine;
     #endif
 }
@@ -59,22 +62,25 @@ const std::vector<GLuint> screenQuadIndices = {
     1, 2, 3
 };
 
-GraphicsEngine::GraphicsEngine(): 
+GraphicsEngine::GraphicsEngine():
+LAST_MESH_ID(0), 
 pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)),
 screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, screenQuadVertexFormat, 1, false))
 {
-    debugFreecamEnabled = false;
-    debugFreecamPitch = 0.0;
-    debugFreecamYaw = 0.0;
+
+    DebugLogLineReached();
+    debugFreecamEnabled = false; DebugLogLineReached();
+    debugFreecamPitch = 0.0; DebugLogLineReached();
+    debugFreecamYaw = 0.0; DebugLogLineReached();
 
     skyboxMaterial = nullptr;
-
+DebugLogLineReached();
     defaultShaderProgram = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl");
     defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", {}, false, false, false, true);
     defaultBillboardGuiShaderProgram = ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", {}, true, true, false, true);
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
-
+DebugLogLineReached();
     auto skybox_boxmesh = Mesh::FromFile("../models/skybox.obj", MeshVertexFormat::Default(), -1.0, 1.0, 1, false);
     skybox = new RenderableMesh(skybox_boxmesh);
     // std::cout << "SKYBOX has indices: ";
@@ -88,6 +94,7 @@ screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, scre
     // }
     // std::cout << "\n";
     glDepthFunc(GL_LEQUAL); // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
+DebugLogLineReached();
 }
 
 GraphicsEngine::~GraphicsEngine() {
@@ -556,7 +563,7 @@ void GraphicsEngine::UpdateDebugFreecam() {
     assert(debugFreecamEnabled);
 
     // camera acceleration
-    if (PRESSED_KEYS[GLFW_KEY_W] or PRESSED_KEYS[GLFW_KEY_S] or PRESSED_KEYS[GLFW_KEY_A] or PRESSED_KEYS[GLFW_KEY_D] or PRESSED_KEYS[GLFW_KEY_Q] or PRESSED_KEYS[GLFW_KEY_E]) {
+    if (window.PRESSED_KEYS[GLFW_KEY_W] or window.PRESSED_KEYS[GLFW_KEY_S] or window.PRESSED_KEYS[GLFW_KEY_A] or window.PRESSED_KEYS[GLFW_KEY_D] or window.PRESSED_KEYS[GLFW_KEY_Q] or window.PRESSED_KEYS[GLFW_KEY_E]) {
         debugFreecamSpeed += debugFreecamAcceleration;
     }
     else {
@@ -564,8 +571,8 @@ void GraphicsEngine::UpdateDebugFreecam() {
     }
 
     // camera rotation
-    debugFreecamPitch += 0.5 * MOUSE_DELTA.y;
-    debugFreecamYaw += 0.5 * MOUSE_DELTA.x;
+    debugFreecamPitch += 0.5 * window.MOUSE_DELTA.y;
+    debugFreecamYaw += 0.5 * window.MOUSE_DELTA.x;
     if (debugFreecamYaw > 180) {
         debugFreecamYaw -= 360;
     } else if (debugFreecamYaw < -180) {
@@ -580,9 +587,9 @@ void GraphicsEngine::UpdateDebugFreecam() {
     auto look = LookVector(glm::radians(debugFreecamPitch), glm::radians(debugFreecamYaw));
     auto right = LookVector(0, glm::radians(debugFreecamYaw + 90));
     auto up = glm::cross(look, right);
-    glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_D] - PRESSED_KEYS[GLFW_KEY_A]);
-    glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_Q] - PRESSED_KEYS[GLFW_KEY_E]);
-    glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(PRESSED_KEYS[GLFW_KEY_W] - PRESSED_KEYS[GLFW_KEY_S]);
+    glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(window.PRESSED_KEYS[GLFW_KEY_D] - window.PRESSED_KEYS[GLFW_KEY_A]);
+    glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(window.PRESSED_KEYS[GLFW_KEY_Q] - window.PRESSED_KEYS[GLFW_KEY_E]);
+    glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(window.PRESSED_KEYS[GLFW_KEY_W] - window.PRESSED_KEYS[GLFW_KEY_S]);
     debugFreecamCamera.position += rightMovement + forwardMovement + upMovement;
 }
 

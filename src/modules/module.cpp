@@ -1,6 +1,12 @@
 #include "module.hpp"
 #include "../debug/log.hpp"
 
+#include "audio/engine.hpp"
+#include "graphics/engine.hpp"
+#include "physics/engine.hpp"
+#include "physics/spatial_acceleration_structure.hpp"
+#include "gameobjects/component_registry.hpp"
+
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "windows.h"
 #else
@@ -99,6 +105,24 @@ Module::Module(const char* filepath) {
         if (close) {
             onClose = (void(*)())close;
         }
+
+        auto loadGlobals = LoadFunc(*(HMODULE*)internalModule, "LoadGlobals");
+        if (loadGlobals) {
+             auto castedLoadGlobals = (void(*)(ModulesGlobalsPointers))loadGlobals;
+             castedLoadGlobals(ModulesGlobalsPointers {
+                .GE = &GraphicsEngine::Get(),
+                .CR = &ComponentRegistry::Get(),
+                .PE = &PhysicsEngine::Get(),
+                .SAS = &SpatialAccelerationStructure::Get(),  
+                .AE = &AudioEngine::Get() 
+             });
+        }
+        else {
+            DebugLogError("The module at ", filepath, " lacks the function LoadGlobals(ModulesGlobalsPointers*) and thus cannot be initialized.");
+            onClose = std::nullopt;
+            onInit = std::nullopt;
+            internalModule = nullptr;
+        }
     }
     
     #else
@@ -117,8 +141,9 @@ void Module::CloseAll() {
 }
 
 Module::~Module() {
-    (*onClose)();
     if (internalModule != nullptr) {
+
+        (*onClose)();
         
         #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     

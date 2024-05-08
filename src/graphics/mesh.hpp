@@ -200,13 +200,10 @@ class Mesh {
 
     private:
 
-    // true if the mesh was created using Mesh::FromText(). If that's the case, 
+    // true if the mesh was created using Mesh::FromText(). If that's the case, TODO WHAT WAS SUPPOSED TO FINISH THIS COMMENT LOL
     const bool wasCreatedFromText;
 
     Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizePositions, bool fromText = false);
-    inline static std::atomic<unsigned int> LAST_MESH_ID = {1};
-    inline static std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
-    inline static tinyobj::ObjReader OBJ_LOADER;
 
     // scale vertex positions into range -0.5 to 0.5 and calculate originalSize
     void NormalizePositions();

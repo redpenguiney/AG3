@@ -4,6 +4,22 @@
 #include <string>
 #include <list>
 
+class GraphicsEngine;
+class ComponentRegistry;
+class PhysicsEngine;
+class SpatialAccelerationStructure;
+class AudioEngine;
+
+extern "C" {
+    struct ModulesGlobalsPointers {
+        GraphicsEngine* GE;
+        ComponentRegistry* CR;
+        PhysicsEngine* PE;
+        SpatialAccelerationStructure* SAS;
+        AudioEngine* AE;
+    };
+}
+
 class Module {
     public:
 
