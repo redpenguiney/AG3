@@ -8,6 +8,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "debug/log.hpp"
 #include "rigidbody_component.hpp"
 
 // some wacky function i copypasted from https://stackoverflow.com/questions/8147027/how-do-i-call-stdmake-shared-on-a-class-with-only-protected-or-private-const .
@@ -117,6 +118,7 @@ ComponentRegistry& ComponentRegistry::Get() {
 }
 
 void GameObject::Destroy() {
+    DebugLogInfo("Destroy was called on ", name, " (", this, ").");
     if (!ComponentRegistry::Get().GAMEOBJECTS.contains(this)) {
         std::cout << "Error: Destroy() was called on the same gameobject twice, or this gameobject is otherwise invalid. Please don't.\n";
         abort();
@@ -131,7 +133,7 @@ void GameObject::Destroy() {
 }
 
 GameObject::~GameObject() {
-    
+    DebugLogInfo("Destructor was called on ", name, " (", this, ").");
     //std::cout << "Destroying.\n";
     
 };

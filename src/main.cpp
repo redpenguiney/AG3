@@ -36,7 +36,10 @@ using namespace std;
 double timeAtWhichExitProcessStarted = 0;
 
 void AtExit() {
+    DebugLogInfo("Closing modules.");
     Module::CloseAll();
+    // DebugLogInfo("Cleaning up all gameobjects.");
+    
     LogElapsed(timeAtWhichExitProcessStarted, "Exit process elapsed ");
     DebugLogInfo("Program ran successfully. Exiting.");
 }
@@ -185,6 +188,6 @@ int main(int numArgs, const char *argPtrs[]) {
     timeAtWhichExitProcessStarted = Time();
     DebugLogInfo("Beginning exit process.");
 
-    DebugLogInfo("Cleaned up all gameobjects.");
+    
     return EXIT_SUCCESS;
 }

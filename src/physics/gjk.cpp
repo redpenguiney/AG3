@@ -439,7 +439,8 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
 
         // std::cout << "Distance is " << distanceToPlane << ".\n";
 
-        if (distanceToPlane <= 0) { // if contact point is inside the object
+        const double ALLOW_THRESHOLD = 0.0;
+        if (distanceToPlane <= ALLOW_THRESHOLD) { // if contact point is inside the object
             contactPoints.push_back({p + ((glm::dvec3)referenceNormal * -distanceToPlane), -distanceToPlane});
         }
     }
@@ -610,7 +611,6 @@ std::optional<CollisionInfo> FindContact(
         return CollisionInfo {.collisionNormal = -farthestNormal, .contactPoints = ClipFaceContactPoints(farthestNormal, farthestFace, transform2, transform1, collider1)};
         break;
         {case EdgeCollision:
-        // std::cout << "EDGE COLLISION\n";
         // std::printf("Edge is %f vs face %f", farthestEdgeDistance, farthestDistance);
         // There are two edges colliding in this case. Contact point is average of closest point on edge1 to edge2 and closest point on edge2 to edge1.
         // see https://en.wikipedia.org/wiki/Skew_lines#Nearest_points for formula to get those closest points
