@@ -35,9 +35,7 @@ using namespace std;
 
 double timeAtWhichExitProcessStarted = 0;
 
-void AtExit() {
-    DebugLogInfo("Closing modules.");
-    Module::CloseAll();
+void AtExit() {    
     // DebugLogInfo("Cleaning up all gameobjects.");
     
     LogElapsed(timeAtWhichExitProcessStarted, "Exit process elapsed ");
@@ -51,12 +49,14 @@ int main(int numArgs, const char *argPtrs[]) {
 
     atexit(AtExit); DebugLogInfo("0");
 
-    // TODO: shouldn't actually matter if these lines exist, and if it does fix that please
+    // TODO: order does matter here, formalize that
     auto & GE = GraphicsEngine::Get(); DebugLogInfo("1");
     auto & PE = PhysicsEngine::Get(); DebugLogInfo("2");
     auto & AE = AudioEngine::Get(); DebugLogInfo("3");
     auto & LUA = LuaHandler::Get(); DebugLogInfo("4");
     auto & CR = ComponentRegistry::Get(); DebugLogInfo("5");
+
+    atexit(Module::CloseAll); // this is placed here, after the component registry is initialized, because that guarantees that modules' references to gameobjects are destroyed before the gameobjects are (because static destructors/at exits are called in reverse order)
 
     Module::LoadModule("..\\modules\\libtest_module.dll");
 
