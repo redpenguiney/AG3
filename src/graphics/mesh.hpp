@@ -20,7 +20,7 @@ class Material;
 class ShaderProgram;
 class PhysicsMesh;
 
-// These were originally private static variables in mesh.hpp and material.hpp, but that didn't work well with the introduction of modules/dlls so now it's here.
+// These were originally private static variables in mesh.hpp, physics_mesh.hpp, shader_program.hpp, and material.hpp, but that didn't work well with the introduction of modules/dlls so now it's here.
 // Only for internal use by mesh.cpp. The public Get() method is for transferring to modules.
 class MeshGlobals {
     

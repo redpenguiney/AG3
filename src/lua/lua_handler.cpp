@@ -31,9 +31,21 @@ std::optional<sol::state> LUA_STATE = std::nullopt;
 // };
 // std::vector<WaitingCoroutine> YIELDED_COROUTINES;
 
+#ifdef IS_MODULE
+LuaHandler* _LUA_HANDLER_ = nullptr;
+void LuaHandler::SetModuleLuaHandler(LuaHandler* handler) {
+    _LUA_HANDLER_ = handler;
+}
+#endif
+
 LuaHandler& LuaHandler::Get() {
-    static LuaHandler lh;
-    return lh;
+    #ifdef IS_MODULE
+    assert(_LUA_HANDLER_ != nullptr);
+    return *_LUA_HANDLER_;
+    #else
+    static LuaHandler handler;
+    return handler;
+    #endif
 }
 
 // int ExceptionHandler(lua_State* L, sol::optional<const std::exception&> maybe_exception, sol::string_view description) {

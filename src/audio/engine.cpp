@@ -2,9 +2,21 @@
 #include "../gameobjects/component_registry.hpp"
 #include <vector>
 
+#ifdef IS_MODULE
+AudioEngine* _AUDIO_ENGINE_ = nullptr;
+void AudioEngine::SetModuleAudioEngine(AudioEngine* engine) {
+    _AUDIO_ENGINE_ = engine;
+}
+#endif
+
 AudioEngine& AudioEngine::Get() {
+    #ifdef IS_MODULE
+    assert(_AUDIO_ENGINE_ != nullptr);
+    return *_AUDIO_ENGINE_;
+    #else
     static AudioEngine engine;
     return engine;
+    #endif
 }
 
 AudioEngine::AudioEngine() {
@@ -20,7 +32,7 @@ AudioEngine::AudioEngine() {
 
     std::vector<ALCint> attributes = {ALC_MONO_SOURCES, 1 << 24, ALC_STEREO_SOURCES, 1 << 24};
 
-    // for some reason, something called hrtf makes the audio sound so we try to turn it off if possible
+    // for some reason, something called hrtf makes the audio sound bad so we try to turn it off if possible
     // see https://openal-soft.org/openal-extensions/SOFT_HRTF.txt and https://github.com/kcat/openal-soft/issues/825 
     if (alcIsExtensionPresent(device, "ALC_SOFT_HRTF") == AL_TRUE) {
         attributes.push_back(/*ALC_HRTF_SOFT*/ 0x1992);

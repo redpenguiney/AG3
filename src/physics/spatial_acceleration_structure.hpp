@@ -84,11 +84,15 @@ class SpatialAccelerationStructure { // (SAS)
     SpatialAccelerationStructure(SpatialAccelerationStructure const&) = delete; // no copying
     SpatialAccelerationStructure& operator=(SpatialAccelerationStructure const&) = delete; // no assigning
 
-    static SpatialAccelerationStructure& Get()
-    {
-        static SpatialAccelerationStructure sas; // yeah apparently you can have local static variables
-        return sas;
-    }
+    static SpatialAccelerationStructure& Get();
+    
+    // When modules (shared libraries) get their copy of this code, they need to use a special version of SpatialAccelerationStructure::Get().
+    // This is so that both the module and the main executable have access to the same singleton. 
+    // The executable will provide each shared_library with a pointer to the spatial acceleration structure.
+    #ifdef IS_MODULE
+    static void SetModuleSpatialAccelerationStructure(SpatialAccelerationStructure* structure);
+    #endif
+
 
     // Represents what kind of AABB to generate for a collider.
     // BoundingCube AABB will create a cube-shaped AABB that will contain the object no matter how it is rotated, which is fast to make/update but for a long skinny object will create a lot of false collisions for the expensive narrow phase to deal with.

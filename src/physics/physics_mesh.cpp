@@ -13,13 +13,13 @@
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
 
 std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, float simplifyThreshold, bool convexDecomposition) {
-    if (MESHES_TO_PHYS_MESHES.count(mesh->meshId)) { // TODO: once we have simplifyThreshold and convexDecomposition, we need to make sure that matches up too
-        return MESHES_TO_PHYS_MESHES[mesh->meshId];
+    if (MeshGlobals::Get().MESHES_TO_PHYS_MESHES.count(mesh->meshId)) { // TODO: once we have simplifyThreshold and convexDecomposition, we need to make sure that matches up too
+        return MeshGlobals::Get().MESHES_TO_PHYS_MESHES[mesh->meshId];
     }
     else {
         auto ptr = std::shared_ptr<PhysicsMesh>(new PhysicsMesh(mesh));
-        LOADED_PHYS_MESHES[ptr->physMeshId] = ptr;
-        MESHES_TO_PHYS_MESHES[mesh->meshId] = ptr;
+        MeshGlobals::Get().LOADED_PHYS_MESHES[ptr->physMeshId] = ptr;
+        MeshGlobals::Get().MESHES_TO_PHYS_MESHES[mesh->meshId] = ptr;
         return ptr;
     } 
 }
@@ -171,11 +171,11 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
     return {PhysicsMesh::ConvexMesh {.triangles = triangles, .faces = faces, .edges = edges}};
 }
 
-PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): physMeshId(LAST_PHYS_MESH_ID++), meshes(me_when_i_so_i_but_then_i_so_i(mesh)) {
+PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): physMeshId(MeshGlobals::Get().LAST_PHYS_MESH_ID++), meshes(me_when_i_so_i_but_then_i_so_i(mesh)) {
 
 }
 
 std::shared_ptr<PhysicsMesh>& PhysicsMesh::Get(unsigned int id) {
-    assert(LOADED_PHYS_MESHES.count(id));
-    return LOADED_PHYS_MESHES[id];
+    assert(MeshGlobals::Get().LOADED_PHYS_MESHES.count(id));
+    return MeshGlobals::Get().LOADED_PHYS_MESHES[id];
 }

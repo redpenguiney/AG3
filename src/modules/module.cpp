@@ -6,6 +6,7 @@
 #include "physics/engine.hpp"
 #include "physics/spatial_acceleration_structure.hpp"
 #include "gameobjects/component_registry.hpp"
+#include "conglomerates/gui.hpp"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "windows.h"
@@ -112,6 +113,7 @@ Module::Module(const char* filepath) {
              castedLoadGlobals(ModulesGlobalsPointers {
                 .GE = &GraphicsEngine::Get(),
                 .MG = &MeshGlobals::Get(),
+                .GG = &GuiGlobals::Get(),
                 .CR = &ComponentRegistry::Get(),
                 .PE = &PhysicsEngine::Get(),
                 .SAS = &SpatialAccelerationStructure::Get(),  

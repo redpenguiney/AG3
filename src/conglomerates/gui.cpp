@@ -4,9 +4,28 @@
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
 #include "graphics/engine.hpp"
 
-std::vector<Gui*> listOfGuis;
+
+#ifdef IS_MODULE
+GuiGlobals* _GUI_GLOBALS_ = nullptr;
+void GuiGlobals::SetModuleGuiGlobals(GuiGlobals* globals) {
+    _GUI_GLOBALS_ = globals;
+}
+#endif
+
+GuiGlobals& GuiGlobals::Get() {
+    #ifdef IS_MODULE
+    assert(_GUI_GLOBALS_ != nullptr);
+    return *_GUI_GLOBALS_;
+    #else
+    static GuiGlobals globals;
+    return globals;
+    #endif
+}
+
+GuiGlobals::GuiGlobals() {}
+
 void Gui::UpdateGuiForNewWindowResolution() {
-    for (auto & ui: listOfGuis) {
+    for (auto & ui: GuiGlobals::Get().listOfGuis) {
         if (ui->guiTextInfo.has_value()) {
             ui->UpdateGuiText();
         }
@@ -14,9 +33,9 @@ void Gui::UpdateGuiForNewWindowResolution() {
     }
 }
 
-std::vector<Gui*> listOfBillboardGuis;
+
 void Gui::UpdateBillboardGuis() {
-    for (auto & ui: listOfBillboardGuis) {
+    for (auto & ui: GuiGlobals::Get().listOfBillboardGuis) {
         ui->UpdateGuiTransform();
     }
 }
@@ -82,19 +101,19 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     UpdateGuiGraphics();
     UpdateGuiTransform();    
     
-    listOfGuis.push_back(this);
+    GuiGlobals::Get().listOfGuis.push_back(this);
     if (billboardInfo.has_value()) {
-        listOfBillboardGuis.push_back(this);
+        GuiGlobals::Get().listOfBillboardGuis.push_back(this);
     }
 }
 
 Gui::~Gui() {
     unsigned int i = 0;
-    for (auto & ui: listOfGuis) {
+    for (auto & ui: GuiGlobals::Get().listOfGuis) {
         if (ui == this) {
             // fast erase
-            listOfGuis.at(i) = listOfGuis.back();
-            listOfGuis.pop_back();
+            GuiGlobals::Get().listOfGuis.at(i) = GuiGlobals::Get().listOfGuis.back();
+            GuiGlobals::Get().listOfGuis.pop_back();
             
             break;
         }
@@ -103,11 +122,11 @@ Gui::~Gui() {
 
     if (billboardInfo) {
         i = 0;
-        for (auto & ui: listOfBillboardGuis) {
+        for (auto & ui: GuiGlobals::Get().listOfBillboardGuis) {
             if (ui == this) {
                 // fast erase
-                listOfBillboardGuis.at(i) = listOfBillboardGuis.back();
-                listOfBillboardGuis.pop_back();
+                GuiGlobals::Get().listOfBillboardGuis.at(i) = GuiGlobals::Get().listOfBillboardGuis.back();
+                GuiGlobals::Get().listOfBillboardGuis.pop_back();
                 
                 break;
             }

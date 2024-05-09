@@ -10,6 +10,7 @@ class PhysicsEngine;
 class SpatialAccelerationStructure;
 class AudioEngine;
 class MeshGlobals;
+class GuiGlobals;
 
 extern "C" {
     struct ModulesGlobalsPointers {

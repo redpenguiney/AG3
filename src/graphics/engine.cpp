@@ -436,6 +436,7 @@ void GraphicsEngine::UpdateRenderComponents() {
     // vec4
     unsigned int i = 0;
     for (auto & [renderComp, attributeName, value, timesRemainingToUpdate]: Instanced4ComponentVertexAttributeUpdates) {
+        
         if (renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
             meshpools[renderComp->shaderProgramId][renderComp->materialId][renderComp->meshpoolId]->SetInstancedVertexAttribute<4>(renderComp->meshpoolSlot, renderComp->meshpoolInstance, attributeName, value);
             timesRemainingToUpdate -= 1;
@@ -521,7 +522,7 @@ void GraphicsEngine::UpdateRenderComponents() {
         auto & renderComp = *std::get<0>(tuple);
         auto & transformComp = *std::get<1>(tuple);
         if (renderComp.live) {
-            //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
+            // std::cout << "Component at " << &renderComp << " is live \n";
             // if (renderComp.componentPoolId != i) {
             //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
             //     abort();

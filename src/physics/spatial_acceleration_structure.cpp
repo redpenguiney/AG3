@@ -581,3 +581,20 @@ void SpatialAccelerationStructure::ColliderComponent::RecalculateAABB(const Tran
 const AABB& SpatialAccelerationStructure::ColliderComponent::GetAABB() {
     return aabb;
 }
+
+#ifdef IS_MODULE
+SpatialAccelerationStructure* _SPATIAL_ACCELERATION_STRUCTURE_ = nullptr;
+void SpatialAccelerationStructure::SetModuleSpatialAccelerationStructure(SpatialAccelerationStructure* structure) {
+    _SPATIAL_ACCELERATION_STRUCTURE_ = structure;
+}
+#endif
+
+SpatialAccelerationStructure& SpatialAccelerationStructure::Get() {
+    #ifdef IS_MODULE
+    assert(_SPATIAL_ACCELERATION_STRUCTURE_ != nullptr);
+    return *_SPATIAL_ACCELERATION_STRUCTURE_;
+    #else
+    static SpatialAccelerationStructure structure;
+    return structure;
+    #endif
+}

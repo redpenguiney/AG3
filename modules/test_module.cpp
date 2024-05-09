@@ -26,6 +26,8 @@
 #include "graphics/engine.hpp"
 #include "GLM/gtx/string_cast.hpp"
 #include "graphics/engine.hpp"
+#include "physics/engine.hpp"
+#include "audio/engine.hpp"
 
 Gui* ui;
 std::weak_ptr<GameObject> goWeakPtr;
@@ -38,6 +40,10 @@ __declspec (dllexport) void LoadGlobals(ModulesGlobalsPointers globals) {
     ComponentRegistry::SetModuleComponentRegistry(globals.CR);
     GraphicsEngine::SetModuleGraphicsEngine(globals.GE);
     MeshGlobals::SetModuleMeshGlobals(globals.MG);
+    SpatialAccelerationStructure::SetModuleSpatialAccelerationStructure(globals.SAS);
+    GuiGlobals::SetModuleGuiGlobals(globals.GG);
+    PhysicsEngine::SetModulePhysicsEngine(globals.PE);
+    AudioEngine::SetModuleAudioEngine(globals.AE);
 }
 
 __declspec (dllexport) void OnInit() {
@@ -51,17 +57,17 @@ __declspec (dllexport) void OnInit() {
 
         //GE.camera.position.y = 3;
 
-    // auto garticSound = Sound::New("../sounds/garticphone.wav");
-    // {
-    //     auto params = GameobjectCreateParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::AudioPlayerComponentBitIndex});
-    //     params.sound = garticSound;
-    //     auto soundSounder = ComponentRegistry::NewGameObject(params);
-    //     soundSounder->audioPlayerComponent->looped = true;
-    //     soundSounder->audioPlayerComponent->positional = true;
-    //     soundSounder->audioPlayerComponent->volume = 0.15;
-    //     soundSounder->audioPlayerComponent->pitch = 0.5;
-    //     soundSounder->audioPlayerComponent->Play();
-    // }
+    auto garticSound = Sound::New("../sounds/garticphone.wav");
+    {
+        auto params = GameobjectCreateParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::AudioPlayerComponentBitIndex});
+        params.sound = garticSound;
+        auto soundSounder = ComponentRegistry::Get().NewGameObject(params);
+        soundSounder->audioPlayerComponent->looped = true;
+        soundSounder->audioPlayerComponent->positional = true;
+        soundSounder->audioPlayerComponent->volume = 0.15;
+        soundSounder->audioPlayerComponent->pitch = 0.5;
+        soundSounder->audioPlayerComponent->Play();
+    }
 
     auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
     
@@ -138,58 +144,58 @@ __declspec (dllexport) void OnInit() {
     // //     // wall1->transformComponent->SetScl({1, 1, 3});
     // }
 
-    // auto skyboxFaces = std::vector<std::string>(
-    // { 
-    //     "../textures/sky/right.png",
-    //     "../textures/sky/left.png",
-    //     "../textures/sky/top.png",
-    //     "../textures/sky/bottom.png",
-    //     "../textures/sky/back.png",
-    //     "../textures/sky/front.png"
-    // });
+    auto skyboxFaces = std::vector<std::string>(
+    { 
+        "../textures/sky/right.png",
+        "../textures/sky/left.png",
+        "../textures/sky/top.png",
+        "../textures/sky/bottom.png",
+        "../textures/sky/back.png",
+        "../textures/sky/front.png"
+    });
 
-    // {
-    //     auto [index, sky_m_ptr] = Material::New({TextureCreateParams {skyboxFaces, Texture::ColorMap}}, Texture::TextureCubemap);
-    //     GE.skyboxMaterial = sky_m_ptr;
-    //     GE.skyboxMaterialLayer = index;
-    // }
-    // GE.debugFreecamCamera.position = glm::dvec3(0, 15, 0);
-    
-    
-    // int nObjs = 0;
-    // for (int x = 0; x < 1; x++) {
-    //     for (int y = 0; y < 1; y++) {
-    //         for (int z = 0; z < 1; z++) {
-    //             GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
-    //             params.meshId = m->meshId;
-    //             params.materialId = brickMaterial->id;
-    //             auto g = CR.NewGameObject(params);
-    //             g->transformComponent->SetPos({0 + x * 3,3.0 + y * 3, 0 + z * 3});
-    //             g->colliderComponent->elasticity = 0.0;
-    //             g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), glm::radians(0.0), glm::radians(0.0))));
-    //             // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
-    //             // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
-    //             g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
-    //             g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-    //             g->renderComponent->SetTextureZ(brickTextureZ);
-    //             g->name = std::string("Gameobject #") + std::to_string(nObjs);
-    //             goWeakPtr = g;
-    //             nObjs++;
-    //         } 
-    //     }
-    // }
-
-    
-    // // make light
     {
-        // GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-        // params.meshId = m->meshId;
-        // params.materialId = 0;
-        // auto coolLight = CR.NewGameObject(params);
-        // coolLight->renderComponent->SetTextureZ(-1);
-        // coolLight->transformComponent->SetPos({8, 5, 0});
-        // coolLight->pointLightComponent->SetRange(200);
-        // coolLight->pointLightComponent->SetColor({1, 1, 1});
+        auto [index, sky_m_ptr] = Material::New({TextureCreateParams {skyboxFaces, Texture::ColorMap}}, Texture::TextureCubemap);
+        GE.skyboxMaterial = sky_m_ptr;
+        GE.skyboxMaterialLayer = index;
+    }
+    GE.debugFreecamCamera.position = glm::dvec3(0, 15, 0);
+    
+    
+    int nObjs = 0;
+    for (int x = 0; x < 1; x++) {
+        for (int y = 0; y < 1; y++) {
+            for (int z = 0; z < 1; z++) {
+                GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
+                params.meshId = m->meshId;
+                params.materialId = brickMaterial->id;
+                auto g = CR.NewGameObject(params);
+                g->transformComponent->SetPos({0 + x * 3,3.0 + y * 3, 0 + z * 3});
+                g->colliderComponent->elasticity = 0.0;
+                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), glm::radians(0.0), glm::radians(0.0))));
+                // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
+                // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
+                g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
+                g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
+                g->renderComponent->SetTextureZ(brickTextureZ);
+                g->name = std::string("Gameobject #") + std::to_string(nObjs);
+                goWeakPtr = g;
+                nObjs++;
+            } 
+        }
+    }
+
+    
+    // make light
+    {
+        GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        params.meshId = m->meshId;
+        params.materialId = 0;
+        auto coolLight = CR.NewGameObject(params);
+        coolLight->renderComponent->SetTextureZ(-1);
+        coolLight->transformComponent->SetPos({8, 5, 0});
+        coolLight->pointLightComponent->SetRange(200);
+        coolLight->pointLightComponent->SetColor({1, 1, 1});
     }
     // {
     //     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
@@ -232,56 +238,56 @@ __declspec (dllexport) void OnInit() {
     // glLineWidth(2.0);
 
     
-    // {
-    //     auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
-    //     ttfParams.fontHeight = 16;
-    //     ttfParams.format = Texture::Grayscale_8Bit;
-    //     auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
+    {
+        auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
+        ttfParams.fontHeight = 16;
+        ttfParams.format = Texture::Grayscale_8Bit;
+        auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
 
-    //     ui = new Gui(true, 
-    //     std::make_optional(std::make_pair(arialLayer, arialFont)), 
-    //     std::nullopt, 
-    //     Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), 
-    //     GraphicsEngine::Get().defaultBillboardGuiShaderProgram);
-    //     ui->scaleSize = {0.5, 0.15};
-    //     ui->guiScaleMode = Gui::ScaleXX;
-    //     ui->offsetPos = {0.0, 0.0};
-    //     // ui->scalePos = {0.5, 0.5};
-    //     ui->anchorPoint = {0.0, 0.0};
-    //     ui->rgba.a = 0.0;
-    //     ui->GetTextInfo().rgba = {1.0, 1.0, 1.0, 1.0};
+        ui = new Gui(true, 
+        std::make_optional(std::make_pair(arialLayer, arialFont)), 
+        std::nullopt, 
+        Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), 
+        GraphicsEngine::Get().defaultBillboardGuiShaderProgram);
+        ui->scaleSize = {0.5, 0.15};
+        ui->guiScaleMode = Gui::ScaleXX;
+        ui->offsetPos = {0.0, 0.0};
+        // ui->scalePos = {0.5, 0.5};
+        ui->anchorPoint = {0.0, 0.0};
+        ui->rgba.a = 0.0;
+        ui->GetTextInfo().rgba = {1.0, 1.0, 1.0, 1.0};
 
-    //     // ui->GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
-    //     // ui->GetTextInfo().text = "Tga appbHb kok wjijj wa abcdefghijk eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
-    //     ui->GetTextInfo().topMargin = 0;
-    //     ui->GetTextInfo().bottomMargin = 0;
-    //     ui->GetTextInfo().lineHeight = 1.0;
-    //     ui->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
-    //     ui->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
-    //     ui->UpdateGuiText();
-    //     ui->UpdateGuiGraphics();
-    //     ui->UpdateGuiTransform();
+        // ui->GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
+        // ui->GetTextInfo().text = "Tga appbHb kok wjijj wa abcdefghijk eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+        ui->GetTextInfo().topMargin = 0;
+        ui->GetTextInfo().bottomMargin = 0;
+        ui->GetTextInfo().lineHeight = 1.0;
+        ui->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+        ui->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+        ui->UpdateGuiText();
+        ui->UpdateGuiGraphics();
+        ui->UpdateGuiTransform();
         
-    //     // Gui ui2(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
-    //     // ui2.scaleSize = {0.25, 0.05};
-    //     // ui2.guiScaleMode = Gui::ScaleXX;
-    //     // ui2.offsetPos = {0.0, 0.0};
-    //     // ui2.scalePos = {0.75, 0.0};
-    //     // ui2.anchorPoint = {0.0, -1.0};   
+        // Gui ui2(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
+        // ui2.scaleSize = {0.25, 0.05};
+        // ui2.guiScaleMode = Gui::ScaleXX;
+        // ui2.offsetPos = {0.0, 0.0};
+        // ui2.scalePos = {0.75, 0.0};
+        // ui2.anchorPoint = {0.0, -1.0};   
 
-    //     // ui2.rgba = {1.0, 0.5, 0.0, 1.0};
-    //     // ui2.UpdateGuiGraphics();
-    //     // ui2.UpdateGuiTransform();
-    // }
+        // ui2.rgba = {1.0, 0.5, 0.0, 1.0};
+        // ui2.UpdateGuiGraphics();
+        // ui2.UpdateGuiTransform();
+    }
 }
 
 __declspec (dllexport) void OnPostPhysics() {
-    // ui->GetTextInfo().text = glm::to_string(goWeakPtr.lock()->rigidbodyComponent->velocity);
-    // ui->UpdateGuiText();
+    ui->GetTextInfo().text = glm::to_string(goWeakPtr.lock()->rigidbodyComponent->velocity);
+    ui->UpdateGuiText();
 }
 
 __declspec (dllexport) void OnClose() {
-    // delete ui;
+    delete ui;
 }
 
 #endif

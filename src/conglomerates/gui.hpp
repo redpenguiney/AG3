@@ -7,7 +7,28 @@
 #include <optional>
 #include <utility>
 
+class Gui;
+
+// These were originally private static variables, but that didn't work well with the introduction of modules/dlls so now it's here.
+// Only for internal use by gui.cpp. The public Get() method is for transferring these globals to modules.
 class GuiGlobals {
+    public:
+    static GuiGlobals& Get();
+
+    // When modules (shared libraries) get their copy of this code, they need to use a special version of GuiGlobals::Get().
+    // This is so that both the module and the main executable have access to the same globals. 
+    // The executable will provide each shared_library with a pointer to these gui globals.
+    #ifdef IS_MODULE
+    static void SetModuleGuiGlobals(GuiGlobals* globals);
+    #endif
+
+    private:
+    
+    std::vector<Gui*> listOfGuis;
+    std::vector<Gui*> listOfBillboardGuis;
+    friend class Gui;
+
+    GuiGlobals();
 
 };
 

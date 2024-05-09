@@ -33,7 +33,6 @@ MeshGlobals& MeshGlobals::Get() {
     assert(_MESH_GLOBALS != nullptr);
     return *_MESH_GLOBALS;
     #else
-    DebugLogLineReached();
     static MeshGlobals globals;
     return globals;
     #endif

@@ -54,7 +54,7 @@ Shader::~Shader() {
 }
 
 void ShaderProgram::SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 cameraProjMatrixNoFloatingOrigin, glm::mat4x4 orthrographicMatrix) {  
-    for (auto & [shaderId, shaderProgram] : LOADED_PROGRAMS) {
+    for (auto & [shaderId, shaderProgram] : MeshGlobals::Get().LOADED_PROGRAMS) {
         (void)shaderId;
         if (shaderProgram->useOrthro) { // make sure the shader program actually wants our camera/projection matrix
             shaderProgram->Uniform("orthro", orthrographicMatrix, false);
@@ -67,19 +67,19 @@ void ShaderProgram::SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 
 
 std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool usePerspective, const bool useLightClusters, const bool orthrographicProjection) {
     auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexPath, fragmentPath, additionalIncludedFiles, floatingOrigin, usePerspective, useLightClusters, orthrographicProjection));
-    LOADED_PROGRAMS.emplace(ptr->programId, ptr);
+    MeshGlobals::Get().LOADED_PROGRAMS.emplace(ptr->programId, ptr);
     return ptr;
 }
 
 std::shared_ptr<ShaderProgram>& ShaderProgram::Get(unsigned int shaderProgramId) {
-    assert(LOADED_PROGRAMS.count(shaderProgramId) != 0 && "ShaderProgram::Get() was given an invalid shaderProgramId.");
-    return LOADED_PROGRAMS[shaderProgramId];
+    assert(MeshGlobals::Get().LOADED_PROGRAMS.count(shaderProgramId) != 0 && "ShaderProgram::Get() was given an invalid shaderProgramId.");
+    return MeshGlobals::Get().LOADED_PROGRAMS[shaderProgramId];
 }
 
 void ShaderProgram::Unload(unsigned int shaderProgramId) {
     assert(GraphicsEngine::Get().IsShaderProgramInUse(shaderProgramId));
-    assert(LOADED_PROGRAMS.count(shaderProgramId) != 0 && "ShaderProgram::Unload() was given an invalid shaderProgramId.");
-    LOADED_PROGRAMS.erase(shaderProgramId);
+    assert(MeshGlobals::Get().LOADED_PROGRAMS.count(shaderProgramId) != 0 && "ShaderProgram::Unload() was given an invalid shaderProgramId.");
+    MeshGlobals::Get().LOADED_PROGRAMS.erase(shaderProgramId);
 }
 
 ShaderProgram::~ShaderProgram() {
@@ -127,9 +127,9 @@ void ShaderProgram::Uniform(std::string uniformName, bool bval) {
 }
 
 void ShaderProgram::Use() {
-    if (LOADED_PROGRAM_ID != programId) {
+    if (MeshGlobals::Get().LOADED_PROGRAM_ID != programId) {
         glUseProgram(programId);
-        LOADED_PROGRAM_ID = programId;
+        MeshGlobals::Get().LOADED_PROGRAM_ID = programId;
     }
 }
 

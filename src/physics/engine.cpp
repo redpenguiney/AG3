@@ -19,9 +19,21 @@ PhysicsEngine::PhysicsEngine() {
 }
 PhysicsEngine::~PhysicsEngine() {}
 
+#ifdef IS_MODULE
+PhysicsEngine* _PHYSICS_ENGINE_ = nullptr;
+void PhysicsEngine::SetModulePhysicsEngine(PhysicsEngine* engine) {
+    _PHYSICS_ENGINE_ = engine;
+}
+#endif
+
 PhysicsEngine& PhysicsEngine::Get() {
-        static PhysicsEngine engine; // yeah apparently you can have local static variables
-        return engine;
+    #ifdef IS_MODULE
+    assert(_PHYSICS_ENGINE_ != nullptr);
+    return *_PHYSICS_ENGINE_;
+    #else
+    static PhysicsEngine engine; // yeah apparently you can have local static variables
+    return engine;
+    #endif
 }
 
 

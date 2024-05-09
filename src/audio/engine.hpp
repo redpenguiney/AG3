@@ -9,6 +9,14 @@ class AudioEngine {
     public:
         
         static AudioEngine& Get();
+
+        // When modules (shared libraries) get their copy of this code, they need to use a special version of AudioEngine::Get().
+        // This is so that both the module and the main executable have access to the same singleton. 
+        // The executable will provide each shared_library with a pointer to the audio engine.
+        #ifdef IS_MODULE
+        static void SetModuleAudioEngine(AudioEngine* engine);
+        #endif
+
         void Update();
 
         glm::dvec3 microphonePosition;
