@@ -97,6 +97,7 @@ ComponentRegistry::ComponentRegistry() {
 }
 
 ComponentRegistry::~ComponentRegistry() {
+    DebugLogInfo("Cleaning up all gameobjects.");
     GAMEOBJECTS.clear(); // no way its this simple
 }
 

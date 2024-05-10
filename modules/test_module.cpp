@@ -284,6 +284,27 @@ __declspec (dllexport) void OnInit() {
 __declspec (dllexport) void OnPostPhysics() {
     ui->GetTextInfo().text = glm::to_string(goWeakPtr.lock()->rigidbodyComponent->velocity);
     ui->UpdateGuiText();
+
+    auto & GE = GraphicsEngine::Get();
+
+    // printf("Doing a little raycasting.\n");
+    if (GE.window.LMB_DOWN) {
+        auto castResult = Raycast(GE.debugFreecamCamera.position, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
+        
+        if (castResult.hitObject != nullptr) {
+            // std::cout << "Hit object " << castResult.hitObject->name << ", normal is " << glm::to_string(castResult.hitNormal) << " \n";
+        }
+
+        if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
+            
+            castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
+            //castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position + castResult.hitNormal * 0.02);
+        }
+        else {
+            // std::cout << "LMB_DOWN but not hitting anything.\n";
+        }
+
+    }
 }
 
 __declspec (dllexport) void OnClose() {

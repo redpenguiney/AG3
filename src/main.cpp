@@ -35,9 +35,7 @@ using namespace std;
 
 double timeAtWhichExitProcessStarted = 0;
 
-void AtExit() {    
-    // DebugLogInfo("Cleaning up all gameobjects.");
-    
+void AtExit() {        
     LogElapsed(timeAtWhichExitProcessStarted, "Exit process elapsed ");
     DebugLogInfo("Program ran successfully. Exiting.");
 }
@@ -124,24 +122,7 @@ int main(int numArgs, const char *argPtrs[]) {
         
         
 
-        // printf("Doing a little raycasting.\n");
-        if (GE.window.LMB_DOWN) {
-            auto castResult = Raycast(GE.debugFreecamCamera.position, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
-            
-            if (castResult.hitObject != nullptr) {
-                // std::cout << "Hit object " << castResult.hitObject->name << ", normal is " << glm::to_string(castResult.hitNormal) << " \n";
-            }
-
-            if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
-                
-                castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
-                //castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position + castResult.hitNormal * 0.02);
-            }
-            else {
-                // std::cout << "LMB_DOWN but not hitting anything.\n";
-            }
-
-        }
+        
 
 
         if (GE.window.PRESS_BEGAN_KEYS[GLFW_KEY_SPACE]) {

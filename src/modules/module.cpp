@@ -141,12 +141,16 @@ Module::Module(const char* filepath) {
 
 void Module::CloseAll() {
     LOADED_MODULES.clear();
+    DebugLogInfo("Closed all modules.");
 }
 
 Module::~Module() {
     if (internalModule != nullptr) {
 
-        (*onClose)();
+        if (onClose.has_value()) {
+            (*onClose)();
+        }
+        
         
         #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
     
