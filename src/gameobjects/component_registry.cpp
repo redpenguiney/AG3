@@ -98,6 +98,9 @@ ComponentRegistry::ComponentRegistry() {
 
 ComponentRegistry::~ComponentRegistry() {
     DebugLogInfo("Cleaning up all gameobjects.");
+    for (auto & [ptr, _] : GAMEOBJECTS) {
+        DebugLogInfo("There was a gameobject ", ptr->name, "at ", ptr, " with refcount ", _.use_count());
+    }
     GAMEOBJECTS.clear(); // no way its this simple
 }
 
