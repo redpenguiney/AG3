@@ -64,20 +64,19 @@ pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024
 screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, screenQuadVertexFormat, 1, false))
 {
 
-    DebugLogLineReached();
-    debugFreecamEnabled = false; DebugLogLineReached();
-    debugFreecamPitch = 0.0; DebugLogLineReached();
-    debugFreecamYaw = 0.0; DebugLogLineReached();
+    debugFreecamEnabled = false;
+    debugFreecamPitch = 0.0;
+    debugFreecamYaw = 0.0;
 
     skyboxMaterial = nullptr;
-DebugLogLineReached();
+
     defaultShaderProgram = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl");
     defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", {}, false, false, false, true);
     defaultBillboardGuiShaderProgram = ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", {}, true, true, false, true);
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
     crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
-DebugLogLineReached();
+
     auto skybox_boxmesh = Mesh::FromFile("../models/skybox.obj", MeshVertexFormat::Default(), -1.0, 1.0, 1, false);
     skybox = new RenderableMesh(skybox_boxmesh);
     // std::cout << "SKYBOX has indices: ";
@@ -91,7 +90,7 @@ DebugLogLineReached();
     // }
     // std::cout << "\n";
     glDepthFunc(GL_LEQUAL); // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
-DebugLogLineReached();
+
 }
 
 GraphicsEngine::~GraphicsEngine() {

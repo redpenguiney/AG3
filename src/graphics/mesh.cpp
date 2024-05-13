@@ -39,6 +39,7 @@ MeshGlobals& MeshGlobals::Get() {
 }
 
 MeshGlobals::MeshGlobals() {}
+MeshGlobals::~MeshGlobals() {}
 
 // helper thing for Mesh::FromFile() and TextMeshFromText() that will expand the vector so that it contains index if needed, then return vector.at(index)
 template<typename T>

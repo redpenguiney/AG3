@@ -1,6 +1,8 @@
 #pragma once
 #include <iostream>
 
+// TODO: line numbers
+
 template<typename ... Args>
 void DebugLogInfo(Args... args) {
     std::cout << "\x1B[33mINFO: \x1B[37m";

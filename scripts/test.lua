@@ -1,4 +1,4 @@
-__MAIN_FUNC_ = function()
+local test = function() 
     print("hola from lua!!!")
     print("Graphics engine is "..tostring(GE))
 
@@ -13,7 +13,7 @@ __MAIN_FUNC_ = function()
     local go = GameObject.new(params)
 
     local vec3 = Vec3d.new(0, 2, 3)
-    print(go.transform);
+    print(go.tr.ansform);
     local transform = go.transform;
     print(transform);
     print(transform.position)
@@ -25,13 +25,20 @@ __MAIN_FUNC_ = function()
     -- coroutine.yield()
     print("here we go");
     for i = 0, 10 do
-        print(i)
+        print("iteration "..tostring(i))
         Wait(1)
+        -- print("again?")
     end
 
-    print("LUA WON!!!")
+    print("LUA WON!!!") 
+
 end
 
+return test
 
 
+
+
+
+-- error("woah, we should not have gotten here")
 

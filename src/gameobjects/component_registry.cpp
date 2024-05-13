@@ -98,10 +98,8 @@ ComponentRegistry::ComponentRegistry() {
 
 ComponentRegistry::~ComponentRegistry() {
     DebugLogInfo("Cleaning up all gameobjects.");
-    for (auto & [ptr, _] : GAMEOBJECTS) {
-        DebugLogInfo("There was a gameobject ", ptr->name, "at ", ptr, " with refcount ", _.use_count());
-    }
     GAMEOBJECTS.clear(); // no way its this simple
+    DebugLogInfo("Cleaned up all gameobjects.");
 }
 
 #ifdef IS_MODULE
@@ -122,7 +120,7 @@ ComponentRegistry& ComponentRegistry::Get() {
 }
 
 void GameObject::Destroy() {
-    DebugLogInfo("Destroy was called on ", name, " (", this, ").");
+    // DebugLogInfo("Destroy was called on ", name, " (", this, ").");
     if (!ComponentRegistry::Get().GAMEOBJECTS.contains(this)) {
         std::cout << "Error: Destroy() was called on the same gameobject twice, or this gameobject is otherwise invalid. Please don't.\n";
         abort();
@@ -137,13 +135,11 @@ void GameObject::Destroy() {
 }
 
 GameObject::~GameObject() {
-    DebugLogInfo("Destructor was called on ", name, " (", this, ").");
-    //std::cout << "Destroying.\n";
-    
+    // DebugLogInfo("Destructor was called on ", name, " (", this, ").");    
 };
 
 TransformComponent* GameObject::LuaGetTransform() {
-    return transformComponent.GetPtr();
+    return transformComponent.GetPtr(); // TODO WHY WOULD I WRITE THAT WHAT IS WRONG WITH ME LUA SHOULD UNDER NO CIRCUMSTANCES HAVE RAW PTRS
 }
 
 GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):

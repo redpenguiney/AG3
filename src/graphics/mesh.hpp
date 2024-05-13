@@ -55,6 +55,7 @@ class MeshGlobals {
     friend class PhysicsMesh;
     
     MeshGlobals();
+    ~MeshGlobals();
 };
 
 // Something a vertex has; color, position, normal, etc.

@@ -22,7 +22,9 @@
 
 // normally this stuff would be private members of the lua handler class, but then the header file would have to include all of sol2 which would probably make compile times worse
 // we use sol2 for lua support.
+// TODO: if we ever do dlls/modules it can't be like this
 std::optional<sol::state> LUA_STATE = std::nullopt;
+// sol::optional<sol::thread> LUA_THREAD = std::nullopt; // we have to run coroutines on threads
 
 // used in letting lua scripts wait without blocking the rest of the program
 // struct WaitingCoroutine {
@@ -73,19 +75,16 @@ bool HandleMaybeLuaError(const sol::protected_function_result& result, std::stri
 
 // void Wait(sol::object lTime) {
 //     assert(lTime.is<double>());
-//     LUA_STATE->set(Args &&args...)
-//     // double time = lTime.as<double>();
+//     // LUA_STATE->set(Args &&args...)
+//     double time = lTime.as<double>();
 
-//     // std::cout << "Wait for " << time << ".\n";
-//     // std::cout << "Coroutine type is " << (coroutine.get_type());
-//     // sol::main_coroutine coroutine = (*LUA_STATE)["__MAIN_FUNC_"];
-//     // assert(coroutine.runnable());
-//     // auto result = coroutine.call(); can't run here, hasn't been yielded yet
-//     // HandleMaybeLuaError(result, "???");
-//     // DebugLogInfo("Wait: We have been blessed with a coroutine ", coroutine.pointer());
-//     // std::cout << "conversion successful.\n";
-    
-//     // std::cout << "a.\n";
+//     DebugLogInfo("Wait for ", int(time * 60.0), ".\n");
+  
+//     sol::coroutine co = LUA_THREAD->state()["__MAIN_CO_"];
+//     // TODO: waiting needs to be better set delay
+//     std::vector<std::pair<sol::coroutine, int>>& tbl = LUA_THREAD->state()["__YIELDED_CO_"];
+//     tbl.push_back({co, int(time * 60.0)});
+//     // DebugLogInfo("Yielding coroutine now.");
 // }
 
 void Require(std::string key, std::string filepath) {
@@ -97,6 +96,7 @@ LuaHandler::LuaHandler() {
     
     // intitialize lua
     LUA_STATE = sol::state();
+    // LUA_THREAD = sol::thread::create(LUA_STATE->lua_state());
 
     // setup lua standard library
     LUA_STATE->open_libraries(sol::lib::base, sol::lib::os, sol::lib::math, sol::lib::table, sol::lib::coroutine, sol::lib::string);
@@ -110,14 +110,15 @@ LuaHandler::LuaHandler() {
     // engines
     // LUA_STATE->set("GE", &GraphicsEngine::Get());
 
-    // waiting: very important
-    // LUA_STATE->set("__C_WAIT", &Wait);
-    LUA_STATE->require_script("Wait", 
-    "function Wait(time) print(\"kok\") __WAIT_DURATION_ = time print(\"yoielding\") coroutine.yield() print(\"okkk\?\?!\?\?!\") end return Wait");
+    // waiting/yielding: very important
+    // LUA_STATE->set("__C_WAIT", sol::yielding(Wait));
+    // LUA_STATE->set("__YIELDED_CO_", std::vector<std::pair<sol::coroutine, int>> {});
+    // LUA_STATE->require_script("Wait", 
+    // "function Wait(time) print(\"kok\") __WAIT_DURATION_ = time print(\"yoielding\") __C_WAIT(1.0) print(\"control returned to lua script\") end return Wait");
 
     // // requiring other files
     // // notably, because sol is weird, require() returns nothing and instead sets the given variable name to whatever require() returns.
-    LUA_STATE->set("require", &Require); 
+    // LUA_STATE->set("require", &Require); 
 
     // // enums
     auto enumTable = LUA_STATE->create_table();
@@ -132,7 +133,8 @@ LuaHandler::LuaHandler() {
         });
     
     LUA_STATE->set("Enum", enumTable);
-    (*LUA_STATE)["__YIELDED_CO_"] = LUA_STATE->create_table();
+    // (*LUA_STATE)["__YIELDED_CO_"] = LUA_STATE->create_table();
+    // sol::table tbl = (*LUA_STATE)["__YIELDED_CO_"] ;
 
     // glm types
     SetupVecUsertype<glm::vec3, float>(&*LUA_STATE, "Vec3f");
@@ -159,6 +161,8 @@ LuaHandler::LuaHandler() {
     gameObjectUsertype["transform"] = sol::property(&GameObject::LuaGetTransform);
 
     // LUA_STATE->set_function("NewGameObject", ComponentRegistry::NewGameObject);
+
+    HandleMaybeLuaError(LUA_STATE.value().safe_script_file("../scripts/scheduler.lua"), "../scripts/scheduler.lua");
 }
 
 void LuaHandler::RunString(const std::string source) {
@@ -169,29 +173,29 @@ void LuaHandler::RunString(const std::string source) {
 
 unsigned int lastCoroutineId = 0;
 
-void RunLuaCoroutine(sol::main_coroutine& co, const std::string& scriptPath) {
-    auto result = co();
+// void RunLuaCoroutine(sol::main_coroutine& co, const std::string& scriptPath) {
+//     auto result = co();
 
         
-    DebugLogInfo("RunFile: We have been blessed with a coroutine ", co.pointer());
+//     DebugLogInfo("RunFile: We have been blessed with a coroutine ", co.pointer());
 
-    if (HandleMaybeLuaError(result, scriptPath) && co.runnable()) {
-        sol::object wait_duration = (*LUA_STATE)["__WAIT_DURATION_"];
-        double wait_time = 0;
-        if (!wait_duration.is<double>()) {
-            wait_time = wait_duration.as<double>();
-            LUA_STATE->set("__WAIT_DURATION_", sol::nil);
-        }   
+//     if (HandleMaybeLuaError(result, scriptPath) && co.runnable()) {
+//         sol::object wait_duration = (*LUA_STATE)["__WAIT_DURATION_"];
+//         double wait_time = 0;
+//         if (!wait_duration.is<double>()) {
+//             wait_time = wait_duration.as<double>();
+//             LUA_STATE->set("__WAIT_DURATION_", sol::nil);
+//         }   
 
-        DebugLogInfo("Setting coroutine.");
-        sol::table tbl = LUA_STATE->create_table();
-        unsigned int id = lastCoroutineId++;
-        tbl["frames"] = wait_time * 60.0f;
-        tbl["coroutine"] = co;
-        (*LUA_STATE)["__YIELDED_CO_"][id] = tbl; 
-        // YIELDED_COROUTINES.push_back({co, static_cast<long long>(wait_time * 60.0f)});
-    }
-}
+//         DebugLogInfo("Setting coroutine.");
+//         sol::table tbl = LUA_STATE->create_table();
+//         unsigned int id = lastCoroutineId++;
+//         tbl["frames"] = wait_time * 60.0f;
+//         tbl["coroutine"] = co;
+//         (*LUA_STATE)["__YIELDED_CO_"][id] = tbl; 
+//         // YIELDED_COROUTINES.push_back({co, static_cast<long long>(wait_time * 60.0f)});
+//     }
+// }
 
 void LuaHandler::RunFile(const std::string scriptPath) {
     // "safe" means it won't just throw if the script doesn't successfully run to completion
@@ -204,21 +208,29 @@ void LuaHandler::RunFile(const std::string scriptPath) {
     // sol::coroutine routine = (*LUA_STATE)["__NEW_COROUTINE"];
     // auto result = routine();
 
-    // sol::thread coroutineRunner = sol::thread::create(LUA_STATE->lua_state());
-    // auto runnerView = coroutineRunner.thread_state();
-    // runnerView[]
+    // auto runnerView = LUA_THREAD->state();
+    // // runnerView[]
 
-    auto result = LUA_STATE->safe_script_file(scriptPath, &sol::script_pass_on_error);
-    if (HandleMaybeLuaError(result, scriptPath)) {
-        sol::main_coroutine co = (*LUA_STATE)["__MAIN_FUNC_"];
-        DebugLogInfo("Ok");
+    // DebugLogInfo("Loading file...");
+    // auto result = runnerView.safe_script_file(scriptPath, &sol::script_pass_on_error);
+    // if (HandleMaybeLuaError(result, scriptPath)) {
+    //     DebugLogInfo("Calling main coroutine...");
+    //     sol::coroutine co = runnerView["__MAIN_CO_"];
+    //     auto result2 = co(); 
+    //     HandleMaybeLuaError(result2, scriptPath);
+    // };
+    //     // sol::main_coroutine co = (*LUA_STATE)["__MAIN_FUNC_"];
+    // // DebugLogInfo("Ok");
         
-        RunLuaCoroutine(co, scriptPath);
+    //     // RunLuaCoroutine(co, scriptPath);
 
-        DebugLogInfo("WE\'RE DONE HERE");
-    }
+    // DebugLogInfo("WE\'RE DONE HERE");
     
+    // }
     
+    auto result = LUA_STATE->require_file("__LOADED_FUNC_", scriptPath);
+
+    HandleMaybeLuaError(LUA_STATE.value()["DoTask"](result), scriptPath);
 }
 
 LuaHandler::~LuaHandler() {
@@ -227,31 +239,60 @@ LuaHandler::~LuaHandler() {
 
 void LuaHandler::OnFrameBegin() {
 
+    HandleMaybeLuaError(LUA_STATE.value()["ResumeTasks"](), "???");
+
     // resume waiting coroutines
 
     // std::vector<unsigned int> indicesToRemove;
     // unsigned int i = 0;
-    // // for (auto & co: YIELDED_COROUTINES) {
-    // sol::table tbl = (*LUA_STATE)["__YIELDED_CO_"] ;
-    // for (auto & pair : tbl) {
-    //     sol::table co = pair.second.as<sol::table>();
-    //     sol::object framesLeft = co["frames"];
-    //     co["frames"] = framesLeft.as<double>() - 1;
-    //     if (framesLeft <= 0) {
-    //         // assert(co.coroutine.runnable());
-    //         DebugLogInfo("Getting pointer.");
-    //         DebugLogInfo("Running coroutine at ", co.coroutine.pointer());
-    //         while (co.coroutine.runnable()) {
-    //             // DebugLogInfo("run?");
-    //             RunLuaCoroutine(co.coroutine, std::string("??? on frame begin ???"));
+    // // // for (auto & co: YIELDED_COROUTINES) {
+    // // DebugLogInfo("test");
+    // auto & tbl = LUA_THREAD->state().get<std::vector<std::pair<sol::coroutine, int>>&>("__YIELDED_CO_");
+    // auto & tbl_copy = tbl;
+    // // DebugLogInfo("Size of tbl = ", tbl.size());
+
+    // // std::vector<sol::object> keysToErase;
+
+    // for (auto & [co, time] : tbl_copy) {
+    //     DebugLogInfo("Time = ", time);
+    //     time -= 1;
+    //     if (time <= 0) {
+    //         assert(co.runnable());
+    //         // sol::coroutine co = pair.second.as<sol::coroutine>();
+    //         // keysToErase.push_back(pair.first);
+    //         co();
+    //         if (!co.runnable()) {
+    //             indicesToRemove.push_back(i);
+    //             i++;
     //         }
             
-    //     } 
-    //     i++;
+    //     }
+        
+
+    //     // break;
+
+    //     // sol::table co = pair.second.as<sol::table>();
+    //     // sol::object framesLeft = co["frames"];
+    //     // co["frames"] = framesLeft.as<double>() - 1;
+    //     // if (framesLeft <= 0) {
+    //     //     // assert(co.coroutine.runnable());
+    //     //     DebugLogInfo("Getting pointer.");
+    //     //     DebugLogInfo("Running coroutine at ", co.coroutine.pointer());
+    //     //     while (co.coroutine.runnable()) {
+    //     //         // DebugLogInfo("run?");
+    //     //         RunLuaCoroutine(co.coroutine, std::string("??? on frame begin ???"));
+    //     //     }
+            
+    //     // } 
+        
+    // }
+
+    // for (auto & key: keysToErase) {
+    //     tbl[key] = sol::nil;
     // }
 
     // for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
-    //     YIELDED_COROUTINES.erase(YIELDED_COROUTINES.begin() + *it);
+    //     tbl.erase(tbl.begin() + *it);
     // }
 }
 
