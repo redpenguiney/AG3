@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <type_traits>
 #ifndef SOL_CALL_HPP
 #define SOL_CALL_HPP
 
@@ -490,6 +491,7 @@ namespace sol {
 							     "preceeded by the "
 							     "actual object with '.' syntax)");
 						}
+
 						object_type* o = static_cast<object_type*>(maybeo.value());
 						return call(L, std::forward<Fx>(fx), *o);
 #else

@@ -42,6 +42,9 @@ class ComponentHandle {
     // only exists so you can pass a reference to a component to a function
     T* const GetPtr() const;
 
+    //  static cast component handle to ptr so that sol will accept it; used solely by lua, errors on nullptr
+    explicit operator T*() const;
+
     // If ptr != nullptr/it hasn't already been cleared, calls Destroy() on the component, returns it to the pool, and sets ptr to nullptr.
     // Gameobjects do this for all their components when Destroy() is called on them.
     void Clear();
@@ -68,6 +71,11 @@ T* ComponentHandle<T>::operator->() const {assert(ptr != nullptr); return ptr;};
 
 template<typename T>
 T* const ComponentHandle<T>::GetPtr() const {return ptr;}
+
+template<typename T>
+ComponentHandle<T>::operator T*() const {
+    return this->operator->();
+} 
 
 template<typename T>
 void ComponentHandle<T>::Clear() {

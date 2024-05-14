@@ -29,10 +29,10 @@ function ResumeTasks()
             local ok, err = coroutine.resume(v.coro)
             -- coroutine does some stuff then yield or finish
             if coroutine.status(v.coro) == "dead" then -- if coroutine is finished/errored, remove it from the list
-                table.remove(coroutine, i)
+                table.remove(YIELDED_COROUTINES, i)
                 
                 if not ok then
-                    print(debug.traceback("ERROR: In lua, the following error was generated: "..err.."\n"))
+                    error(err)
                 end
             else
                 -- if the coroutine yielded by calling Wait(), WAIT_LENGTH will be set to the number of frames they want to wait for.

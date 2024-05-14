@@ -138,9 +138,9 @@ GameObject::~GameObject() {
     // DebugLogInfo("Destructor was called on ", name, " (", this, ").");    
 };
 
-TransformComponent* GameObject::LuaGetTransform() {
-    return transformComponent.GetPtr(); // TODO WHY WOULD I WRITE THAT WHAT IS WRONG WITH ME LUA SHOULD UNDER NO CIRCUMSTANCES HAVE RAW PTRS
-}
+// TransformComponent* GameObject::LuaGetTransform() {
+    // return transformComponent.GetPtr(); // TODO WHY WOULD I WRITE THAT WHAT IS WRONG WITH ME LUA SHOULD UNDER NO CIRCUMSTANCES HAVE RAW PTRS
+// }
 
 GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):
     // a way to make this less verbose and more type safe would be nice
