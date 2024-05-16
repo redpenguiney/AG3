@@ -26,12 +26,16 @@
 
 struct GameobjectCreateParams;
 
+template<typename T> 
+class LuaComponentHandleWrapper;
+
 // Just a little pointer wrapper for gameobjects that throws an error when trying to dereference a nullptr to a component (gameobjects have a nullptr to any components they don't have, and when Destroy() is called all components are set to nullptr)
 // Still the gameobject's job to get and return objects to/from the pool since the pool used depends on the exact set of components the gameobject uses.
 template<typename T>
 class ComponentHandle {
     public:
     ComponentHandle(T* const comp_ptr);
+    ComponentHandle(const ComponentHandle<T>&) = delete;
     T& operator*() const;
     T* operator->() const;
 
@@ -42,14 +46,15 @@ class ComponentHandle {
     // only exists so you can pass a reference to a component to a function
     T* const GetPtr() const;
 
-    //  static cast component handle to ptr so that sol will accept it; used solely by lua, errors on nullptr
-    explicit operator T*() const;
+    //  static cast component handle to lua version; used solely by lua, errors on nullptr
+    explicit operator LuaComponentHandleWrapper<T>() const;
 
     // If ptr != nullptr/it hasn't already been cleared, calls Destroy() on the component, returns it to the pool, and sets ptr to nullptr.
     // Gameobjects do this for all their components when Destroy() is called on them.
     void Clear();
 
     private:
+    // TODO: make unique?
     T* ptr;
 };
 
@@ -73,8 +78,8 @@ template<typename T>
 T* const ComponentHandle<T>::GetPtr() const {return ptr;}
 
 template<typename T>
-ComponentHandle<T>::operator T*() const {
-    return this->operator->();
+ComponentHandle<T>::operator LuaComponentHandleWrapper<T>() const {
+    return this;
 } 
 
 template<typename T>
@@ -444,13 +449,13 @@ class GameObject {
     // TODO: avoid not storing ptrs for components we don't have
     ComponentHandle<TransformComponent> transformComponent;
     ComponentHandle<GraphicsEngine::RenderComponent> renderComponent;
-    // ComponentHandle<GraphicsEngine::RenderComponentNoFO> renderComponentNoFO; these two components have exact same size and methods and you can only have one of them so why bother
+    // ComponentHandle<GraphicsEngine::RenderComponentNoFO> renderComponentNoFO; these two components have exact same size and methods and you can only have one of them so we store both with the same pointer
     ComponentHandle<RigidbodyComponent> rigidbodyComponent;
     ComponentHandle<SpatialAccelerationStructure::ColliderComponent> colliderComponent;
     ComponentHandle<PointLightComponent> pointLightComponent;
     ComponentHandle<AudioPlayerComponent> audioPlayerComponent;
 
-    TransformComponent* LuaGetTransform();
+    ComponentHandle<TransformComponent>& LuaGetTransform();
 
     ~GameObject();
 

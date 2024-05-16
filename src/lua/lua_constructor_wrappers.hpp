@@ -7,6 +7,33 @@ struct LuaGameobjectCreateParams: GameobjectCreateParams {
     LuaGameobjectCreateParams(sol::lua_table args);
 };
 
+// We can't use normal ComponentHandle because sol would, if told it was like a pointer (which it is and it needs to know that), it would try to copy it.
+template <typename T>
+class LuaComponentHandle {
+    public:
+    ComponentHandle<T>* handle;
+
+};
+
+// lets sol recognize LuaComponentHandle as a pointer-like object, see https://sol2.readthedocs.io/en/latest/api/unique_usertype_traits.html
+
+namespace sol {
+        template <typename T>
+        struct unique_usertype_traits<LuaComponentHandle<T>> {
+                typedef T type;
+                typedef LuaComponentHandle<T> actual_type;
+                static const bool value = true;
+
+                static bool is_null(const actual_type& ptr) {
+                        return ptr.handle->GetPtr() == nullptr;
+                }
+
+                static type* get (const actual_type& ptr) {
+                        return ptr.handle->GetPtr();
+                }
+        };
+}
+
 std::shared_ptr<GameObject> LuaGameobjectConstructor(sol::object args);
 
 template<typename A, typename B>

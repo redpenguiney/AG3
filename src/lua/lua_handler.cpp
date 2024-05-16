@@ -6,6 +6,7 @@
 
 #include "debug/log.hpp"
 #include "gameobjects/component_registry.hpp"
+// #include "lua/lua_component_wrappers.hpp"
 #include "sol/forward.hpp"
 #ifndef SOL_ALL_SAFETIES_ON 
 #error bruh
@@ -151,7 +152,7 @@ LuaHandler::LuaHandler() {
     gameObjectCreateParamsUsertype["materialId"] = &LuaGameobjectCreateParams::materialId;
     gameObjectCreateParamsUsertype["shaderId"] = &LuaGameobjectCreateParams::shaderId;
 
-    auto transformComponentUsertype = LUA_STATE->new_usertype<ComponentHandle<TransformComponent>>("Transform", sol::no_constructor);
+    auto transformComponentUsertype = LUA_STATE->new_usertype<TransformComponent>("Transform", sol::no_constructor);
     transformComponentUsertype["position"] = sol::property(&TransformComponent::Position, &TransformComponent::SetPos);
     transformComponentUsertype["rotation"] = sol::property(&TransformComponent::Rotation, &TransformComponent::SetRot);
     transformComponentUsertype["scale"] = sol::property(&TransformComponent::Scale, &TransformComponent::SetScl);
@@ -159,7 +160,7 @@ LuaHandler::LuaHandler() {
     // transformComponentUsertype["children"] = sol::readonly_property(&TransformComponent::children); TODO
 
     auto gameObjectUsertype = LUA_STATE->new_usertype<GameObject>("GameObject", sol::factories(LuaGameobjectConstructor));
-    gameObjectUsertype["transform"] = sol::readonly(&GameObject::transformComponent);
+    gameObjectUsertype["transform"] = sol::property(&GameObject::LuaGetTransform);
     gameObjectUsertype["Destroy"] = &GameObject::Destroy;
 
     // LUA_STATE->set_function("NewGameObject", ComponentRegistry::NewGameObject);

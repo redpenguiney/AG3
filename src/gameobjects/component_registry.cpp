@@ -126,7 +126,9 @@ void GameObject::Destroy() {
         abort();
     }
     ComponentRegistry::Get().GAMEOBJECTS.erase(this);
+    DebugLogInfo("b4 TC AT ", transformComponent.GetPtr());
     transformComponent.Clear();
+    DebugLogInfo("atr TC AT ", transformComponent.GetPtr());
     renderComponent.Clear();
     colliderComponent.Clear();
     rigidbodyComponent.Clear();
@@ -177,3 +179,7 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     if (audioPlayerComponent) {audioPlayerComponent->Init(this, params.sound);}
     name = "GameObject";
 };
+
+ComponentHandle<TransformComponent>& GameObject::LuaGetTransform() {
+    return transformComponent;
+}
