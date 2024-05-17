@@ -56,14 +56,49 @@ std::string toString(A a) {
 }
 
 template<typename vecT, typename scalarT> 
-void SetupVecUsertype(sol::state* state, const char* typeName) {
-    auto vecUsertype = state->new_usertype<vecT>(typeName, sol::constructors<vecT(), vecT(double), vecT(float), vecT(double, double, double), vecT(float, float, float), vecT(glm::dvec3), vecT(glm::vec3)>());
+void SetupVec4Usertype(sol::state* state, const char* typeName) {
+    auto vecUsertype = state->new_usertype<vecT>(typeName, sol::constructors<vecT(), vecT(double), vecT(float), vecT(double, double, double, double), vecT(float, float, float, float), vecT(glm::dvec4), vecT(glm::vec4)>());
+
     vecUsertype["x"] = sol::readonly(&vecT::x);
     vecUsertype["y"] = sol::readonly(&vecT::y);
     vecUsertype["z"] = sol::readonly(&vecT::z);
+    vecUsertype["w"] = sol::readonly(&vecT::w);
+    
     vecUsertype["__mul"] = sol::overload(multiply<vecT, scalarT>, multiply<vecT, vecT>);
     vecUsertype["__div"] = sol::overload(division<vecT, scalarT>, division<vecT, vecT>);
     vecUsertype["__add"] = sol::overload(add<vecT, scalarT>, add<vecT, vecT>);
     vecUsertype["__sub"] = sol::overload(subtract<vecT, scalarT>, subtract<vecT, vecT>);
     vecUsertype["__tostring"] = toString<vecT>;
 }
+
+template<typename vecT, typename scalarT> 
+void SetupVec2Usertype(sol::state* state, const char* typeName) {
+    auto vecUsertype = state->new_usertype<vecT>(typeName, sol::constructors<vecT(), vecT(double), vecT(float), vecT(double, double), vecT(float, float), vecT(glm::dvec2), vecT(glm::vec2)>());
+
+    vecUsertype["x"] = sol::readonly(&vecT::x);
+    vecUsertype["y"] = sol::readonly(&vecT::y);
+    
+    vecUsertype["__mul"] = sol::overload(multiply<vecT, scalarT>, multiply<vecT, vecT>);
+    vecUsertype["__div"] = sol::overload(division<vecT, scalarT>, division<vecT, vecT>);
+    vecUsertype["__add"] = sol::overload(add<vecT, scalarT>, add<vecT, vecT>);
+    vecUsertype["__sub"] = sol::overload(subtract<vecT, scalarT>, subtract<vecT, vecT>);
+    vecUsertype["__tostring"] = toString<vecT>;
+}
+
+template<typename vecT, typename scalarT> 
+void SetupVec3Usertype(sol::state* state, const char* typeName) {
+
+    auto vecUsertype = state->new_usertype<vecT>(typeName, sol::constructors<vecT(), vecT(double), vecT(float), vecT(double, double, double), vecT(float, float, float), vecT(glm::dvec3), vecT(glm::vec3)>());
+
+    vecUsertype["x"] = sol::readonly(&vecT::x);
+    vecUsertype["y"] = sol::readonly(&vecT::y);
+    vecUsertype["z"] = sol::readonly(&vecT::z);
+    
+    vecUsertype["__mul"] = sol::overload(multiply<vecT, scalarT>, multiply<vecT, vecT>);
+    vecUsertype["__div"] = sol::overload(division<vecT, scalarT>, division<vecT, vecT>);
+    vecUsertype["__add"] = sol::overload(add<vecT, scalarT>, add<vecT, vecT>);
+    vecUsertype["__sub"] = sol::overload(subtract<vecT, scalarT>, subtract<vecT, vecT>);
+    vecUsertype["__tostring"] = toString<vecT>;
+}
+
+std::shared_ptr<Mesh> LuaMeshConstructor(sol::object args);

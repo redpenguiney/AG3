@@ -183,3 +183,23 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
 LuaComponentHandle<TransformComponent> GameObject::LuaGetTransform() {
     return LuaComponentHandle<TransformComponent>(&transformComponent);
 }
+
+LuaComponentHandle<GraphicsEngine::RenderComponent> GameObject::LuaGetRender() {
+    return LuaComponentHandle<GraphicsEngine::RenderComponent>(&renderComponent);
+}
+
+LuaComponentHandle<RigidbodyComponent> GameObject::LuaGetRigidbody() {
+    return LuaComponentHandle<RigidbodyComponent>(&rigidbodyComponent);
+}
+
+LuaComponentHandle<SpatialAccelerationStructure::ColliderComponent> GameObject::LuaGetCollider() {
+    return LuaComponentHandle<SpatialAccelerationStructure::ColliderComponent>(&colliderComponent);
+}
+
+LuaComponentHandle<AudioPlayerComponent> GameObject::LuaGetAudioPlayer() {
+    return LuaComponentHandle<AudioPlayerComponent>(&audioPlayerComponent);
+}
+
+LuaComponentHandle<PointLightComponent> GameObject::LuaGetPointLight() {
+    return LuaComponentHandle<PointLightComponent>(&pointLightComponent);
+}

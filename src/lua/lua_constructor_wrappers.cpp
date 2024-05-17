@@ -1,4 +1,5 @@
 #include "lua_constructor_wrappers.hpp"
+#include "graphics/mesh.hpp"
 
 std::vector<ComponentRegistry::ComponentBitIndex> GetComponents(sol::lua_table args) {
     std::vector<ComponentRegistry::ComponentBitIndex> components;
@@ -23,4 +24,10 @@ std::shared_ptr<GameObject> LuaGameobjectConstructor(sol::object args) {
         throw sol::error("Invalid mesh id given. Please use a real mesh that can actually be rendered.");
     }
     return ComponentRegistry::Get().NewGameObject(params);
+}
+
+std::shared_ptr<Mesh> LuaMeshConstructor(sol::object args) {
+    if (!args.is<std::string>()) {
+        throw sol::error("Mesh::New")
+    }
 }

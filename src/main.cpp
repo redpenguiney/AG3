@@ -188,7 +188,6 @@ int main(int numArgs, const char *argPtrs[]) {
         }
     }
 
-    
     // make light
     {
         GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});

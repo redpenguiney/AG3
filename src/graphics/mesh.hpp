@@ -1,5 +1,7 @@
 #pragma once
-#include "pch/external_pch.h"
+// #include "pch/external_pch.h"
+#include "glm/ext.hpp"
+#include "tinyobjloader/tiny_obj_loader.h"
 #include "../../external_headers/GLEW/glew.h"
 #include <optional>
 #include <vector>
@@ -167,6 +169,29 @@ enum class VerticalAlignMode{
     Bottom
 };
 
+struct MeshCreateParams {
+    const MeshVertexFormat& meshVertexFormat = MeshVertexFormat::Default();
+    
+    // default value of textureZ for the mesh's vertices, if that is a noninstanced vertex attribute
+    float textureZ=-1.0;
+
+    // default value of transaprency/alpha for the mesh's vertices, if color is a noninstanced 4-component vertex attribute
+    unsigned int transparency=1.0;
+
+    // meshpool will make room for this many objects to use this mesh (if you go over it's fine, but performance may be affected)
+    // the memory cost of this is ~64 * expectedCount bytes if you ask for space you don't nee
+    // default of 1024 should be fine in almost all cases
+    // NOTE: if you're constantly adding and removing unique meshes, they better all have same expectedCount or TODO memory issues i should probably address at somepoint
+    unsigned int expectedCount = 1024;
+
+    // size should always be normalized for collisions/physics to work. Only set to false if you're making a weird mesh like the skybox or gui or something.
+    // to actually change a rendercomponent's mesh's size, scale its transform component, using Mesh::originalSize if you want the mesh at its correct size.
+    bool normalizeSize = true;
+
+    // if a mesh is not dynamic, it saves memory and performance. If it is dynamic, you can modify the mesh using Start/StopModifying().
+    const bool dynamic = false;
+};
+
 struct TextMeshCreateParams {
     GLfloat leftMargin, rightMargin, topMargin, bottomMargin; // in pixels, 0 is the center of the ui text is being put on. top and bottom margin are only respected for top and bottom vertical alignment respectively.
     GLfloat lineHeightMultiplier; // 1 is single spaced, 2 is double spaced, etc.
@@ -230,7 +255,7 @@ class Mesh {
     // leave expectedCount at 1024 unless it's something like a cube, in which case maybe set it to like 100k (you can create more objects than this number, just for instancing)
     // textureZ is used as a starter value for every vertex's textureZ if it isn't instanced
     // normalizeSize should ALWAYS be true unless you're creating a mesh (like the screen quad or skybox mesh) for internal usage
-    static std::shared_ptr<Mesh> FromFile(const std::string& path, const MeshVertexFormat& meshVertexFormat = MeshVertexFormat::Default(), float textureZ=-1.0, unsigned int transparency=1.0, unsigned int expectedCount = 1024, bool normalizeSize = true, const bool isDynamic = false);
+    static std::shared_ptr<Mesh> FromFile(const std::string& path, const MeshCreateParams& params);
     
     // Creates a mesh for use in text/gui.
     // Modify the mesh with TextMeshFromText() to actually set text and what not.

@@ -139,8 +139,10 @@ LuaHandler::LuaHandler() {
     // sol::table tbl = (*LUA_STATE)["__YIELDED_CO_"] ;
 
     // glm types
-    SetupVecUsertype<glm::vec3, float>(&*LUA_STATE, "Vec3f");
-    SetupVecUsertype<glm::dvec3, double>(&*LUA_STATE, "Vec3d");
+    SetupVec3Usertype<glm::vec3, float>(&*LUA_STATE, "Vec3f");
+    SetupVec3Usertype<glm::dvec3, double>(&*LUA_STATE, "Vec3d");
+    SetupVec4Usertype<glm::vec4, float>(&*LUA_STATE, "Vec4f");
+    SetupVec2Usertype<glm::vec2, float>(&*LUA_STATE, "Vec2f");
 
     auto quatUserType = LUA_STATE->new_usertype<glm::quat>("Quat", sol::constructors<glm::quat(glm::vec3), glm::quat(glm::quat), glm::quat(float, float, float, float)>());
 
@@ -159,8 +161,16 @@ LuaHandler::LuaHandler() {
     transformComponentUsertype["parent"] = sol::property(&TransformComponent::GetParent, &TransformComponent::SetParent);
     // transformComponentUsertype["children"] = sol::readonly_property(&TransformComponent::children); TODO
 
+    auto renderComponentUsertype = LUA_STATE->new_usertype<GraphicsEngine::RenderComponent>("Render", sol::no_constructor);
+    renderComponentUsertype["color"] = sol::property(&GraphicsEngine::RenderComponent::SetColor);
+
     auto gameObjectUsertype = LUA_STATE->new_usertype<GameObject>("GameObject", sol::factories(LuaGameobjectConstructor));
     gameObjectUsertype["transform"] = sol::property(&GameObject::LuaGetTransform);
+    gameObjectUsertype["render"] = sol::property(&GameObject::LuaGetRender);
+    gameObjectUsertype["rigidbody"] = sol::property(&GameObject::LuaGetRigidbody);
+    gameObjectUsertype["collider"] = sol::property(&GameObject::LuaGetCollider);
+    gameObjectUsertype["pointLight"] = sol::property(&GameObject::LuaGetPointLight);
+    gameObjectUsertype["audioPlayer"] = sol::property(&GameObject::LuaGetAudioPlayer);
     gameObjectUsertype["Destroy"] = &GameObject::Destroy;
 
     // LUA_STATE->set_function("NewGameObject", ComponentRegistry::NewGameObject);

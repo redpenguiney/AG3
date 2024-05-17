@@ -26,9 +26,12 @@ local test = function()
     transform.rotation = Quat.new(Vec3f.new(0.0, 3.14/8.0, 0.0))
     -- coroutine.yield()
     print("here we go");
-    for i = 0, 10 do
+    local c = Vec4f.new(0.5, 0.5, 0.5, 1.0)
+    while true do
         print("iteration "..tostring(i))
-        Wait(0.2)
+        go.render.color = c
+        c = c + Vec4f.new(math.random(-1, 1) * 0.01, math.random(-1, 1) * 0.01, math.random(-1, 1) * 0.01, 0.0)
+        Wait(0.0)
         -- print("again?")
     end
 

@@ -454,6 +454,11 @@ class GameObject {
     ComponentHandle<AudioPlayerComponent> audioPlayerComponent;
 
     LuaComponentHandle<TransformComponent> LuaGetTransform();
+    LuaComponentHandle<GraphicsEngine::RenderComponent> LuaGetRender();
+    LuaComponentHandle<RigidbodyComponent> LuaGetRigidbody();
+    LuaComponentHandle<SpatialAccelerationStructure::ColliderComponent> LuaGetCollider();
+    LuaComponentHandle<PointLightComponent> LuaGetPointLight();
+    LuaComponentHandle<AudioPlayerComponent> LuaGetAudioPlayer();
 
     ~GameObject();
 
