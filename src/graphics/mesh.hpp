@@ -1,5 +1,5 @@
 #pragma once
-#include "../../external_headers/GLM/ext.hpp"
+#include "pch/external_pch.h"
 #include "../../external_headers/GLEW/glew.h"
 #include <optional>
 #include <vector>
@@ -10,7 +10,6 @@
 #include <memory>
 #include <atomic>
 #include <string>
-#include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
 #include "../debug/log.hpp"
 
 class Texture;

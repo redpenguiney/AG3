@@ -26,9 +26,6 @@
 
 struct GameobjectCreateParams;
 
-template<typename T> 
-class LuaComponentHandleWrapper;
-
 // Just a little pointer wrapper for gameobjects that throws an error when trying to dereference a nullptr to a component (gameobjects have a nullptr to any components they don't have, and when Destroy() is called all components are set to nullptr)
 // Still the gameobject's job to get and return objects to/from the pool since the pool used depends on the exact set of components the gameobject uses.
 template<typename T>
@@ -46,9 +43,6 @@ class ComponentHandle {
     // only exists so you can pass a reference to a component to a function
     T* const GetPtr() const;
 
-    //  static cast component handle to lua version; used solely by lua, errors on nullptr
-    explicit operator LuaComponentHandleWrapper<T>() const;
-
     // If ptr != nullptr/it hasn't already been cleared, calls Destroy() on the component, returns it to the pool, and sets ptr to nullptr.
     // Gameobjects do this for all their components when Destroy() is called on them.
     void Clear();
@@ -56,6 +50,14 @@ class ComponentHandle {
     private:
     // TODO: make unique?
     T* ptr;
+};
+
+// We can't use normal ComponentHandle because sol would, if told it was like a pointer (which it is and it needs to know that), it would try to copy it, which is bad so we need to do this.
+template <typename T>
+class LuaComponentHandle {
+    public:
+    ComponentHandle<T>* const handle;
+    LuaComponentHandle(ComponentHandle<T>* ptr): handle(ptr) {}
 };
 
 // templates can't go in cpps
@@ -78,15 +80,11 @@ template<typename T>
 T* const ComponentHandle<T>::GetPtr() const {return ptr;}
 
 template<typename T>
-ComponentHandle<T>::operator LuaComponentHandleWrapper<T>() const {
-    return this;
-} 
-
-template<typename T>
 void ComponentHandle<T>::Clear() {
     if (ptr) {
         ptr->Destroy();
         ptr->pool->ReturnObject(ptr);
+        ptr = nullptr;
     }
 }
 
@@ -455,7 +453,7 @@ class GameObject {
     ComponentHandle<PointLightComponent> pointLightComponent;
     ComponentHandle<AudioPlayerComponent> audioPlayerComponent;
 
-    ComponentHandle<TransformComponent>& LuaGetTransform();
+    LuaComponentHandle<TransformComponent> LuaGetTransform();
 
     ~GameObject();
 

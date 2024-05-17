@@ -2,12 +2,9 @@
 #include "gameobjects/component_registry.hpp"
 #include "gameobjects/transform_component.hpp"
 
-// Sadly, due to SOL limitations we can't have lua automatically/simply use ComponentHandle<whatever>, and have to have this extra wrapper. At least this way we can do prettier error checking if we want.
-
 template<typename T>
 class LuaComponentHandleWrapper {
     ComponentHandle<T>& handle;
-    operator ComponentHandle<T>();
 };
 
 // class LuaTransformComponent: ComponentHandle<TransformComponent> {

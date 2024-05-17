@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <vector>
 #include "debug/log.hpp"
+#include "gameobjects/component_registry.hpp"
+#include "gameobjects/transform_component.hpp"
 #include "rigidbody_component.hpp"
 
 // some wacky function i copypasted from https://stackoverflow.com/questions/8147027/how-do-i-call-stdmake-shared-on-a-class-with-only-protected-or-private-const .
@@ -126,9 +128,7 @@ void GameObject::Destroy() {
         abort();
     }
     ComponentRegistry::Get().GAMEOBJECTS.erase(this);
-    DebugLogInfo("b4 TC AT ", transformComponent.GetPtr());
     transformComponent.Clear();
-    DebugLogInfo("atr TC AT ", transformComponent.GetPtr());
     renderComponent.Clear();
     colliderComponent.Clear();
     rigidbodyComponent.Clear();
@@ -180,6 +180,6 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     name = "GameObject";
 };
 
-ComponentHandle<TransformComponent>& GameObject::LuaGetTransform() {
-    return transformComponent;
+LuaComponentHandle<TransformComponent> GameObject::LuaGetTransform() {
+    return LuaComponentHandle<TransformComponent>(&transformComponent);
 }

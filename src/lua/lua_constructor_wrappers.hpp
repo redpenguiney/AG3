@@ -2,19 +2,13 @@
 #include "../gameobjects/component_registry.hpp"
 #include <sol/sol.hpp>
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
+#include "gameobjects/component_registry.hpp"
 
 struct LuaGameobjectCreateParams: GameobjectCreateParams {
     LuaGameobjectCreateParams(sol::lua_table args);
 };
 
-// We can't use normal ComponentHandle because sol would, if told it was like a pointer (which it is and it needs to know that), it would try to copy it.
-template <typename T>
-class LuaComponentHandle {
-    public:
-    ComponentHandle<T>* handle;
-
-};
-
+// see component.registry.hpp for def. and explanation of LuaComponentHandle
 // lets sol recognize LuaComponentHandle as a pointer-like object, see https://sol2.readthedocs.io/en/latest/api/unique_usertype_traits.html
 
 namespace sol {
