@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include "debug/log.hpp"
 #include "meshpool.hpp"
 
 // TODO: use GL_SHORT for indices in meshpools where there are fewer than 65536 indices (wait is that even possible)
@@ -215,7 +216,10 @@ void Meshpool::SetInstancedVertexAttribute(const unsigned int slot, const unsign
         assert(!slotInstanceSpaces[slot].count(instanceId));
     }
     
-    assert(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)].has_value());
+    if (!vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)].has_value()) {
+        DebugLogError("The current meshpool's meshvertexformat has no such attribute ", attributeName, ", and thus the value at slot ", slot, " instanceId ", instanceId, " could not be set.");
+        abort();
+    }
     assert(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)]->instanced == true);
     assert(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)]->nFloats == nFloats);
     float* attributeLocation = (float*)(vertexFormat.vertexAttributes[MeshVertexFormat::AttributeIndexFromAttributeName(attributeName)]->offset + instancedVertexBuffer.Data() + ((slotToInstanceLocations[slot] + instanceId) * instancedVertexSize));

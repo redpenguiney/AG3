@@ -26,8 +26,10 @@ std::shared_ptr<GameObject> LuaGameobjectConstructor(sol::object args) {
     return ComponentRegistry::Get().NewGameObject(params);
 }
 
-std::shared_ptr<Mesh> LuaMeshConstructor(sol::object args) {
-    if (!args.is<std::string>()) {
-        throw sol::error("Mesh::New")
+std::shared_ptr<Mesh> LuaMeshConstructor(sol::object arg1, sol::object arg2) {
+    if (arg1.is<std::string>()) {
+        
     }
+
+    throw sol::error("Mesh::New() takes a path to a file and an optional MeshCreateParams, nothing else. TODO it should actually also support other things but doesn't lol");
 }

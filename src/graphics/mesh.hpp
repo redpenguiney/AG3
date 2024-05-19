@@ -170,13 +170,14 @@ enum class VerticalAlignMode{
 };
 
 struct MeshCreateParams {
-    const MeshVertexFormat& meshVertexFormat = MeshVertexFormat::Default();
+    // TODO: "auto" option would be nice for vertex format
+    const MeshVertexFormat meshVertexFormat = MeshVertexFormat::Default();
     
     // default value of textureZ for the mesh's vertices, if that is a noninstanced vertex attribute
     float textureZ=-1.0;
 
     // default value of transaprency/alpha for the mesh's vertices, if color is a noninstanced 4-component vertex attribute
-    unsigned int transparency=1.0;
+    float transparency=1.0;
 
     // meshpool will make room for this many objects to use this mesh (if you go over it's fine, but performance may be affected)
     // the memory cost of this is ~64 * expectedCount bytes if you ask for space you don't nee
@@ -190,6 +191,7 @@ struct MeshCreateParams {
 
     // if a mesh is not dynamic, it saves memory and performance. If it is dynamic, you can modify the mesh using Start/StopModifying().
     const bool dynamic = false;
+
 };
 
 struct TextMeshCreateParams {
@@ -200,7 +202,7 @@ struct TextMeshCreateParams {
     bool wrapText = true;
 };
 
-// sets vertices/indices to contain the right stuff, not normalized.
+// sets vertices/indices to contain the right stuff, not normalized. Doesn't actually make a mesh, sorry for dumb name.
 void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreateParams& params, const MeshVertexFormat& vertexFormat, std::vector<GLfloat>& vertices, std::vector<GLuint>& indices);
 
 // TODO: MAKE DYNAMIC MESHES UNUSABLE WHILE THEY ARE BEING MODIFIED
@@ -242,10 +244,16 @@ class Mesh {
     static bool IsValidForGameObject(unsigned int meshId);
     static std::shared_ptr<Mesh>& Get(unsigned int meshId);
 
+    // literally don't know where this function went it vanished. anyways,
+    // unloads the mesh with the given meshId, freeing its memory.
+    // you CAN unload a mesh while objects are using it without any issues - a copy of that mesh is still on the gpu.
+    // you only need to call this function if you are (like for procedural terrain) dynamically loading new meshes
+    static void Unload(int meshId);
+
     // verts must be organized in accordance with the given meshVertexFormat.
     // leave expectedCount at 1024 unless it's something like a cube, in which case maybe set it to like 100k (you can create more objects than this number, just for instancing)
     // normalizeSize should ALWAYS be true unless you're creating a mesh (like the screen quad or skybox mesh) for internal usage
-    static std::shared_ptr<Mesh> FromVertices(const std::vector<GLfloat>& verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount=1024, bool normalizeSize = true);
+    static std::shared_ptr<Mesh> FromVertices(const std::vector<GLfloat>& verts, const std::vector<GLuint> &indies, const MeshCreateParams& params);
 
     // only accepts OBJ files.
     // File should just contain one object. 
@@ -259,16 +267,15 @@ class Mesh {
     
     // Creates a mesh for use in text/gui.
     // Modify the mesh with TextMeshFromText() to actually set text and what not.
-    static std::shared_ptr<Mesh> Text(const MeshVertexFormat& meshVertexFormat = MeshVertexFormat::DefaultGui());
-    
-    static void Unload(int meshId);
+    // Note: Disregards certain params. TODO be slightly more specific
+    static std::shared_ptr<Mesh> Text(const MeshCreateParams& params);
 
     private:
 
     // true if the mesh was created using Mesh::FromText(). If that's the case, TODO WHAT WAS SUPPOSED TO FINISH THIS COMMENT LOL
     const bool wasCreatedFromText;
 
-    Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizePositions, bool fromText = false);
+    Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshCreateParams& params, bool fromText = false);
 
     // scale vertex positions into range -0.5 to 0.5 and calculate originalSize
     void NormalizePositions();

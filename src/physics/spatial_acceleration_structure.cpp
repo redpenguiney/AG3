@@ -191,7 +191,7 @@ void SpatialAccelerationStructure::DebugVisualize() {
     auto & crummyDebugShader = GraphicsEngine::Get().crummyDebugShader;
     crummyDebugShader->Use();
 
-    const auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default());
+    const auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshCreateParams());
     const auto& vertices = m->vertices; // remember, its xyz, uv, normal, tangent tho we only bothering with xyz
     const auto& indices = m->indices;
 

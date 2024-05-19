@@ -11,7 +11,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include "../../external_headers/GLM/gtc/type_ptr.hpp"
+#include "glm/gtc/type_ptr.hpp"
 #define TINYOBJLOADER_IMPLEMENTATION // what kind of library makes you have to ask it to actually implement the functions???
 #include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
 #include "../utility/let_me_hash_a_tuple.cpp"
@@ -63,7 +63,7 @@ std::shared_ptr<Mesh> Mesh::Square() {
          };
 
     // IF IT DOESN"T WORK LOOK HERE, i think this static variable is okay
-    static auto m = Mesh::FromVertices(squareVerts, {0, 1, 2, 0, 2, 3}, false, MeshVertexFormat::DefaultGui(), 1.0, false);
+    static auto m = Mesh::FromVertices(squareVerts, {0, 1, 2, 0, 2, 3}, MeshCreateParams {.meshVertexFormat = MeshVertexFormat::DefaultGui(), .transparency = 1.0, .expectedCount = 1, .normalizeSize = false, .dynamic = false});
     return m;
 }
 
@@ -495,9 +495,9 @@ std::shared_ptr<Mesh>& Mesh::Get(unsigned int meshId) {
 
 // }
 
-std::shared_ptr<Mesh> Mesh::FromVertices(const std::vector<GLfloat>& verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizeSize) {
+std::shared_ptr<Mesh> Mesh::FromVertices(const std::vector<GLfloat>& verts, const std::vector<GLuint> &indies, const MeshCreateParams& params) {
     unsigned int meshId = MeshGlobals::Get().LAST_MESH_ID; // (creating a mesh increments this)
-    auto ptr = std::shared_ptr<Mesh>(new Mesh(verts, indies, isDynamic, meshVertexFormat, expectedCount, normalizeSize));
+    auto ptr = std::shared_ptr<Mesh>(new Mesh(verts, indies, params));
     MeshGlobals::Get().LOADED_MESHES[meshId] = ptr;
     return ptr;
 }
@@ -525,25 +525,26 @@ std::shared_ptr<Mesh> Mesh::FromVertices(const std::vector<GLfloat>& verts, cons
 //     return ptr;
 // }
 
-std::shared_ptr<Mesh> Mesh::Text(const MeshVertexFormat& meshVertexFormat) {
+std::shared_ptr<Mesh> Mesh::Text(const MeshCreateParams& params) {
     unsigned int i = MeshGlobals::Get().LAST_MESH_ID;
-    auto ptr = std::shared_ptr<Mesh>(new Mesh(Mesh::Square()->meshVertices, Mesh::Square()->meshIndices, true, meshVertexFormat, 1, false, true));
+    auto realParams = MeshCreateParams {.meshVertexFormat = params.meshVertexFormat, .expectedCount = 1, .normalizeSize = false, .dynamic = true};
+    auto ptr = std::shared_ptr<Mesh>(new Mesh(Mesh::Square()->meshVertices, Mesh::Square()->meshIndices, realParams, true));
     MeshGlobals::Get().LOADED_MESHES[i] = ptr;
     return ptr;
 }
 
-std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFormat& meshVertexFormat, float textureZ, unsigned int meshTransparency, unsigned int expectedCount, bool normalizeSize, const bool isDynamic) {
+std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshCreateParams& params) {
     // Load file
     auto config = tinyobj::ObjReaderConfig();
     config.triangulate = true;
-    config.vertex_color = !meshVertexFormat.attributes.color->instanced;
+    config.vertex_color = !params.meshVertexFormat.attributes.color->instanced;
     bool success = MeshGlobals::Get().OBJ_LOADER.ParseFromFile(path, config);
     if (!success) {
         std::printf("Mesh::FromFile failed to load %s because %s", path.c_str(), MeshGlobals::Get().OBJ_LOADER.Error().c_str());
         abort();
     }
 
-    auto nFloatsPerVertex = meshVertexFormat.GetNonInstancedVertexSize()/sizeof(GLfloat);
+    auto nFloatsPerVertex = params.meshVertexFormat.GetNonInstancedVertexSize()/sizeof(GLfloat);
 
     auto shape = MeshGlobals::Get().OBJ_LOADER.GetShapes().at(0);
     //auto material = OBJ_LOADER.GetMaterials().at(0);
@@ -572,77 +573,77 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
             indices.push_back(currentVertex);
 
             // position
-            if (meshVertexFormat.attributes.position.has_value() && !meshVertexFormat.attributes.position->instanced) {
-                for (unsigned int i = 0; i < meshVertexFormat.attributes.position->nFloats; i++) {
-                    vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.attributes.position->offset/sizeof(GLfloat) + i, vertices) = (positions[index.vertex_index * 3 + i]);
+            if (params.meshVertexFormat.attributes.position.has_value() && !params.meshVertexFormat.attributes.position->instanced) {
+                for (unsigned int i = 0; i < params.meshVertexFormat.attributes.position->nFloats; i++) {
+                    vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.attributes.position->offset/sizeof(GLfloat) + i, vertices) = (positions[index.vertex_index * 3 + i]);
                 }
             }
 
             // uv
-            if (meshVertexFormat.attributes.textureUV.has_value() && !meshVertexFormat.attributes.textureUV->instanced) {
-                for (unsigned int i = 0; i < meshVertexFormat.attributes.textureUV->nFloats; i++) {
-                    vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.attributes.textureUV->offset/sizeof(GLfloat) + i, vertices) = (texcoordsXY[index.texcoord_index * 2 + i]);
+            if (params.meshVertexFormat.attributes.textureUV.has_value() && !params.meshVertexFormat.attributes.textureUV->instanced) {
+                for (unsigned int i = 0; i < params.meshVertexFormat.attributes.textureUV->nFloats; i++) {
+                    vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.attributes.textureUV->offset/sizeof(GLfloat) + i, vertices) = (texcoordsXY[index.texcoord_index * 2 + i]);
                 }
             }
             
             // normal
-            if (meshVertexFormat.attributes.normal.has_value() && !meshVertexFormat.attributes.normal->instanced) {
-                for (unsigned int i = 0; i < meshVertexFormat.attributes.normal->nFloats; i++) {
-                    vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.attributes.normal->offset/sizeof(GLfloat) + i, vertices) = (normals[index.normal_index * 3 + i]);
+            if (params.meshVertexFormat.attributes.normal.has_value() && !params.meshVertexFormat.attributes.normal->instanced) {
+                for (unsigned int i = 0; i < params.meshVertexFormat.attributes.normal->nFloats; i++) {
+                    vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.attributes.normal->offset/sizeof(GLfloat) + i, vertices) = (normals[index.normal_index * 3 + i]);
                 }
             }
 
             // tangent
-            if (meshVertexFormat.attributes.tangent.has_value() && !meshVertexFormat.attributes.tangent->instanced) {
-                for (unsigned int i = 0; i < meshVertexFormat.attributes.tangent->nFloats; i++) {
+            if (params.meshVertexFormat.attributes.tangent.has_value() && !params.meshVertexFormat.attributes.tangent->instanced) {
+                for (unsigned int i = 0; i < params.meshVertexFormat.attributes.tangent->nFloats; i++) {
                     // we just set these to 0 for now, they're calculating for real at a later step
-                    vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat) + i, vertices) = (0);
+                    vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat) + i, vertices) = (0);
                 }
             }
             
             // textureZ
-            if (meshVertexFormat.attributes.textureZ.has_value() && !meshVertexFormat.attributes.textureZ->instanced) {
-                for (unsigned int i = 0; i < meshVertexFormat.attributes.textureZ->nFloats; i++) {
-                    vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.attributes.textureZ->offset/sizeof(GLfloat) + i, vertices) = (textureZ);
+            if (params.meshVertexFormat.attributes.textureZ.has_value() && !params.meshVertexFormat.attributes.textureZ->instanced) {
+                for (unsigned int i = 0; i < params.meshVertexFormat.attributes.textureZ->nFloats; i++) {
+                    vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.attributes.textureZ->offset/sizeof(GLfloat) + i, vertices) = (params.textureZ);
                 }
             }
 
             // color
-            if (meshVertexFormat.attributes.color.has_value() && !meshVertexFormat.attributes.color->instanced) {
-                for (unsigned int i = 0; i < meshVertexFormat.attributes.color->nFloats; i++) {
-                    vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.attributes.color->offset/sizeof(GLfloat) + i, vertices) = (i == 3 ? meshTransparency : colors[index.vertex_index * 3 + i]);
+            if (params.meshVertexFormat.attributes.color.has_value() && !params.meshVertexFormat.attributes.color->instanced) {
+                for (unsigned int i = 0; i < params.meshVertexFormat.attributes.color->nFloats; i++) {
+                    vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.attributes.color->offset/sizeof(GLfloat) + i, vertices) = (i == 3 ? params.transparency : colors[index.vertex_index * 3 + i]);
                 }
             }
 
             // model matrix, though i fear for your sanity if this isn't instanced
-            if (meshVertexFormat.attributes.modelMatrix.has_value() && !meshVertexFormat.attributes.modelMatrix->instanced) {
-                for (unsigned int i = 0; i < meshVertexFormat.attributes.modelMatrix->nFloats; i++) {
+            if (params.meshVertexFormat.attributes.modelMatrix.has_value() && !params.meshVertexFormat.attributes.modelMatrix->instanced) {
+                for (unsigned int i = 0; i < params.meshVertexFormat.attributes.modelMatrix->nFloats; i++) {
                     // we just set these to 0 for now, it's the user's job to set values to them
-                    vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.attributes.modelMatrix->offset/sizeof(GLfloat) + i, vertices) = (0);
+                    vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.attributes.modelMatrix->offset/sizeof(GLfloat) + i, vertices) = (0);
                 }
             }
 
             // normal matrix, again why would you not instance this
-            if (meshVertexFormat.attributes.normalMatrix.has_value() && !meshVertexFormat.attributes.normalMatrix->instanced) {
-                for (unsigned int i = 0; i < meshVertexFormat.attributes.normalMatrix->nFloats; i++) {
+            if (params.meshVertexFormat.attributes.normalMatrix.has_value() && !params.meshVertexFormat.attributes.normalMatrix->instanced) {
+                for (unsigned int i = 0; i < params.meshVertexFormat.attributes.normalMatrix->nFloats; i++) {
                     // we just set these to 0 for now, it's the user's job to set values to them
-                    vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.attributes.normalMatrix->offset/sizeof(GLfloat) + i, vertices) = (0);
+                    vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.attributes.normalMatrix->offset/sizeof(GLfloat) + i, vertices) = (0);
                 }
             }
             
-            // vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.textureUV->offset/sizeof(GLfloat), vertices) = (texcoordsXY[index.texcoord_index * 2]); 
-            // vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.textureUV->offset/sizeof(GLfloat) + 1, vertices) = (texcoordsXY[index.texcoord_index * 2 + 1]);
+            // vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.textureUV->offset/sizeof(GLfloat), vertices) = (texcoordsXY[index.texcoord_index * 2]); 
+            // vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.textureUV->offset/sizeof(GLfloat) + 1, vertices) = (texcoordsXY[index.texcoord_index * 2 + 1]);
             
-            // vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.normal->offset/sizeof(GLfloat), vertices) = (normals[index.normal_index * 3]);
-            // vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.normal->offset/sizeof(GLfloat) + 1, vertices) = (normals[index.normal_index * 3 + 1]);
-            // vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.normal->offset/sizeof(GLfloat) + 2, vertices) = (normals[index.normal_index * 3 + 2]);
+            // vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.normal->offset/sizeof(GLfloat), vertices) = (normals[index.normal_index * 3]);
+            // vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.normal->offset/sizeof(GLfloat) + 1, vertices) = (normals[index.normal_index * 3 + 1]);
+            // vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.normal->offset/sizeof(GLfloat) + 2, vertices) = (normals[index.normal_index * 3 + 2]);
 
 
-            // if (meshVertexFormat.color && !meshVertexFormat.color->instanced) {
-            //     vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.color->offset/sizeof(GLfloat), vertices) = (colors[index.vertex_index * 3]);
-            //     vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.color->offset/sizeof(GLfloat), vertices) = (colors[index.vertex_index * 3 + 1]);
-            //     vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.color->offset/sizeof(GLfloat), vertices) = (colors[index.vertex_index * 3 + 2]);
-            //     vectorAtExpanding(currentVertex * nFloatsPerVertex + meshVertexFormat.color->offset/sizeof(GLfloat), vertices) = (meshTransparency);
+            // if (params.meshVertexFormat.color && !params.meshVertexFormat.color->instanced) {
+            //     vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.color->offset/sizeof(GLfloat), vertices) = (colors[index.vertex_index * 3]);
+            //     vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.color->offset/sizeof(GLfloat), vertices) = (colors[index.vertex_index * 3 + 1]);
+            //     vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.color->offset/sizeof(GLfloat), vertices) = (colors[index.vertex_index * 3 + 2]);
+            //     vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.color->offset/sizeof(GLfloat), vertices) = (meshTransparency);
             // }
 
             currentVertex += 1;
@@ -653,15 +654,15 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
     }
 
     // calculate tangent vectors
-    if (meshVertexFormat.attributes.tangent.has_value() && meshVertexFormat.attributes.tangent->instanced == false) {
+    if (params.meshVertexFormat.attributes.tangent.has_value() && params.meshVertexFormat.attributes.tangent->instanced == false) {
 
         std::vector<GLfloat> tangents;
         
         // to calculate tangent vectors, we must put a few restrictions on the meshVertexFormat.
-        assert(meshVertexFormat.attributes.position.has_value() && meshVertexFormat.attributes.position->nFloats >= 3 && meshVertexFormat.attributes.position->instanced == false);
-        assert(meshVertexFormat.attributes.textureUV.has_value() && meshVertexFormat.attributes.textureUV->nFloats >= 2 && meshVertexFormat.attributes.textureUV->instanced == false);
-        assert(meshVertexFormat.attributes.normal.has_value() && meshVertexFormat.attributes.normal->nFloats >= 3 && meshVertexFormat.attributes.normal->instanced == false);
-        assert(meshVertexFormat.attributes.tangent->nFloats >= 3);
+        assert(params.meshVertexFormat.attributes.position.has_value() && params.meshVertexFormat.attributes.position->nFloats >= 3 && params.meshVertexFormat.attributes.position->instanced == false);
+        assert(params.meshVertexFormat.attributes.textureUV.has_value() && params.meshVertexFormat.attributes.textureUV->nFloats >= 2 && params.meshVertexFormat.attributes.textureUV->instanced == false);
+        assert(params.meshVertexFormat.attributes.normal.has_value() && params.meshVertexFormat.attributes.normal->nFloats >= 3 && params.meshVertexFormat.attributes.normal->instanced == false);
+        assert(params.meshVertexFormat.attributes.tangent->nFloats >= 3);
 
         for (unsigned int triangleIndex = 0; triangleIndex < indices.size()/3; triangleIndex++) {
             glm::vec3 points[3];
@@ -672,9 +673,9 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
                 //std::cout << " i = " << indexIntoIndices << "nfloats = " << nFloatsPerVertex << " actual index = " << indices.at(indexIntoIndices) <<  " \n";
                 auto vertexIndex = indices.at(indexIntoIndices);
                 //std::cout << "thing in indices  was " << vertexIndex << " \n"; 
-                points[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.position->offset/sizeof(GLfloat)));
-                texCoords[j] = glm::make_vec2(&vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.textureUV->offset/sizeof(GLfloat)));
-                l_normals[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.normal->offset/sizeof(GLfloat)));
+                points[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + params.meshVertexFormat.attributes.position->offset/sizeof(GLfloat)));
+                texCoords[j] = glm::make_vec2(&vertices.at(nFloatsPerVertex * vertexIndex + params.meshVertexFormat.attributes.textureUV->offset/sizeof(GLfloat)));
+                l_normals[j] = glm::make_vec3(&vertices.at(nFloatsPerVertex * vertexIndex + params.meshVertexFormat.attributes.normal->offset/sizeof(GLfloat)));
             }
             
             glm::vec3 edge1 = points[1] - points[0];
@@ -692,41 +693,39 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshVertexFo
             for (unsigned int i2 = 0; i2 < 3; i2++) {
                 auto indexIntoIndices = triangleIndex * 3 + i2;
                 auto vertexIndex = indices.at(indexIntoIndices);
-                vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat)) = atangentX;
-                vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat) + 1) = atangentY;
-                vertices.at(nFloatsPerVertex * vertexIndex + meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat) + 2) = atangentZ;
+                vertices.at(nFloatsPerVertex * vertexIndex + params.meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat)) = atangentX;
+                vertices.at(nFloatsPerVertex * vertexIndex + params.meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat) + 1) = atangentY;
+                vertices.at(nFloatsPerVertex * vertexIndex + params.meshVertexFormat.attributes.tangent->offset/sizeof(GLfloat) + 2) = atangentZ;
             }
             
         }
     }
     
     unsigned int meshId = MeshGlobals::Get().LAST_MESH_ID; // (creating a mesh increments this)
-    auto ptr = std::shared_ptr<Mesh>(new Mesh(vertices, indices, isDynamic, meshVertexFormat, expectedCount, normalizeSize));
+    auto ptr = std::shared_ptr<Mesh>(new Mesh(vertices, indices, params));
     MeshGlobals::Get().LOADED_MESHES[meshId] = ptr;
     return ptr;
 }
 
-// unloads the mesh with the given meshId, freeing its memory.
-// you CAN unload a mesh while objects are using it without any issues - a copy of that mesh is still on the gpu.
-// you only need to call this function if you are (like for procedural terrain) dynamically loading new meshes
+
 void Mesh::Unload(int meshId) {
     assert(MeshGlobals::Get().LOADED_MESHES.count(meshId) != 0 && "Mesh::Unload() was given an invalid meshId.");
     MeshGlobals::Get().LOADED_MESHES.erase(meshId);
 }
 
-Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const bool isDynamic, const MeshVertexFormat& meshVertexFormat, unsigned int expectedCount, bool normalizePositions, bool fromText):
-dynamic(isDynamic),
+Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshCreateParams& params, bool fromText):
+dynamic(params.dynamic),
 meshId(MeshGlobals::Get().LAST_MESH_ID++),
-instanceCount(expectedCount),
-nonInstancedVertexSize(meshVertexFormat.GetNonInstancedVertexSize()),
-instancedVertexSize(meshVertexFormat.GetInstancedVertexSize()),
-vertexFormat(meshVertexFormat),
+instanceCount(params.expectedCount),
+nonInstancedVertexSize(params.meshVertexFormat.GetNonInstancedVertexSize()),
+instancedVertexSize(params.meshVertexFormat.GetInstancedVertexSize()),
+vertexFormat(params.meshVertexFormat),
 wasCreatedFromText(fromText),
 meshVertices(verts),
 meshIndices(indies)
 {
 
-    if (normalizePositions) {
+    if (params.normalizeSize) {
         NormalizePositions();
     }
     

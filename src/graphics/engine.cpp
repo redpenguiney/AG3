@@ -7,6 +7,7 @@
 #include "../gameobjects/pointlight_component.hpp"
 #include "../gameobjects/component_registry.hpp"
 #include "graphics/engine.hpp"
+#include "graphics/mesh.hpp"
 
 #ifdef IS_MODULE
 GraphicsEngine* _GRAPHICS_ENGINE_ = nullptr;
@@ -61,7 +62,7 @@ const std::vector<GLuint> screenQuadIndices = {
 
 GraphicsEngine::GraphicsEngine():
 pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)),
-screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, screenQuadVertexFormat, 1, false))
+screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, MeshCreateParams {.meshVertexFormat = screenQuadVertexFormat, .transparency = 1, .normalizeSize = false, .dynamic = false}))
 {
 
     debugFreecamEnabled = false;
@@ -77,7 +78,7 @@ screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, false, scre
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
     crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
 
-    auto skybox_boxmesh = Mesh::FromFile("../models/skybox.obj", MeshVertexFormat::Default(), -1.0, 1.0, 1, false);
+    auto skybox_boxmesh = Mesh::FromFile("../models/skybox.obj", MeshCreateParams{.textureZ = -1.0, .transparency = 1, .expectedCount = 1, .normalizeSize = false});
     skybox = new RenderableMesh(skybox_boxmesh);
     // std::cout << "SKYBOX has indices: ";
     // for (auto & v: skybox_boxmesh->indices) {

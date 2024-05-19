@@ -3,6 +3,7 @@
 #include <vector>
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
 #include "graphics/engine.hpp"
+#include "graphics/mesh.hpp"
 
 
 #ifdef IS_MODULE
@@ -69,7 +70,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
         GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, billboardGuiInfo ? ComponentRegistry::RenderComponentBitIndex : ComponentRegistry::RenderComponentNoFOBitIndex});
         textObjectParams.materialId = fontMaterial->second->id;
         textObjectParams.shaderId = guiShader->shaderProgramId;
-        auto textMesh = Mesh::Text();
+        auto textMesh = Mesh::Text(MeshCreateParams());
         // auto textMesh = Mesh::Square();
 
         textObjectParams.meshId = textMesh->meshId;

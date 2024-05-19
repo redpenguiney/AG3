@@ -11,6 +11,7 @@
 #include "../external_headers/GLM/gtx/string_cast.hpp"
 
 #include "graphics/engine.hpp"
+#include "graphics/mesh.hpp"
 #include "graphics/shader_program.hpp"
 #include "graphics/material.hpp"
 #include "gameobjects/component_registry.hpp"
@@ -73,7 +74,8 @@ int main(int numArgs, const char *argPtrs[]) {
         soundSounder->audioPlayerComponent->Play();
     }
 
-    auto m = Mesh::FromFile("../models/rainbowcube.obj", MeshVertexFormat::Default(), -1.0, 1.0, 16384);
+    auto makeMparams = MeshCreateParams {.textureZ = -1.0, .transparency = 1, .expectedCount = 16384};
+    auto m = Mesh::FromFile("../models/rainbowcube.obj", makeMparams);
     
    
 
