@@ -1,5 +1,11 @@
 #include "lua_constructor_wrappers.hpp"
 #include "graphics/mesh.hpp"
+#include "graphics/texture.hpp"
+#include "sol/object.hpp"
+#include "sol/variadic_results.hpp"
+#include <string>
+#include <tuple>
+#include <vector>
 
 std::vector<ComponentRegistry::ComponentBitIndex> GetComponents(sol::lua_table args) {
     std::vector<ComponentRegistry::ComponentBitIndex> components;
@@ -40,11 +46,29 @@ std::shared_ptr<Mesh> LuaMeshConstructor(sol::object arg1, sol::object arg2) {
     }
 }
 
-// TextureCreateParams LuaTextureCreateParamsConstructor() {
-//     return TextureCreateParams()   
-// }
+TextureCreateParams LuaTextureCreateParamsConstructor(sol::object filepath, sol::object textureUsage) {
+    if (!textureUsage.is<Texture::TextureUsage>()) {
+        throw sol::error("The 2nd argument to TextureCreateParams.new() should be a TextureUsage enum value.");
+    }
+    if (filepath.is<std::string>()) {
+        return TextureCreateParams({filepath.as<std::string>(),}, textureUsage.as<Texture::TextureUsage>());
+    }
+    else if (filepath.is<sol::table>()) {
+        std::vector<std::string> filepathArray;
+        for (auto & [key, value] : filepath.as<sol::table>()) {
+            if (!value.is<std::string>()) {
+                throw sol::error("The 1st argument to TextureCreateParams.new() should be a filepath string or a table of filepath strings. You passed a table, but there's something in it that is not a string. Fix it.");
+            }
+            filepathArray.push_back(filepath.as<std::string>());
+        }
+        return TextureCreateParams(filepathArray, textureUsage.as<Texture::TextureUsage>());
+    }
+    else {
+        throw sol::error("The 1st argument to TextureCreateParams.new() should be a filepath string or a table of filepath strings.");
+    } 
+}
 
-sol::variadic_results LuaMaterialConstructor(sol::variadic_args args) {
+std::tuple<std::shared_ptr<Material>, float> LuaMaterialConstructor(sol::variadic_args args) {
     if (args.size() < 2 || !args[0].is<Texture::TextureType>()) {
         throw sol::error("Material.new() expects at least two arguments, the first of which should be a TextureType enum and all following arguments should be instances of TextureCreateParams.");
     }
@@ -54,7 +78,7 @@ sol::variadic_results LuaMaterialConstructor(sol::variadic_args args) {
     for (auto it = args.begin() + 1; it != args.end(); it++) {
         auto obj = *it;
         if (!obj.is<TextureCreateParams>()) {
-            throw sol::error("Argument at index " + i + " to Material.new() is not a TextureCreateParams. Please fix that.");
+            throw sol::error(std::string("Argument at index ") + std::to_string(i) + " to Material.new() is not a TextureCreateParams. Please fix that.");
         }
         else {
             params.push_back(obj);
@@ -62,6 +86,6 @@ sol::variadic_results LuaMaterialConstructor(sol::variadic_args args) {
         i++;
     }
 
-    
-    return 
+    auto [textureZ, material] = Material::New(params, args[0]);
+    return std::make_tuple(material, textureZ);
 }

@@ -3,6 +3,7 @@
 #include <sol/sol.hpp>
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
 #include "gameobjects/component_registry.hpp"
+#include "sol/variadic_args.hpp"
 
 struct LuaGameobjectCreateParams: GameobjectCreateParams {
     LuaGameobjectCreateParams(sol::lua_table args);
@@ -102,5 +103,7 @@ void SetupVec3Usertype(sol::state* state, const char* typeName) {
 }
 
 std::shared_ptr<Mesh> LuaMeshConstructor(sol::object arg1, sol::object arg2); // TODO: use sol::variadic_args
-// TextureCreateParams LuaTextureCreateParamsConstructor();
-sol::variadic_results LuaMaterialConstructor(sol::variadic_args args);
+
+// filepath can be a string or an array of filepaths.
+TextureCreateParams LuaTextureCreateParamsConstructor(sol::object filepath, sol::object textureUsage);
+std::tuple<std::shared_ptr<Material>, float> LuaMaterialConstructor(sol::variadic_args args);

@@ -1,4 +1,3 @@
-local test = function() 
     print("hola from lua!!!")
     -- print("Graphics engine is "..tostring(GE))
 
@@ -11,11 +10,20 @@ local test = function()
     makeMparams.expectedCount = 16384
     local m = Mesh.new("../models/rainbowcube.obj", makeMparams);
 
+    local brickMaterial, brickTextureZ = Material.new(Enum.TextureType.Texture2D,
+        TextureCreateParams.new("../textures/ambientcg_bricks085/color.jpg", Enum.TextureUsage.ColorMap), 
+        TextureCreateParams.new("../textures/ambientcg_bricks085/roughness.jpg", Enum.TextureUsage.SpecularMap), 
+        TextureCreateParams.new("../textures/ambientcg_bricks085/normal_gl.jpg", Enum.TextureUsage.NormalMap)
+        --TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
+    )
+
     -- todo: you can put garbage values in here without consequences
-    local params = GameObjectCreateParams.new({Enum.ComponentBitIndex.Transform, Enum.ComponentBitIndex.Render, Enum.ComponentBitIndex.Rigidbody})
+    local params = GameObjectCreateParams.new({Enum.ComponentBitIndex.Transform, Enum.ComponentBitIndex.Render, Enum.ComponentBitIndex.Rigidbody, Enum.ComponentBitIndex.Collider})
     params.meshId = m.id
+    params.materialId = brickMaterial.id
 
     local go = GameObject.new(params)
+    go.render.textureZ = brickTextureZ
 
     local vec3 = Vec3d.new(0, 2, 3)
     -- print(go.transform);
@@ -38,16 +46,13 @@ local test = function()
         Wait(0.0)
         -- print("again?")
     end
-
+    
     print("LUA WON!!!") 
 
     go:Destroy()
     print(transform.position)
     print(go.transform.position)
 end
-
-return test
-
 
 
 

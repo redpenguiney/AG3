@@ -89,8 +89,8 @@ bool HandleMaybeLuaError(const sol::protected_function_result& result, std::stri
 //     // DebugLogInfo("Yielding coroutine now.");
 // }
 
-void Require(std::string key, std::string filepath) {
-    LUA_STATE->require_file(key, filepath);
+sol::object Require(std::string key, std::string filepath) {
+    return LUA_STATE->require_file(key, filepath);
 }
 
 LuaHandler::LuaHandler() {
@@ -118,9 +118,9 @@ LuaHandler::LuaHandler() {
     // LUA_STATE->require_script("Wait", 
     // "function Wait(time) print(\"kok\") __WAIT_DURATION_ = time print(\"yoielding\") __C_WAIT(1.0) print(\"control returned to lua script\") end return Wait");
 
-    // // requiring other files
+    // // requiring other files; only used internally
     // // notably, because sol is weird, require() returns nothing and instead sets the given variable name to whatever require() returns.
-    // LUA_STATE->set("require", &Require); 
+    LUA_STATE->set("require", &Require); 
 
     // // enums
     auto enumTable = LUA_STATE->create_table();
@@ -182,12 +182,13 @@ LuaHandler::LuaHandler() {
     meshUsertype["Get"] = &Mesh::Get;
 
     // textures/materials
-    auto textureCreateParamsUsertype = LUA_STATE->new_usertype<TextureCreateParams>("TextureCreateParams", sol::constructors<TextureCreateParams(std::vector<std::string>, Texture::TextureUsage)>());
+    auto textureCreateParamsUsertype = LUA_STATE->new_usertype<TextureCreateParams>("TextureCreateParams", sol::factories(LuaTextureCreateParamsConstructor));
     textureCreateParamsUsertype["format"] = &TextureCreateParams::format;
     textureCreateParamsUsertype["filteringBehaviour"] = &TextureCreateParams::filteringBehaviour;
     textureCreateParamsUsertype["mipmapBehaviour"] = &TextureCreateParams::mipmapBehaviour;
 
     auto materialUsertype = LUA_STATE->new_usertype<Material>("Material", sol::factories(LuaMaterialConstructor));
+    materialUsertype["id"] = &Material::id;
 
     // gameobjects and their componentts
     auto gameObjectCreateParamsUsertype = LUA_STATE->new_usertype<LuaGameobjectCreateParams>("GameObjectCreateParams", sol::constructors<LuaGameobjectCreateParams(sol::lua_table)>());
@@ -284,9 +285,9 @@ void LuaHandler::RunFile(const std::string scriptPath) {
     
     // }
     
-    auto result = LUA_STATE->require_file("__LOADED_FUNC_", scriptPath);
+    // auto result = LUA_STATE->require_script("__INTERNAL_RUNFILE_REQUIRE_KEY_", "function() return require(\"" + scriptPath + "\") end");
 
-    HandleMaybeLuaError(LUA_STATE.value()["DoTask"](result), scriptPath);
+    HandleMaybeLuaError(LUA_STATE.value()["DoTask"](scriptPath), scriptPath);
 }
 
 LuaHandler::~LuaHandler() {

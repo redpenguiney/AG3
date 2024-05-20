@@ -8,7 +8,13 @@ function Wait(seconds)
     coroutine.yield()
 end
 
-function DoTask(func, src) 
+function DoTask(src) 
+    local function func()
+        print("hi")
+        local f = require("__OOPS_", src)
+        print("bruh")
+    end
+
     local co = coroutine.create(func)
 
     local ok, err = coroutine.resume(co)
