@@ -133,7 +133,28 @@ LuaHandler::LuaHandler() {
             {"PointLight", ComponentRegistry::PointlightComponentBitIndex},
             {"AudioPlayer", ComponentRegistry::AudioPlayerComponentBitIndex}
         });
-    
+
+    enumTable.new_enum<Texture::TextureUsage, true>("TextureUsage", {
+        {"ColorMap", Texture::TextureUsage::ColorMap},
+        {"DisplacementMap", Texture::TextureUsage::DisplacementMap},
+        {"FontMap", Texture::TextureUsage::FontMap},
+        {"SpecularMap", Texture::TextureUsage::SpecularMap},
+        {"NormalMap", Texture::TextureUsage::NormalMap},
+    });
+    enumTable.new_enum<Texture::TextureFilteringBehaviour, true>("TextureFilteringBehaviour", {
+        {"LinearFiltering", Texture::TextureFilteringBehaviour::LinearTextureFiltering},
+        {"NoFiltering", Texture::TextureFilteringBehaviour::NoTextureFiltering}
+    });
+    enumTable.new_enum<Texture::TextureMipmapBehaviour, true>("TextureMipmapBehaviour", {
+        {"Linear", Texture::TextureMipmapBehaviour::LinearMipmapInterpolation},
+        {"NearestMipmap", Texture::TextureMipmapBehaviour::UseNearestMipmap},
+        {"Off", Texture::TextureMipmapBehaviour::NoMipmaps}
+    });
+    enumTable.new_enum<Texture::TextureType>("TextureType", {
+        {"Texture2D", Texture::TextureType::Texture2D},
+        {"TextureCubemap", Texture::TextureType::TextureCubemap}
+    });
+
     LUA_STATE->set("Enum", enumTable);
     // (*LUA_STATE)["__YIELDED_CO_"] = LUA_STATE->create_table();
     // sol::table tbl = (*LUA_STATE)["__YIELDED_CO_"] ;
@@ -146,8 +167,29 @@ LuaHandler::LuaHandler() {
 
     auto quatUserType = LUA_STATE->new_usertype<glm::quat>("Quat", sol::constructors<glm::quat(glm::vec3), glm::quat(glm::quat), glm::quat(float, float, float, float)>());
 
+    // meshes
+    auto meshCreateParamsUsertype = LUA_STATE->new_usertype<MeshCreateParams>("MeshCreateParams", sol::factories(MeshCreateParams::Default));
+    meshCreateParamsUsertype["dynamic"] = &MeshCreateParams::dynamic;
+    meshCreateParamsUsertype["textureZ"] = &MeshCreateParams::textureZ;
+    meshCreateParamsUsertype["opacity"] = &MeshCreateParams::opacity;
+    meshCreateParamsUsertype["expectedCount"] = &MeshCreateParams::expectedCount;
+    meshCreateParamsUsertype["normalizeSize"] = &MeshCreateParams::normalizeSize;
+    // meshCreateParamsUsertype["meshVertexFormat"] = &MeshCreateParams::meshVertexFormat; // TODO
 
-    // gameobejcts and their componentts
+    auto meshUsertype = LUA_STATE->new_usertype<Mesh>("Mesh", sol::factories(LuaMeshConstructor));
+    meshUsertype["id"] = &Mesh::meshId;
+    meshUsertype["Unload"] = &Mesh::Unload;
+    meshUsertype["Get"] = &Mesh::Get;
+
+    // textures/materials
+    auto textureCreateParamsUsertype = LUA_STATE->new_usertype<TextureCreateParams>("TextureCreateParams", sol::constructors<TextureCreateParams(std::vector<std::string>, Texture::TextureUsage)>());
+    textureCreateParamsUsertype["format"] = &TextureCreateParams::format;
+    textureCreateParamsUsertype["filteringBehaviour"] = &TextureCreateParams::filteringBehaviour;
+    textureCreateParamsUsertype["mipmapBehaviour"] = &TextureCreateParams::mipmapBehaviour;
+
+    auto materialUsertype = LUA_STATE->new_usertype<Material>("Material", sol::factories(LuaMaterialConstructor));
+
+    // gameobjects and their componentts
     auto gameObjectCreateParamsUsertype = LUA_STATE->new_usertype<LuaGameobjectCreateParams>("GameObjectCreateParams", sol::constructors<LuaGameobjectCreateParams(sol::lua_table)>());
     gameObjectCreateParamsUsertype["physMeshId"] = &LuaGameobjectCreateParams::physMeshId;
     gameObjectCreateParamsUsertype["meshId"] = &LuaGameobjectCreateParams::meshId;
@@ -163,6 +205,7 @@ LuaHandler::LuaHandler() {
 
     auto renderComponentUsertype = LUA_STATE->new_usertype<GraphicsEngine::RenderComponent>("Render", sol::no_constructor);
     renderComponentUsertype["color"] = sol::property(&GraphicsEngine::RenderComponent::SetColor);
+    renderComponentUsertype["textureZ"] = sol::property(&GraphicsEngine::RenderComponent::SetTextureZ);
 
     auto gameObjectUsertype = LUA_STATE->new_usertype<GameObject>("GameObject", sol::factories(LuaGameobjectConstructor));
     gameObjectUsertype["transform"] = sol::property(&GameObject::LuaGetTransform);

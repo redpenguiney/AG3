@@ -17,7 +17,7 @@ LuaGameobjectCreateParams::LuaGameobjectCreateParams(sol::lua_table args): Gameo
 
 std::shared_ptr<GameObject> LuaGameobjectConstructor(sol::object args) {
     if (!args.is<LuaGameobjectCreateParams>()) {
-        sol::error("Gameobject.New() takes a GameobjectCreateParams as an argument, nothing else.");
+        sol::error("Gameobject.new() takes a GameobjectCreateParams as an argument, nothing else.");
     }
     auto params = args.as<LuaGameobjectCreateParams>();
     if (!Mesh::IsValidForGameObject(params.meshId)) {
@@ -27,9 +27,41 @@ std::shared_ptr<GameObject> LuaGameobjectConstructor(sol::object args) {
 }
 
 std::shared_ptr<Mesh> LuaMeshConstructor(sol::object arg1, sol::object arg2) {
-    if (arg1.is<std::string>()) {
-        
+    if (arg1.is<std::string>() && (arg2 == sol::nil || arg2.is<MeshCreateParams>())) {
+        if (arg2 == sol::nil) {
+            return Mesh::FromFile(arg1.as<std::string>());
+        }
+        else {
+            return Mesh::FromFile(arg1.as<std::string>(), arg2.as<MeshCreateParams>());
+        }
+    }
+    else {
+        throw sol::error("Mesh.new() takes a path to a file and an optional MeshCreateParams, nothing else. TODO it should actually also support other things but doesn't lol");
+    }
+}
+
+// TextureCreateParams LuaTextureCreateParamsConstructor() {
+//     return TextureCreateParams()   
+// }
+
+sol::variadic_results LuaMaterialConstructor(sol::variadic_args args) {
+    if (args.size() < 2 || !args[0].is<Texture::TextureType>()) {
+        throw sol::error("Material.new() expects at least two arguments, the first of which should be a TextureType enum and all following arguments should be instances of TextureCreateParams.");
     }
 
-    throw sol::error("Mesh::New() takes a path to a file and an optional MeshCreateParams, nothing else. TODO it should actually also support other things but doesn't lol");
+    unsigned int i = 1; // we start iterating from 2nd arg because those are the texture create params
+    std::vector<TextureCreateParams> params;
+    for (auto it = args.begin() + 1; it != args.end(); it++) {
+        auto obj = *it;
+        if (!obj.is<TextureCreateParams>()) {
+            throw sol::error("Argument at index " + i + " to Material.new() is not a TextureCreateParams. Please fix that.");
+        }
+        else {
+            params.push_back(obj);
+        }
+        i++;
+    }
+
+    
+    return 
 }

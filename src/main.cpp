@@ -74,7 +74,7 @@ int main(int numArgs, const char *argPtrs[]) {
         soundSounder->audioPlayerComponent->Play();
     }
 
-    auto makeMparams = MeshCreateParams {.textureZ = -1.0, .transparency = 1, .expectedCount = 16384};
+    auto makeMparams = MeshCreateParams {.textureZ = -1.0, .opacity = 1, .expectedCount = 16384};
     auto m = Mesh::FromFile("../models/rainbowcube.obj", makeMparams);
     
    
@@ -413,6 +413,7 @@ int main(int numArgs, const char *argPtrs[]) {
     timeAtWhichExitProcessStarted = Time();
     DebugLogInfo("Beginning exit process.");
 
+    delete ui;
     
     return EXIT_SUCCESS;
 }

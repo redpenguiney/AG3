@@ -70,7 +70,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
         GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, billboardGuiInfo ? ComponentRegistry::RenderComponentBitIndex : ComponentRegistry::RenderComponentNoFOBitIndex});
         textObjectParams.materialId = fontMaterial->second->id;
         textObjectParams.shaderId = guiShader->shaderProgramId;
-        auto textMesh = Mesh::Text(MeshCreateParams());
+        auto textMesh = Mesh::Text(MeshCreateParams {.meshVertexFormat = MeshVertexFormat::DefaultGui()});
         // auto textMesh = Mesh::Square();
 
         textObjectParams.meshId = textMesh->meshId;

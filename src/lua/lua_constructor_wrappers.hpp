@@ -101,4 +101,6 @@ void SetupVec3Usertype(sol::state* state, const char* typeName) {
     vecUsertype["__tostring"] = toString<vecT>;
 }
 
-std::shared_ptr<Mesh> LuaMeshConstructor(sol::object args);
+std::shared_ptr<Mesh> LuaMeshConstructor(sol::object arg1, sol::object arg2); // TODO: use sol::variadic_args
+// TextureCreateParams LuaTextureCreateParamsConstructor();
+sol::variadic_results LuaMaterialConstructor(sol::variadic_args args);

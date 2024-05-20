@@ -28,6 +28,14 @@ void MeshGlobals::SetModuleMeshGlobals(MeshGlobals* globals) {
 }
 #endif
 
+MeshCreateParams MeshCreateParams::Default() {
+    return MeshCreateParams();
+}
+
+MeshCreateParams MeshCreateParams::DefaultGui() {
+    return MeshCreateParams({.meshVertexFormat = MeshVertexFormat::DefaultGui()});
+}
+
 MeshGlobals& MeshGlobals::Get() {
     #ifdef IS_MODULE
     assert(_MESH_GLOBALS != nullptr);
@@ -63,7 +71,7 @@ std::shared_ptr<Mesh> Mesh::Square() {
          };
 
     // IF IT DOESN"T WORK LOOK HERE, i think this static variable is okay
-    static auto m = Mesh::FromVertices(squareVerts, {0, 1, 2, 0, 2, 3}, MeshCreateParams {.meshVertexFormat = MeshVertexFormat::DefaultGui(), .transparency = 1.0, .expectedCount = 1, .normalizeSize = false, .dynamic = false});
+    static auto m = Mesh::FromVertices(squareVerts, {0, 1, 2, 0, 2, 3}, MeshCreateParams {.meshVertexFormat = MeshVertexFormat::DefaultGui(), .opacity = 1.0, .expectedCount = 1, .normalizeSize = false, .dynamic = false});
     return m;
 }
 
@@ -611,7 +619,7 @@ std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshCreatePa
             // color
             if (params.meshVertexFormat.attributes.color.has_value() && !params.meshVertexFormat.attributes.color->instanced) {
                 for (unsigned int i = 0; i < params.meshVertexFormat.attributes.color->nFloats; i++) {
-                    vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.attributes.color->offset/sizeof(GLfloat) + i, vertices) = (i == 3 ? params.transparency : colors[index.vertex_index * 3 + i]);
+                    vectorAtExpanding(currentVertex * nFloatsPerVertex + params.meshVertexFormat.attributes.color->offset/sizeof(GLfloat) + i, vertices) = (i == 3 ? params.opacity : colors[index.vertex_index * 3 + i]);
                 }
             }
 

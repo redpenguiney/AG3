@@ -124,7 +124,7 @@ class Gui {
         ScaleYY
     } guiScaleMode; // which screen dimensions the scale portion of position/scale uses for each axis.
     
-    glm::vec4 rgba; // color and transparency
+    glm::vec4 rgba; // color and opacity/alpha
     std::optional<std::shared_ptr<Material>> material;
     std::optional<unsigned int> materialLayer; 
 

@@ -171,13 +171,13 @@ enum class VerticalAlignMode{
 
 struct MeshCreateParams {
     // TODO: "auto" option would be nice for vertex format
-    const MeshVertexFormat meshVertexFormat = MeshVertexFormat::Default();
+    const MeshVertexFormat meshVertexFormat = MeshVertexFormat::Default(); // todo: unconst?
     
     // default value of textureZ for the mesh's vertices, if that is a noninstanced vertex attribute
     float textureZ=-1.0;
 
     // default value of transaprency/alpha for the mesh's vertices, if color is a noninstanced 4-component vertex attribute
-    float transparency=1.0;
+    float opacity=1.0;
 
     // meshpool will make room for this many objects to use this mesh (if you go over it's fine, but performance may be affected)
     // the memory cost of this is ~64 * expectedCount bytes if you ask for space you don't nee
@@ -190,8 +190,10 @@ struct MeshCreateParams {
     bool normalizeSize = true;
 
     // if a mesh is not dynamic, it saves memory and performance. If it is dynamic, you can modify the mesh using Start/StopModifying().
-    const bool dynamic = false;
+    bool dynamic = false;
 
+    static MeshCreateParams Default();
+    static MeshCreateParams DefaultGui();
 };
 
 struct TextMeshCreateParams {
@@ -259,16 +261,17 @@ class Mesh {
     // File should just contain one object. 
     // TODO: materials
     // TODO: MTL support should be easy
+    // TODO: caching mesh creation will be invaluable so that if same args are used, will return ptr to existing. If people want a copy instead of the same mesh, special arg? or specific Clone() method?
     // meshTransparency will be the initial alpha value of every vertex color, because obj files only support RGB (and also they don't REALLY support RGB).
     // leave expectedCount at 1024 unless it's something like a cube, in which case maybe set it to like 100k (you can create more objects than this number, just for instancing)
     // textureZ is used as a starter value for every vertex's textureZ if it isn't instanced
     // normalizeSize should ALWAYS be true unless you're creating a mesh (like the screen quad or skybox mesh) for internal usage
-    static std::shared_ptr<Mesh> FromFile(const std::string& path, const MeshCreateParams& params);
+    static std::shared_ptr<Mesh> FromFile(const std::string& path, const MeshCreateParams& params = MeshCreateParams::Default());
     
     // Creates a mesh for use in text/gui.
     // Modify the mesh with TextMeshFromText() to actually set text and what not.
     // Note: Disregards certain params. TODO be slightly more specific
-    static std::shared_ptr<Mesh> Text(const MeshCreateParams& params);
+    static std::shared_ptr<Mesh> Text(const MeshCreateParams& params = MeshCreateParams::DefaultGui());
 
     private:
 
