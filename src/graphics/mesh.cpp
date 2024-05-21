@@ -12,12 +12,11 @@
 #include <string>
 #include <vector>
 #include "glm/gtc/type_ptr.hpp"
-#define TINYOBJLOADER_IMPLEMENTATION // what kind of library makes you have to ask it to actually implement the functions???
-#include "../../external_headers/tinyobjloader/tiny_obj_loader.h"
 #include "../utility/let_me_hash_a_tuple.cpp"
 #include "engine.hpp"
 #include <list>
 #include "../debug/log.hpp"
+#include "gameobjects/render_component.hpp"
 
 // TODO: this file takes too long to compile
 

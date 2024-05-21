@@ -20,7 +20,7 @@ struct CollisionInfo {
 // GJK+EPA collision algorithms. Determines whether the given thingies are colliding, and if they are, the return value will contain the collision info.
 std::optional<CollisionInfo> IsColliding(
     const TransformComponent& transform1,
-    const SpatialAccelerationStructure::ColliderComponent& collider1,
+    const ColliderComponent& collider1,
     const TransformComponent& transform2,
-    const SpatialAccelerationStructure::ColliderComponent& collider2
+    const ColliderComponent& collider2
 );

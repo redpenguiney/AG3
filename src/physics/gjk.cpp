@@ -19,7 +19,7 @@
 // feb 14 it wasn't enough apparently
 
 // the GJK support function. returns farthest vertex (in world space) along a directional vector 
-glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, const TransformComponent& transform, const SpatialAccelerationStructure::ColliderComponent& collider) {
+glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, const TransformComponent& transform, const ColliderComponent& collider) {
     // the physics mesh's vertices are obviously in model space, so we must put search direction in model space.
     // this way, to find the farthest vertex on a 10000-vertex mesh we don't need to do 10000 vertex transformations
     // TODO: this is still O(n vertices) complexity
@@ -171,9 +171,9 @@ bool TetrahedronCase(std::vector<std::array<glm::dvec3, 3>>& simplex, glm::dvec3
 std::array<glm::dvec3, 3> NewSimplexPoint(
     const glm::dvec3& searchDirection,
     const TransformComponent& transform1,
-    const SpatialAccelerationStructure::ColliderComponent& collider1,
+    const ColliderComponent& collider1,
     const TransformComponent& transform2,
-    const SpatialAccelerationStructure::ColliderComponent& collider2
+    const ColliderComponent& collider2
 ) {
 
     auto a = FindFarthestVertexOnObject(searchDirection, transform1, collider1);
@@ -258,9 +258,9 @@ struct SatFacesResult {
 // Does SAT by testing collider1's faces against collider 2's vertices.
 SatFacesResult SatFaces(
     const TransformComponent& transform1,
-    const SpatialAccelerationStructure::ColliderComponent& collider1,
+    const ColliderComponent& collider1,
     const TransformComponent& transform2,
-    const SpatialAccelerationStructure::ColliderComponent& collider2
+    const ColliderComponent& collider2
 ) 
 {
     double farthestDistance = -FLT_MAX;
@@ -319,7 +319,7 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
     const std::vector<glm::vec3>* referenceFace, 
     const TransformComponent& referenceTransform, 
     const TransformComponent& otherTransform,
-    const SpatialAccelerationStructure::ColliderComponent& otherCollider
+    const ColliderComponent& otherCollider
 ) {
     // std::cout << "Clipping face contact points: reference face has normal " << glm::to_string(referenceNormal) << ".\n";
     // find the face on otherCollider with a normal closest to -normal.
@@ -458,9 +458,9 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
 // TODO: because sometimes GJK and SAT disagree about whether there's a collision because it's really close + FP precision errors, this function can say there wasn't actually a collision, which might not work.
 std::optional<CollisionInfo> FindContact(
     const TransformComponent& transform1,
-    const SpatialAccelerationStructure::ColliderComponent& collider1,
+    const ColliderComponent& collider1,
     const TransformComponent& transform2,
-    const SpatialAccelerationStructure::ColliderComponent& collider2
+    const ColliderComponent& collider2
 ) 
 {
     // if we have like spheres or something with no actual vertices that won't work for this, TODO fallback to EPA
@@ -653,9 +653,9 @@ std::optional<CollisionInfo> FindContact(
 // CollisionInfo EPA(
 //     std::vector<std::array<glm::dvec3, 3>>& simplex, // first dvec3 in each array is actual simplex point on the minkoskwi difference, the other 2 are the collider points whose difference is that point, we need those for contact points
 //     const TransformComponent& transform1,
-//     const SpatialAccelerationStructure::ColliderComponent& collider1,
+//     const ColliderComponent& collider1,
 //     const TransformComponent& transform2,
-//     const SpatialAccelerationStructure::ColliderComponent& collider2
+//     const ColliderComponent& collider2
 // ) 
 // {
 //     // Simplex is no longer a simplex and is just a convex polytope (3d polygon) made from (more than 4) points on the Minkoski difference.
@@ -866,9 +866,9 @@ std::optional<CollisionInfo> FindContact(
 // TODO: concave support
 std::optional<CollisionInfo> IsColliding(
     const TransformComponent& transform1,
-    const SpatialAccelerationStructure::ColliderComponent& collider1,
+    const ColliderComponent& collider1,
     const TransformComponent& transform2,
-    const SpatialAccelerationStructure::ColliderComponent& collider2
+    const ColliderComponent& collider2
 ) 
 {
     // std::cout << "HI: testing collision between #1 = " << glm::to_string(transform1.Position()) << " and #2 = " << glm::to_string(transform2.Position()) << "\n";

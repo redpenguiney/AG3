@@ -39,10 +39,10 @@ PhysicsEngine& PhysicsEngine::Get() {
 
 
 // Simulates physics of a single rigidbody.
-void DoPhysics(const double dt, SpatialAccelerationStructure::ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::vector<std::pair<TransformComponent*, glm::dvec3>>& seperations) {    
+void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::vector<std::pair<TransformComponent*, glm::dvec3>>& seperations) {    
     // TODO: should REALLY use tight fitting AABB here
     auto aabbToTest = collider.GetAABB();
-    std::vector<SpatialAccelerationStructure::ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest);
+    std::vector<ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest);
     // assert(potentialColliding.size() == 0);
 
     // TODO: potential perf gains by using tight fitting AABB/OBB here after broadphase SAS query?
@@ -184,12 +184,12 @@ void PhysicsEngine::Step(const double timestep) {
     
 
     // iterate through all sets of colliderComponent + rigidBodyComponent + transformComponent
-    auto components = ComponentRegistry::Get().GetSystemComponents<TransformComponent, SpatialAccelerationStructure::ColliderComponent, RigidbodyComponent>();
+    auto components = ComponentRegistry::Get().GetSystemComponents<TransformComponent, ColliderComponent, RigidbodyComponent>();
 
     // first pass, apply gravity, convert applied force to velocity, apply drag, and move everything by its velocity
     for (auto & tuple: components) {
         TransformComponent& transform = *std::get<0>(tuple);
-        SpatialAccelerationStructure::ColliderComponent& collider = *std::get<1>(tuple);
+        ColliderComponent& collider = *std::get<1>(tuple);
         RigidbodyComponent& rigidbody = *std::get<2>(tuple);
         if (collider.live) {
             // transform.SetRot(glm::normalize(transform.Rotation()));
@@ -231,7 +231,7 @@ void PhysicsEngine::Step(const double timestep) {
     
     for (auto & tuple: components) {
         TransformComponent& transform = *std::get<0>(tuple);
-        SpatialAccelerationStructure::ColliderComponent& collider = *std::get<1>(tuple);
+        ColliderComponent& collider = *std::get<1>(tuple);
         RigidbodyComponent& rigidbody = *std::get<2>(tuple);
         if (collider.live && !rigidbody.kinematic) {
             DoPhysics(timestep, collider, transform, rigidbody, separations);

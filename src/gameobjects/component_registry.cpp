@@ -41,14 +41,14 @@ std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCre
     if (!componentBuckets.count(params.requestedComponents)) {
         componentBuckets[params.requestedComponents] = std::array<void*, N_COMPONENT_TYPES> {{
             [TransformComponentBitIndex] = params.requestedComponents[TransformComponentBitIndex] ? new ComponentPool<TransformComponent>() : nullptr,
-            [RenderComponentBitIndex] = params.requestedComponents[RenderComponentBitIndex] ? new ComponentPool<GraphicsEngine::RenderComponent>() : nullptr,
-            [ColliderComponentBitIndex] = params.requestedComponents[ColliderComponentBitIndex] ? new ComponentPool<SpatialAccelerationStructure::ColliderComponent>() : nullptr,
+            [RenderComponentBitIndex] = params.requestedComponents[RenderComponentBitIndex] ? new ComponentPool<RenderComponent>() : nullptr,
+            [ColliderComponentBitIndex] = params.requestedComponents[ColliderComponentBitIndex] ? new ComponentPool<ColliderComponent>() : nullptr,
             [RigidbodyComponentBitIndex] = params.requestedComponents[RigidbodyComponentBitIndex] ? new ComponentPool<RigidbodyComponent>() : nullptr,
             [PointlightComponentBitIndex] = params.requestedComponents[PointlightComponentBitIndex] ? new ComponentPool<PointLightComponent>() : nullptr,
-            [RenderComponentNoFOBitIndex] = params.requestedComponents[RenderComponentNoFOBitIndex] ? new ComponentPool<GraphicsEngine::RenderComponentNoFO>() : nullptr,
+            [RenderComponentNoFOBitIndex] = params.requestedComponents[RenderComponentNoFOBitIndex] ? new ComponentPool<RenderComponentNoFO>() : nullptr,
             [AudioPlayerComponentBitIndex] = params.requestedComponents[AudioPlayerComponentBitIndex] ? new ComponentPool<AudioPlayerComponent>() : nullptr
         }};
-        //std::cout << "RENDER COMP POOL PAGE AT " << ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets[params.requestedComponents][RenderComponentBitIndex]))->pools[0] << "\n";
+        //std::cout << "RENDER COMP POOL PAGE AT " << ((ComponentPool<RenderComponent>*)(componentBuckets[params.requestedComponents][RenderComponentBitIndex]))->pools[0] << "\n";
     }
 
     // Get components for the gameobject
@@ -60,13 +60,13 @@ std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCre
             components[i] = ((ComponentPool<TransformComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
             break;
             case RenderComponentBitIndex:
-            components[i] = ((ComponentPool<GraphicsEngine::RenderComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            components[i] = ((ComponentPool<RenderComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
             break;
             case RenderComponentNoFOBitIndex:
-            components[i] = ((ComponentPool<GraphicsEngine::RenderComponentNoFO>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            components[i] = ((ComponentPool<RenderComponentNoFO>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
             break;
             case ColliderComponentBitIndex:
-            components[i] = ((ComponentPool<SpatialAccelerationStructure::ColliderComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            components[i] = ((ComponentPool<ColliderComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
             break;
             case RigidbodyComponentBitIndex:
             components[i] = ((ComponentPool<RigidbodyComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
@@ -147,9 +147,9 @@ GameObject::~GameObject() {
 GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):
     // a way to make this less verbose and more type safe would be nice
     transformComponent((TransformComponent*)components[ComponentRegistry::TransformComponentBitIndex]),
-    renderComponent((GraphicsEngine::RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] ? (GraphicsEngine::RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] : (GraphicsEngine::RenderComponentNoFO*)components[ComponentRegistry::RenderComponentNoFOBitIndex]),  
+    renderComponent((RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] ? (RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] : (RenderComponentNoFO*)components[ComponentRegistry::RenderComponentNoFOBitIndex]),  
     rigidbodyComponent((RigidbodyComponent*)components[ComponentRegistry::RigidbodyComponentBitIndex]),
-    colliderComponent((SpatialAccelerationStructure::ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex]),
+    colliderComponent((ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex]),
     pointLightComponent((PointLightComponent*)components[ComponentRegistry::PointlightComponentBitIndex]),
     audioPlayerComponent((AudioPlayerComponent*)components[ComponentRegistry::AudioPlayerComponentBitIndex])
 {
@@ -184,16 +184,16 @@ LuaComponentHandle<TransformComponent> GameObject::LuaGetTransform() {
     return LuaComponentHandle<TransformComponent>(&transformComponent);
 }
 
-LuaComponentHandle<GraphicsEngine::RenderComponent> GameObject::LuaGetRender() {
-    return LuaComponentHandle<GraphicsEngine::RenderComponent>(&renderComponent);
+LuaComponentHandle<RenderComponent> GameObject::LuaGetRender() {
+    return LuaComponentHandle<RenderComponent>(&renderComponent);
 }
 
 LuaComponentHandle<RigidbodyComponent> GameObject::LuaGetRigidbody() {
     return LuaComponentHandle<RigidbodyComponent>(&rigidbodyComponent);
 }
 
-LuaComponentHandle<SpatialAccelerationStructure::ColliderComponent> GameObject::LuaGetCollider() {
-    return LuaComponentHandle<SpatialAccelerationStructure::ColliderComponent>(&colliderComponent);
+LuaComponentHandle<ColliderComponent> GameObject::LuaGetCollider() {
+    return LuaComponentHandle<ColliderComponent>(&colliderComponent);
 }
 
 LuaComponentHandle<AudioPlayerComponent> GameObject::LuaGetAudioPlayer() {

@@ -4,6 +4,7 @@
 #include "../../external_headers/GLM/vec3.hpp"
 #include "../../external_headers/GLM/mat3x3.hpp"
 
+// TODO: RIGIDBODIES CURRENTLY DON'T DO PHYSICS IF THEY DON'T HAVE A COLLIDER, MB
 class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     public:
     bool kinematic; // if true, the physics engine will do nothing to this component except change its position/rotation by its velocity
@@ -28,6 +29,8 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
 
     void Init();
     void Destroy();
+
+    
 
     // Applies the given force at the given position on the object, applying the correct amount of torque.
     // position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)

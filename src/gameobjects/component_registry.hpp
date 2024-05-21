@@ -16,9 +16,9 @@
 #include <vector>
 #include "component_pool.hpp"
 #include <vector>
-#include "../graphics/engine.hpp"
+#include "../gameobjects/render_component.hpp"
+#include "../gameobjects/collider_component.hpp"
 #include "transform_component.hpp"
-#include "../physics/spatial_acceleration_structure.hpp"
 #include "pointlight_component.hpp"
 #include "rigidbody_component.hpp"
 #include "audio_player_component.hpp"
@@ -320,13 +320,13 @@ class ComponentRegistry {
         if constexpr((std::is_same_v<TransformComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::TransformComponentBitIndex);
         }
-        if constexpr((std::is_same_v<GraphicsEngine::RenderComponent, Args> || ...)) {
+        if constexpr((std::is_same_v<RenderComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::RenderComponentBitIndex);
         }
-        if constexpr((std::is_same_v<GraphicsEngine::RenderComponentNoFO, Args> || ...)) {
+        if constexpr((std::is_same_v<RenderComponentNoFO, Args> || ...)) {
             indices.push_back(ComponentRegistry::RenderComponentNoFOBitIndex);
         }
-        if constexpr((std::is_same_v<SpatialAccelerationStructure::ColliderComponent, Args> || ...)) {
+        if constexpr((std::is_same_v<ColliderComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::ColliderComponentBitIndex);
         }
         if constexpr((std::is_same_v<RigidbodyComponent, Args> || ...)) {
@@ -382,13 +382,13 @@ class ComponentRegistry {
 template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<TransformComponent>() {
     return ComponentRegistry::TransformComponentBitIndex;
 }
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<GraphicsEngine::RenderComponent>() {
+template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<RenderComponent>() {
     return ComponentRegistry::RenderComponentBitIndex;
 }
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<GraphicsEngine::RenderComponentNoFO>() {
+template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<RenderComponentNoFO>() {
     return ComponentRegistry::RenderComponentNoFOBitIndex;
 }
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<SpatialAccelerationStructure::ColliderComponent>() {
+template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<ColliderComponent>() {
     return ComponentRegistry::ColliderComponentBitIndex;
 }
 template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<RigidbodyComponent>() {
@@ -446,17 +446,17 @@ class GameObject {
 
     // TODO: avoid not storing ptrs for components we don't have
     ComponentHandle<TransformComponent> transformComponent;
-    ComponentHandle<GraphicsEngine::RenderComponent> renderComponent;
-    // ComponentHandle<GraphicsEngine::RenderComponentNoFO> renderComponentNoFO; these two components have exact same size and methods and you can only have one of them so we store both with the same pointer
+    ComponentHandle<RenderComponent> renderComponent;
+    // ComponentHandle<RenderComponentNoFO> renderComponentNoFO; these two components have exact same size and methods and you can only have one of them so we store both with the same pointer
     ComponentHandle<RigidbodyComponent> rigidbodyComponent;
-    ComponentHandle<SpatialAccelerationStructure::ColliderComponent> colliderComponent;
+    ComponentHandle<ColliderComponent> colliderComponent;
     ComponentHandle<PointLightComponent> pointLightComponent;
     ComponentHandle<AudioPlayerComponent> audioPlayerComponent;
 
     LuaComponentHandle<TransformComponent> LuaGetTransform();
-    LuaComponentHandle<GraphicsEngine::RenderComponent> LuaGetRender();
+    LuaComponentHandle<RenderComponent> LuaGetRender();
     LuaComponentHandle<RigidbodyComponent> LuaGetRigidbody();
-    LuaComponentHandle<SpatialAccelerationStructure::ColliderComponent> LuaGetCollider();
+    LuaComponentHandle<ColliderComponent> LuaGetCollider();
     LuaComponentHandle<PointLightComponent> LuaGetPointLight();
     LuaComponentHandle<AudioPlayerComponent> LuaGetAudioPlayer();
 

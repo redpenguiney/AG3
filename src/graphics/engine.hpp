@@ -17,6 +17,7 @@
 #include "material.hpp"
 #include "renderable_mesh.hpp"
 #include "framebuffer.hpp"
+// #include "gameobjects/render_component.hpp"
 
 // struct MeshLocation {
 //     unsigned int poolId; // uuid of the meshpool 
@@ -29,6 +30,9 @@
 //         initialized = false;
 //     }
 // };
+
+class RenderComponent;
+class RenderComponentNoFO;
 
 // Handles graphics, obviously.
 class GraphicsEngine {
@@ -91,86 +95,9 @@ class GraphicsEngine {
     // Draws everything
     void RenderScene();
 
-    // Gameobjects that want to be rendered should have a pointer to one of these.
-    // However, they are stored here in a vector because that's better for the cache. (google ECS).
-    // NEVER DELETE THIS POINTER, JUST CALL Destroy(). DO NOT STORE OUTSIDE A GAMEOBJECT. THESE USE AN OBJECT POOL.
-    class RenderComponent: public BaseComponent<RenderComponent> {
-        public:
+    
 
-        // not const because object pool, don't actually change this
-        unsigned int meshId;
-        unsigned int shaderProgramId, materialId;
-
-        // called to initialize when given to a gameobject
-        void Init(unsigned int meshId, unsigned int materialId, unsigned int shaderId = Get().defaultShaderProgram->shaderProgramId);
-
-        // call before returning to pool
-        void Destroy();
-
-        // Sets the instanced vertex attribute (which depends on the mesh, but could be color, textureZ, etc.)
-        // Note: setting color, textureZ, etc. is complicated because A. needs to be fast for all meshes that have different instanced vertex attributes B. multibuffering means that to set color, one must set color 3 times over 3 frames C. we can't set those things until the render component gets its meshpool, and for perf reasons we cache mesh creation so that doesn't happen until RenderScene() is called.
-        void SetInstancedVertexAttribute(const unsigned int attributeName, const glm::vec4& value);
-
-        // Sets the instanced vertex attribute (which depends on the mesh, but could be color, textureZ, etc.)
-        // Note: setting color, textureZ, etc. is complicated because A. needs to be fast for all meshes that have different instanced vertex attributes B. multibuffering means that to set color, one must set color 3 times over 3 frames C. we can't set those things until the render component gets its meshpool, and for perf reasons we cache mesh creation so that doesn't happen until RenderScene() is called.
-        void SetInstancedVertexAttribute(const unsigned int attributeName, const glm::vec3& value);
-
-        // Sets the instanced vertex attribute (which depends on the mesh, but could be color, textureZ, etc.)
-        // Note: setting color, textureZ, etc. is complicated because A. needs to be fast for all meshes that have different instanced vertex attributes B. multibuffering means that to set color, one must set color 3 times over 3 frames C. we can't set those things until the render component gets its meshpool, and for perf reasons we cache mesh creation so that doesn't happen until RenderScene() is called.
-        void SetInstancedVertexAttribute(const unsigned int attributeName, const glm::vec2& value);
-
-        // Sets the instanced vertex attribute (which depends on the mesh, but could be color, textureZ, etc.)
-        // Note: setting color, textureZ, etc. is complicated because A. needs to be fast for all meshes that have different instanced vertex attributes B. multibuffering means that to set color, one must set color 3 times over 3 frames C. we can't set those things until the render component gets its meshpool, and for perf reasons we cache mesh creation so that doesn't happen until RenderScene() is called.
-        void SetInstancedVertexAttribute(const unsigned int attributeName, const float& value);
-
-        // Equivalent to SetInstancedVertexAttribute() with the correct args
-        void SetColor(const glm::vec4& color) {SetInstancedVertexAttribute(MeshVertexFormat::COLOR_ATTRIBUTE_NAME, color);}
-
-        // Equivalent to SetInstancedVertexAttribute() with the correct args
-        void SetTextureZ(const float textureZ) {SetInstancedVertexAttribute(MeshVertexFormat::TEXTURE_Z_ATTRIBUTE_NAME, textureZ);}
-
-        private:
-
-        // TODO: getters for color, textureZ, etc. Should have a pointer that leads to that data so it doesn't get interleaved with the more hotly used data
-        // glm::vec4 color;
-        // float textureZ;
-
-        // MeshLocation meshLocation;
-        
-
-        // -1 before being initialized
-        int meshpoolId, meshpoolSlot, meshpoolInstance;
-
-        friend class GraphicsEngine;
-
-        // mesh.cpp needs to access mesh location sorry
-        friend class Mesh;
-        
-        //private constructor to enforce usage of object pool
-        friend class ComponentPool<RenderComponent>;
-        RenderComponent();
-    };
-
-    // Identical to a RenderComponent in every way, except that it doesn't use floating origin. Not a bool flag on a normal render component bc i like premature optimization.
-    class RenderComponentNoFO: public RenderComponent {
-        public:
-        // TODO: implicit conversion to normal rendercomponent because they do the exact same things?
-        
-        private:
-
-        //private constructor to enforce usage of object pool
-        friend class ComponentPool<RenderComponentNoFO>;
-        RenderComponentNoFO();
-
-        // exists to let RenderComponentNoFO avoid type safety.
-        // void* should be ptr to component pool
-        void SetPool(void* p) {
-            pool = (ComponentPool<RenderComponent>*)p;
-        }
-    };
-
-    static_assert(sizeof(RenderComponent) == sizeof(RenderComponentNoFO), "These classes need the exact same memory layout or i'll be sad.\n");
-
+    
     std::shared_ptr<Material> GetDefaultMaterial(); // TODO
 
     // Render components that use a dynamic mesh add themselves to this unordered map (and remove themselves on destruction).
@@ -184,6 +111,8 @@ class GraphicsEngine {
     private:
 
     friend class Mesh; // literally just friend so dynamic mesh support is less work for me idc about keeping it modular
+    friend class RenderComponent;
+    // friend class RenderComponentNoFO;
 
     // SSBO that stores all points lights so that the GPU can use them.
     // Format is:

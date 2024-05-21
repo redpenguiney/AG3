@@ -12,6 +12,7 @@
 #include <memory>
 #include <tuple>
 #include <vector>
+#include "gameobjects/collider_component.hpp"
 
 void SpatialAccelerationStructure::Update() {
     //auto start = Time();
@@ -63,13 +64,13 @@ void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationS
     }
 }
 
-std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& collider) {
+std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& collider) {
     // find leaf nodes whose AABBs intersect the collider
     std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
     AddIntersectingLeafNodes(&root, collidingNodes, collider);
     
     // test the aabbs of the objects inside each node and if so add them to the vector
-    std::vector<SpatialAccelerationStructure::ColliderComponent*> collidingComponents;
+    std::vector<ColliderComponent*> collidingComponents;
     for (auto & node: collidingNodes) {
         for (auto & obj: node->objects) {
             if (obj->aabb.TestIntersection(collider)) {
@@ -85,7 +86,7 @@ std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAcceleratio
 }
 
 // TODO: redundant code in these two query functions, could improve
-std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAccelerationStructure::Query(const glm::dvec3& origin, const glm::dvec3& direction) {
+std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::dvec3& origin, const glm::dvec3& direction) {
     glm::dvec3 inverse_direction = glm::dvec3(1.0/direction.x, 1.0/direction.y, 1.0/direction.z); 
 
     // find leaf nodes whose AABBs intersect the ray
@@ -93,7 +94,7 @@ std::vector<SpatialAccelerationStructure::ColliderComponent*> SpatialAcceleratio
     AddIntersectingLeafNodes(&root, collidingNodes, origin, inverse_direction);
 
     // test the aabbs of the objects inside each node and if so add them to the vector
-    std::vector<SpatialAccelerationStructure::ColliderComponent*> collidingComponents;
+    std::vector<ColliderComponent*> collidingComponents;
     //std::cout << "For raycast, testing " << collidingNodes.size() << " nodes.\n";
     for (auto & node: collidingNodes) {
         //std::cout << "\twithin this node testing " << node->objects.size() << " collider AABBs.\n";
@@ -412,7 +413,7 @@ void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider, cons
     }
 }
 
-void SpatialAccelerationStructure::ColliderComponent::RemoveFromSas() {
+void ColliderComponent::RemoveFromSas() {
     // remove object from node
     for (unsigned int i = 0; i < node->objects.size(); i++) {
         if (node->objects[i] == this) {
@@ -424,7 +425,7 @@ void SpatialAccelerationStructure::ColliderComponent::RemoveFromSas() {
     // TODO: we need to do something when node is emptied, probably    
 }
 
-void SpatialAccelerationStructure::UpdateCollider(SpatialAccelerationStructure::ColliderComponent& collider, const TransformComponent& transform) {
+void SpatialAccelerationStructure::UpdateCollider(ColliderComponent& collider, const TransformComponent& transform) {
     collider.RecalculateAABB(transform);
     const AABB& newAabb = collider.aabb;
 
@@ -534,53 +535,6 @@ SpatialAccelerationStructure::~SpatialAccelerationStructure() {
 
 }
 
-void SpatialAccelerationStructure::ColliderComponent::Init(GameObject* gameobj, std::shared_ptr<PhysicsMesh>& physMesh) {
-    aabbType = AABBBoundingCube;
-    node = nullptr;
-    gameobject = gameobj;
-    physicsMesh = physMesh;
-    elasticity = 1;
-    friction = 0.2;
-    density = 1.0;
-    SpatialAccelerationStructure::Get().AddCollider(this, *gameobject->transformComponent);
-
-}
-
-void SpatialAccelerationStructure::ColliderComponent::Destroy() {
-    physicsMesh = nullptr;
-}
-
-std::shared_ptr<GameObject>& SpatialAccelerationStructure::ColliderComponent::GetGameObject() {
-    return ComponentRegistry::Get().GAMEOBJECTS[gameobject];
-}
-
-// TODO: collider AABBs should be augmented to contain their motion over the next time increment.
-    // If we ever use a second SAS for accelerating visibility queries too, then don't do it for that
-void SpatialAccelerationStructure::ColliderComponent::RecalculateAABB(const TransformComponent& colliderTransform) {
-    // std::cout << "Reacalculating AABB of " << this << "\n";
-    if (aabbType == AABBBoundingCube) {
-        glm::dvec3 min = {-std::sqrt(0.75), -std::sqrt(0.75), -std::sqrt(0.75)};
-        glm::dvec3 max = {std::sqrt(0.75), std::sqrt(0.75), std::sqrt(0.75)};
-        
-        // TODO: maybe fat factor should be added instead of multiplied?
-        min *= AABB_FAT_FACTOR;
-        min *= glm::compMax(colliderTransform.scale);
-        max *= AABB_FAT_FACTOR;
-        max *= glm::compMax(colliderTransform.scale);
-
-        min += colliderTransform.Position();
-        max += colliderTransform.Position();
-        aabb = AABB(min, max);
-    }
-    else {
-        std::printf("PROBLEM\n");
-        abort();
-    }
-}
-
-const AABB& SpatialAccelerationStructure::ColliderComponent::GetAABB() {
-    return aabb;
-}
 
 #ifdef IS_MODULE
 SpatialAccelerationStructure* _SPATIAL_ACCELERATION_STRUCTURE_ = nullptr;

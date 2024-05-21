@@ -29,6 +29,7 @@
 #include "debug/log.hpp"
 #include "src/gameobjects/component_registry.hpp"
 #include "src/graphics/engine.hpp"
+#include "physics/spatial_acceleration_structure.hpp"
 
 #include "modules/module.hpp"
 

@@ -10,7 +10,7 @@ class Window {
     public:
     unsigned int width = 0;
     unsigned int height = 0;
-    bool mouseLocked;
+    
 
     Window() = delete; 
 
@@ -49,11 +49,16 @@ class Window {
     bool LMB_ENDED;
     bool RMB_ENDED;
 
+    bool SHIFT_DOWN
+    bool CTRL_DOWN
+
     // TODO: RAW MOUSE option
     glm::dvec2 MOUSE_POS;
     glm::dvec2 MOUSE_DELTA; // how much mouse has moved since last frame
 
     private:
+    bool mouseLocked;
+
     GLFWwindow* glfwWindow;
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindowHeight);
