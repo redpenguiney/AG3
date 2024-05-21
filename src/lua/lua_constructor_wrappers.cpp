@@ -1,8 +1,6 @@
 #include "lua_constructor_wrappers.hpp"
 #include "graphics/mesh.hpp"
 #include "graphics/texture.hpp"
-#include "sol/object.hpp"
-#include "sol/variadic_results.hpp"
 #include <string>
 #include <tuple>
 #include <vector>

@@ -66,10 +66,12 @@ LuaHandler& LuaHandler::Get() {
 
 // Returns true if the result is valid. Else, returns false and prints error messages
 bool HandleMaybeLuaError(const sol::protected_function_result& result, std::string fileNameOrSource) {
+    
     if (result.valid()) {
         return true;
     }
     else {
+        sol::error err = result;
         DebugLogError("While attemping to run lua \"", fileNameOrSource, "\":\n", sol::error(result).what());
         return false;
     }

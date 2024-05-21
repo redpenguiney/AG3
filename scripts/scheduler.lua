@@ -4,29 +4,37 @@ YIELDED_COROUTINES = {
 WAIT_LENGTH = 0
 
 function Wait(seconds) 
+    -- print("woahh")
     WAIT_LENGTH = seconds * 60
     coroutine.yield()
+    
+end
+
+function __FUNC_(src)
+    print("hi")
+    require("__OOPS_", src)
+    print("bruh")
 end
 
 function DoTask(src) 
-    local function func()
-        print("hi")
-        local f = require("__OOPS_", src)
-        print("bruh")
-    end
+    
+    print("Doing task")
+    local co = coroutine.create(__FUNC_)
 
-    local co = coroutine.create(func)
+    local ok, err = coroutine.resume(co, src)
+    print("it finished, ok = ", tostring(ok), "err = ", tostring(err))
 
-    local ok, err = coroutine.resume(co)
     -- coroutine will do some stuff then yield or finish
-    if coroutine.status(co) ~= "dead" then -- if coroutine didn't finish/error
+    if ok and coroutine.status(co) ~= "dead" then -- if coroutine didn't finish/error
+        print("its alive?")
         table.insert(YIELDED_COROUTINES, {coro = co, framesLeft = 0, src = src})
+        
     else
         if not ok then
             error(err)
         end
     end
-    
+    print("Finished task")
 end
 
 function ResumeTasks()
@@ -38,7 +46,7 @@ function ResumeTasks()
                 table.remove(YIELDED_COROUTINES, i)
                 
                 if not ok then
-                    error(err)
+                    pcall(error, err)
                 end
             else
                 -- if the coroutine yielded by calling Wait(), WAIT_LENGTH will be set to the number of frames they want to wait for.

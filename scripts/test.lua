@@ -8,7 +8,10 @@
     makeMparams.textureZ = -1.0
     makeMparams.opacity = 1
     makeMparams.expectedCount = 16384
-    local m = Mesh.new("../models/rainbowcube.obj", makeMparams);
+
+    
+
+    local m = Mesh.new("../models/rainbowcube.obj", makeMparams); 
 
     local brickMaterial, brickTextureZ = Material.new(Enum.TextureType.Texture2D,
         TextureCreateParams.new("../textures/ambientcg_bricks085/color.jpg", Enum.TextureUsage.ColorMap), 
@@ -23,7 +26,10 @@
     params.materialId = brickMaterial.id
 
     local go = GameObject.new(params)
+
+    
     go.render.textureZ = brickTextureZ
+    
 
     local vec3 = Vec3d.new(0, 2, 3)
     -- print(go.transform);
@@ -39,20 +45,27 @@
     transform.rotation = Quat.new(Vec3f.new(0.0, 3.14/8.0, 0.0))
     -- coroutine.yield()
     -- print("here we go");
+
+    
+
     local c = Vec4f.new(0.5, 0.5, 0.5, 1.0)
     while true do
-        go.render.color = c
-        c = c + Vec4f.new(math.random(-1, 1) * 0.01, math.random(-1, 1) * 0.01, math.random(-1, 1) * 0.01, 0.0)
+        
+        -- go.render.color = c
+        -- c = c + Vec4f.new(math.random(-1, 1) * 0.01, math.random(-1, 1) * 0.01, math.random(-1, 1) * 0.01, 0.0)
+        
         Wait(0.0)
+        -- print("cool")
         -- print("again?")
     end
-    
-    print("LUA WON!!!") 
 
-    go:Destroy()
-    print(transform.position)
-    print(go.transform.position)
-end
+    
+    
+    -- print("LUA WON!!!") 
+
+    -- go:Destroy()
+    -- print(transform.position)
+    -- print(go.transform.position)
 
 
 
