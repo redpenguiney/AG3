@@ -7,7 +7,6 @@
 #include "debug/log.hpp"
 #include "gameobjects/component_registry.hpp"
 // #include "lua/lua_component_wrappers.hpp"
-#include "sol/forward.hpp"
 #ifndef SOL_ALL_SAFETIES_ON 
 #error bruh
 #endif
@@ -23,6 +22,8 @@
 #include "lua_constructor_wrappers.hpp"
 
 #include "physics/raycast.hpp"
+
+// TODO: ASYNCHRONOUS ASSET LOADING
 
 // normally this stuff would be private members of the lua handler class, but then the header file would have to include all of sol2 which would probably make compile times worse
 // we use sol2 for lua support.
@@ -92,6 +93,28 @@ bool HandleMaybeLuaError(const sol::protected_function_result& result, std::stri
 //     tbl.push_back({co, int(time * 60.0)});
 //     // DebugLogInfo("Yielding coroutine now.");
 // }
+
+#include <fstream>
+sol::protected_function_result LoadFileAsFunction(std::string filepath) {
+    std::fstream t;
+    t.open(filepath);
+
+    std::string buffer = "function __LOADED_FILE_AS_FUNC_ ()\n ";
+    std::string line;
+    while(t && std::getline(t, line)){
+        buffer += line;
+        buffer += "\n"; // getline() deletes the newlines, annoyingly, and then comments in lua code wipe out the whole script
+    }
+    t.close();
+
+    
+    buffer += "\n end return __LOADED_FILE_AS_FUNC_";
+
+    DebugLogInfo("Loading string into sol: \n", buffer);
+
+    // todo: this does unneccesarily do some copies and stuff
+    return LUA_STATE.value().safe_script(buffer);
+}
 
 sol::object Require(std::string key, std::string filepath) {
     return LUA_STATE->require_file(key, filepath);
@@ -354,38 +377,12 @@ unsigned int lastCoroutineId = 0;
 
 void LuaHandler::RunFile(const std::string scriptPath) {
     // "safe" means it won't just throw if the script doesn't successfully run to completion
-    // we need to actually wrap this call in a coroutine by requiring it 
-    // TODO: would this technically allow the equivalent of SQL injection? probably
-    // RunString("local success, message = coroutine.resume(coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)) if not success then print(\"Coroutine said\"..tostring(message)) end");
-    // RunString("result, message = pcall(function() require(\"__IGNORE\", \"" + scriptPath + "\") end) if not result then error(message) end");
-
-    // RunString("local __NEW_COROUTINE = coroutine.create(function() require(\"__IGNORE\", \"" + scriptPath + "\") end)");
-    // sol::coroutine routine = (*LUA_STATE)["__NEW_COROUTINE"];
-    // auto result = routine();
-
-    // auto runnerView = LUA_THREAD->state();
-    // // runnerView[]
-
-    // DebugLogInfo("Loading file...");
-    // auto result = runnerView.safe_script_file(scriptPath, &sol::script_pass_on_error);
-    // if (HandleMaybeLuaError(result, scriptPath)) {
-    //     DebugLogInfo("Calling main coroutine...");
-    //     sol::coroutine co = runnerView["__MAIN_CO_"];
-    //     auto result2 = co(); 
-    //     HandleMaybeLuaError(result2, scriptPath);
-    // };
-    //     // sol::main_coroutine co = (*LUA_STATE)["__MAIN_FUNC_"];
-    // // DebugLogInfo("Ok");
-        
-    //     // RunLuaCoroutine(co, scriptPath);
-
-    // DebugLogInfo("WE\'RE DONE HERE");
+    // we need to actually wrap whatever the file is in a function call, which is what LoadFileAsFunction does, so that it can be called with a coroutine so it can wait and stuff.
+    auto loadedFunction = LoadFileAsFunction(scriptPath);
+    if (HandleMaybeLuaError(loadedFunction, scriptPath)) {
+        HandleMaybeLuaError(LUA_STATE.value()["DoTask"](sol::function(loadedFunction), scriptPath), scriptPath);
+    }
     
-    // }
-    
-    // auto result = LUA_STATE->require_script("__INTERNAL_RUNFILE_REQUIRE_KEY_", "function() return require(\"" + scriptPath + "\") end");
-
-    HandleMaybeLuaError(LUA_STATE.value()["DoTask"](scriptPath), scriptPath);
 }
 
 LuaHandler::~LuaHandler() {

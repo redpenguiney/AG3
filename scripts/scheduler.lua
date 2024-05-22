@@ -5,28 +5,28 @@ WAIT_LENGTH = 0
 
 function Wait(seconds) 
     local _, isMain = coroutine.running()
-    print("at WAIT()")
+    -- print("at WAIT()")
     assert(not isMain, "Somehow, you managed to run this code without being in a coroutine. Please report this.")
     WAIT_LENGTH = seconds * 60
-    print("woahh ", coroutine.running())
+    -- print("woahh ", coroutine.running())
     -- local ok, err = pcall(coroutine.yield)
-    -- coroutine.yield()
-    print("WE got ", ok, " and ", err)
+    coroutine.yield()
+    -- print("WE got ", ok, " and ", err)
     
 end
 
-function __FUNC_(src)
-    print("hi")
-    require("__OOPS_", src)
-    print("bruh")
-end
+-- function __FUNC_(src)
+--     print("hi")
+--     require("__OOPS_", src)
+--     print("bruh")
+-- end
 
-function DoTask(src) 
+function DoTask(func, src)
     
-    print("Doing task")
-    local co = coroutine.create(__FUNC_)
+    print("Doing task on func ", func, " from file ", src)
+    local co = coroutine.create(func)
 
-    local ok, err = coroutine.resume(co, src)
+    local ok, err = coroutine.resume(co)
     print("it finished, ok = ", tostring(ok), "err = ", tostring(err))
 
     -- coroutine will do some stuff then yield or finish

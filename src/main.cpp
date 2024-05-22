@@ -47,14 +47,14 @@ int main(int numArgs, const char *argPtrs[]) {
 
     DebugLogInfo("Main function reached.");
 
-    atexit(AtExit); DebugLogInfo("0");
+    atexit(AtExit);
 
     // TODO: order does matter here, formalize that
-    auto & GE = GraphicsEngine::Get(); DebugLogInfo("1");
-    auto & PE = PhysicsEngine::Get(); DebugLogInfo("2");
-    auto & AE = AudioEngine::Get(); DebugLogInfo("3");
-    auto & LUA = LuaHandler::Get(); DebugLogInfo("4");
-    auto & CR = ComponentRegistry::Get(); DebugLogInfo("5");
+    auto & GE = GraphicsEngine::Get();
+    auto & PE = PhysicsEngine::Get();
+    auto & AE = AudioEngine::Get();
+    auto & LUA = LuaHandler::Get();
+    auto & CR = ComponentRegistry::Get();
 
     atexit(Module::CloseAll); // this is placed here, after the component registry is initialized, because that guarantees that modules' references to gameobjects are destroyed before the gameobjects are (because static destructors/at exits are called in reverse order)
 
