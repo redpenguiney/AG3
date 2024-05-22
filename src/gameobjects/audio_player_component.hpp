@@ -38,8 +38,7 @@ class AudioPlayerComponent: public BaseComponent<AudioPlayerComponent> {
     // DONT call this unless you're the audio engine, sets 
     void Update(glm::dvec3 microphonePosition);
 
-    void Play(); // plays the sound starting from the beginning
-    void Play(float startTime); // plays the sound starting at the given number of seconds in
+    void Play(float startTime = 0); // plays the sound starting at the given number of seconds in 
     void Pause(); // stops playback of the sound
     void Resume(); // plays the sound at its current position
     void Stop();

@@ -73,22 +73,10 @@ void AudioPlayerComponent::SetSound(std::shared_ptr<Sound> newSound) {
     CheckedOpenALCall(alSourcei(audioSourceId, AL_BUFFER, sound->alAudioBufferId));
 }
 
-void AudioPlayerComponent::Play() {
-    
-    // if (!isPlaying) {
-    //     startPlaying = true;
-    //     isPlaying = true;
-    // }
-
-    // startPlayingAt = 0;
-
-    Play(0);
-}
-
 void AudioPlayerComponent::Play(float startTime) {
     assert(sound != nullptr);
     CheckedOpenALCall(alSourcef(audioSourceId, AL_SEC_OFFSET, startTime));
-    CheckedOpenALCall(alSourcePlay(audioSourceId));
+    Resume();
 }
 
 void AudioPlayerComponent::Pause() {
@@ -98,6 +86,12 @@ void AudioPlayerComponent::Pause() {
     // }
 
     CheckedOpenALCall(alSourcePause(audioSourceId));
+}
+
+void AudioPlayerComponent::Resume() {
+    assert(sound != nullptr);
+
+    CheckedOpenALCall(alSourcePlay(audioSourceId))
 }
 
 void AudioPlayerComponent::Stop() {

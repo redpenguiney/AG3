@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <sol/forward.hpp>
 
 // Singleton that handles loading and running lua scripts.
 class LuaHandler {
@@ -31,3 +32,5 @@ class LuaHandler {
     LuaHandler();
     ~LuaHandler();
 };
+
+// defined in lua_usertype_initializiation

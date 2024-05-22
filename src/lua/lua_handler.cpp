@@ -97,6 +97,10 @@ sol::object Require(std::string key, std::string filepath) {
     return LUA_STATE->require_file(key, filepath);
 }
 
+Window& GetWindow() {
+    return GraphicsEngine::Get().window;
+}
+
 LuaHandler::LuaHandler() {
     assert(!LUA_STATE.has_value()); // the constructor is supposed to make a lua state so there better not already be one
     
@@ -105,7 +109,7 @@ LuaHandler::LuaHandler() {
     // LUA_THREAD = sol::thread::create(LUA_STATE->lua_state());
 
     // setup lua standard library
-    LUA_STATE->open_libraries(sol::lib::base, sol::lib::os, sol::lib::math, sol::lib::table, sol::lib::coroutine, sol::lib::string);
+    LUA_STATE->open_libraries(sol::lib::base, sol::lib::os, sol::lib::math, sol::lib::table, sol::lib::coroutine, sol::lib::string, sol::lib::debug);
 
     // say stuff when lua does sad face error
     // sol::set_default_exception_handler(LUA_STATE->lua_state(), &ExceptionHandler);
@@ -202,19 +206,19 @@ LuaHandler::LuaHandler() {
 
     auto quatUserType = LUA_STATE->new_usertype<glm::quat>("Quat", sol::constructors<glm::quat(glm::vec3), glm::quat(glm::quat), glm::quat(float, float, float, float)>());
 
-    auto mat3x3Usertype = LUA_STATE->new_usertype<glm::mat3x3>("Mat3x3", sol::factories(glm::identity<mat3x3>));    
+    auto mat3x3Usertype = LUA_STATE->new_usertype<glm::mat3x3>("Mat3x3", sol::factories(glm::identity<glm::mat3x3>));    
 
     // windowing/input
-    LUA_STATE->set_function("GetWindow", &Window::Get);
+    LUA_STATE->set_function("GetWindow", GetWindow);
     auto windowUsertype = LUA_STATE->new_usertype<Window>("Window", sol::no_constructor);
     windowUsertype["width"] = &Window::width;
     windowUsertype["height"] = &Window::height;
     windowUsertype["mouseLocked"] = sol::property(&Window::SetMouseLocked);
     windowUsertype["Close"] = &Window::Close;
     windowUsertype["ShouldClose"] = &Window::ShouldClose;
-    windowUsertype["PressBeganKeys"] = &Window::PRESS_BEGAN_KEYS;
-    windowUsertype["PressEndedKeys"] = &Window::PRESS_ENDED_KEYS;
-    windowUsertype["PressedKeys"] = &Window::PRESSED_KEYS;
+    windowUsertype["IsPressBegan"] = &Window::IsPressBegan;
+    windowUsertype["IsPressEnded"] = &Window::IsPressEnded;
+    windowUsertype["IsPressed"] = &Window::IsPressed;
 
     // meshes
     auto meshCreateParamsUsertype = LUA_STATE->new_usertype<MeshCreateParams>("MeshCreateParams", sol::factories(MeshCreateParams::Default));
@@ -248,7 +252,7 @@ LuaHandler::LuaHandler() {
     gameObjectCreateParamsUsertype["meshId"] = &LuaGameobjectCreateParams::meshId;
     gameObjectCreateParamsUsertype["materialId"] = &LuaGameobjectCreateParams::materialId;
     gameObjectCreateParamsUsertype["shaderId"] = &LuaGameobjectCreateParams::shaderId;
-    gameObjectCreateParamsUsertype["sound"] = &LuaGameobjectCreateParams::sound
+    gameObjectCreateParamsUsertype["sound"] = &LuaGameobjectCreateParams::sound;
 
     auto transformComponentUsertype = LUA_STATE->new_usertype<TransformComponent>("Transform", sol::no_constructor);
     transformComponentUsertype["position"] = sol::property(&TransformComponent::Position, &TransformComponent::SetPos);
@@ -261,12 +265,12 @@ LuaHandler::LuaHandler() {
     renderComponentUsertype["color"] = sol::property(&RenderComponent::SetColor);
     renderComponentUsertype["textureZ"] = sol::property(&RenderComponent::SetTextureZ);
 
-    auto colliderComponentUsertype = LUA_STATE.new_usertype<ColliderComponent>("Collider", sol::no_constructor);
-    colliderComponentUsertype["IsCollidingWith"] = &ColliderComponent::IsCollidingWith;
-    colliderComponentUsertype["GetColliding"] = &ColliderComponent::GetColliding;
-    colliderComponent["gameobject"] = sol::property(&ColliderComponent::GetGameobject);
+    auto colliderComponentUsertype = LUA_STATE->new_usertype<ColliderComponent>("Collider", sol::no_constructor);
+    // colliderComponentUsertype["IsCollidingWith"] = &ColliderComponent::IsCollidingWith;
+    // colliderComponentUsertype["GetColliding"] = &ColliderComponent::GetColliding;
+    colliderComponentUsertype["gameObject"] = sol::property(&ColliderComponent::GetGameObject);
 
-    auto rigidbodyComponentUsertype = LUA_STATE.new_usertype<RigidbodyComponent>("Rigidbody", sol::no_constructor);
+    auto rigidbodyComponentUsertype = LUA_STATE->new_usertype<RigidbodyComponent>("Rigidbody", sol::no_constructor);
     rigidbodyComponentUsertype["kinematic"] = &RigidbodyComponent::kinematic;
     rigidbodyComponentUsertype["velocity"] = &RigidbodyComponent::velocity;
     rigidbodyComponentUsertype["angularVelocity"] = &RigidbodyComponent::angularVelocity;
@@ -275,24 +279,24 @@ LuaHandler::LuaHandler() {
     rigidbodyComponentUsertype["linearDrag"] = &RigidbodyComponent::linearDrag;
     rigidbodyComponentUsertype["angularDrag"] = &RigidbodyComponent::angularDrag;
 
-    auto pointlightComponentUsertype = LUA_STATE->new_usertype<PointlightComponent>("PointLight", sol::no_constructor);
-    pointlightComponentUsertype["range"] = sol::property(&PointlightComponent::Range, &PointLightComponent::SetRange);
+    auto pointlightComponentUsertype = LUA_STATE->new_usertype<PointLightComponent>("PointLight", sol::no_constructor);
+    pointlightComponentUsertype["range"] = sol::property(&PointLightComponent::Range, &PointLightComponent::SetRange);
     pointlightComponentUsertype["color"] = sol::property(&PointLightComponent::Color, &PointLightComponent::SetColor);
 
     auto audioPlayerComponentUsertype = LUA_STATE->new_usertype<AudioPlayerComponent>("AudioPlayer", sol::no_constructor);
-    audioPlayerComponent["IsPlaying"] = &AudioPlayerComponent::IsPlaying;
-    audioPlayerComponent["Resume"] = &AudioPlayerComponent::Resume;
-    audioPlayerComponent["Stop"] = &AudioPlayerComponent::Stop;
-    audioPlayerComponent["Pause"] = &AudioPlayerComponent::Pause;
-    audioPlayerComponent["Play"] = sol::overload(&AudioPlayerComponent::Play(float), &AudioPlayerComponent::Play());
+    audioPlayerComponentUsertype["IsPlaying"] = &AudioPlayerComponent::IsPlaying;
+    audioPlayerComponentUsertype["Resume"] = &AudioPlayerComponent::Resume;
+    audioPlayerComponentUsertype["Stop"] = &AudioPlayerComponent::Stop;
+    audioPlayerComponentUsertype["Pause"] = &AudioPlayerComponent::Pause;
+    audioPlayerComponentUsertype["Play"] = &AudioPlayerComponent::Play;
     
-    audioPlayerComponent["sound"] = sol::property(&AudioPlayerComponent::SetSound);
-    audioPlayerComponent["doppler"] = &AudioPlayerComponent::doppler;
-    audioPlayerComponent["pitch"] = &AudioPlayerComponent::pitch;
-    audioPlayerComponent["volume"] = &AudioPlayerComponent::volume;
-    audioPlayerComponent["rolloff"] = &AudioPlayerComponent::rolloff;
-    audioPlayerComponent["looped"] = &AudioPlayerComponent::looped;
-    audioPlayerComponent["positional"] = &AudioPlayerComponent::positional;
+    audioPlayerComponentUsertype["sound"] = sol::property(&AudioPlayerComponent::SetSound);
+    audioPlayerComponentUsertype["doppler"] = &AudioPlayerComponent::doppler;
+    audioPlayerComponentUsertype["pitch"] = &AudioPlayerComponent::pitch;
+    audioPlayerComponentUsertype["volume"] = &AudioPlayerComponent::volume;
+    audioPlayerComponentUsertype["rolloff"] = &AudioPlayerComponent::rolloff;
+    audioPlayerComponentUsertype["looped"] = &AudioPlayerComponent::looped;
+    audioPlayerComponentUsertype["positional"] = &AudioPlayerComponent::positional;
 
     auto gameObjectUsertype = LUA_STATE->new_usertype<GameObject>("GameObject", sol::factories(LuaGameobjectConstructor));
     gameObjectUsertype["transform"] = sol::property(&GameObject::LuaGetTransform);
@@ -306,10 +310,10 @@ LuaHandler::LuaHandler() {
 
     // raycast
     auto raycastResultUsertype = LUA_STATE->new_usertype<RaycastResult>(sol::no_constructor);
-    raycastResultUsertype["hitObject"] = sol::readonly(RaycastResult::hitObject);
-    raycastResultUsertype["hitNormal"] = sol::readonly(RaycastResult::hitNormal);
-    raycastResultUsertype["hitPoint"] = sol::readonly(RaycastResult::hitPoint);
-    LUA_STATE.set_function("Raycast", &Raycast);
+    raycastResultUsertype["hitObject"] = sol::readonly(&RaycastResult::hitObject);
+    raycastResultUsertype["hitNormal"] = sol::readonly(&RaycastResult::hitNormal);
+    raycastResultUsertype["hitPoint"] = sol::readonly(&RaycastResult::hitPoint);
+    LUA_STATE->set_function("Raycast", &Raycast);
 
     // LUA_STATE->set_function("NewGameObject", ComponentRegistry::NewGameObject);
 

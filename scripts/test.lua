@@ -4,6 +4,8 @@
     -- print("Enum is " .. tostring(Enum));
     -- print("Enum.ComponentBitIndex.RenderNoFO = " .. tostring(Enum.ComponentBitIndex.Rigidbody))
 
+    err("bob")
+
     local makeMparams = MeshCreateParams.new()
     makeMparams.textureZ = -1.0
     makeMparams.opacity = 1
@@ -49,15 +51,15 @@
     
 
     local c = Vec4f.new(0.5, 0.5, 0.5, 1.0)
-    while true do
+    -- while true do
         
-        -- go.render.color = c
-        -- c = c + Vec4f.new(math.random(-1, 1) * 0.01, math.random(-1, 1) * 0.01, math.random(-1, 1) * 0.01, 0.0)
+    --     -- go.render.color = c
+    --     -- c = c + Vec4f.new(math.random(-1, 1) * 0.01, math.random(-1, 1) * 0.01, math.random(-1, 1) * 0.01, 0.0)
         
         Wait(0.0)
-        -- print("cool")
-        -- print("again?")
-    end
+    --     -- print("cool")
+    --     -- print("again?")
+    -- end
 
     
     

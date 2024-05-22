@@ -16,8 +16,8 @@
 #include <vector>
 #include "component_pool.hpp"
 #include <vector>
-#include "../gameobjects/render_component.hpp"
-#include "../gameobjects/collider_component.hpp"
+#include "render_component.hpp"
+#include "collider_component.hpp"
 #include "transform_component.hpp"
 #include "pointlight_component.hpp"
 #include "rigidbody_component.hpp"

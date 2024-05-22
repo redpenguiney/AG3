@@ -34,6 +34,7 @@ class Window {
 
     
     void SetMouseLocked(bool locked);
+    bool IsMouseLocked() const;
 
     // User input stuff.
     // index is key enums provided by GLFW
@@ -42,6 +43,10 @@ class Window {
     std::unordered_map<unsigned int, bool> PRESS_BEGAN_KEYS;
     std::unordered_map<unsigned int, bool> PRESS_ENDED_KEYS;
 
+    bool IsPressed(int key);
+    bool IsPressBegan(int key);
+    bool IsPressEnded(int key);
+
     bool LMB_DOWN;
     bool RMB_DOWN;
     bool LMB_BEGAN;
@@ -49,8 +54,8 @@ class Window {
     bool LMB_ENDED;
     bool RMB_ENDED;
 
-    bool SHIFT_DOWN
-    bool CTRL_DOWN
+    bool SHIFT_DOWN; // TODO
+    bool CTRL_DOWN; // TODO
 
     // TODO: RAW MOUSE option
     glm::dvec2 MOUSE_POS;

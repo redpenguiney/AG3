@@ -377,7 +377,7 @@ int main(int numArgs, const char *argPtrs[]) {
             GE.window.Close();
         }
         if (GE.window.PRESS_BEGAN_KEYS[GLFW_KEY_TAB]) {
-            GE.window.SetMouseLocked(!GE.window.mouseLocked);
+            GE.window.SetMouseLocked(!GE.window.IsMouseLocked());
         }
         
         AE.Update();

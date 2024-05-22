@@ -56,6 +56,20 @@ Window::~Window() {
     glfwTerminate();
 }
 
+bool Window::IsMouseLocked() const {
+    return mouseLocked;
+}
+
+bool Window::IsPressed(int key) {
+    return PRESSED_KEYS.contains(key);
+}
+bool Window::IsPressBegan(int key) {
+    return PRESS_BEGAN_KEYS.contains(key);
+}
+bool Window::IsPressEnded(int key) {
+    return PRESS_ENDED_KEYS.contains(key);
+}
+
 void Window::Update() {
     PRESS_BEGAN_KEYS.clear(); // TODO: might have problems with this, idk how key callback really works
     PRESS_ENDED_KEYS.clear();

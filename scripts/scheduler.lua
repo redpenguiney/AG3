@@ -4,9 +4,14 @@ YIELDED_COROUTINES = {
 WAIT_LENGTH = 0
 
 function Wait(seconds) 
-    -- print("woahh")
+    local _, isMain = coroutine.running()
+    print("at WAIT()")
+    assert(not isMain, "Somehow, you managed to run this code without being in a coroutine. Please report this.")
     WAIT_LENGTH = seconds * 60
-    coroutine.yield()
+    print("woahh ", coroutine.running())
+    -- local ok, err = pcall(coroutine.yield)
+    -- coroutine.yield()
+    print("WE got ", ok, " and ", err)
     
 end
 
@@ -31,7 +36,7 @@ function DoTask(src)
         
     else
         if not ok then
-            error(err)
+            error((err)..debug.traceback(co))
         end
     end
     print("Finished task")

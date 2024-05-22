@@ -15,7 +15,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#define STB_IMAGE_IMPLEMENTATION
 #include "../../external_headers/stb/stb_image.h" 
 #include "../debug/debug.hpp"
 #include "texture.hpp"

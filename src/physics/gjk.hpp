@@ -24,3 +24,11 @@ std::optional<CollisionInfo> IsColliding(
     const TransformComponent& transform2,
     const ColliderComponent& collider2
 );
+
+// // Faster than IsColliding() because it only checks IF they are colliding, not HOW they are colliding.
+// bool TestCollision(
+//     const TransformComponent& transform1,
+//     const ColliderComponent& collider1,
+//     const TransformComponent& transform2,
+//     const ColliderComponent& collider2
+// );

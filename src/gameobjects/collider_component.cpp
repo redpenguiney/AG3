@@ -2,6 +2,8 @@
 #include "gameobjects/collider_component.hpp"
 #include "gameobjects/component_registry.hpp"
 
+#include "physics/gjk.hpp"
+
 void ColliderComponent::Init(GameObject* gameobj, std::shared_ptr<PhysicsMesh>& physMesh) {
     aabbType = AABBBoundingCube;
     node = nullptr;
@@ -21,6 +23,10 @@ void ColliderComponent::Destroy() {
 std::shared_ptr<GameObject>& ColliderComponent::GetGameObject() {
     return ComponentRegistry::Get().GAMEOBJECTS[gameobject];
 }
+
+// bool ColliderComponent::IsCollidingWith(const ColliderComponent& other) const {
+//     TODO
+// }
 
 // TODO: collider AABBs should be augmented to contain their motion over the next time increment.
     // If we ever use a second SAS for accelerating visibility queries too, then don't do it for that
