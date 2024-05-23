@@ -11,7 +11,7 @@
     makeMparams.opacity = 1
     makeMparams.expectedCount = 16384
 
-    GetGraphicsEngine().debugFreecamEnabled = false
+    -- GetGraphicsEngine().debugFreecamEnabled = false
     local p = Vec3d.new(0.0, 0.0, -100.0)
     GetCurrentCamera().position  = p
 

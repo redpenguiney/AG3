@@ -110,7 +110,7 @@ sol::protected_function_result LoadFileAsFunction(std::string filepath) {
     
     buffer += "\n end return __LOADED_FILE_AS_FUNC_";
 
-    DebugLogInfo("Loading string into sol: \n", buffer);
+    // DebugLogInfo("Loading string into sol: \n", buffer);
 
     // todo: this does unneccesarily do some copies and stuff
     return LUA_STATE.value().safe_script(buffer);
