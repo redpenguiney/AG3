@@ -120,8 +120,17 @@ sol::object Require(std::string key, std::string filepath) {
     return LUA_STATE->require_file(key, filepath);
 }
 
-Window& GetWindow() {
-    return GraphicsEngine::Get().window;
+// Fun fact: sol/lua doesn't like stuff by reference, so we have to give pointers instead for all the singletons. Doesn't effect lua side of things.
+Window* GetWindow() {
+    return &GraphicsEngine::Get().window;
+}
+
+Camera* GetCurrentCamera() {
+    return &GraphicsEngine::Get().GetCurrentCamera();
+}
+
+GraphicsEngine* GetGE() {
+    return &GraphicsEngine::Get();
 }
 
 LuaHandler::LuaHandler() {
@@ -139,9 +148,22 @@ LuaHandler::LuaHandler() {
     // LUA_STATE->set_exception_handler(&ExceptionHandler);
     // sol::protected_function::set_default_handler(ExceptionHandler);
     
+    // camera
+    auto cameraUsertype = LUA_STATE->new_usertype<Camera>("Camera", sol::constructors<Camera()>());
+    cameraUsertype["position"] = &Camera::position;
+    cameraUsertype["rotation"] = &Camera::rotation;
+    cameraUsertype["fov"] = &Camera::fieldOfView;
+    cameraUsertype["nearDistance"] = &Camera::near;
+    cameraUsertype["farDistance"] = &Camera::far;
+    LUA_STATE->set_function("GetCurrentCamera", &GetCurrentCamera);
+
     // expose our stuff to lua
     // engines
-    // LUA_STATE->set("GE", &GraphicsEngine::Get());
+    auto GEUsertype = LUA_STATE->new_usertype<GraphicsEngine>("GraphicsEngine", sol::no_constructor);
+    // GEUsertype["SetCurrentCamera"] TODO
+    GEUsertype["debugFreecamEnabled"] = &GraphicsEngine::debugFreecamEnabled;
+
+    LUA_STATE->set_function("GetGraphicsEngine", GetGE);
 
     // waiting/yielding: very important
     // LUA_STATE->set("__C_WAIT", sol::yielding(Wait));
