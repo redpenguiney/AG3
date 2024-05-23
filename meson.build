@@ -19,5 +19,5 @@ engine_sources = ['external_headers/lua/onelua.cpp', 'src/graphics/stb_image.cpp
 #todo pch would be nice, try to get this to work: cpp_pch : 'pch/external_pch.h',
 
 incdir = include_directories('src', 'external_headers/sol2/include', 'external_headers/lua', 'external_headers', 'subprojects/freetype/include')
-e = executable('AG3', 'src/main.cpp', sources: engine_sources, include_directories: incdir, dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep, openalsoft_dep], cpp_args: ['-O3', '-Wshadow', '-Wall', '-static', '-DSOL_ALL_SAFETIES_ON=1'])
+e = executable('AG3', 'src/main.cpp', sources: engine_sources, include_directories: incdir, dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep, openalsoft_dep], cpp_args: ['-O3', '-Wshadow', '-Wall', '-static', '-static-libgcc', '-static-libstdc++', '-DSOL_ALL_SAFETIES_ON=1'])
 #test('er', e)
