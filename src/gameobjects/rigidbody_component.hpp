@@ -42,7 +42,10 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     glm::dvec3 VelocityAtPoint(glm::vec3 position);
 
     // returns inverse moment of inertia in world space, given the transform corresponding to the rigidbody
-    glm::mat3x3 GetInverseGlobalMomentOfInertia(const TransformComponent& transform);
+    // glm::mat3x3 GetInverseGlobalMomentOfInertia(const TransformComponent& transform);
+
+    // returns inverse mmoi of the rigidbody around the given axis. Axis is in world space.
+    float InverseMomentOfInertiaAroundAxis(const TransformComponent& transform, glm::vec3 axis);
 
     private:
     //private constructor to enforce usage of object pool

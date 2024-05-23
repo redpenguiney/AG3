@@ -178,7 +178,7 @@ int main(int numArgs, const char *argPtrs[]) {
                 auto g = CR.NewGameObject(params);
                 g->transformComponent->SetPos({0 + x * 3,3.0 + y * 3, 0 + z * 3});
                 g->colliderComponent->elasticity = 0.0;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), glm::radians(0.0), glm::radians(0.0))));
+                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), glm::radians(15.0), glm::radians(0.0))));
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));

@@ -12,8 +12,8 @@
     makeMparams.expectedCount = 16384
 
     -- GetGraphicsEngine().debugFreecamEnabled = false
-    local p = Vec3d.new(0.0, 0.0, -100.0)
-    GetCurrentCamera().position  = p
+    -- local p = Vec3d.new(0.0, 0.0, -100.0)
+    -- GetCurrentCamera().position  = p
 
     local m = Mesh.new("../models/rainbowcube.obj", makeMparams); 
 

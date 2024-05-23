@@ -81,6 +81,7 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
             // and this https://gamedev.stackexchange.com/questions/131219/rigid-body-physics-resolution-causing-never-ending-bouncing-and-jittering?rq=1
             // http://www.chrishecker.com/Rigid_Body_Dynamics
             // https://graphics.stanford.edu/papers/rigid_bodies-sig03/rigid_bodies.pdf
+            // this engine implementation seems simple and does similar stuff to us https://github.com/NathanMacLeod/physics3D/blob/master/Physics/PhysicsEngine.cpp#L71
 
             // seperate colliding objects
             const double LINEAR_SLOP = 0.0;
@@ -88,20 +89,24 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
                 // DebugPlacePointOnPosition({transform.Position() + seperationVector}, {1, 0.2, 0.2, 1.0});
             seperations.emplace_back(std::make_pair(&transform, seperationVector));
 
-                
+
             // DebugPlacePointOnPosition({averageContactPoint}, {0.2, 0.2, 1.0, 1.0});
     
             glm::vec3 d1 = (transform.Position() - averageContactPoint); // contact to pos    
-            // glm::vec3 d2 = (otherTransform->Position() - averageContactPoint); // contact to otherPos
+            glm::vec3 d2 = (otherTransform->Position() - averageContactPoint); // contact to otherPos
             float relVelocityAlongNormal = glm::dot(normal, glm::vec3(glm::vec3(rigidbody.velocity) + glm::cross(d1, rigidbody.angularVelocity)));
 
             // collision impulse
             {
                 
                 glm::vec3 nxd1 = glm::cross(normal, d1);
-                // glm::vec3 nxd2 = glm::cross(normal, d2);
+                glm::vec3 nxd2 = glm::cross(normal, d2);
 
-                float reducedMass = 1.0 / (rigidbody.InverseMass() + glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1));
+                float reducedMass = rigidbody.InverseMass() + glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1);
+                if (otherRigidbody) {
+                    reducedMass += otherRigidbody->InverseMass() + glm::dot(nxd2, rigidbody.GetInverseGlobalMomentOfInertia(*otherTransform) * nxd2);
+                }
+                reducedMass = 1.0 / reducedMass;
                 if (reducedMass > rigidbody.InverseMass()) {
                     DebugLogError("Calculated reduced contact mass of ", reducedMass, " (1/", 1.0/reducedMass , "). n = ", glm::to_string(normal), " d1 = ", glm::to_string(d1), " nxd1 = ", glm::to_string(nxd1), " mmoi*nxd1 = ", glm::to_string(rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1), " dotting that yields ", glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1));
                 }
