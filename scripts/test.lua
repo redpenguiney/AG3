@@ -31,7 +31,7 @@
     params.meshId = m.id
     params.materialId = brickMaterial.id
 
-    local go = GameObject.new(params)
+    -- local go = GameObject.new(params)
 
     
     go.render.textureZ = brickTextureZ

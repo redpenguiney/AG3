@@ -13,6 +13,7 @@
 #include <iostream>
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
 #include "../gameobjects/component_registry.hpp"
+#include "debug/log.hpp"
 
 // DEAR GOD. YOU DON'T KNOW. A MONTH AND A HALF WAS SPENT SUFFERING IN THIS FILE. I NEVER WANT TO TOUCH THIS AGAIN.
 // DECEMBER TO FEBRUARY 2ND. FINALLY.
@@ -28,7 +29,7 @@ glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     assert(!std::isnan(directionInWorldSpace.y)); 
     assert(!std::isnan(directionInWorldSpace.z)); 
 
-    std::cout << "Normal matrix is " << glm::to_string(transform.GetNormalMatrix()) << "\n";
+    // std::cout << "Normal matrix is " << glm::to_string(transform.GetNormalMatrix()) << "\n";
     auto worldToModel = glm::inverse(transform.GetNormalMatrix());
     auto directionInModelSpace = glm::vec3(glm::normalize(worldToModel * glm::vec4(directionInWorldSpace.x, directionInWorldSpace.y, directionInWorldSpace.z, 1)));
 
@@ -897,13 +898,18 @@ std::optional<CollisionInfo> IsColliding(
     // make new search direction go from simplex towards origin
     searchDirection = glm::normalize(-simplex.back()[0]);
 
+    unsigned int nIterations = 0;
     while (true) {
-
-        std::cout << "\tSimplex: ";
-        for (auto & p: simplex) {
-            std::cout << glm::to_string(p[0]) << " from " << glm::to_string(p[1]) << " - " << glm::to_string(p[2]) << ", ";
+        nIterations++;
+        if (nIterations == 1024) {
+            DebugLogError("WARNING: GJK FAILED TO DETERMINE COLLISION AFTER 1024 ITERATIONS. NANs likely.");
+            return std::nullopt;
         }
-        std::cout << "\n";
+        // std::cout << "\tSimplex: ";
+        // for (auto & p: simplex) {
+        //     std::cout << glm::to_string(p[0]) << " from " << glm::to_string(p[1]) << " - " << glm::to_string(p[2]) << ", ";
+        // }
+        // std::cout << "\n";
 
         // get new point for simplex
         auto newSimplexPoint = NewSimplexPoint(searchDirection, transform1, collider1, transform2, collider2);

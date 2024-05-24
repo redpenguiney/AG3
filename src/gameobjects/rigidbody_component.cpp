@@ -1,10 +1,13 @@
 #include "rigidbody_component.hpp"
 #include "../../external_headers/GLM/ext.hpp"
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
+#include "GLM/gtx/string_cast.hpp"
+#include "debug/log.hpp"
 #include "gameobjects/rigidbody_component.hpp"
 #include "gameobjects/transform_component.hpp"
 #include <cassert>
 #include <iostream>
+#include <limits>
 
 void RigidbodyComponent::Init() {
     kinematic = false;
@@ -47,10 +50,19 @@ void RigidbodyComponent::SetMass(float newMass) {
     // return glm::toMat4(transform.rotation);
 // }
 
+// mainly so that division by zero gives infinity not undefined behavior
+static_assert(std::numeric_limits<double>::is_iec559, "Physics engine expects IEEE floating point compliance.");
+static_assert(std::numeric_limits<float>::is_iec559, "Physics engine expects IEEE floating point compliance.");
+
 float RigidbodyComponent::InverseMomentOfInertiaAroundAxis(const TransformComponent& transform, glm::vec3 axis) {
+    assert(glm::length2(axis) != 0);
+
     glm::vec3 axisInLocalSpace = glm::inverse(transform.Rotation()) * axis;
     glm::vec3 inertiaAxis = localMomentOfInertia * axisInLocalSpace;
-	return 1.0/glm::dot(axisInLocalSpace, inertiaAxis);
+    float dot = glm::dot(axisInLocalSpace, inertiaAxis);
+    // DebugLogInfo("Returning dot ", dot, ", 1.0/that is ", 1.0/dot, " from axis ", glm::to_string(inertiaAxis), " local ", glm::to_string(axisInLocalSpace));
+    assert(!std::isnan(1.0/dot));
+	return 1.0/dot;
 }
 
 // fyi position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)

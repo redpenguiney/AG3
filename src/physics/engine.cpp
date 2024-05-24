@@ -1,5 +1,8 @@
 #include "../gameobjects/component_pool.hpp"
 #include "../gameobjects/rigidbody_component.hpp"
+#include "GLM/geometric.hpp"
+#include "GLM/gtx/string_cast.hpp"
+#include "debug/log.hpp"
 #include "spatial_acceleration_structure.hpp"
 #include "../gameobjects/component_registry.hpp"
 #include <cassert>
@@ -52,10 +55,8 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
     for (auto & otherColliderPtr: potentialColliding) {
         if (otherColliderPtr == &collider) {continue;} // collider shouldn't collide with itself lol
         
-        DebugLogInfo("Doing collision test");
         auto collisionTestResult = IsColliding(*otherColliderPtr->GetGameObject()->transformComponent.GetPtr(), *otherColliderPtr, transform, collider);
         if (collisionTestResult) {
-            DebugLogInfo("Collision found");
 
             const ComponentHandle<RigidbodyComponent>& otherRigidbody = otherColliderPtr->GetGameObject()->rigidbodyComponent;
             const ComponentHandle<TransformComponent>& otherTransform = otherColliderPtr->GetGameObject()->transformComponent;
@@ -92,24 +93,40 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
             seperations.emplace_back(std::make_pair(&transform, seperationVector));
 
 
-            // DebugPlacePointOnPosition({averageContactPoint}, {0.2, 0.2, 1.0, 1.0});
+            DebugPlacePointOnPosition({averageContactPoint}, {0.2, 0.2, 1.0, 1.0});
     
             glm::vec3 d1 = (transform.Position() - averageContactPoint); // contact to pos    
             glm::vec3 d2 = (otherTransform->Position() - averageContactPoint); // contact to otherPos
-            float relVelocityAlongNormal = glm::dot(normal, glm::vec3(glm::vec3(rigidbody.velocity) + glm::cross(d1, rigidbody.angularVelocity)));
-            DebugLogInfo("ok");
+            glm::vec3 relVelocity = glm::vec3(rigidbody.velocity);// + glm::cross(d1, rigidbody.angularVelocity));
+            if (otherRigidbody) {
+                relVelocity -= glm::vec3(otherRigidbody->velocity) + glm::cross(d2, otherRigidbody->angularVelocity);
+            }
+            float relVelocityAlongNormal = glm::dot(normal, relVelocity);
             // collision impulse
+            glm::vec3 collisionResolutionImpulse;
             {
                 
                 glm::vec3 torqueAxis1 = glm::cross(normal, d1); // rCLdeXn ; axis around which torque is applied
-                float inverseMomentOfInertiaAroundAxis1 = rigidbody.InverseMomentOfInertiaAroundAxis(transform, torqueAxis1);
+
+                float inverseMomentOfInertiaAroundAxis1 = 0; // if collision angle is directly perpendicular torque doesn't happen, gonna get divide by zero problems
+                if (glm::length2(torqueAxis1) >= FLT_EPSILON) {
+                    // DebugLogInfo("NORMALIZING ", glm::to_string(torqueAxis1), glm::length2(torqueAxis1));
+                    torqueAxis1 = glm::normalize(torqueAxis1);
+                    inverseMomentOfInertiaAroundAxis1 = rigidbody.InverseMomentOfInertiaAroundAxis(transform, torqueAxis1);
+                }
+                
         
                 float reducedMass = rigidbody.InverseMass() + glm::length2(torqueAxis1) * inverseMomentOfInertiaAroundAxis1;
                 
                 if (otherRigidbody) {
 
                     glm::vec3 torqueAxis2 = glm::cross(normal, d2); // rCLdrXn ; -1 * axis around which torque is applied
-                    float inverseMomentOfInertiaAroundAxis2 = otherRigidbody->InverseMomentOfInertiaAroundAxis(*otherTransform, torqueAxis2);
+                    
+                    float inverseMomentOfInertiaAroundAxis2 = 0; // if collision angle is directly perpendicular torque obvi irrelevant
+                    if (glm::length2(torqueAxis2) >= FLT_EPSILON) {
+                        torqueAxis2= glm::normalize(torqueAxis2);
+                        inverseMomentOfInertiaAroundAxis2 = otherRigidbody->InverseMomentOfInertiaAroundAxis(*otherTransform, torqueAxis2);
+                    }
                     
                     reducedMass += otherRigidbody->InverseMass() + glm::length2(torqueAxis2) * inverseMomentOfInertiaAroundAxis2;
     
@@ -134,9 +151,46 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
                 
                 float impulse = elasticityTerm * relVelocityAlongNormal * reducedMass;
 
-                rigidbody.accumulatedForce += normal * impulse;
-                rigidbody.accumulatedTorque += glm::cross(-d1, normal) * impulse;
-                DebugLogInfo("oker");
+                collisionResolutionImpulse = normal * impulse;
+                rigidbody.accumulatedForce += collisionResolutionImpulse;
+                DebugLogInfo("Torque axis is ", glm::to_string(torqueAxis1), " normal ", glm::to_string(normal), " d1 ", glm::to_string(d1), " crossing those gives ", glm::to_string(glm::cross(normal, d1)));
+                rigidbody.accumulatedTorque += -torqueAxis1 * impulse;
+            }
+
+            // friction impulse #3: electric boogalee
+            {
+                glm::vec3 tangentVelocity = relVelocity - (normal * relVelocityAlongNormal);
+                if (glm::length2(tangentVelocity) != 0) {
+                    // DebugLogInfo("Tangent V = ", glm::to_string(tangentVelocity), ", relV = ", glm::to_string(relVelocity), ", along normal = ", glm::to_string(normal * relVelocityAlongNormal));
+                    glm::vec3 tangentDirection = glm::normalize(tangentVelocity);
+
+                    glm::vec3 torqueAxis1 = glm::cross(tangentDirection, d1);
+                    float inverseMomentOfInertiaAroundAxis1 = rigidbody.InverseMomentOfInertiaAroundAxis(transform, torqueAxis1);
+
+                    float reducedMass = rigidbody.InverseMass() + glm::length2(torqueAxis1) * inverseMomentOfInertiaAroundAxis1;
+
+                    if (otherRigidbody) {
+
+                    }
+
+                    reducedMass = 1.0/reducedMass;
+                    if (reducedMass > rigidbody.InverseMass()) {
+                        DebugLogError("Calculated reduced contact mass of ", reducedMass, " (1/", 1.0/reducedMass , "). n = ", glm::to_string(normal), " d1 = ", glm::to_string(d1), " nxd1 = ", glm::to_string(torqueAxis1));
+                    }
+
+                    
+                    // this is the impulse that would completely halt the objects.
+                    float impulse =  glm::dot(tangentDirection, relVelocity) * reducedMass;
+                    
+                    float friction = otherColliderPtr->friction * collider.friction;
+                    float maxPossibleImpulse = glm::length(collisionResolutionImpulse) * friction;
+                    if (maxPossibleImpulse < abs(impulse)) {
+                        impulse = maxPossibleImpulse;
+                    }
+
+                    // rigidbody.accumulatedForce -= tangentDirection * impulse;
+                    // rigidbody.accumulatedTorque += torqueAxis1 * impulse;
+                }
             }
 
             // friction impulse
@@ -228,7 +282,7 @@ void PhysicsEngine::Step(const double timestep) {
             // a = t/i
             // glm::mat3 globalInverseInertiaTensor = rigidbody.GetInverseGlobalMomentOfInertia(transform); 
             // rigidbody.angularVelocity += globalInverseInertiaTensor * rigidbody.accumulatedTorque;
-            rigidbody.angularVelocity += glm::inverse(rigidbody.localMomentOfInertia) * rigidbody.accumulatedTorque;
+            rigidbody.angularVelocity += glm::vec3(rigidbody.InverseMomentOfInertiaAroundAxis(transform, {1, 0, 0}), rigidbody.InverseMomentOfInertiaAroundAxis(transform, {0, 1, 0}), rigidbody.InverseMomentOfInertiaAroundAxis(transform, {0, 0, 1})) * rigidbody.accumulatedTorque;
             rigidbody.accumulatedTorque = {0, 0, 0};
 
             if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {
@@ -238,6 +292,7 @@ void PhysicsEngine::Step(const double timestep) {
             if (rigidbody.angularVelocity != glm::vec3(0, 0, 0)) {
                 glm::quat spin = glm::quat(0, rigidbody.angularVelocity.x, rigidbody.angularVelocity.y, rigidbody.angularVelocity.z) * 0.5f * float(timestep);
                 //std::cout << "velocity " << glm::to_string(rigidbody.localMomentOfInertia) << " so we at " << glm::to_string(QuatAroundX) << " \n";
+                assert(!std::isnan(spin.x));
                 transform.SetRot(glm::normalize(transform.Rotation() + spin));
             }
         }

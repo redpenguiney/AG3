@@ -176,7 +176,7 @@ int main(int numArgs, const char *argPtrs[]) {
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = CR.NewGameObject(params);
-                g->transformComponent->SetPos({0 + x * 3,3.0 + y * 3, 0 + z * 3});
+                g->transformComponent->SetPos({0 + x * 3,1.5 + y * 3, 0 + z * 3});
                 g->colliderComponent->elasticity = 0.0;
                 g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), glm::radians(15.0), glm::radians(0.0))));
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
@@ -348,7 +348,7 @@ int main(int numArgs, const char *argPtrs[]) {
         LUA.PostPhysicsCallbacks();
         Module::PostPhysics();
         
-        ui->GetTextInfo().text = glm::to_string(goWeakPtr.lock()->rigidbodyComponent->velocity);
+        ui->GetTextInfo().text = glm::to_string(goWeakPtr.lock()->rigidbodyComponent->velocity) + "\n"s + glm::to_string(goWeakPtr.lock()->rigidbodyComponent->angularVelocity);
         ui->UpdateGuiText();
 
         if (GE.window.LMB_DOWN) {
