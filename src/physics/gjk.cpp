@@ -24,17 +24,17 @@ glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     // this way, to find the farthest vertex on a 10000-vertex mesh we don't need to do 10000 vertex transformations
     // TODO: this is still O(n vertices) complexity
 
-    assert(directionInWorldSpace.x != NAN);
-    assert(directionInWorldSpace.y != NAN);
-    assert(directionInWorldSpace.z != NAN);
+    assert(!std::isnan(directionInWorldSpace.x)); 
+    assert(!std::isnan(directionInWorldSpace.y)); 
+    assert(!std::isnan(directionInWorldSpace.z)); 
 
-    // std::cout << "Normal matrix is " << glm::to_string(transform.GetNormalMatrix()) << "\n";
+    std::cout << "Normal matrix is " << glm::to_string(transform.GetNormalMatrix()) << "\n";
     auto worldToModel = glm::inverse(transform.GetNormalMatrix());
     auto directionInModelSpace = glm::vec3(glm::normalize(worldToModel * glm::vec4(directionInWorldSpace.x, directionInWorldSpace.y, directionInWorldSpace.z, 1)));
 
-    assert(directionInModelSpace.x != NAN);
-    assert(directionInModelSpace.y != NAN);
-    assert(directionInModelSpace.z != NAN);
+    assert(!std::isnan(directionInModelSpace.x)); 
+    assert(!std::isnan(directionInModelSpace.y)); 
+    assert(!std::isnan(directionInModelSpace.z)); 
 
 
     float farthestDistance = -FLT_MAX;
@@ -51,6 +51,8 @@ glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
         } 
     }
 
+    
+
     //// std::cout << "Model matrix is " << glm::to_string(transform.GetPhysicsModelMatrix()) << "\n";
     // std::cout << "Support: farthest vertex in direction " << glm::to_string(directionInModelSpace) << " is " << glm::to_string(farthestVertex) << "\n";
 
@@ -58,6 +60,7 @@ glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     const auto& modelToWorld = transform.GetPhysicsModelMatrix();
     auto farthestVertexInWorldSpace = glm::dvec3(modelToWorld * glm::dvec4(farthestVertex.x, farthestVertex.y, farthestVertex.z, 1));
     //// std::cout << "\tIn world space that's " << glm::to_string(farthestVertexInWorldSpace) << "\n";
+    
     return farthestVertexInWorldSpace;
 }
 
@@ -175,9 +178,14 @@ std::array<glm::dvec3, 3> NewSimplexPoint(
     const TransformComponent& transform2,
     const ColliderComponent& collider2
 ) {
-
+    // DebugLogInfo("Generating new simplex point.");
     auto a = FindFarthestVertexOnObject(searchDirection, transform1, collider1);
     auto b = FindFarthestVertexOnObject(-searchDirection, transform2, collider2);
+
+    assert(!std::isnan(a.x)); 
+    assert(!std::isnan(a.x)); 
+    assert(!std::isnan(a.x)); 
+
     // std::cout << "SUPPORT: Farthest point in " << glm::to_string(searchDirection) << " is " << glm::to_string(a - b) << ".\n";
     return {a-b, a, b};
 }
@@ -891,11 +899,11 @@ std::optional<CollisionInfo> IsColliding(
 
     while (true) {
 
-        // std::cout << "\tSimplex: ";
-        // for (auto & p: simplex) {
-            // std::cout << glm::to_string(p[0]) << " from " << glm::to_string(p[1]) << " - " << glm::to_string(p[2]) << ", ";
-        // }
-        // std::cout << "\n";
+        std::cout << "\tSimplex: ";
+        for (auto & p: simplex) {
+            std::cout << glm::to_string(p[0]) << " from " << glm::to_string(p[1]) << " - " << glm::to_string(p[2]) << ", ";
+        }
+        std::cout << "\n";
 
         // get new point for simplex
         auto newSimplexPoint = NewSimplexPoint(searchDirection, transform1, collider1, transform2, collider2);

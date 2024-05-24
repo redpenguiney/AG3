@@ -150,4 +150,5 @@ void TransformComponent::UpdateRotScaleMatrix() {
     // normalMatrix = glm::toMat3(rotation);
     rotScaleMatrix = glm::mat4x4(rotation) * glm::scale(glm::identity<glm::mat4x4>(), (glm::vec3)scale);
     normalMatrix = glm::inverseTranspose(glm::mat3x3(rotScaleMatrix));
+    assert(!std::isnan(normalMatrix[0][0]));
 }

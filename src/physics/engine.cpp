@@ -52,8 +52,10 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
     for (auto & otherColliderPtr: potentialColliding) {
         if (otherColliderPtr == &collider) {continue;} // collider shouldn't collide with itself lol
         
+        DebugLogInfo("Doing collision test");
         auto collisionTestResult = IsColliding(*otherColliderPtr->GetGameObject()->transformComponent.GetPtr(), *otherColliderPtr, transform, collider);
         if (collisionTestResult) {
+            DebugLogInfo("Collision found");
 
             const ComponentHandle<RigidbodyComponent>& otherRigidbody = otherColliderPtr->GetGameObject()->rigidbodyComponent;
             const ComponentHandle<TransformComponent>& otherTransform = otherColliderPtr->GetGameObject()->transformComponent;
@@ -95,20 +97,33 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
             glm::vec3 d1 = (transform.Position() - averageContactPoint); // contact to pos    
             glm::vec3 d2 = (otherTransform->Position() - averageContactPoint); // contact to otherPos
             float relVelocityAlongNormal = glm::dot(normal, glm::vec3(glm::vec3(rigidbody.velocity) + glm::cross(d1, rigidbody.angularVelocity)));
-
+            DebugLogInfo("ok");
             // collision impulse
             {
                 
-                glm::vec3 nxd1 = glm::cross(normal, d1);
-                glm::vec3 nxd2 = glm::cross(normal, d2);
-
-                float reducedMass = rigidbody.InverseMass() + glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1);
+                glm::vec3 torqueAxis1 = glm::cross(normal, d1); // rCLdeXn ; axis around which torque is applied
+                float inverseMomentOfInertiaAroundAxis1 = rigidbody.InverseMomentOfInertiaAroundAxis(transform, torqueAxis1);
+        
+                float reducedMass = rigidbody.InverseMass() + glm::length2(torqueAxis1) * inverseMomentOfInertiaAroundAxis1;
+                
                 if (otherRigidbody) {
-                    reducedMass += otherRigidbody->InverseMass() + glm::dot(nxd2, rigidbody.GetInverseGlobalMomentOfInertia(*otherTransform) * nxd2);
+
+                    glm::vec3 torqueAxis2 = glm::cross(normal, d2); // rCLdrXn ; -1 * axis around which torque is applied
+                    float inverseMomentOfInertiaAroundAxis2 = otherRigidbody->InverseMomentOfInertiaAroundAxis(*otherTransform, torqueAxis2);
+                    
+                    reducedMass += otherRigidbody->InverseMass() + glm::length2(torqueAxis2) * inverseMomentOfInertiaAroundAxis2;
+    
                 }
-                reducedMass = 1.0 / reducedMass;
+                
+                reducedMass = 1.0/reducedMass;
+
+                // float reducedMass = rigidbody.InverseMass() + glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1);
+                // if (otherRigidbody) {
+                //     reducedMass += otherRigidbody->InverseMass() + glm::dot(nxd2, rigidbody.GetInverseGlobalMomentOfInertia(*otherTransform) * nxd2);
+                // }
+                // reducedMass = 1.0 / reducedMass;
                 if (reducedMass > rigidbody.InverseMass()) {
-                    DebugLogError("Calculated reduced contact mass of ", reducedMass, " (1/", 1.0/reducedMass , "). n = ", glm::to_string(normal), " d1 = ", glm::to_string(d1), " nxd1 = ", glm::to_string(nxd1), " mmoi*nxd1 = ", glm::to_string(rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1), " dotting that yields ", glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1));
+                    DebugLogError("Calculated reduced contact mass of ", reducedMass, " (1/", 1.0/reducedMass , "). n = ", glm::to_string(normal), " d1 = ", glm::to_string(d1), " nxd1 = ", glm::to_string(torqueAxis1));
                 }
 
                 // assert(reducedMass <= rigidbody.InverseMass());
@@ -121,43 +136,44 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
 
                 rigidbody.accumulatedForce += normal * impulse;
                 rigidbody.accumulatedTorque += glm::cross(-d1, normal) * impulse;
+                DebugLogInfo("oker");
             }
 
             // friction impulse
-            {
-                float friction = otherColliderPtr->friction * collider.friction;
-                glm::vec3 relVelocityAlongPlane = glm::vec3(glm::vec3(rigidbody.velocity) + glm::cross(d1, rigidbody.angularVelocity)) - (normal * relVelocityAlongNormal);
-                if (glm::length(relVelocityAlongPlane) != 0) {
-                    glm::vec3 tangent = glm::normalize(relVelocityAlongPlane);
+            // {
+            //     float friction = otherColliderPtr->friction * collider.friction;
+            //     glm::vec3 relVelocityAlongPlane = glm::vec3(glm::vec3(rigidbody.velocity) + glm::cross(d1, rigidbody.angularVelocity)) - (normal * relVelocityAlongNormal);
+            //     if (glm::length(relVelocityAlongPlane) != 0) {
+            //         glm::vec3 tangent = glm::normalize(relVelocityAlongPlane);
 
-                    glm::vec3 txd1 = glm::cross(tangent, d1);
-                    // glm::vec3 txd2 = glm::cross(tangent, d2);
+            //         glm::vec3 txd1 = glm::cross(tangent, d1);
+            //         // glm::vec3 txd2 = glm::cross(tangent, d2);
         
-                    float reducedMass = 1.0 / (rigidbody.InverseMass() + glm::dot(txd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1));
-                    if (reducedMass > rigidbody.InverseMass()) {
-                        DebugLogError("Calculated reduced friction mass of ", reducedMass, " (1/", 1.0/reducedMass , "). t = ", glm::to_string(tangent), " d1 = ", glm::to_string(d1), " txd1 = ", glm::to_string(txd1), " mmoi*txd1 = ", glm::to_string(rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1), " dotting that yields ", glm::dot(txd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1));
-                    }
+            //         // float reducedMass = 1.0 / (rigidbody.InverseMass() + glm::dot(txd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1));
+            //         // if (reducedMass > rigidbody.InverseMass()) {
+            //         //     DebugLogError("Calculated reduced friction mass of ", reducedMass, " (1/", 1.0/reducedMass , "). t = ", glm::to_string(tangent), " d1 = ", glm::to_string(d1), " txd1 = ", glm::to_string(txd1), " mmoi*txd1 = ", glm::to_string(rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1), " dotting that yields ", glm::dot(txd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1));
+            //         // }
                     
-                    float frictionImpulse = friction * reducedMass;
+            //         float frictionImpulse = friction * reducedMass;
 
-                    // check if friction is strong enough to reverse the object's speed and if so, set speed to 0 instead so we don't start going backwards due to friction
-                    if (glm::length(relVelocityAlongPlane) < frictionImpulse * rigidbody.InverseMass()) {
-                        DebugLogInfo("Friction totally stopped the object.");
-                        rigidbody.accumulatedForce += -relVelocityAlongPlane / rigidbody.InverseMass();
-                    }
-                    else {
-                        DebugLogInfo("Applying force with tangent ", glm::to_string(tangent), " and friction impulse ", frictionImpulse, ". Rel. tangent velocity was ", glm::to_string(relVelocityAlongPlane), " torque axis ", glm::to_string(glm::cross(d1, tangent)));
-                        rigidbody.accumulatedForce -= tangent * frictionImpulse;
-                        rigidbody.accumulatedTorque -= glm::cross(normal, tangent) * frictionImpulse;
-                    }
+            //         // check if friction is strong enough to reverse the object's speed and if so, set speed to 0 instead so we don't start going backwards due to friction
+            //         if (glm::length(relVelocityAlongPlane) < frictionImpulse * rigidbody.InverseMass()) {
+            //             DebugLogInfo("Friction totally stopped the object.");
+            //             rigidbody.accumulatedForce += -relVelocityAlongPlane / rigidbody.InverseMass();
+            //         }
+            //         else {
+            //             DebugLogInfo("Applying force with tangent ", glm::to_string(tangent), " and friction impulse ", frictionImpulse, ". Rel. tangent velocity was ", glm::to_string(relVelocityAlongPlane), " torque axis ", glm::to_string(glm::cross(d1, tangent)));
+            //             rigidbody.accumulatedForce -= tangent * frictionImpulse;
+            //             rigidbody.accumulatedTorque -= glm::cross(normal, tangent) * frictionImpulse;
+            //         }
 
                     
-                }
+            //     }
                 
                 
+            // // }
+            // // std::cout << "Accumulated force is now " << glm::to_string(rigidbody.accumulatedForce) << ". Impulse is " << impulse << ". Reduced mass is " << reducedMass << ".\n";
             // }
-            // std::cout << "Accumulated force is now " << glm::to_string(rigidbody.accumulatedForce) << ". Impulse is " << impulse << ". Reduced mass is " << reducedMass << ".\n";
-            }
 
             // FRICTION
             // glm::vec3 relVelocityAlongPlane =  relVelocity + (normal * relVelocityAlongContactNormal);
