@@ -3,6 +3,7 @@
 #include "glm/ext.hpp"
 #include "tinyobjloader/tiny_obj_loader.h"
 #include "../../external_headers/GLEW/glew.h"
+#include "utility/let_me_hash_a_tuple.hpp"
 #include <optional>
 #include <vector>
 #include <set>
@@ -50,8 +51,10 @@ class MeshGlobals {
     std::unordered_map<unsigned int, std::shared_ptr<ShaderProgram>> LOADED_PROGRAMS; 
     friend class ShaderProgram;
 
-    // std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> LOADED_PHYS_MESHES; 
-    std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> MESHES_TO_PHYS_MESHES; 
+    // std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> LOADED_PHYS_MESHES;
+
+    // tuple<meshId, compressionLevel, convexDecomposition> 
+    std::unordered_map<std::tuple<unsigned int, unsigned int, bool >, std::shared_ptr<PhysicsMesh>, hash_tuple::hash<std::tuple<GLuint, GLuint, GLuint>>> MESHES_TO_PHYS_MESHES; 
     friend class PhysicsMesh;
     
     MeshGlobals();

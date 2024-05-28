@@ -19,7 +19,7 @@ class PhysicsMesh {
     // If you call this function twice with the same arguments, you'll (hopefully) get 2 pointers to the same PhysicsMesh.
     // simplifyThreshold is TODO
     // convexDecomposition is TODO
-    static std::shared_ptr<PhysicsMesh> New(std::shared_ptr<Mesh>& mesh, float simplifyThreshold = 0, bool convexDecomposition = false);
+    static std::shared_ptr<PhysicsMesh> New(std::shared_ptr<Mesh>& mesh, unsigned int simplifyThreshold = 0, bool convexDecomposition = false);
 
     // TODO: CONSTRUCT FROM VERTICES
 

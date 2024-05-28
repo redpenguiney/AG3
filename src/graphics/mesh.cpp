@@ -12,7 +12,6 @@
 #include <string>
 #include <vector>
 #include "glm/gtc/type_ptr.hpp"
-#include "../utility/let_me_hash_a_tuple.cpp"
 #include "engine.hpp"
 #include <list>
 #include "../debug/log.hpp"
@@ -45,7 +44,7 @@ MeshGlobals& MeshGlobals::Get() {
     #endif
 }
 
-MeshGlobals::MeshGlobals() {}
+MeshGlobals::MeshGlobals(): MESHES_TO_PHYS_MESHES() {}
 MeshGlobals::~MeshGlobals() {}
 
 // helper thing for Mesh::FromFile() and TextMeshFromText() that will expand the vector so that it contains index if needed, then return vector.at(index)

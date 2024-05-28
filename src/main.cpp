@@ -58,7 +58,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
     atexit(Module::CloseAll); // this is placed here, after the component registry is initialized, because that guarantees that modules' references to gameobjects are destroyed before the gameobjects are (because static destructors/at exits are called in reverse order)
 
-    // Module::LoadModule("..\\modules\\libtest_module.dll");
+    Module::LoadModule("..\\modules\\libtest_module.dll");
 
     Gui* ui;
     std::weak_ptr<GameObject> goWeakPtr;
@@ -170,15 +170,17 @@ int main(int numArgs, const char *argPtrs[]) {
     
     int nObjs = 0;
     for (int x = 0; x < 1; x++) {
-        for (int y = 0; y < 4; y++) {
+        for (int y = 0; y < 2; y++) {
             for (int z = 0; z < 1; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = CR.NewGameObject(params);
-                g->transformComponent->SetPos({0 + x * 3, 12 + y * 3, 0 + z * 3});
+                g->transformComponent->SetPos({0 + x * 3, 2 + y * 2, 0 + z * 3});
                 g->colliderComponent->elasticity = 0.3;
-                g->colliderComponent->friction = 5.0;
+                g->colliderComponent->friction = 2.0;
+                g->rigidbodyComponent->angularDrag = 1.0;
+                g->rigidbodyComponent->linearDrag = 1.0;
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
@@ -367,10 +369,10 @@ int main(int numArgs, const char *argPtrs[]) {
                 // physicsPaused = true;
                 // printf("Stepping PE.\n");
                 for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
-                    PE.Step(SIMULATION_TIMESTEP/2.0);
-                    PE.Step(SIMULATION_TIMESTEP/4.0);
-                    PE.Step(SIMULATION_TIMESTEP/8.0);
-                    PE.Step(SIMULATION_TIMESTEP/8.0);
+                    PE.Step(SIMULATION_TIMESTEP/2.0/N_PHYSICS_ITERATIONS);
+                    PE.Step(SIMULATION_TIMESTEP/4.0/N_PHYSICS_ITERATIONS);
+                    PE.Step(SIMULATION_TIMESTEP/8.0/N_PHYSICS_ITERATIONS);
+                    PE.Step(SIMULATION_TIMESTEP/8.0/N_PHYSICS_ITERATIONS);
                     // PE.Step(SIMULATION_TIMESTEP);
                 }
 

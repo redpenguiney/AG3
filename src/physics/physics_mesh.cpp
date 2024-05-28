@@ -13,22 +13,26 @@
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
 #include "GLM/gtx/norm.hpp"
 
-std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, float simplifyThreshold, bool convexDecomposition) {
-    if (MeshGlobals::Get().MESHES_TO_PHYS_MESHES.count(mesh->meshId)) { // TODO: once we have simplifyThreshold and convexDecomposition, we need to make sure that matches up too
-        return MeshGlobals::Get().MESHES_TO_PHYS_MESHES[mesh->meshId];
+
+
+std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, unsigned int simplifyThreshold, bool convexDecomposition) {
+    auto tuple = std::make_tuple(mesh->meshId, simplifyThreshold, convexDecomposition);
+    if (MeshGlobals::Get().MESHES_TO_PHYS_MESHES.count(tuple)) { // TODO: once we have simplifyThreshold and convexDecomposition, we need to make sure that matches up too
+        return MeshGlobals::Get().MESHES_TO_PHYS_MESHES[tuple];
     }
     else {
         auto ptr = std::shared_ptr<PhysicsMesh>(new PhysicsMesh(mesh));
         // MeshGlobals::Get().LOADED_PHYS_MESHES[ptr->physMeshId] = ptr;
-        MeshGlobals::Get().MESHES_TO_PHYS_MESHES[mesh->meshId] = ptr;
+        MeshGlobals::Get().MESHES_TO_PHYS_MESHES[tuple] = ptr;
         return ptr;
     } 
 }
 
 // Returns a vector of ConvexMesh objects for a PhysicsMesh from the given Mesh. 
 // TODO: convex decomposition
-std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_ptr<Mesh>& mesh) {
+std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_ptr<Mesh>& mesh, float simplifyThreshold, bool convexDecomposition) {
     assert(!mesh->dynamic);
+    assert(simplifyThreshold >= 1.0f);
 
     // Graphics meshes contain extraneous data (normals, colors, etc.) that isn't relevant to physics, so this function needs to get rid of that.
     // This function also needs to take triangles with same normal and put them in same polygon to fill faces, and get edges.
@@ -174,7 +178,7 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
     return {PhysicsMesh::ConvexMesh {.triangles = triangles, .faces = faces, .edges = edges}};
 }
 
-PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): meshes(me_when_i_so_i_but_then_i_so_i(mesh)) {
+PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): meshes(me_when_i_so_i_but_then_i_so_i(mesh, 1.0, false)) {
 
 }
 

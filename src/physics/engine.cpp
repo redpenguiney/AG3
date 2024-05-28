@@ -291,9 +291,9 @@ void PhysicsEngine::Step(const double timestep) {
             // transform.SetRot(glm::normalize(transform.Rotation()));
             rigidbody.velocity += PhysicsEngine::Get().GRAVITY * timestep;
 
-            // TODO: drag ignores timestep
-            // rigidbody.velocity *= rigidbody.linearDrag;
-            // rigidbody.angularVelocity *= rigidbody.angularDrag;
+            // exponentiation is used to make the drag work consistently across all timesteps
+            rigidbody.velocity *= powf(rigidbody.linearDrag, float(timestep));
+            rigidbody.angularVelocity *= powf(rigidbody.angularDrag, float(timestep));
 
             // f = ma, so a = f/m
             
