@@ -72,7 +72,7 @@ int main(int numArgs, const char *argPtrs[]) {
         soundSounder->audioPlayerComponent->positional = true;
         soundSounder->audioPlayerComponent->volume = 0.15;
         soundSounder->audioPlayerComponent->pitch = 0.5;
-        soundSounder->audioPlayerComponent->Play();
+        // soundSounder->audioPlayerComponent->Play();
     }
 
     auto makeMparams = MeshCreateParams {.textureZ = -1.0, .opacity = 1, .expectedCount = 16384};
@@ -96,25 +96,25 @@ int main(int numArgs, const char *argPtrs[]) {
 
         auto floor = CR.NewGameObject(params);
         floor->transformComponent->SetPos({0, 0, 0});
-        floor->transformComponent->SetRot(glm::vec3 {0.0, 0, glm::radians(0.0)});
-        floor->colliderComponent->elasticity = 0.9;
+        floor->transformComponent->SetRot(glm::vec3 {0.0, glm::radians(0.0), glm::radians(0.0)});
+        floor->colliderComponent->elasticity = 1.0;
         floor->transformComponent->SetScl({10, 1, 10});
         floor->renderComponent->SetColor({0, 1, 0, 1.0});
         floor->renderComponent->SetTextureZ(grassTextureZ);
         floor->name = "ah yes the floor here is made of floor";
     }
 
-    // GameobjectCreateParams wallParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
-    //     wallParams.meshId = m->meshId;
-    //     wallParams.materialId = brickMaterial->id;
-    //     auto wall1 = ComponentRegistry::NewGameObject(wallParams);
-    //     wall1->transformComponent->SetPos({4, 4, 0});
-    //     wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
-    //     wall1->colliderComponent->elasticity = 1.0;
-    //     wall1->transformComponent->SetScl({1, 8, 8});
-    //     wall1->renderComponent->SetColor({0, 1, 1, 1});
-    //     wall1->renderComponent->SetTextureZ(brickTextureZ);
-    //     wall1->name = "wall";
+    GameobjectCreateParams wallParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex});
+        wallParams.meshId = m->meshId;
+        wallParams.materialId = brickMaterial->id;
+        auto wall1 = CR.NewGameObject(wallParams);
+        wall1->transformComponent->SetPos({4, 4, 0});
+        wall1->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+        wall1->colliderComponent->elasticity = 1.0;
+        wall1->transformComponent->SetScl({1, 8, 8});
+        wall1->renderComponent->SetColor({0, 1, 1, 1});
+        wall1->renderComponent->SetTextureZ(brickTextureZ);
+        wall1->name = "wall";
     // {
         
     //     auto wall2 = ComponentRegistry::NewGameObject(wallParams);
@@ -170,26 +170,61 @@ int main(int numArgs, const char *argPtrs[]) {
     
     int nObjs = 0;
     for (int x = 0; x < 1; x++) {
-        for (int y = 0; y < 1; y++) {
+        for (int y = 0; y < 4; y++) {
             for (int z = 0; z < 1; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
                 params.materialId = brickMaterial->id;
                 auto g = CR.NewGameObject(params);
-                g->transformComponent->SetPos({0 + x * 3,1.5 + y * 3, 0 + z * 3});
-                g->colliderComponent->elasticity = 0.0;
-                g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(0.0), glm::radians(15.0), glm::radians(0.0))));
+                g->transformComponent->SetPos({0 + x * 3, 12 + y * 3, 0 + z * 3});
+                g->colliderComponent->elasticity = 0.3;
+                g->colliderComponent->friction = 5.0;
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
-                // g->rigidbodyComponent->angularVelocity = {1.0, 1.0, 1.0};
+                // g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
                 g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 g->renderComponent->SetTextureZ(brickTextureZ);
                 g->name = std::string("Gameobject #") + std::to_string(nObjs);
                 goWeakPtr = g;
                 nObjs++;
+
+                g->rigidbodyComponent->SetMass(5.0, *g->transformComponent);
+
+                // for (float i = 0; i < 720; i += 15) {
+                //     // DebugLogInfo(i, " degrees is ", glm::to_string(glm::quat(glm::vec3(glm::radians(i), glm::radians(0.0), glm::radians(0.0)))));
+                //     g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(i), glm::radians(0.0), glm::radians(0.0))));
+                //     DebugLogInfo("Rotation ", i, " inverse moi around x-axis is ", g->rigidbodyComponent->InverseMomentOfInertiaAroundAxis(*g->transformComponent, {1.0, 0.0, 0.0}));
+                // }
+
+                // GameobjectCreateParams axisMarkerParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+                // axisMarkerParams.meshId= m->meshId;
+
+                // auto xAxis = CR.NewGameObject(axisMarkerParams);
+                // xAxis->transformComponent->SetParent(*g->transformComponent);
+                // xAxis->transformComponent->SetPos(g->transformComponent->Position() + glm::dvec3(1.0, 0.0, 0.0));
+                // xAxis->transformComponent->SetScl({1.0, 0.1, 0.1});
+                // xAxis->renderComponent->SetColor({1.0, 0.0, 0.0, 1.0});
+
+                // auto yAxis = CR.NewGameObject(axisMarkerParams);
+                // yAxis->transformComponent->SetParent(*g->transformComponent);
+                // yAxis->transformComponent->SetPos(g->transformComponent->Position() + glm::dvec3(0.0, 1.0, 0.0));
+                // yAxis->transformComponent->SetScl({0.1, 1.0, 0.1});
+                // yAxis->renderComponent->SetColor({0.0, 1.0, 0.0, 1.0});
+
+                // auto zAxis = CR.NewGameObject(axisMarkerParams);
+                // zAxis->transformComponent->SetParent(*g->transformComponent);
+                // zAxis->transformComponent->SetPos(g->transformComponent->Position() + glm::dvec3(0.0, 0.0, 1.0));
+                // zAxis->transformComponent->SetScl({0.1, 0.1, 1.0});
+                // zAxis->renderComponent->SetColor({0.0, 0.0, 1.0, 1.0});
+
+                // g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(360.0), glm::radians(0.0), glm::radians(0.0))));
+
             } 
         }
     }
+
+    
+    
 
     // make light
     {

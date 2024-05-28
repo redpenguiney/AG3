@@ -1,6 +1,7 @@
 #include "transform_component.hpp"
 #include <iostream>
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
+#include "debug/log.hpp"
 
 const glm::dvec3& TransformComponent::Position() const {
     return position;
@@ -76,6 +77,17 @@ void TransformComponent::SetPos(glm::dvec3 pos) {
 }
 
 void TransformComponent::SetRot(glm::quat rot) {
+    assert(glm::length(rot)  > 0.001);
+    rot = glm::normalize(rot);
+
+    // // fun fact: quaternions can go up to 720 degrees, but the physics engine has a stroke when it goes past 360 (idk why)
+    // // this clamps it  [0, 360] degrees
+    // if (rot.x < 0) {
+    //     // DebugLogInfo("Flipping quaternion.");
+        
+    //     rot.x *= -1;
+    // }
+
     if (children.size() > 0) {
         auto deltaRotation = rot * glm::inverse(rotation);
          

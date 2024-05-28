@@ -402,7 +402,7 @@ template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegist
 }
 
 struct GameobjectCreateParams {
-    unsigned int physMeshId; // set to 0 (default) if you want automatically generated (requires meshId in that case); ignore if no collider
+    std::optional<std::shared_ptr<class PhysicsMesh>> physMesh;
     unsigned int meshId; // ignore if not rendering
     unsigned int materialId; // defaults to 0 for no material. ignore if not rendering
     unsigned int shaderId; // defaults to 0 for default shader. ignore if not rendering
@@ -410,7 +410,7 @@ struct GameobjectCreateParams {
     std::optional<std::shared_ptr<Sound>> sound; // for audio player components
 
     GameobjectCreateParams(const std::vector<ComponentRegistry::ComponentBitIndex> componentList):
-    physMeshId(0),
+    physMesh(std::nullopt),
     meshId(0),
     materialId(0),
     shaderId(0),
@@ -433,8 +433,8 @@ class GameObject {
     std::string name; // just an identifier i have mainly for debug reasons, scripts could also use it i guess
 
     struct GameObjectNetworkData {
-        // Whether or not the running application owns this gameobject (and is sending sync data to other clients) or not (and is recieving sync data from the owning client)
-        bool isOwner;
+        // Who owns this gameobject (and is sending sync data to other clients which recieve it)
+        // unsigned int owner;
 
         // Value is pointless and undefined if not the owner.
         // 

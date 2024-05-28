@@ -50,8 +50,7 @@ class MeshGlobals {
     std::unordered_map<unsigned int, std::shared_ptr<ShaderProgram>> LOADED_PROGRAMS; 
     friend class ShaderProgram;
 
-    std::atomic<unsigned int> LAST_PHYS_MESH_ID = {1}; // used to give each physmesh a unique uuid
-    std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> LOADED_PHYS_MESHES; 
+    // std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> LOADED_PHYS_MESHES; 
     std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> MESHES_TO_PHYS_MESHES; 
     friend class PhysicsMesh;
     

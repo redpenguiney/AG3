@@ -293,7 +293,7 @@ LuaHandler::LuaHandler() {
 
     // gameobjects and their componentts
     auto gameObjectCreateParamsUsertype = LUA_STATE->new_usertype<LuaGameobjectCreateParams>("GameObjectCreateParams", sol::constructors<LuaGameobjectCreateParams(sol::lua_table)>());
-    gameObjectCreateParamsUsertype["physMeshId"] = &LuaGameobjectCreateParams::physMeshId;
+    gameObjectCreateParamsUsertype["physMesh"] = &LuaGameobjectCreateParams::physMesh;
     gameObjectCreateParamsUsertype["meshId"] = &LuaGameobjectCreateParams::meshId;
     gameObjectCreateParamsUsertype["materialId"] = &LuaGameobjectCreateParams::materialId;
     gameObjectCreateParamsUsertype["shaderId"] = &LuaGameobjectCreateParams::shaderId;

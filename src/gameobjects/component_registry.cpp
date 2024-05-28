@@ -160,21 +160,29 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
         assert(Mesh::Get(params.meshId)); // verify that we were given a valid meshId
         renderComponent->Init(params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
     }
-    if (colliderComponent) {
+    
+    
+    if (colliderComponent || rigidbodyComponent) {
         std::shared_ptr<PhysicsMesh> physMesh;
-        if (params.physMeshId == 0) {
+
+        if (params.physMesh == std::nullopt) {
             if (params.meshId == 0) {
-                std::cout << "ERROR: When trying to create a ColliderComponent, no PhysicsMeshId was given, and no MeshId was given to produce one with.\n";
+                DebugLogError("When trying to create a ColliderComponent, no PhysicsMesh was given, and no MeshId was given to produce one with.");
                 abort();
             }
             physMesh = PhysicsMesh::New(Mesh::Get(params.meshId));
         }
         else {
-            physMesh = PhysicsMesh::Get(params.physMeshId);
+            physMesh = params.physMesh.value();
+            
         }
-        colliderComponent->Init(this, physMesh);
+
+        assert(physMesh != nullptr);
+
+        if (colliderComponent) colliderComponent->Init(this, physMesh);
+        if (rigidbodyComponent) rigidbodyComponent->Init(physMesh);
     };
-    if (rigidbodyComponent) {rigidbodyComponent->Init();}
+    
     if (pointLightComponent) {pointLightComponent->Init();}
     if (audioPlayerComponent) {audioPlayerComponent->Init(this, params.sound);}
     name = "GameObject";

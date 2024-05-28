@@ -11,6 +11,7 @@
 #include <vector>
 #include "../utility/let_me_hash_a_tuple.cpp"
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
+#include "GLM/gtx/norm.hpp"
 
 std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, float simplifyThreshold, bool convexDecomposition) {
     if (MeshGlobals::Get().MESHES_TO_PHYS_MESHES.count(mesh->meshId)) { // TODO: once we have simplifyThreshold and convexDecomposition, we need to make sure that matches up too
@@ -18,7 +19,7 @@ std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, float
     }
     else {
         auto ptr = std::shared_ptr<PhysicsMesh>(new PhysicsMesh(mesh));
-        MeshGlobals::Get().LOADED_PHYS_MESHES[ptr->physMeshId] = ptr;
+        // MeshGlobals::Get().LOADED_PHYS_MESHES[ptr->physMeshId] = ptr;
         MeshGlobals::Get().MESHES_TO_PHYS_MESHES[mesh->meshId] = ptr;
         return ptr;
     } 
@@ -27,6 +28,8 @@ std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, float
 // Returns a vector of ConvexMesh objects for a PhysicsMesh from the given Mesh. 
 // TODO: convex decomposition
 std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_ptr<Mesh>& mesh) {
+    assert(!mesh->dynamic);
+
     // Graphics meshes contain extraneous data (normals, colors, etc.) that isn't relevant to physics, so this function needs to get rid of that.
     // This function also needs to take triangles with same normal and put them in same polygon to fill faces, and get edges.
     std::vector<std::pair<glm::vec3, std::vector<glm::vec3>>> faces;
@@ -171,11 +174,138 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
     return {PhysicsMesh::ConvexMesh {.triangles = triangles, .faces = faces, .edges = edges}};
 }
 
-PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): physMeshId(MeshGlobals::Get().LAST_PHYS_MESH_ID++), meshes(me_when_i_so_i_but_then_i_so_i(mesh)) {
+PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): meshes(me_when_i_so_i_but_then_i_so_i(mesh)) {
 
 }
 
-std::shared_ptr<PhysicsMesh>& PhysicsMesh::Get(unsigned int id) {
-    assert(MeshGlobals::Get().LOADED_PHYS_MESHES.count(id));
-    return MeshGlobals::Get().LOADED_PHYS_MESHES[id];
+// std::shared_ptr<PhysicsMesh>& PhysicsMesh::Get(unsigned int id) {
+    // assert(MeshGlobals::Get().LOADED_PHYS_MESHES.count(id));
+    // return MeshGlobals::Get().LOADED_PHYS_MESHES[id];
+// }
+
+// helper function for CalculateLocalMomentOfInertia()
+float TetrahedronVolume(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d) {
+    // return abs(glm::determinant(glm::mat4x4(
+    //     a.x, a.y, a.z, 1.0f, 
+    //     b.x, b.y, b.z, 1.0f, 
+    //     c.x, c.y, c.z, 1.0f, 
+    //     d.x, d.y, d.z, 1.0f
+    // ))/6.0f);
+    return glm::dot(a, glm::cross(b, c))/6.0f;
+}
+
+// helper function for CalculateLocalMomentOfInertia(). i is matrix x, j is matrix y.
+float ComputeInertiaProduct(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, unsigned int i, unsigned int j) {
+    return (
+        2.0 * p1[i] * p1[j] + p2[i] * p3[j] + p3[i] * p2[j] +
+        2.0 * p2[i] * p2[j] + p1[i] * p3[j] + p3[i] * p1[j] +
+        2.0 * p3[i] * p3[j] + p1[i] * p2[j] + p2[i] * p1[j]
+    );
+}
+
+// helper function for CalculateLocalMomentOfInertia(). i is the matrix x-coordinate.
+float ComputeInertiaMoment(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, unsigned int i) {
+    return (
+        pow(p1[i], 2.0f) + p2[i] * p3[i] +
+        pow(p2[i], 2.0f) + p1[i] * p3[i] +
+        pow(p3[i], 2.0f) + p1[i] * p2[i] 
+    );      
+}
+
+glm::mat3x3 PhysicsMesh::CalculateLocalMomentOfInertia(glm::vec3 objectScale, float objectMass) {
+
+    assert(objectMass > 0);
+    assert(glm::length2(objectScale) > 0);
+
+    // From http://number-none.com/blow/inertia/body_i.html and https://stackoverflow.com/questions/809832/how-can-i-compute-the-mass-and-moment-of-inertia-of-a-polyhedron 
+    // and most especially https://www.youtube.com/watch?v=GYc99lMdcFE
+
+    // calculate volume of object (needed to calculate density which is needed to calculate moi)
+    float volume = 0.0;
+
+    for (const auto & convexMesh: meshes) { // TODO: does this even work for concave things?
+        for (const auto & triangle: convexMesh.triangles) {
+            glm::vec3 p1 = triangle[0] * objectScale; 
+            glm::vec3 p2 = triangle[1] * objectScale; 
+            glm::vec3 p3 = triangle[2] * objectScale; 
+                
+            glm::vec3 triangleNormal = glm::cross(p2 - p1, p3 - p1);
+            
+            glm::vec3 triangleCentroid = (p1 + p2 + p3)/3.0f;
+            
+            // volume calc from https://math.stackexchange.com/questions/3616760/how-to-calculate-the-volume-of-tetrahedron-given-by-4-points
+            float tetrahedronVolume = TetrahedronVolume(p1, p2, p3, {1.0, 1.0, 1.0});
+            
+            float dot = glm::dot(triangleNormal, triangleCentroid); // We're checking if the triangle normal points towards the origin.
+            if (dot > 0.0) { // then the triangle's normal points away from the origin. 
+                volume += tetrahedronVolume;
+            }
+            else { // then the triangle normal points towards the origin (because mesh has concave bits) and we gotta negate all the values it calculates.
+                volume -= tetrahedronVolume;
+            }
+
+            DebugLogInfo("Tetra had volume", tetrahedronVolume, " dot ", dot, " from verts \n\t ", glm::to_string(p1), glm::to_string(p2), glm::to_string(p3));
+        }
+    }
+
+    DebugLogInfo("Calculated volume of ", volume);
+    assert(volume > 0);
+
+    float density = objectMass / volume;
+
+    glm::vec3 objectCenterOfMass = {0, 0, 0};
+    float Ia = 0.0, Ib = 0.0, Ic = 0.0, Iap = 0.0, Ibp = 0.0, Icp = 0.0; // components of inertia tensor. i think.
+
+    for (const auto & convexMesh: meshes) { // TODO: does this even work for concave things?
+        for (const auto & triangle: convexMesh.triangles) {
+            glm::vec3 p1 = triangle[0] * objectScale; 
+            glm::vec3 p2 = triangle[1] * objectScale; 
+            glm::vec3 p3 = triangle[2] * objectScale; 
+            
+            glm::vec3 triangleNormal = glm::cross(p2 - p1, p3 - p1);
+            
+            glm::vec3 triangleCentroid = (p1 + p2 + p3)/3.0f;
+            glm::vec3 tetrahedronCenterOfMass = (p1 + p2 + p3)/4.0f; // not bothering to add the origin for obvious reasons
+            
+            // volume calc from https://math.stackexchange.com/questions/3616760/how-to-calculate-the-volume-of-tetrahedron-given-by-4-points
+            float tetrahedronVolume = TetrahedronVolume(p1, p2, p3, {1.0, 1.0, 1.0});
+
+            float tetrahedronMass = tetrahedronVolume * density;
+
+            float dot = glm::dot(triangleNormal, triangleCentroid); // We're checking if the triangle normal points towards the origin.
+            if (dot < 0.0) { // then the triangle's normal points towards the origin and must be negated. 
+                tetrahedronMass *= -1;
+                tetrahedronVolume *= -1;
+            }
+
+            objectCenterOfMass += tetrahedronCenterOfMass * tetrahedronMass; // we'll divide it to get actual average at the end
+
+            // from 23:00 in the video i mentioned above
+            Ia += 6.0f * tetrahedronVolume * (ComputeInertiaMoment(p1, p2, p3, 1) + ComputeInertiaMoment(p1, p2, p3, 2));
+            Ib += 6.0f * tetrahedronVolume * (ComputeInertiaMoment(p1, p2, p3, 0) + ComputeInertiaMoment(p1, p2, p3, 2));
+            Ic += 6.0f * tetrahedronVolume * (ComputeInertiaMoment(p1, p2, p3, 0) + ComputeInertiaMoment(p1, p2, p3, 1));
+            Iap += 6.0 * tetrahedronVolume * ComputeInertiaProduct(p1, p2, p3, 1, 2);
+            Ibp += 6.0 * tetrahedronVolume * ComputeInertiaProduct(p1, p2, p3, 0, 1);
+            Icp += 6.0 * tetrahedronVolume * ComputeInertiaProduct(p1, p2, p3, 0, 2);
+        }
+    }
+
+    objectCenterOfMass /= objectMass;
+    Ia *= density/60.0f;
+    Ib *= density/60.0f;
+    Ic *= density/60.0f;
+    Iap *= density/120.0f;
+    Iap *= density/120.0f;
+    Iap *= density/120.0f;
+
+    // We just calculated inertia tensor with respect to the origin. Since all meshes are transformed to be centered on the origin, we're done here.
+    glm::mat3x3 inertiaTensor {
+        Ia, -Ibp, -Icp,
+        -Ibp, Ib, -Iap,
+        -Icp, -Iap, Ic
+    };
+
+    DebugLogInfo("Density ", density, ", Volume ", volume);
+    DebugLogInfo("Calculated inertia tensor ", glm::to_string(inertiaTensor));
+    return inertiaTensor;
 }

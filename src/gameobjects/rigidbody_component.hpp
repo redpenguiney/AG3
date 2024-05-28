@@ -3,8 +3,12 @@
 #include "transform_component.hpp"
 #include "../../external_headers/GLM/vec3.hpp"
 #include "../../external_headers/GLM/mat3x3.hpp"
+#include <memory>
 
-// TODO: RIGIDBODIES CURRENTLY DON'T DO PHYSICS IF THEY DON'T HAVE A COLLIDER, MB
+class PhysicsMesh;
+
+// TODO: RIGIDBODIES CURRENTLY DON'T DO PHYSICS IF THEY DON'T HAVE A COLLIDER, MB.
+// Created rigidbodies are immobile (infinite mass & moi) until you call SetMass() on them.
 class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     public:
     bool kinematic; // if true, the physics engine will do nothing to this component except change its position/rotation by its velocity
@@ -16,7 +20,10 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
                                // around x, y, and z axis, in radians/second
                                // axis are in world space?
     glm::vec3 accumulatedTorque; // like accumulateForce, but for torque (rotational force), converted to change in angular velocity via torque/globalMomentOfInertia
-    glm::mat3x3 localMomentOfInertia; // sorta like mass but for rotation; how hard it is to rotate something around each axis basically; must be converted to global space
+    
+    // sorta like mass but for rotation; how hard it is to rotate something around each axis basically; must be converted from object to global space before being used for physics via InverseMomentOfInertiaAroundAxis().
+    // You can change this as you please (to achieve effects like making the player's rigidbody not rotate, but note that SetMass() will reset this.
+    glm::mat3x3 localMomentOfInertia; 
 
     double linearDrag; // rigid body's velocity will be multiplied by this every frame
     float angularDrag; // rigid body's angular velocity will be multiplied by this every frame
@@ -24,10 +31,16 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     // returns 1/mass of the rigid body.
     float InverseMass() const;
 
-    // newMass must not be zero
-    void SetMass(float newMass);
+    // newMass must not be zero. Sets object mass and localMomentOfInertia. We need access to the transform component to update the moment of inertia along with mass.
+    void SetMass(float newMass, const TransformComponent& transform);
 
-    void Init();
+    // makes the object impossible to move or rotate. Just a more performant way of passing infinity to SetMass().
+    void MakeMassInfinite();
+
+    // You MUST call this if the transform component's scale changes to have correct physics results. TODO: kinda mid to have to do this
+    void UpdateMomentOfInertia(const TransformComponent& transform);
+
+    void Init(const std::shared_ptr<PhysicsMesh>& physMesh);
     void Destroy();
 
     
@@ -47,6 +60,8 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     // returns inverse mmoi of the rigidbody around the given axis. Axis is in world space.
     float InverseMomentOfInertiaAroundAxis(const TransformComponent& transform, glm::vec3 axis);
 
+    
+
     private:
     //private constructor to enforce usage of object pool
     friend class ComponentPool<RigidbodyComponent>;
@@ -54,4 +69,6 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     RigidbodyComponent(const RigidbodyComponent& other) = delete;
 
     float inverseMass; // we store 1/mass instead of mass because all the formulas use inverse mass and this saves us some division
+
+    std::shared_ptr<PhysicsMesh> physicsMesh;
 };
