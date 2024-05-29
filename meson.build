@@ -19,7 +19,7 @@ engine_sources = ['src/physics/mesh_simplification.cpp', 'external_headers/lua/o
 #todo pch would be nice, try to get this to work: cpp_pch : 'pch/external_pch.h',
 
 incdir = include_directories('src', 'external_headers/sol2/include', 'external_headers/lua', 'external_headers', 'subprojects/freetype/include')
-srclib = static_library('srclib', engine_sources, include_directories: incdir, dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep, openalsoft_dep], cpp_args: ['-O3', '-Wshadow', '-Wall', '-static', '-static-libgcc', '-static-libstdc++', '-DSOL_ALL_SAFETIES_ON=1'])
-e = executable('AG3', 'src/main.cpp', link_with: srclib, include_directories: incdir, dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep, openalsoft_dep], cpp_args: ['-O3', '-Wshadow', '-Wall', '-static', '-static-libgcc', '-static-libstdc++', '-DSOL_ALL_SAFETIES_ON=1'])
-mod = shared_library
+#srclib = static_library('srclib', engine_sources, include_directories: incdir, dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep, openalsoft_dep], cpp_args: ['-O3', '-Wshadow', '-Wall', '-static', '-static-libgcc', '-static-libstdc++', '-DSOL_ALL_SAFETIES_ON=1'])
+e = executable('AG3', 'src/main.cpp', sources: engine_sources, include_directories: incdir, cpp_args: ['-O3', '-Wshadow', '-Wall', '-static', '-static-libgcc', '-static-libstdc++', '-DSOL_ALL_SAFETIES_ON=1'], dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep, openalsoft_dep])
+#test_module = shared_library('test_module', 'modules/test_module.cpp', sources: engine_sources, include_directories: incdir, dependencies: [lua_dep, glew_dep, glfw_dep, freetype_dep, openalsoft_dep], cpp_args: ['-O3', '-Wshadow', '-Wall', '-static', '-static-libgcc', '-static-libstdc++', '-DSOL_ALL_SAFETIES_ON=1', '-DIS_MODULE=1'])
 #test('er', e)

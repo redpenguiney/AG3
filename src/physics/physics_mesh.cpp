@@ -248,11 +248,9 @@ glm::mat3x3 PhysicsMesh::CalculateLocalMomentOfInertia(glm::vec3 objectScale, fl
                 volume -= tetrahedronVolume;
             }
 
-            DebugLogInfo("Tetra had volume", tetrahedronVolume, " dot ", dot, " from verts \n\t ", glm::to_string(p1), glm::to_string(p2), glm::to_string(p3));
         }
     }
 
-    DebugLogInfo("Calculated volume of ", volume);
     assert(volume > 0);
 
     float density = objectMass / volume;
@@ -309,7 +307,5 @@ glm::mat3x3 PhysicsMesh::CalculateLocalMomentOfInertia(glm::vec3 objectScale, fl
         -Icp, -Iap, Ic
     };
 
-    DebugLogInfo("Density ", density, ", Volume ", volume);
-    DebugLogInfo("Calculated inertia tensor ", glm::to_string(inertiaTensor));
     return inertiaTensor;
 }

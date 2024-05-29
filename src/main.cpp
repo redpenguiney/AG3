@@ -58,7 +58,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
     atexit(Module::CloseAll); // this is placed here, after the component registry is initialized, because that guarantees that modules' references to gameobjects are destroyed before the gameobjects are (because static destructors/at exits are called in reverse order)
 
-    Module::LoadModule("..\\modules\\libtest_module.dll");
+    // Module::LoadModule("..\\modules\\libtest_module.dll");
 
     Gui* ui;
     std::weak_ptr<GameObject> goWeakPtr;
@@ -323,7 +323,7 @@ int main(int numArgs, const char *argPtrs[]) {
     }
 
     // LUA.RunString("print(\"help from lua\")");
-    LUA.RunFile("../scripts/test.lua");
+    // LUA.RunFile("../scripts/test.lua");
 
     DebugLogInfo("Starting main loop.");
 

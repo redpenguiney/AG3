@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 #include <array>
-#include "external_headers/GLM/ext.hpp"
+#include "GLM/vec3.hpp"
 #include "gameobjects/transform_component.hpp"
 
 #include "physics_mesh.hpp"

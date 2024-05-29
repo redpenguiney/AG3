@@ -1,17 +1,7 @@
 #include "spatial_acceleration_structure.hpp"
 #include "../gameobjects/component_registry.hpp"
-#include <array>
 #include "../../external_headers/GLM/gtx/string_cast.hpp"
 #include "graphics/engine.hpp"
-#include <cassert>
-#include <cmath>
-#include <cstddef>
-#include <cstdio>
-#include <cstdlib>
-#include <cwchar>
-#include <memory>
-#include <tuple>
-#include <vector>
 #include "gameobjects/collider_component.hpp"
 
 void SpatialAccelerationStructure::Update() {

@@ -43,7 +43,7 @@ Window::Window(int widthh, int heightt) {
     glfwGetCursorPos(glfwWindow, &MOUSE_POS.x, &MOUSE_POS.y);
     // std::printf("Init mouse at %f %f\n", MOUSE_POS.x, MOUSE_POS.y);
 
-    printf("Window creation successful.\n");
+    DebugLogInfo("Window creation successful.");
 
     // See gl_error_handler, just prints opengl errors to console automatically
     // todo: disable on release builds for performance
