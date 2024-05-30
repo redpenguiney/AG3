@@ -1,20 +1,27 @@
 #include "module.hpp"
 #include "../debug/log.hpp"
+#include "engine_export.hpp"
 
 #include "audio/engine.hpp"
 #include "graphics/engine.hpp"
+#include "modules/engine_export.hpp"
 #include "physics/engine.hpp"
 #include "physics/spatial_acceleration_structure.hpp"
 #include "gameobjects/component_registry.hpp"
 #include "conglomerates/gui.hpp"
+#include "engine_export.hpp"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#define WINDOWS
+#endif
+
+#ifdef WINDOWS
 #include "windows.h"
 #else
 #error unsupported module platform
 #endif
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#ifdef WINDOWS
 // returns nullptr if no function
 void* LoadFunc(const HMODULE& windowsModule, const char* funcName) {
     FARPROC functionAddress = GetProcAddress(windowsModule, funcName);
@@ -32,25 +39,25 @@ void Module::LoadModule(const char *filepath) {
 }
 
 void Module::PrePhysics() {
-    for (auto & internalModule: LOADED_MODULES) {
-        if (internalModule.onPrePhysics.has_value()) {
-            (*(internalModule.onPrePhysics))();
+    for (auto & module: LOADED_MODULES) {
+        if (module.onPrePhysics.has_value()) {
+            (*(module.onPrePhysics))();
         }
     }
 }
 
 void Module::PostPhysics() {
-    for (auto & internalModule: LOADED_MODULES) {
-        if (internalModule.onPostPhysics.has_value()) {
-            (*(internalModule.onPostPhysics))();
+    for (auto & module: LOADED_MODULES) {
+        if (module.onPostPhysics.has_value()) {
+            (*(module.onPostPhysics))();
         }
     }
 }
 
 void Module::PostRender() {
-    for (auto & internalModule: LOADED_MODULES) {
-        if (internalModule.onPostRender.has_value()) {
-            (*(internalModule.onPostRender))();
+    for (auto & module: LOADED_MODULES) {
+        if (module.onPostRender.has_value()) {
+            (*(module.onPostRender))();
         }
     }
 }
@@ -64,7 +71,7 @@ void RunHook(void(*func)()) {
 
 Module::Module(const char* filepath) {
     internalModule = nullptr;
-    #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+    #ifdef WINDOWS
     internalModule = new HMODULE;
     *(HMODULE*)internalModule = LoadLibrary(filepath);
     if ((*(HMODULE*)internalModule) == nullptr) {
@@ -117,7 +124,8 @@ Module::Module(const char* filepath) {
                 .CR = &ComponentRegistry::Get(),
                 .PE = &PhysicsEngine::Get(),
                 .SAS = &SpatialAccelerationStructure::Get(),  
-                .AE = &AudioEngine::Get() 
+                .AE = &AudioEngine::Get(),
+                .TEST = ModuleTestInterface::Get()
              });
         }
         else {
@@ -152,7 +160,7 @@ Module::~Module() {
         }
         
         
-        #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+        #ifdef WINDOWS
     
         FreeLibrary(*(HMODULE*)internalModule);
         delete (HMODULE*)internalModule;

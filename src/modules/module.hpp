@@ -3,26 +3,7 @@
 #include <optional>
 #include <string>
 #include <list>
-
-class GraphicsEngine;
-class ComponentRegistry;
-class PhysicsEngine;
-class SpatialAccelerationStructure;
-class AudioEngine;
-class MeshGlobals;
-class GuiGlobals;
-
-extern "C" {
-    struct ModulesGlobalsPointers {
-        GraphicsEngine* GE;
-        MeshGlobals* MG;
-        GuiGlobals* GG;
-        ComponentRegistry* CR;
-        PhysicsEngine* PE;
-        SpatialAccelerationStructure* SAS;
-        AudioEngine* AE;
-    };
-}
+#include "module_globals_pointers.hpp"
 
 class Module {
     public:
