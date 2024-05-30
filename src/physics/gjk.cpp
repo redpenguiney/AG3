@@ -358,10 +358,6 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
         incidentFaceInWorldSpace.push_back(otherTransform.GetPhysicsModelMatrix() * glm::dvec4(v, 1.0));
     }
 
-    // for (auto & v: incidentFaceInWorldSpace) {
-        // std::cout << "Incident face has vertex " << glm::to_string(v) << "\n";
-    // }
-
     // Get side planes for reference face.
     // Pairs are <normal, pointOnPlane>
     std::vector<std::pair<glm::dvec3, glm::dvec3>> sidePlanes;
@@ -389,7 +385,7 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
     // This will get the contact area.
     std::vector<glm::dvec3> contactList = incidentFaceInWorldSpace;
     for (auto & clippingPlane: sidePlanes) {
-
+        // std::cout << "Side plane has normal " << glm::to_string(clippingPlane.first) << " and point " << glm::to_string(clippingPlane.second) << ".\n"; 
         std::vector<glm::dvec3> input = contactList;
         contactList.clear();
 
@@ -399,8 +395,10 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
             auto v2 = input[i + 1 == input.size() ? 0 : i + 1];
 
             // find intersection of edge v1v2 and the clippingPlane
-            glm::dvec3 intersectionPoint;
+            glm::dvec3 intersectionPoint(NAN);
             glm::dvec3 edgeDir = glm::dvec3(v2 - v1);
+            // std::cout << "\tDot = " << glm::dot(clippingPlane.first, edgeDir) << ".\n";
+            // std::cout << "\tDIR = " << glm::to_string(edgeDir) << ".\n";
             if (glm::dot(clippingPlane.first, edgeDir) != 0) {
                 
                 double t = (glm::dot(clippingPlane.first, clippingPlane.second) - glm::dot(clippingPlane.first, v1)) / glm::dot(clippingPlane.first, glm::normalize(edgeDir));
@@ -410,17 +408,18 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
             // do the clipping
             double distanceToV1 = SignedDistanceToPlane(clippingPlane.first, v1, clippingPlane.second);
             double distanceToV2 = SignedDistanceToPlane(clippingPlane.first, v2, clippingPlane.second);
-            // std::cout << "d1 = " << distanceToV1  << ", d2 = " << distanceToV2 << " = distance from point " << glm::to_string(v1) << " to normal " << glm::to_string(clippingPlane.first) << " and plane point " << glm::to_string(clippingPlane.second) << "\n"; 
+            // std::cout << "\td1 = " << distanceToV1  << ", d2 = " << distanceToV2 << " = distance from point " << glm::to_string(v1) << " to normal " << glm::to_string(clippingPlane.first) << " and plane point " << glm::to_string(clippingPlane.second) << "\n"; 
 
             if (distanceToV1 <= 0) { // then v1 is on the right side of the side plane and should stay
                 contactList.push_back(v1);
                 // std::cout << "\tkeeping.\n";
-                if (distanceToV2 >= 0) { // then v2 is on the wrong side of the plane and thus the edge v goes through the side plane, we should add the intersection point
+                if (distanceToV2 > 0) { // then v2 is on the wrong side of the plane and thus the edge v goes through the side plane, we should add the intersection point
                     contactList.push_back(intersectionPoint);
                     // std::cout << "\tcase1: adding intersection point " << glm::to_string(intersectionPoint) << "\n";
                 }
             }  
             else if (distanceToV2 <= 0) { // then v1 is on wrong side and v2 is on right side, so we should add point of intersection (v2 itself will be added on next iteration)
+                assert(!std::isnan(intersectionPoint.x));
                 contactList.push_back(intersectionPoint);
                 // std::cout << "\tcase2: adding intersection point " << glm::to_string(intersectionPoint) << "\n";
             }
@@ -430,9 +429,6 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
     }
 
     assert(contactList.size() > 0);
-    // for (auto & v: contactList) {
-        // std::cout << "After clipping, incident face has vertex " << glm::to_string(v) << "\n";
-    // }
 
     // Lastly, verify for each contact point that it's actually inside the reference face and if it is, move contact points onto the reference face (idk why lel).
     std::vector<std::pair<glm::dvec3, double>> contactPoints; 
@@ -450,10 +446,12 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
 
         const double ALLOW_THRESHOLD = 0.0;
         if (distanceToPlane <= ALLOW_THRESHOLD) { // if contact point is inside the object
+            
             contactPoints.push_back({p + ((glm::dvec3)referenceNormal * -distanceToPlane), -distanceToPlane});
         }
     }
-
+    // DebugLogInfo("Of ", contactList.size(), " contact points, ", contactPoints.size(), " were accepted; rf ", referenceFaceInWorldSpace.size(), " if ", incidentFaceInWorldSpace.size(), " sp ", sidePlanes.size());
+    assert(contactList.size() <= std::max(referenceFace->size(), incidentFace->size()) * 2);
     assert(contactPoints.size() > 0);
     return contactPoints;
 }

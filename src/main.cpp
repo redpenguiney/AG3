@@ -170,7 +170,7 @@ int main(int numArgs, const char *argPtrs[]) {
     
     int nObjs = 0;
     for (int x = 0; x < 1; x++) {
-        for (int y = 0; y < 2; y++) {
+        for (int y = 0; y < 8; y++) {
             for (int z = 0; z < 1; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
