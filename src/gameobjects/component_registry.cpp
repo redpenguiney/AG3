@@ -170,6 +170,7 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
                 DebugLogError("When trying to create a ColliderComponent, no PhysicsMesh was given, and no MeshId was given to produce one with.");
                 abort();
             }
+            DebugLogInfo("Creating physmesh from ", params.meshId);
             physMesh = PhysicsMesh::New(Mesh::Get(params.meshId));
         }
         else {

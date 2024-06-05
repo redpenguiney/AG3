@@ -76,8 +76,8 @@ int main(int numArgs, const char *argPtrs[]) {
     }
 
     auto makeMparams = MeshCreateParams {.textureZ = -1.0, .opacity = 1, .expectedCount = 16384};
-    auto m = Mesh::FromFile("../models/rainbowcube.obj", makeMparams);
-    
+    // auto m2 = Mesh::FromFile("../models/rainbowcube.obj", makeMparams);
+    auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/rainbowcube.obj").at(0);
    
 
     auto [grassTextureZ, grassMaterial] = Material::New({TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap}}, Texture::Texture2D);
@@ -165,12 +165,12 @@ int main(int numArgs, const char *argPtrs[]) {
         GE.skyboxMaterial = sky_m_ptr;
         GE.skyboxMaterialLayer = index;
     }
-    GE.debugFreecamCamera.position = glm::dvec3(0, 15, 0);
+    GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
     
     
     int nObjs = 0;
     for (int x = 0; x < 1; x++) {
-        for (int y = 0; y < 8; y++) {
+        for (int y = 0; y < 3; y++) {
             for (int z = 0; z < 1; z++) {
                 GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex});
                 params.meshId = m->meshId;
@@ -179,8 +179,8 @@ int main(int numArgs, const char *argPtrs[]) {
                 g->transformComponent->SetPos({0 + x * 3, 2 + y * 2, 0 + z * 3});
                 g->colliderComponent->elasticity = 0.3;
                 g->colliderComponent->friction = 2.0;
-                g->rigidbodyComponent->angularDrag = 1.0;
-                g->rigidbodyComponent->linearDrag = 1.0;
+                // g->rigidbodyComponent->angularDrag = 1.0;
+                // g->rigidbodyComponent->linearDrag = 1.0;
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
                 g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
@@ -389,7 +389,7 @@ int main(int numArgs, const char *argPtrs[]) {
         ui->UpdateGuiText();
 
         if (GE.window.LMB_DOWN) {
-            auto castResult = Raycast(GE.debugFreecamCamera.position, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
+            auto castResult = Raycast(GE.GetDebugFreecamCamera().position, LookVector(glm::radians(GE.debugFreecamPitch), glm::radians(GE.debugFreecamYaw)));
             
             if (castResult.hitObject != nullptr) {
                 // std::cout << "Hit object " << castResult.hitObject->name << ", normal is " << glm::to_string(castResult.hitNormal) << " \n";

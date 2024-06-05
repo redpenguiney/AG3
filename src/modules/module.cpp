@@ -1,15 +1,13 @@
 #include "module.hpp"
 #include "../debug/log.hpp"
-#include "engine_export.hpp"
+#include "graphics_engine_export.hpp"
 
 #include "audio/engine.hpp"
 #include "graphics/engine.hpp"
-#include "modules/engine_export.hpp"
 #include "physics/engine.hpp"
 #include "physics/spatial_acceleration_structure.hpp"
 #include "gameobjects/component_registry.hpp"
 #include "conglomerates/gui.hpp"
-#include "engine_export.hpp"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #define WINDOWS
@@ -119,13 +117,12 @@ Module::Module(const char* filepath) {
              auto castedLoadGlobals = (void(*)(ModulesGlobalsPointers))loadGlobals;
              castedLoadGlobals(ModulesGlobalsPointers {
                 .GE = &GraphicsEngine::Get(),
-                .MG = &MeshGlobals::Get(),
-                .GG = &GuiGlobals::Get(),
-                .CR = &ComponentRegistry::Get(),
-                .PE = &PhysicsEngine::Get(),
-                .SAS = &SpatialAccelerationStructure::Get(),  
-                .AE = &AudioEngine::Get(),
-                .TEST = ModuleTestInterface::Get()
+                // .MG = &MeshGlobals::Get(),
+                // .GG = &GuiGlobals::Get(),
+                // .CR = &ComponentRegistry::Get(),
+                // .PE = &PhysicsEngine::Get(),
+                // .SAS = &SpatialAccelerationStructure::Get(),  
+                // .AE = &AudioEngine::Get(),
              });
         }
         else {

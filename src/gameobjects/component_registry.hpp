@@ -24,6 +24,8 @@
 #include "audio_player_component.hpp"
 #include <optional>
 
+#include "modules/component_registry_export.hpp"
+
 struct GameobjectCreateParams;
 
 // Just a little pointer wrapper for gameobjects that throws an error when trying to dereference a nullptr to a component (gameobjects have a nullptr to any components they don't have, and when Destroy() is called all components are set to nullptr)
@@ -114,13 +116,6 @@ class ComponentRegistry {
     std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params);
 
     static ComponentRegistry& Get();
-
-    // When modules (shared libraries) get their copy of this code, they need to use a special version of GraphicsEngine::Get().
-    // This is so that both the module and the main executable have access to the same singleton. 
-    // The executable will provide each shared_library with a pointer to the graphics engine.
-    #ifdef IS_MODULE
-    static void SetModuleComponentRegistry(ComponentRegistry* reg); 
-    #endif
 
     // To hide all the non-type safe stuff, we need an iterator that just lets people iterate through the components of all gameobjects that have certain components (i.e give me all pairs of transform + render)
     template <typename ... Args>

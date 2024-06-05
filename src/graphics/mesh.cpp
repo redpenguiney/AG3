@@ -1,12 +1,5 @@
 #include "mesh.hpp"
-#include "graphics/mesh.hpp"
 #include "texture.hpp"
-#include <cassert>
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <iterator>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -17,14 +10,8 @@
 #include "../debug/log.hpp"
 #include "gameobjects/render_component.hpp"
 
-// TODO: this file takes too long to compile
 
-#ifdef IS_MODULE
-MeshGlobals* _MESH_GLOBALS = nullptr;
-void MeshGlobals::SetModuleMeshGlobals(MeshGlobals* globals) {
-    _MESH_GLOBALS = globals;
-}
-#endif
+// TODO: this file takes too long to compile
 
 MeshCreateParams MeshCreateParams::Default() {
     return MeshCreateParams();
@@ -538,6 +525,8 @@ std::shared_ptr<Mesh> Mesh::Text(const MeshCreateParams& params) {
     MeshGlobals::Get().LOADED_MESHES[i] = ptr;
     return ptr;
 }
+
+
 
 std::shared_ptr<Mesh> Mesh::FromFile(const std::string& path, const MeshCreateParams& params) {
     // Load file

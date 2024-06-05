@@ -62,12 +62,11 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
             assert(collisionTestResult->contactPoints.size() > 0);
             // if (otherRigidbody && collisionTestResult->contactPoints.size() > 4) {
             //     DebugLogInfo("Collision with ", collisionTestResult->contactPoints.size(), " points.");
-            //     for (auto & p: collisionTestResult->contactPoints) {
-            //         std::cout << "\tOne point is " << glm::to_string(p.first) << ".\n";
-            //     //     averageContactPoint += p.first;
-            //     //     averagePenetration += p.second;
-            //         DebugPlacePointOnPosition({p.first}, {0.5, 0.0, 0.0, 1.0});
-            //     }
+                // for (auto & p: collisionTestResult->contactPoints) {
+                //     averageContactPoint += p.first;
+                //     averagePenetration += p.second;
+                    // DebugPlacePointOnPosition({p.first}, {0.5, 0.0, 0.0, 1.0});
+                // }
             // }
             // find center of contact region
             // glm::dvec3 averageContactPoint = {0, 0, 0}; // in object space

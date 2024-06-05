@@ -33,8 +33,9 @@ std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, unsig
 std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_ptr<Mesh>& mesh, float simplifyThreshold, bool convexDecomposition) {
     assert(!mesh->dynamic);
     assert(simplifyThreshold >= 1.0f);
+    // DebugLogInfo("Here we go. ", mesh->meshId);
 
-    // Graphics meshes contain extraneous data (normals, colors, etc.) that isn't relevant to physics, so this function needs to get rid of that.
+    // Graphics meshes contain extraneous data (UVs, colors, etc.) that isn't relevant to physics, so this function needs to get rid of that.
     // This function also needs to take triangles with same normal and put them in same polygon to fill faces, and get edges.
     std::vector<std::pair<glm::vec3, std::vector<glm::vec3>>> faces;
     std::vector<std::array<glm::vec3, 3>> triangles;
@@ -42,17 +43,20 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
 
     assert(mesh->indices.size() % 3 == 0);
     for (auto it = mesh->indices.begin(); it != mesh->indices.end(); it+=3) {
-        auto i = *it;
         
-        auto vertexIndex1 = i * mesh->nonInstancedVertexSize/sizeof(GLfloat);
-        auto vertexIndex2 = (i + 1) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
-        auto vertexIndex3 = (i + 2) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
+        auto itCopy = it;
+
+        auto vertexIndex1 = *(itCopy) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
+        auto vertexIndex2 =  *(itCopy + 1) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
+        auto vertexIndex3 =  *(itCopy + 2) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
 
         auto offset = mesh->vertexFormat.attributes.position->offset/sizeof(GLfloat);
         glm::vec3 vertex1 = {mesh->vertices[vertexIndex1 + offset], mesh->vertices[vertexIndex1 + 1 + offset], mesh->vertices[vertexIndex1 + 2 + offset]};
         glm::vec3 vertex2 = {mesh->vertices[vertexIndex2 + offset], mesh->vertices[vertexIndex2 + 1 + offset], mesh->vertices[vertexIndex2 + 2 + offset]};
         glm::vec3 vertex3 = {mesh->vertices.at(vertexIndex3 + offset), mesh->vertices.at(vertexIndex3 + 1 + offset), mesh->vertices.at(vertexIndex3 + 2 + offset)};
         
+        // DebugLogInfo("Vertices ", glm::to_string(vertex1), ",", glm::to_string(vertex2), ",", glm::to_string(vertex3));
+
         auto normal = glm::cross(vertex1 - vertex2, vertex1 - vertex3);
 
         // make sure normal always points outward
@@ -67,22 +71,27 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
         for (auto & f: faces) {
             if (glm::dot(f.first, normal) > 0.99f) { // this dot product check lets the normals be very slightly different (TODO: change threshold? do we even want threshold?)
                 foundFace = true;
+                // DebugLogInfo("Found second face with normal ", glm::to_string(normal));
 
                 bool containsVertex1 = false;
                 bool containsVertex2 = false;
                 bool containsVertex3 = false;
                 for (auto & v: f.second) {
                     if (v == vertex1) {
+                        // DebugLogInfo("Face already has ", glm::to_string(v));
                         containsVertex1 = true;
                     }
                     else if (v == vertex2) {
+                        // DebugLogInfo("Face already has ", glm::to_string(v));
                         containsVertex2 = true;
                     }
                     else if (v == vertex3) {
+                        // DebugLogInfo("Face already has ", glm::to_string(v));
                         containsVertex3 = true;
                     }
                 }
                 
+                // DebugLogInfo("Before: f2 size = ", f.second.size());
                 if (!containsVertex1) {
                     f.second.push_back(vertex1);
                 }
@@ -92,6 +101,7 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
                 if (!containsVertex3) {
                     f.second.push_back(vertex3);
                 }
+                // DebugLogInfo("After: f2 size = ", f.second.size());
 
                 break; // break exits the inner loop
             }

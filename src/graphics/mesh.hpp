@@ -22,18 +22,10 @@ class Material;
 class ShaderProgram;
 class PhysicsMesh;
 
-// These were originally private static variables in mesh.hpp, physics_mesh.hpp, shader_program.hpp, and material.hpp, but that didn't work well with the introduction of modules/dlls so now it's here.
-// Only for internal use by mesh.cpp. The public Get() method is for transferring to modules.
+// TODO: UNDO THIS CLASS'S EXISTENCE
 class MeshGlobals {
     
     public:
-
-    // When modules (shared libraries) get their copy of this code, they need to use a special version of Mesh::Get().
-    // This is so that both the module and the main executable have access to the same globals. 
-    // The executable will provide each shared_library with a pointer to MeshGlobals.
-    #ifdef IS_MODULE
-    static void SetModuleMeshGlobals(MeshGlobals* globals);
-    #endif
     
     static MeshGlobals& Get();
 
@@ -270,6 +262,12 @@ class Mesh {
     // normalizeSize should ALWAYS be true unless you're creating a mesh (like the screen quad or skybox mesh) for internal usage
     static std::shared_ptr<Mesh> FromFile(const std::string& path, const MeshCreateParams& params = MeshCreateParams::Default());
     
+    // Accepts most files (whatever assimp takes)
+    // Creates meshes/materials for whatever the file needs (TODO: cache to avoid duplicate mats/meshes), and then returns those.
+    // Each tuple contains a mesh, its material (WARNING: or nullptr if the mesh doesn't have a material), the textureZ, and an offset from the origin (so that a scene with many objects can be reassembled)
+    // TODO: offset currently unimplemented
+    static std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, glm::vec3>> MultiFromFile(const std::string& path);
+
     // Creates a mesh for use in text/gui.
     // Modify the mesh with TextMeshFromText() to actually set text and what not.
     // Note: Disregards certain params. TODO be slightly more specific

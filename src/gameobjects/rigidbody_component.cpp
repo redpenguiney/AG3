@@ -66,7 +66,7 @@ float RigidbodyComponent::InverseMomentOfInertiaAroundAxis(const TransformCompon
     glm::vec3 axisInLocalSpace = glm::inverse(transform.Rotation()) * axis;
     glm::vec3 inertiaAxis = localMomentOfInertia * axisInLocalSpace;
     float dot = glm::dot(axisInLocalSpace, inertiaAxis);
-    // DebugLogInfo("\tReturning dot ", dot, ", 1.0/that is ", 1.0/dot, " from i-axis ", glm::to_string(inertiaAxis), " local ", glm::to_string(axisInLocalSpace));
+    // DebugLogInfo("\tReturning dot ", dot, ", 1.0/that is ", 1.0/dot, " from i-axis ", glm::to_string(inertiaAxis), " local ", glm::to_string(axisInLocalSpace), " localmomomiooii = ", glm::to_string(localMomentOfInertia));
     assert(!std::isnan(1.0/dot));
 	return 1.0/dot;
 }

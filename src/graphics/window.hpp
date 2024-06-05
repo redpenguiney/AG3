@@ -1,7 +1,7 @@
 #pragma once
 #include "../../external_headers/GLEW/glew.h"
 #include "../../external_headers/GLFW/glfw3.h"
-#include "../../external_headers/GLM/ext.hpp"
+#include "../../external_headers/GLM/vec2.hpp"
 #include <unordered_map>
 
 

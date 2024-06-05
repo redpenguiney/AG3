@@ -110,6 +110,42 @@ Camera& GraphicsEngine::GetCurrentCamera() {
     return debugFreecamEnabled ? debugFreecamCamera : camera; 
 }
 
+Camera& GraphicsEngine::GetDebugFreecamCamera() {
+    return debugFreecamCamera;
+}
+
+Camera& GraphicsEngine::GetMainCamera() {
+    return camera;
+}
+
+void GraphicsEngine::SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram> program) {
+    skyboxShaderProgram = program;
+}
+
+void GraphicsEngine::SetSkyboxMaterial(std::shared_ptr<Material> material) {
+    skyboxMaterial = material;
+}
+
+void GraphicsEngine::SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram> program) {
+    postProcessingShaderProgram = program;
+}
+
+void GraphicsEngine::SetDefaultShaderProgram(std::shared_ptr<ShaderProgram> program) {
+    defaultShaderProgram = program;
+}
+
+void GraphicsEngine::SetDefaultGuiShaderProgram(std::shared_ptr<ShaderProgram> program) {
+    defaultGuiShaderProgram = program;
+}
+
+void GraphicsEngine::SetDefaultBillboardGuiShaderProgram(std::shared_ptr<ShaderProgram> program) {
+    defaultBillboardGuiShaderProgram = program;
+}
+
+Window& GraphicsEngine::GetWindow() {
+    return window;
+}
+
 
 bool GraphicsEngine::IsTextureInUse(unsigned int textureId) { 
     for (auto & [shaderId, map] : meshpools) {
@@ -555,6 +591,22 @@ void GraphicsEngine::UpdateRenderComponents() {
     });
 
     // LogElapsed(start, "Rendercomp update elapsed ");
+}
+
+void GraphicsEngine::SetDebugFreecamAcceleration(double acceleration) {
+    debugFreecamAcceleration = acceleration;
+}
+
+void GraphicsEngine::SetDebugFreecamPitch(double pitch) {
+    debugFreecamPitch = pitch;
+}
+
+void GraphicsEngine::SetDebugFreecamYaw(double yaw) {
+    debugFreecamYaw = yaw;
+}
+
+void GraphicsEngine::SetDebugFreecamEnabled(bool enabled) {
+    debugFreecamEnabled = enabled;
 }
 
 void GraphicsEngine::UpdateDebugFreecam() {

@@ -1,6 +1,7 @@
 #pragma once
 #include "mesh.hpp"
 #include "meshpool.hpp"
+#include "modules/graphics_engine_export.hpp"
 #include "window.hpp"
 #include "shader_program.hpp"
 #include <cassert>
@@ -35,7 +36,7 @@ class RenderComponent;
 class RenderComponentNoFO;
 
 // Handles graphics, obviously.
-class GraphicsEngine {
+class GraphicsEngine: public ModuleGraphicsEngineInterface {
     public:
     // the shader used to render the skybox. Can freely change this with no issues.
     std::shared_ptr<ShaderProgram> skyboxShaderProgram;
@@ -61,25 +62,36 @@ class GraphicsEngine {
 
     // freecam is just a thing for debugging
     bool debugFreecamEnabled = false;
-    double debugFreecamPitch = 0; // in degrees, don't get tripped up when you do lookvector which wants radians
-    double debugFreecamYaw = 0;
-    double debugFreecamSpeed = 0;
-    static const inline double debugFreecamAcceleration = 0.01;
+    
 
     // Returns main camera if debug freecam is disabled, otherwise returns debug freecam camera.
     Camera& GetCurrentCamera();
+    Camera& GetMainCamera();
+    Camera& GetDebugFreecamCamera();
+
+    void SetDebugFreecamEnabled(bool);
+    void SetDebugFreecamPitch(double);
+    void SetDebugFreecamYaw(double);
+    void SetDebugFreecamAcceleration(double);
+
+    double debugFreecamPitch = 0; // in degrees, don't get tripped up when you do lookvector which wants radians
+    double debugFreecamYaw = 0;
+
+    void SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram>);
+    void SetSkyboxMaterial(std::shared_ptr<Material>);
+
+    void SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram>);
+    
+    void SetDefaultShaderProgram(std::shared_ptr<ShaderProgram>);
+    void SetDefaultGuiShaderProgram(std::shared_ptr<ShaderProgram>);
+    void SetDefaultBillboardGuiShaderProgram(std::shared_ptr<ShaderProgram>);
+
+    Window& GetWindow();
 
     // Be advised: If you're tryna get camera position/orientation regardless of whether debugfreecam is enabled, use the GetCurrentCamera() method instead.
     Camera camera;
-    Camera debugFreecamCamera;
+    
     Window window = Window(720, 720); // handles windowing, interfaces with GLFW in general
-
-    // When modules (shared libraries) get their copy of this code, they need to use a special version of GraphicsEngine::Get().
-    // This is so that both the module and the main executable have access to the same singleton. 
-    // The executable will provide each shared_library with a pointer to the graphics engine.
-    #ifdef IS_MODULE
-    static void SetModuleGraphicsEngine(GraphicsEngine* engine);
-    #endif
 
     static GraphicsEngine& Get();
 
@@ -109,6 +121,10 @@ class GraphicsEngine {
     std::shared_ptr<ShaderProgram> crummyDebugShader;
 
     private:
+
+    Camera debugFreecamCamera;
+    double debugFreecamSpeed = 0;
+    double debugFreecamAcceleration = 0.01;
 
     friend class Mesh; // literally just friend so dynamic mesh support is less work for me idc about keeping it modular
     friend class RenderComponent;

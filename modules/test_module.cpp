@@ -20,7 +20,7 @@
 // // #include "../src/audio/sound.hpp"
 
 #include "modules/module_globals_pointers.hpp"
-#include "modules/engine_export.hpp"
+#include "modules/graphics_engine_export.hpp"
 
 // #include "debug/log.hpp"
 // #include "gameobjects/component_registry.hpp"
@@ -32,7 +32,7 @@
 
 #include <iostream>
 
-ModuleTestInterface* test;
+ModuleGraphicsEngineInterface* GE;
 
 extern "C" {
 
@@ -46,13 +46,13 @@ __declspec (dllexport) void LoadGlobals(ModulesGlobalsPointers globals) {
     // GuiGlobals::SetModuleGuiGlobals(globals.GG);
     // PhysicsEngine::SetModulePhysicsEngine(globals.PE);
     // AudioEngine::SetModuleAudioEngine(globals.AE);
-    test = globals.TEST;
+    GE = globals.GE;
 }
 
 __declspec (dllexport) void OnInit() {
     
     std::cout << "OH YEAH LETS GO\n";
-    test->PrintTest();
+    
     // auto & GE = GraphicsEngine::Get();
     // auto & CR = ComponentRegistry::Get();
     // auto & PE = PhysicsEngine::Get();
@@ -64,7 +64,7 @@ __declspec (dllexport) void OnInit() {
 }
 
 __declspec (dllexport) void OnPostPhysics() {
-    
+    // GE->SetDebugFreecamPitch(15);
 
     // auto & GE = GraphicsEngine::Get();
 
