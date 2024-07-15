@@ -1,0 +1,13 @@
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/CMakeFiles/uninstall.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/CMakeFiles/UpdateAssimpLibsDebugSymbolsAndDLLs.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/CMakeFiles/INSTALL.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/CMakeFiles/ALL_BUILD.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/CMakeFiles/ZERO_CHECK.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/contrib/zlib/CMakeFiles/zlibstatic.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/contrib/zlib/CMakeFiles/INSTALL.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/contrib/zlib/CMakeFiles/ALL_BUILD.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/code/CMakeFiles/assimp.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/code/CMakeFiles/INSTALL.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/test/CMakeFiles/unit.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/test/CMakeFiles/INSTALL.dir
+C:/Users/ilike/Documents/Downloads/assimp-master/builddir/test/headercheck/CMakeFiles/INSTALL.dir

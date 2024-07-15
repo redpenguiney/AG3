@@ -18,13 +18,14 @@ layout(binding=3) uniform sampler2DArray displacementMap; // note: this syntax n
 uniform bool normalMappingEnabled;
 uniform bool parallaxMappingEnabled;
 uniform bool specularMappingEnabled;
+uniform bool colorMappingEnabled;
 
 struct pointLight {
     vec4 colorAndRange; // w-coord is range, xyz is rgb
     vec4 rel_pos; // w-coord is padding
 };
 
-layout(std430, binding = 1) buffer pointLightSSBO {
+layout(std430, binding = 0) buffer pointLightSSBO {
     uint pointLightCount;
     float stillPadding;
     float morePaddingLol;
@@ -127,7 +128,7 @@ void main()
     }
     
     vec3 normal = fragmentNormal;
-    if (normalMappingEnabled) {normal = normalize(TBNmatrix * (texture(normalMap, realTexCoords).rgb * 2.0 - 1.0));} // todo: matrix multiplication in fragment shader is really bad
+    if (normalMappingEnabled) {normal = normalize(TBNmatrix * (texture(normalMap, realTexCoords).rgb * 2.0 - 1.0));} // todo: matrix multiplication in fragment shader is really bad, maybe?
 
     vec3 light = vec3(0, 0, 0);
     for (uint i = 0; i < pointLightCount; i++) {
@@ -148,5 +149,5 @@ void main()
     vec3 globalAmbient = vec3(0.1, 0.1, 0.1);
     vec4 color = tx * fragmentColor * vec4((light + globalAmbient), 1);
     Output = color;
-
+    //Output = fragmentColor;
 };

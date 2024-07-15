@@ -46,12 +46,12 @@ __declspec (dllexport) void LoadGlobals(ModulesGlobalsPointers globals) {
     // GuiGlobals::SetModuleGuiGlobals(globals.GG);
     // PhysicsEngine::SetModulePhysicsEngine(globals.PE);
     // AudioEngine::SetModuleAudioEngine(globals.AE);
-    GE = globals.GE;
+    //GE = globals.GE;
 }
 
 __declspec (dllexport) void OnInit() {
     
-    std::cout << "OH YEAH LETS GO\n";
+    //std::cout << "OH YEAH LETS GO\n";
     
     // auto & GE = GraphicsEngine::Get();
     // auto & CR = ComponentRegistry::Get();
