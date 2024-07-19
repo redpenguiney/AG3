@@ -14,6 +14,9 @@ layout(location=6) in mat4 modelMatrix;
 layout(location=10) in mat3 normalMatrix;
 // locations 10-12 are part of normalMatrix
 
+// arb1 is z index
+layout(location=13) in float arb1;
+
 // (orthrographic projection)
 uniform mat4 orthro;
 uniform mat4 perspective;
@@ -25,6 +28,7 @@ void main()
 {
 
     gl_Position = orthro * modelMatrix * vec4(vertexPos, 1.0);
+    gl_Position.z = arb1;
    
     fragmentColor = vertexColor;
     fragmentTexCoords = vec3(textureXY, textureZ);

@@ -33,5 +33,6 @@ void main()
         discard;
     };
 
-    Output = color;
+    //Output = color;
+    Output = vec4(gl_FragCoord.zzz * color.xyz, 1.0);
 };

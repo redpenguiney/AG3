@@ -72,8 +72,8 @@ screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, MeshCreateP
     
 
     defaultShaderProgram = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl");
-    defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", {}, false, false, false, true);
-    defaultBillboardGuiShaderProgram = ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", {}, true, true, false, true);
+    defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", {}, false, false, false, true, true);
+    defaultBillboardGuiShaderProgram = ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", {}, true, true, false, true, true);
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
     crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
@@ -294,58 +294,13 @@ void GraphicsEngine::RenderScene(float dt) {
     UpdateMainFramebuffer();
     mainFramebuffer->Bind();
 
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear screen
     
-    glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
-    glEnable(GL_CULL_FACE); // backface culling
 
     // tell opengl how to do transparency
     glEnable(GL_BLEND); 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
 
-    if (wireframeDrawing) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    }
-    else {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);            
-    }
-
-    // Draw world stuff.
-    for (auto & [shaderId, map1] : meshpools) {
-        auto& shader = ShaderProgram::Get(shaderId);
-        shader->Use();
-        pointLightDataBuffer.BindBase(0);
-        for (auto & [materialId, map2] : map1) {
-            if (materialId == 0) { // 0 means no material
-                Material::Unbind();
-
-                shader->Uniform("specularMappingEnabled", false);
-                shader->Uniform("fontMappingEnabled", false);
-                shader->Uniform("normalMappingEnabled", false);
-                shader->Uniform("parallaxMappingEnabled", false);
-                shader->Uniform("colorMappingEnabled", false);
-            }
-            else {
-                
-                auto& material = Material::Get(materialId);
-                material->Use();
-
-                // if (materialId == 4) {
-                //     std::cout << "BINDING THING WITH FONTMAP.\n";
-                // }
-
-                shader->Uniform("specularMappingEnabled", material->HasSpecularMap());
-                shader->Uniform("fontMappingEnabled", material->HasFontMap());
-                shader->Uniform("normalMappingEnabled", material->HasNormalMap());
-                shader->Uniform("parallaxMappingEnabled", material->HasDisplacementMap());
-                shader->Uniform("colorMappingEnabled", material->HasColorMap());
-            }
-            
-            for (auto & [poolId, pool] : map2) {
-                pool->Draw();
-            } 
-        } 
-    }
+    DrawWorld(true);
     
     UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
     // Draw skybox afterwards to encourage early z-test
@@ -363,9 +318,10 @@ void GraphicsEngine::RenderScene(float dt) {
     mainFramebuffer->textureAttachments.at(0).Use();
     screenQuad.Draw();
 
+    DrawWorld(false);
+
     // Debugging stuff
     // TODO: actual settings to toggle debug stuff
-    
     // SpatialAccelerationStructure::Get().DebugVisualize();
     DebugAxis();
 
@@ -460,6 +416,61 @@ void GraphicsEngine::UpdateMeshpools() {
                 pool->Update();
             } 
         } 
+    }
+}
+
+void GraphicsEngine::DrawWorld(bool postProc)
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear screen
+
+    glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
+    glEnable(GL_CULL_FACE); // backface culling
+
+    if (wireframeDrawing) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    }
+    else {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
+    // Draw world stuff.
+    for (auto& [shaderId, map1] : meshpools) {
+        auto& shader = ShaderProgram::Get(shaderId);
+        if (shader->ignorePostProc == postProc) {
+            continue;
+        }
+        shader->Use();
+        pointLightDataBuffer.BindBase(0);
+        for (auto& [materialId, map2] : map1) {
+            if (materialId == 0) { // 0 means no material
+                Material::Unbind();
+
+                shader->Uniform("specularMappingEnabled", false);
+                shader->Uniform("fontMappingEnabled", false);
+                shader->Uniform("normalMappingEnabled", false);
+                shader->Uniform("parallaxMappingEnabled", false);
+                shader->Uniform("colorMappingEnabled", false);
+            }
+            else {
+
+                auto& material = Material::Get(materialId);
+                material->Use();
+
+                // if (materialId == 4) {
+                //     std::cout << "BINDING THING WITH FONTMAP.\n";
+                // }
+
+                shader->Uniform("specularMappingEnabled", material->HasSpecularMap());
+                shader->Uniform("fontMappingEnabled", material->HasFontMap());
+                shader->Uniform("normalMappingEnabled", material->HasNormalMap());
+                shader->Uniform("parallaxMappingEnabled", material->HasDisplacementMap());
+                shader->Uniform("colorMappingEnabled", material->HasColorMap());
+            }
+
+            for (auto& [poolId, pool] : map2) {
+                pool->Draw();
+            }
+        }
     }
 }
 

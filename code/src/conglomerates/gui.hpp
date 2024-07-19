@@ -86,6 +86,7 @@ class Gui {
     
     std::shared_ptr<GameObject> object;
 
+    // if haveText == true, then fontMaterial must be a material with a fontmap attached.
     Gui(bool haveText = false, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial = std::nullopt, std::optional<BillboardGuiInfo> billboardInfo = std::nullopt, std::shared_ptr<ShaderProgram> guiShader = GraphicsEngine::Get().defaultGuiShaderProgram);
 
     ~Gui();
@@ -109,13 +110,13 @@ class Gui {
     // Offset position in pixels
     glm::vec2 offsetPos;
 
-    // % of the screen on each axis. (0, 0) is the center of the screen, screen is in interval [-1, 1].
+    // % of the screen on each axis. (0.5, 0.5) is the center of the screen, screen is in interval [0, 1].
     glm::vec2 scalePos;
 
     // Offset size in pixels
     glm::vec2 offsetSize;
 
-    // % of the screen on each axis. (0, 0) is the center of the screen, screen is in interval [-1, 1].
+    // % of the screen on each axis. (1, 1) would cover the whole screen if centered.
     glm::vec2 scaleSize;
 
     enum {
@@ -134,11 +135,15 @@ class Gui {
     // Call after changing font, text, or text-formatting-related stuff
     void UpdateGuiText(); 
 
-    // Call after modifying any graphics related (not text-related and not pos/rot/scl) variables to actually apply those changes to the gui's transform.
+    // Call after modifying any graphics related (not text-related and not pos/rot/scl) variables to actually apply those changes to the gui's appearance.
     void UpdateGuiGraphics();
 
     // get size of the gui in pixels
     glm::vec2 GetPixelSize();
+
+    // Won't fire 
+    Event<> onMouseEnter;
+    Event<> onMouseExit;
 
     private:
     // If not nullopt, the gui has text
@@ -146,5 +151,4 @@ class Gui {
 
     // If not nullopt, will make the gui basically 3d
     std::optional<BillboardGuiInfo> billboardInfo;
-    
 };

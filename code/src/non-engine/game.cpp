@@ -11,6 +11,8 @@
 #include <conglomerates/gui.hpp>
 #include <memory>
 
+#include "modifier.hpp"
+
 //auto n = FastNoise::New<FastNoise::Simplex>();
 //auto f = FastNoise::New<FastNoise::Generator>();
 noise::module::Perlin perlinNoiseGenerator;
@@ -24,11 +26,31 @@ void MakeMainMenu() {
     auto& AE = AudioEngine::Get();
     auto& CR = ComponentRegistry::Get();
 
+    auto ttfParams = TextureCreateParams({ "../fonts/arial.ttf", }, Texture::FontMap);
+    ttfParams.fontHeight = 24;
+    ttfParams.format = Texture::Grayscale_8Bit;
+    auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
+
     // don't take by reference bc vector reallocation invalidates references
-    auto container = mainMenuGuis.emplace_back(std::make_shared<Gui>());
-    container->rgba = { 1, 1, 1, 1 };
+    auto startGame = mainMenuGuis.emplace_back(std::move(std::make_shared<Gui>(true, std::optional(std::make_pair(arialLayer, arialFont )))));
+
+    startGame->rgba = { 0, 0, 1, 1 };
+    startGame->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
+
+    startGame->scalePos = { 0.5, 0.5 };
+    startGame->scaleSize = { 0, 0 };
+    startGame->offsetSize = { 300, 60 };
+    startGame->anchorPoint = { 0, 0 };
     
-    container->UpdateGuiGraphics();
+    startGame->GetTextInfo().text = "START GAME";
+    startGame->GetTextInfo().rgba = { 1, 0, 0, 1 };
+    startGame->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+    startGame->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+
+    startGame->UpdateGuiGraphics();
+    startGame->UpdateGuiTransform();
+    startGame->UpdateGuiText();
+    
 }
 
 void GameInit()
@@ -316,47 +338,48 @@ void GameInit()
     //// glLineWidth(2.0);
 
 
-    //// {
-    ////     auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
-    ////     ttfParams.fontHeight = 16;
-    ////     ttfParams.format = Texture::Grayscale_8Bit;
-    ////     auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
+     //{
+     //    auto ttfParams = TextureCreateParams({"../fonts/arial.ttf",}, Texture::FontMap);
+     //    ttfParams.fontHeight = 16;
+     //    ttfParams.format = Texture::Grayscale_8Bit;
+     //    auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
 
-    ////     ui = new Gui(true, 
-    ////     std::make_optional(std::make_pair(arialLayer, arialFont)), 
-    ////     std::nullopt, 
-    ////     Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), 
-    ////     GraphicsEngine::Get().defaultBillboardGuiShaderProgram);
-    ////     ui->scaleSize = {0.5, 0.15};
-    ////     ui->guiScaleMode = Gui::ScaleXX;
-    ////     ui->offsetPos = {0.0, 0.0};
-    ////     // ui->scalePos = {0.5, 0.5};
-    ////     ui->anchorPoint = {0.0, 0.0};
-    ////     ui->rgba.a = 0.0;
-    ////     ui->GetTextInfo().rgba = {1.0, 1.0, 1.0, 1.0};
+     //    auto ui = new Gui(true,
+     //        std::make_optional(std::make_pair(arialLayer, arialFont)),
+     //        std::nullopt
+     //        //Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), 
+     //        //GraphicsEngine::Get().defaultBillboardGuiShaderProgram);
+     //     );
+     //    ui->scaleSize = {0.5, 0.15};
+     //    ui->guiScaleMode = Gui::ScaleXX;
+     //    ui->offsetPos = {0.0, 0.0};
+     //     ui->scalePos = {0.5, 0.5};
+     //    ui->anchorPoint = {0.0, 0.0};
+     //    ui->rgba.a = 0.0;
+     //    ui->GetTextInfo().rgba = {1.0, 1.0, 1.0, 1.0};
 
-    ////     // ui->GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
-    ////     // ui->GetTextInfo().text = "Tga appbHb kok wjijj wa abcdefghijk eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
-    ////     ui->GetTextInfo().topMargin = 0;
-    ////     ui->GetTextInfo().bottomMargin = 0;
-    ////     ui->GetTextInfo().lineHeight = 1.0;
-    ////     ui->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
-    ////     ui->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
-    ////     ui->UpdateGuiText();
-    ////     ui->UpdateGuiGraphics();
-    ////     ui->UpdateGuiTransform();
+     //     ui->GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
+     //     //ui->GetTextInfo().text = "Tga appbHb kok wjijj wa abcdefghijk eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+     //    ui->GetTextInfo().topMargin = 0;
+     //    ui->GetTextInfo().bottomMargin = 0;
+     //    ui->GetTextInfo().lineHeight = 1.0;
+     //    ui->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+     //    ui->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+     //    ui->UpdateGuiText();
+     //    ui->UpdateGuiGraphics();
+     //    ui->UpdateGuiTransform();
 
-    ////     // Gui ui2(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
-    ////     // ui2.scaleSize = {0.25, 0.05};
-    ////     // ui2.guiScaleMode = Gui::ScaleXX;
-    ////     // ui2.offsetPos = {0.0, 0.0};
-    ////     // ui2.scalePos = {0.75, 0.0};
-    ////     // ui2.anchorPoint = {0.0, -1.0};   
+     //     Gui ui2(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
+     //     ui2.scaleSize = {0.25, 0.05};
+     //     ui2.guiScaleMode = Gui::ScaleXX;
+     //     ui2.offsetPos = {0.0, 0.0};
+     //     ui2.scalePos = {0.75, 0.0};
+     //     ui2.anchorPoint = {0.0, -1.0};   
 
-    ////     // ui2.rgba = {1.0, 0.5, 0.0, 1.0};
-    ////     // ui2.UpdateGuiGraphics();
-    ////     // ui2.UpdateGuiTransform();
-    //// }
+     //     ui2.rgba = {1.0, 0.5, 0.0, 1.0};
+     //     ui2.UpdateGuiGraphics();
+     //     ui2.UpdateGuiTransform();
+     //}
 
     //// LUA.RunString("print(\"help from lua\")");
     //// LUA.RunFile("../scripts/test.lua");

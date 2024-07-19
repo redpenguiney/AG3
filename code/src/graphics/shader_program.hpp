@@ -25,6 +25,7 @@ class ShaderProgram {
     // lets programId be read only without a getter
     const unsigned int& shaderProgramId = programId;
 
+    const bool ignorePostProc; // if true, stuff with this shader will be rendered after postprocessing (on top of the screen quad)
     const bool usePerspective; // if true, the uniform mat4 "perspective" in this program's vertex shader will be automatically set to a perspective projection + view matrix.
     const bool useOrthro; // if true, the uniform mat4 "orthro" in this program's vertex shader will automatically be set to an orthrographic projection matrix.
     const bool useFloatingOrigin; // if true, camera translation will be done in the shader instead of with doubles on the gpu
@@ -39,7 +40,7 @@ class ShaderProgram {
 
     // Returns id of generated program.
     // additionalIncludedFiles is an optional vector of filepaths to files included by the other shaders.
-    static std::shared_ptr<ShaderProgram> New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles = {}, const bool floatingOrigin = true, const bool perspectiveProjection = true, const bool useLightClusters = true, const bool orthrographicProjection = false);
+    static std::shared_ptr<ShaderProgram> New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles = {}, const bool floatingOrigin = true, const bool perspectiveProjection = true, const bool useLightClusters = true, const bool orthrographicProjection = false, const bool ignorePostProc = false);
 
     // Creates a compute shader for performing arbitrary GPU calculations.
     // Returns id of generated program.
@@ -73,7 +74,7 @@ class ShaderProgram {
     std::unordered_map<std::string, int> uniform_locations; // used to set uniform variables
     
 
-    ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool usePerspective, const bool useLightClusters, const bool orthrographic);
+    ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool usePerspective, const bool useLightClusters, const bool orthrographic, const bool ignorePostProc);
     ShaderProgram(const char* computePath);
 
 };

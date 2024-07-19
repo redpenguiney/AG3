@@ -201,6 +201,8 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
     void UpdateDebugFreecam();
     void AddCachedMeshes();
     void UpdateMeshpools();
+    // postProc is true if what's being drawn SHOULD do post proc
+    void DrawWorld(bool postProc);
 
     // void SetColor(const RenderComponent& component, const glm::vec4& rgba);
     void SetModelMatrix(const RenderComponent& component, const glm::mat4x4& model);

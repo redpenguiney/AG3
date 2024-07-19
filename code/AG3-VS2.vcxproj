@@ -138,6 +138,8 @@
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <SmallerTypeCheck>false</SmallerTypeCheck>
       <BasicRuntimeChecks />
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -194,6 +196,8 @@
       <SmallerTypeCheck>false</SmallerTypeCheck>
       <BasicRuntimeChecks />
       <AdditionalIncludeDirectories>;external_headers</AdditionalIncludeDirectories>
+      <UndefinePreprocessorDefinitions>
+      </UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>external_binaries;external_binaries/x64noise</AdditionalLibraryDirectories>
@@ -258,7 +262,12 @@
     <ClCompile Include="src\network\client.cpp" />
     <ClCompile Include="src\network\network.cpp" />
     <ClCompile Include="src\network\protocol.cpp" />
+    <ClCompile Include="src\non-engine\attribute.cpp" />
+    <ClCompile Include="src\non-engine\creature.cpp" />
     <ClCompile Include="src\non-engine\game.cpp" />
+    <ClCompile Include="src\non-engine\health.cpp" />
+    <ClCompile Include="src\non-engine\humanoid.cpp" />
+    <ClCompile Include="src\non-engine\modifier.cpp" />
     <ClCompile Include="src\physics\gjk.cpp" />
     <ClCompile Include="src\physics\mesh_simplification.cpp" />
     <ClCompile Include="src\physics\pengine.cpp" />
@@ -316,6 +325,7 @@
     <ClInclude Include="src\network\protocol.hpp" />
     <ClInclude Include="src\non-engine\creature.hpp" />
     <ClInclude Include="src\non-engine\game.hpp" />
+    <ClInclude Include="src\non-engine\injury.hpp" />
     <ClInclude Include="src\physics\aabb.hpp" />
     <ClInclude Include="src\physics\gjk.hpp" />
     <ClInclude Include="src\physics\pengine.hpp" />

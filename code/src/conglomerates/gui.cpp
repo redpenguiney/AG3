@@ -168,7 +168,7 @@ void Gui::UpdateGuiTransform() {
 
     
 
-    glm::vec3 realPosition(centerPosition.x, centerPosition.y, 0.0);
+    glm::vec3 realPosition(centerPosition.x, centerPosition.y, zLevel);
 
     // if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
     //     realPosition = billboardInfo->followObject.lock()->transformComponent->Position();
@@ -195,8 +195,8 @@ void Gui::UpdateGuiTransform() {
     object->transformComponent->SetRot(rot);
 
     if (guiTextInfo.has_value()) {
-        // guiTextInfo->object->transformComponent->SetPos({0.0, 5.0, 0.0});
-        guiTextInfo->object->transformComponent->SetPos(realPosition);
+         //guiTextInfo->object->transformComponent->SetPos({50.0, 59.0, 0.0});
+        guiTextInfo->object->transformComponent->SetPos(realPosition + glm::vec3(0, 0.1, 0));
         guiTextInfo->object->transformComponent->SetRot(textRot);
     }
 

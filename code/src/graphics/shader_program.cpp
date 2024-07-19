@@ -83,8 +83,8 @@ void ShaderProgram::SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 
     }
 }
 
-std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool usePerspective, const bool useLightClusters, const bool orthrographicProjection) {
-    auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexPath, fragmentPath, additionalIncludedFiles, floatingOrigin, usePerspective, useLightClusters, orthrographicProjection));
+std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool usePerspective, const bool useLightClusters, const bool orthrographicProjection, const bool ignorePostProc) {
+    auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexPath, fragmentPath, additionalIncludedFiles, floatingOrigin, usePerspective, useLightClusters, orthrographicProjection, ignorePostProc));
     MeshGlobals::Get().LOADED_PROGRAMS.emplace(ptr->programId, ptr);
     return ptr;
 }
@@ -151,7 +151,8 @@ void ShaderProgram::Use() {
     }
 }
 
-ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool perspectiveProjection, const bool useLightClusters, const bool orthrographic): 
+ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool perspectiveProjection, const bool useLightClusters, const bool orthrographic, const bool ignorePostProc):
+ignorePostProc(ignorePostProc),
 usePerspective(perspectiveProjection),
 useOrthro(orthrographic),
 useFloatingOrigin(floatingOrigin),
