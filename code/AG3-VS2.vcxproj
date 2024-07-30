@@ -308,6 +308,7 @@
     <ClInclude Include="src\graphics\material.hpp" />
     <ClInclude Include="src\graphics\mesh.hpp" />
     <ClInclude Include="src\graphics\meshpool.hpp" />
+    <ClInclude Include="src\graphics\mesh_provider.hpp" />
     <ClInclude Include="src\graphics\renderable_mesh.hpp" />
     <ClInclude Include="src\graphics\shader_program.hpp" />
     <ClInclude Include="src\graphics\texture.hpp" />

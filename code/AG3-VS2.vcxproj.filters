@@ -386,5 +386,8 @@
     <ClInclude Include="src\non-engine\chunk.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\graphics\mesh_provider.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
