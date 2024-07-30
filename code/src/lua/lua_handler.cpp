@@ -261,9 +261,9 @@ LuaHandler::LuaHandler() {
     windowUsertype["mouseLocked"] = sol::property(&Window::SetMouseLocked);
     windowUsertype["Close"] = &Window::Close;
     windowUsertype["ShouldClose"] = &Window::ShouldClose;
-    windowUsertype["IsPressBegan"] = &Window::IsPressBegan;
+    /*windowUsertype["IsPressBegan"] = &Window::IsPressBegan;
     windowUsertype["IsPressEnded"] = &Window::IsPressEnded;
-    windowUsertype["IsPressed"] = &Window::IsPressed;
+    windowUsertype["IsPressed"] = &Window::IsPressed;*/
 
     // meshes
     auto meshCreateParamsUsertype = LUA_STATE->new_usertype<MeshCreateParams>("MeshCreateParams", sol::factories(MeshCreateParams::Default));

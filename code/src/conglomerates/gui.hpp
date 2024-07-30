@@ -39,9 +39,9 @@ class GuiGlobals {
 // Everything this does, you could just do yourself with rendercomponents + transformcomponents if you want, all this does is call functions on/set values of render/transform components when UpdateGuiTransform()/UpdateGuiGraphics() is called.
 class Gui {
     public:
-    // window.cpp calls this when the window resolution changes to handle stuff.
-    static void UpdateGuiForNewWindowResolution();
-    static void UpdateBillboardGuis();
+
+    // called in main.cpp, connects some events
+    static void Init();
 
     struct GuiTextInfo {
 
@@ -141,11 +141,29 @@ class Gui {
     // get size of the gui in pixels
     glm::vec2 GetPixelSize();
 
-    // Won't fire 
+    // get position of the gui's center (NOT OF THE ANCHOR POINT) in pixels
+    glm::vec2 GetPixelPos();
+
+    // Won't fire if the gui entered and exited in the same frame.
     Event<> onMouseEnter;
     Event<> onMouseExit;
 
+    // Like window input events, but only fire when the mouse is over the gui.
+    Event<InputObject> onInputBegin;
+    Event<InputObject> onInputEnd;
+
+    // returns mouseHover; true if mouse is over the gui.
+    bool IsMouseOver();
+
     private:
+
+    // true if mouse was on this gui last frame.
+    bool mouseHover;
+
+    static void UpdateGuiForNewWindowResolution(glm::uvec2 oldSize, glm::uvec2 newSize);
+    static void FireInputEvents();
+    static void UpdateBillboardGuis(float);
+
     // If not nullopt, the gui has text
     std::optional<GuiTextInfo> guiTextInfo;
 

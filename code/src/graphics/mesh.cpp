@@ -866,7 +866,7 @@ void Mesh::StopModifying(bool normalizeSize) {
     if (normalizeSize) {
         NormalizePositions();
     }
-
+ 
     // std::cout << "MODIFICATION HALTED\n";
     // std::cout << "There are " << GraphicsEngine::Get().dynamicMeshUsers.size() << " dynamic mesh users.\n";
 

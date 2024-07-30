@@ -201,6 +201,12 @@
     <ClCompile Include="src\non-engine\humanoid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\non-engine\chunk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\non-engine\world_loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\debug\debug.hpp">
@@ -375,6 +381,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\non-engine\injury.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\non-engine\chunk.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

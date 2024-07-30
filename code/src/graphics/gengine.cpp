@@ -722,7 +722,7 @@ void GraphicsEngine::UpdateDebugFreecam() {
     assert(debugFreecamEnabled);
 
     // camera acceleration
-    if (window.PRESSED_KEYS[GLFW_KEY_W] || window.PRESSED_KEYS[GLFW_KEY_S] || window.PRESSED_KEYS[GLFW_KEY_A] || window.PRESSED_KEYS[GLFW_KEY_D] || window.PRESSED_KEYS[GLFW_KEY_Q] || window.PRESSED_KEYS[GLFW_KEY_E]) {
+    if (window.PRESSED_KEYS.contains(InputObject::W) || window.PRESSED_KEYS.contains(InputObject::S) || window.PRESSED_KEYS.contains(InputObject::A) || window.PRESSED_KEYS.contains(InputObject::D) || window.PRESSED_KEYS.contains(InputObject::Q) || window.PRESSED_KEYS.contains(InputObject::E)) {
         debugFreecamSpeed += debugFreecamAcceleration;
     }
     else {
@@ -746,9 +746,9 @@ void GraphicsEngine::UpdateDebugFreecam() {
     auto look = LookVector(glm::radians(debugFreecamPitch), glm::radians(debugFreecamYaw));
     auto right = LookVector(0, glm::radians(debugFreecamYaw + 90));
     auto up = glm::cross(look, right);
-    glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(window.PRESSED_KEYS[GLFW_KEY_D] - window.PRESSED_KEYS[GLFW_KEY_A]);
-    glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(window.PRESSED_KEYS[GLFW_KEY_Q] - window.PRESSED_KEYS[GLFW_KEY_E]);
-    glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(window.PRESSED_KEYS[GLFW_KEY_W] - window.PRESSED_KEYS[GLFW_KEY_S]);
+    glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(window.PRESSED_KEYS.contains(InputObject::D) - window.PRESSED_KEYS.contains(InputObject::A));
+    glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(window.PRESSED_KEYS.contains(InputObject::Q) - window.PRESSED_KEYS.contains(InputObject::E));
+    glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(window.PRESSED_KEYS.contains(InputObject::W) - window.PRESSED_KEYS.contains(InputObject::S));
     debugFreecamCamera.position += rightMovement + forwardMovement + upMovement;
 }
 

@@ -25,7 +25,7 @@ GuiGlobals& GuiGlobals::Get() {
 
 GuiGlobals::GuiGlobals() {}
 
-void Gui::UpdateGuiForNewWindowResolution() {
+void Gui::UpdateGuiForNewWindowResolution(glm::uvec2 oldSize, glm::uvec2 newSize) {
     for (auto & ui: GuiGlobals::Get().listOfGuis) {
         if (ui->guiTextInfo.has_value()) {
             ui->UpdateGuiText();
@@ -34,8 +34,67 @@ void Gui::UpdateGuiForNewWindowResolution() {
     }
 }
 
+// TODO: O(nGuis) complexity, not huge deal but spatial partioning structure (shudder) might be wise eventually
+void Gui::FireInputEvents()
+{
+    for (auto& ui : GuiGlobals::Get().listOfGuis) {
 
-void Gui::UpdateBillboardGuis() {
+        // if no one cares whether the mouse is on this gui, don't bother calculating it.
+        if (!ui->onMouseEnter.HasConnections() && !ui->onMouseExit.HasConnections() && !ui->onInputBegin.HasConnections() && !ui->onInputEnd.HasConnections()) {
+            continue;
+        }
+
+        // determine if mouse is over the gui.
+
+        // so that we can treat the gui's rotation as 0 and do a simple AABB-point intersection test, we rotate the cursor position by the inverse of the gui's current rotation.
+        glm::vec2 relCursorPos = ui->GetPixelPos() - glm::vec2(GraphicsEngine::Get().GetWindow().MOUSE_POS);
+        glm::uvec2 cursorPos = glm::vec2(ui->GetPixelPos()) + glm::vec2(glm::quat(ui->rotation, glm::vec3(0, 0, 1)) * glm::vec3(relCursorPos, 0.0f));
+
+        unsigned int left = ui->GetPixelPos().x - ui->GetPixelSize().x / 2;
+        unsigned int right = ui->GetPixelPos().x + ui->GetPixelSize().x / 2;
+        unsigned int bottom = ui->GetPixelPos().y - ui->GetPixelSize().y / 2;
+        unsigned int top = ui->GetPixelPos().y + ui->GetPixelSize().y / 2;
+
+        bool isMouseIntersecting = false;
+        if (cursorPos.x > left && cursorPos.x < right && cursorPos.y > bottom && cursorPos.y < top) {
+            isMouseIntersecting = true;
+        }
+
+
+        if (ui->mouseHover != isMouseIntersecting) { // then the cursor has either moved onto or off of the gui.
+            if (isMouseIntersecting) { // then we started being on the ui.
+                ui->onMouseEnter.Fire();
+            }
+            else { // then we stopped being on the ui.
+                ui->onMouseExit.Fire();
+            }
+        }
+
+        // fire input events
+        if (isMouseIntersecting && ui->onInputBegin.HasConnections()) {
+            for (const InputObject& event : GraphicsEngine::Get().window.PRESS_BEGAN_KEYS) {
+                ui->onInputBegin.Fire(event);
+            }  
+        }
+        if (isMouseIntersecting && ui->onInputEnd.HasConnections()) {
+            for (const InputObject& event : GraphicsEngine::Get().window.PRESS_ENDED_KEYS) {
+                ui->onInputEnd.Fire(event);
+            }
+        }
+
+        ui->mouseHover = isMouseIntersecting;
+    }
+}
+
+void Gui::Init()
+{
+    GraphicsEngine::Get().GetWindow().onWindowResize.Connect(&UpdateGuiForNewWindowResolution);
+    GraphicsEngine::Get().GetWindow().postInputProccessing.Connect(&FireInputEvents);
+    GraphicsEngine::Get().preRenderEvent.Connect(&UpdateBillboardGuis);
+}
+
+
+void Gui::UpdateBillboardGuis(float) {
     for (auto & ui: GuiGlobals::Get().listOfBillboardGuis) {
         ui->UpdateGuiTransform();
     }
@@ -43,6 +102,8 @@ void Gui::UpdateBillboardGuis() {
 
 Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<BillboardGuiInfo> billboardGuiInfo, std::shared_ptr<ShaderProgram> guiShader) {
     GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, billboardGuiInfo ? ComponentRegistry::RenderComponentBitIndex : ComponentRegistry::RenderComponentNoFOBitIndex});
+
+    mouseHover = false;
 
     objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : 0);
     objectParams.meshId = Mesh::Square()->meshId;
@@ -144,7 +205,6 @@ Gui::~Gui() {
 }
 
 void Gui::UpdateGuiTransform() {
-    glm::vec2 realWindowResolution = {GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height};
     // std::cout << "Res = " << glm::to_string(realWindowResolution) << ".\n";
 
     glm::vec2 size = GetPixelSize();
@@ -154,17 +214,7 @@ void Gui::UpdateGuiTransform() {
 
     object->transformComponent->SetScl(glm::vec3(size.x, size.y, 1));
     
-    glm::vec2 modifiedScalePos = scalePos;
-    if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
-        glm::vec3 projected = GraphicsEngine::Get().GetCurrentCamera().ProjectToScreen(billboardInfo->followObject.lock()->transformComponent->Position(), GraphicsEngine::Get().window.Aspect());
-        modifiedScalePos += glm::vec2(projected);
-        if (projected.z < 0 || projected.z > 1) {modifiedScalePos.x += 10000;}
-    }
-
-    glm::vec2 anchorPointPosition = modifiedScalePos * realWindowResolution + offsetPos;
-    glm::vec2 centerPosition = anchorPointPosition - (anchorPoint * size);
-    // std::cout << "Center pos is " << glm::to_string(centerPosition) << ".\n";
-    // std::cout << "Size is " << glm::to_string(size) << ".\n";
+    glm::vec2 centerPosition = GetPixelPos();
 
     
 
@@ -196,7 +246,7 @@ void Gui::UpdateGuiTransform() {
 
     if (guiTextInfo.has_value()) {
          //guiTextInfo->object->transformComponent->SetPos({50.0, 59.0, 0.0});
-        guiTextInfo->object->transformComponent->SetPos(realPosition + glm::vec3(0, 0.1, 0));
+        guiTextInfo->object->transformComponent->SetPos(realPosition + glm::vec3(0, 0.0, 0.1));
         guiTextInfo->object->transformComponent->SetRot(textRot);
     }
 
@@ -259,7 +309,7 @@ void Gui::UpdateGuiText() {
 }
 
 glm::vec2 Gui::GetPixelSize() {
-    glm::vec2 windowResolution;
+    glm::vec2 windowResolution {};
     
     if (guiScaleMode == ScaleXX) {
         windowResolution.x = GraphicsEngine::Get().window.width;
@@ -285,4 +335,29 @@ glm::vec2 Gui::GetPixelSize() {
     glm::vec2 size = (scaleSize * windowResolution) + offsetSize;
 
     return size;
+}
+
+glm::vec2 Gui::GetPixelPos()
+{
+    glm::vec2 realWindowResolution = { GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height };
+    glm::vec2 size = GetPixelSize();
+
+    glm::vec2 modifiedScalePos = scalePos;
+    if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
+        glm::vec3 projected = GraphicsEngine::Get().GetCurrentCamera().ProjectToScreen(billboardInfo->followObject.lock()->transformComponent->Position(), GraphicsEngine::Get().window.Aspect());
+        modifiedScalePos += glm::vec2(projected);
+        if (projected.z < 0 || projected.z > 1) { modifiedScalePos.x += 10000; }
+    }
+
+    glm::vec2 anchorPointPosition = modifiedScalePos * realWindowResolution + offsetPos;
+    glm::vec2 centerPosition = anchorPointPosition - (anchorPoint * size);
+    // std::cout << "Center pos is " << glm::to_string(centerPosition) << ".\n";
+    // std::cout << "Size is " << glm::to_string(size) << ".\n";
+
+    return centerPosition;
+}
+
+bool Gui::IsMouseOver()
+{
+    return mouseHover;
 }
