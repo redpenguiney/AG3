@@ -1,0 +1,15 @@
+{
+    "dependencies": [
+        "glm",
+        "openal-soft",
+        "glew",
+        "glfw3",
+        "boost-asio",
+        "freetype",
+        "stb",
+        "sol2",
+        "assimp",
+        "lua",
+        "libnoise"
+    ]
+}
