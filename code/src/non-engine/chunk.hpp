@@ -3,6 +3,7 @@
 #include <gameobjects/component_registry.hpp>
 #include "utility/hash_glm.hpp"
 
+
 const unsigned int MAX_LOD_LEVELS = 4;
 const float MAX_CHUNK_SIZE = 32 * powf(2, MAX_LOD_LEVELS - 1); // size of the lowest-detail possible chunk
 const float MAX_CHUNK_RESOLUTION = 1 * powf(2, MAX_LOD_LEVELS - 1); // resolution of the lowest-detail possible chunk; meters per sample

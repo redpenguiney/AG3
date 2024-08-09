@@ -108,6 +108,7 @@ void Chunk::Update()
 		provider.resolution = MAX_CHUNK_RESOLUTION * powf(2, -lod);
 		provider.distanceFunction = CalcWorldHeightmap;
 		mesh->Remesh(provider);
+
 	}
 }
 

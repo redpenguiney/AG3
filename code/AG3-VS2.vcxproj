@@ -276,7 +276,10 @@
     <ClCompile Include="src\non-engine\health.cpp" />
     <ClCompile Include="src\non-engine\humanoid.cpp" />
     <ClCompile Include="src\non-engine\modifier.cpp" />
+<<<<<<< HEAD
     <ClCompile Include="src\non-engine\worldgen.cpp" />
+=======
+>>>>>>> a972f8359ae07dd03a8c96b1b4c0914f98b8b242
     <ClCompile Include="src\non-engine\world_loader.cpp" />
     <ClCompile Include="src\physics\gjk.cpp" />
     <ClCompile Include="src\physics\mesh_simplification.cpp" />

@@ -207,6 +207,7 @@
     <ClCompile Include="src\non-engine\world_loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+<<<<<<< HEAD
     <ClCompile Include="src\graphics\mesh_provider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -216,6 +217,8 @@
     <ClCompile Include="src\non-engine\worldgen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+=======
+>>>>>>> a972f8359ae07dd03a8c96b1b4c0914f98b8b242
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\debug\debug.hpp">
@@ -398,6 +401,7 @@
     <ClInclude Include="src\graphics\mesh_provider.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+<<<<<<< HEAD
     <ClInclude Include="src\debug\assert.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -407,5 +411,7 @@
     <ClInclude Include="src\non-engine\worldgen.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+=======
+>>>>>>> a972f8359ae07dd03a8c96b1b4c0914f98b8b242
   </ItemGroup>
 </Project>

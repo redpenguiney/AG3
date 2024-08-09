@@ -16,6 +16,7 @@
 //auto n = FastNoise::New<FastNoise::Simplex>();
 //auto f = FastNoise::New<FastNoise::Generator>();
 //noise::module::Perlin perlinNoiseGenerator;
+noise::module::Perlin perlinNoiseGenerator;
 
 bool inMainMenu = true;
 
