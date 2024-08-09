@@ -1,5 +1,5 @@
 #pragma once
-#include <cassert>
+#include "debug/assert.hpp"
 #include <vector>
 
 // The TextureAtlas struct describes where each individual object texture/region is on a larger image/texture. 

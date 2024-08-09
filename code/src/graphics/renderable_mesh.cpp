@@ -1,10 +1,10 @@
 #include "renderable_mesh.hpp"
-#include <cassert>
+#include "debug/assert.hpp"
 #include <iostream>
 
 RenderableMesh::RenderableMesh(std::shared_ptr<Mesh> mesh) {
-    assert(mesh->dynamic == false);
-    // assert(mesh->vertexFormat.attributes.color->instanced && mesh->vertexFormat.attributes.textureZ->instanced); // don't make the vertices have this stuff please i don't want to add vertex attributes for that
+    Assert(mesh->dynamic == false);
+    // Assert(mesh->vertexFormat.attributes.color->instanced && mesh->vertexFormat.attributes.textureZ->instanced); // don't make the vertices have this stuff please i don't want to add vertex attributes for that
     indexCount = mesh->indices.size();
 
     glGenVertexArrays(1, &vao);

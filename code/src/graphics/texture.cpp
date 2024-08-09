@@ -8,7 +8,7 @@
 #include FT_FREETYPE_H
 // #include "../../external_headers/freetype/freetype/freetype.h"
 #include <algorithm>
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
@@ -72,10 +72,10 @@ glTextureIndex(textureIndex)
 {
     // skyboxes need 6 textures, everything else obviously only needs 1
     if (textureType == Texture::TextureCubemap) {
-        assert(params.texturePaths.size() == 6);
+        Assert(params.texturePaths.size() == 6);
     }
     else {
-        assert(params.texturePaths.size() == 1);
+        Assert(params.texturePaths.size() == 1);
     }
 
     // Get all the image data
@@ -230,7 +230,7 @@ glTextureIndex(textureIndex)
         sourceFormat = GL_RED; //std::cout << "src picked grayscale\n";
         break;
         default:
-        assert(false); // unreachable
+        Assert(false); // unreachable
         break;
         }
 
@@ -247,7 +247,7 @@ glTextureIndex(textureIndex)
             internalFormat = Texture::Grayscale_8Bit;// std::cout << "auto picked grayscale\n";
             break;
             default:
-            assert(false); // unreachable
+            Assert(false); // unreachable
             break;
             }
         } 
@@ -298,7 +298,7 @@ glTextureIndex(textureIndex)
         //     glTexImage3D(bindingLocation, 0, GL_RGBA8, width, height, depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
         // }
         else {
-            assert(false); // unreachable
+            Assert(false); // unreachable
         }
 
         // free the data loaded by stbi (but not the data loaded by assimp)
@@ -310,21 +310,21 @@ glTextureIndex(textureIndex)
     
     }
     else { // to create font textures, we use freetype to rasterize them for us from vector ttf fonts
-        assert(params.format == TextureFormat::Grayscale_8Bit);
+        Assert(params.format == TextureFormat::Grayscale_8Bit);
 
         // TODO: optimization needed probably
         // TODO: apparently theres an stb_freetype library that might be better suited for this
 
         // make sure freetype libraryexists and was initialized successfully.
         FT_Library ft;
-        assert(!FT_Init_FreeType(&ft));
+        Assert(!FT_Init_FreeType(&ft));
         
         // create a face (what freetype calls a loaded font)
         FT_Face face;
-        assert(!FT_New_Face(ft, params.texturePaths.back().c_str(), 0, &face));
+        Assert(!FT_New_Face(ft, params.texturePaths.back().c_str(), 0, &face));
 
         // set font size
-        assert(params.fontHeight != 0);
+        Assert(params.fontHeight != 0);
         FT_Set_Pixel_Sizes(face, 0, params.fontHeight);
 
         // collect glyphs from font, and track information needed to determine size of OpenGL texture
@@ -428,7 +428,7 @@ lineSpacing(params.fontHeight),
 bindingLocation(TextureBindingLocationFromType(textureType)),
 glTextureIndex(textureIndex) 
 {
-    assert(params.texturePaths.size() == 0); 
+    Assert(params.texturePaths.size() == 0); 
 
     glGenTextures(1, &glTextureId);
     Use();
@@ -599,7 +599,7 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
 // Texture::Texture(TextureType textureType, std::vector<std::string>& paths, int mipmapLevels) {
 //     type = textureType;
 //     bindingLocation = textureType;
-//     assert(type == TEXTURE_2D_ARRAY || type == TEXTURE_CUBEMAP);
+//     Assert(type == TEXTURE_2D_ARRAY || type == TEXTURE_CUBEMAP);
 
 //     // load the requested files
 //     std::vector<unsigned char*> imageDatas;
@@ -643,7 +643,7 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
 //         glTexImage3D(bindingLocation, mipmapLevels, GL_RGBA, width, height, imageDatas.size(), 0, GL_RGBA, GL_UNSIGNED_INT, nullptr);
 //     }
 //     else {
-//         assert(imageDatas.size() == 6);
+//         Assert(imageDatas.size() == 6);
 //     }
 
 //     unsigned int i = 0;

@@ -14,7 +14,7 @@
 #include "lua_handler.hpp"
 // #define SOL_USE_LUA_HPP
 #include <sol/sol.hpp>
-#include <cassert>
+#include "debug/assert.hpp"
 #include <optional>
 
 #include "../gameobjects/component_registry.hpp"
@@ -47,7 +47,7 @@ void LuaHandler::SetModuleLuaHandler(LuaHandler* handler) {
 
 LuaHandler& LuaHandler::Get() {
     #ifdef IS_MODULE
-    assert(_LUA_HANDLER_ != nullptr);
+    Assert(_LUA_HANDLER_ != nullptr);
     return *_LUA_HANDLER_;
     #else
     static LuaHandler handler;
@@ -81,7 +81,7 @@ bool HandleMaybeLuaError(const sol::protected_function_result& result, std::stri
 }
 
 // void Wait(sol::object lTime) {
-//     assert(lTime.is<double>());
+//     Assert(lTime.is<double>());
 //     // LUA_STATE->set(Args &&args...)
 //     double time = lTime.as<double>();
 
@@ -134,7 +134,7 @@ GraphicsEngine* GetGE() {
 }
 
 LuaHandler::LuaHandler() {
-    assert(!LUA_STATE.has_value()); // the constructor is supposed to make a lua state so there better not already be one
+    Assert(!LUA_STATE.has_value()); // the constructor is supposed to make a lua state so there better not already be one
     
     // intitialize lua
     LUA_STATE = sol::state();
@@ -261,13 +261,13 @@ LuaHandler::LuaHandler() {
     windowUsertype["mouseLocked"] = sol::property(&Window::SetMouseLocked);
     windowUsertype["Close"] = &Window::Close;
     windowUsertype["ShouldClose"] = &Window::ShouldClose;
-    windowUsertype["IsPressBegan"] = &Window::IsPressBegan;
+    /*windowUsertype["IsPressBegan"] = &Window::IsPressBegan;
     windowUsertype["IsPressEnded"] = &Window::IsPressEnded;
-    windowUsertype["IsPressed"] = &Window::IsPressed;
+    windowUsertype["IsPressed"] = &Window::IsPressed;*/
 
     // meshes
     auto meshCreateParamsUsertype = LUA_STATE->new_usertype<MeshCreateParams>("MeshCreateParams", sol::factories(MeshCreateParams::Default));
-    meshCreateParamsUsertype["dynamic"] = &MeshCreateParams::dynamic;
+    //meshCreateParamsUsertype["dynamic"] = &MeshCreateParams::dynamic;
     meshCreateParamsUsertype["textureZ"] = &MeshCreateParams::textureZ;
     meshCreateParamsUsertype["opacity"] = &MeshCreateParams::opacity;
     meshCreateParamsUsertype["expectedCount"] = &MeshCreateParams::expectedCount;
@@ -431,7 +431,7 @@ void LuaHandler::OnFrameBegin() {
     //     DebugLogInfo("Time = ", time);
     //     time -= 1;
     //     if (time <= 0) {
-    //         assert(co.runnable());
+    //         Assert(co.runnable());
     //         // sol::coroutine co = pair.second.as<sol::coroutine>();
     //         // keysToErase.push_back(pair.first);
     //         co();
@@ -449,7 +449,7 @@ void LuaHandler::OnFrameBegin() {
     //     // sol::object framesLeft = co["frames"];
     //     // co["frames"] = framesLeft.as<double>() - 1;
     //     // if (framesLeft <= 0) {
-    //     //     // assert(co.coroutine.runnable());
+    //     //     // Assert(co.coroutine.runnable());
     //     //     DebugLogInfo("Getting pointer.");
     //     //     DebugLogInfo("Running coroutine at ", co.coroutine.pointer());
     //     //     while (co.coroutine.runnable()) {

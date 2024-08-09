@@ -1,8 +1,8 @@
 #include "render_component.hpp"
 
 void RenderComponent::Init(unsigned int mesh_id, unsigned int material_id, unsigned int shader_id) {
-    assert(live);
-    assert(mesh_id != 0);
+    Assert(live);
+    Assert(mesh_id != 0);
 
     
 
@@ -27,7 +27,7 @@ void RenderComponent::Init(unsigned int mesh_id, unsigned int material_id, unsig
 };
 
 void RenderComponent::Destroy() {
-    assert(live == true);
+    Assert(live == true);
 
     if (Mesh::Get(meshId)->dynamic) {
         unsigned int i = 0;

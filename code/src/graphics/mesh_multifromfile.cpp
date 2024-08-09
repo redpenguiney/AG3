@@ -76,7 +76,7 @@ int BuildBoneHierarchy(std::vector<Bone>& bones, aiNode* node, bool rootAlreadyF
         // DebugLogInfo("trying child...");
         int foundRoot = BuildBoneHierarchy(bones, node->mChildren[i], rootBoneIndex != -1 ? true : rootAlreadyFound);
         if (foundRoot != -1) {
-            assert(rootBoneIndex == -1); // if this isn't the case, then we found two root bones somehow??
+            Assert(rootBoneIndex == -1); // if this isn't the case, then we found two root bones somehow??
             rootBoneIndex = foundRoot;
         }
     }
@@ -126,7 +126,7 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
     std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, glm::vec3>> returnValue;
 
     for (auto & mesh: assimpMeshes) {
-        // assert(mesh->mNumUVComponents == 2);
+        // Assert(mesh->mNumUVComponents == 2);
 
         // bones needs to be multiple of 4 for mesh vertex format (so that meshpools can group up animated meshes efficiently)
         unsigned int roundedBoneCount = 0;
@@ -166,10 +166,10 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
             throw std::runtime_error(std::string("The mesh \"") + mesh->mName.C_Str() + "\" in \"" + path + "\" lacks vertex colors (and you asked for them).");
         } 
         // assimp should have calculated these
-        assert(mesh->HasNormals());
-        assert(mesh->HasTangentsAndBitangents());
+        Assert(mesh->HasNormals());
+        Assert(mesh->HasTangentsAndBitangents());
 
-        assert(mesh->HasFaces());
+        Assert(mesh->HasFaces());
 
         // MeshVertexFormat::FormatVertexAttributes attributes;
         // if (mesh->HasPositions()) {
@@ -195,7 +195,7 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
             //     DebugLogInfo("One is named ", mesh->GetTextureCoordsName(nameI)->C_Str());
             // }
         }
-        // assert(mesh->GetNumUVChannels() > 0);
+        // Assert(mesh->GetNumUVChannels() > 0);
 
         // DebugLogInfo("vert count = ", mesh->mNumVertices, " noninst.size = ", format.GetNonInstancedVertexSize(), " vector len = ", vertices.size(), " pos offset = ", format.attributes.position->offset);
         for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
@@ -251,10 +251,10 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
             aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 
             // todo: multiple texture support?
-            assert(material->GetTextureCount(aiTextureType_DIFFUSE) <= 1);
-            assert(material->GetTextureCount(aiTextureType_SPECULAR) <= 1);
-            assert(material->GetTextureCount(aiTextureType_DISPLACEMENT) <= 1);
-            assert(material->GetTextureCount(aiTextureType_NORMALS) <= 1);
+            Assert(material->GetTextureCount(aiTextureType_DIFFUSE) <= 1);
+            Assert(material->GetTextureCount(aiTextureType_SPECULAR) <= 1);
+            Assert(material->GetTextureCount(aiTextureType_DISPLACEMENT) <= 1);
+            Assert(material->GetTextureCount(aiTextureType_NORMALS) <= 1);
 
             std::vector<TextureCreateParams> texParams;
             ProcessTextures(texParams, aiTextureType_DIFFUSE, Texture::TextureUsage::ColorMap, material, scene);
@@ -283,8 +283,8 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
 
             std::vector<unsigned int> numBonesOnEachVertex;
             numBonesOnEachVertex.resize(vertices.size(), 0);
-            assert(format.attributes.arbitrary1.has_value() && !format.attributes.arbitrary1.value().instanced); // arb1 = bone ids
-            assert(format.attributes.arbitrary2.has_value() && !format.attributes.arbitrary2.value().instanced); // arb2 = bone weights
+            Assert(format.attributes.arbitrary1.has_value() && !format.attributes.arbitrary1.value().instanced); // arb1 = bone ids
+            Assert(format.attributes.arbitrary2.has_value() && !format.attributes.arbitrary2.value().instanced); // arb2 = bone weights
             
             std::unordered_map<std::string, unsigned int> boneNamesToIds;
             for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++) {
@@ -370,8 +370,8 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
                     for (unsigned int channelIndex = 0; channelIndex < anim->mNumChannels; channelIndex++) {
                         aiNodeAnim* channel = anim->mChannels[channelIndex];
 
-                        assert(channel->mNumPositionKeys == channel->mNumRotationKeys);
-                        assert(channel->mNumPositionKeys == channel->mNumScalingKeys);
+                        Assert(channel->mNumPositionKeys == channel->mNumRotationKeys);
+                        Assert(channel->mNumPositionKeys == channel->mNumScalingKeys);
                         if (channel->mNumPositionKeys == 1) {
                             continue;
                         }
@@ -381,11 +381,11 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
                         //DebugLogInfo("Ok so channel ", channel, " for bone ", channel->mNodeName.C_Str(), " has ", channel->mNumPositionKeys, " vs ", keyframes.size());
                         for (auto & keyframe: keyframes) {
                             // DebugLogInfo("its ", channel->mNumPositionKeys, " ", channel->mNumRotationKeys);
-                            assert(channel->mNumPositionKeys > keyframeIndex);
+                            Assert(channel->mNumPositionKeys > keyframeIndex);
                             // DebugLogInfo("Pos keyframe at ", channel->mPositionKeys[keyframeIndex].mTime);
-                            assert(channel->mPositionKeys[keyframeIndex].mTime == channel->mRotationKeys[keyframeIndex].mTime);
-                            assert(channel->mPositionKeys[keyframeIndex].mTime == channel->mScalingKeys[keyframeIndex].mTime);
-                            // assert(channel->mPositionKeys[keyframeIndex].mTime == keyframeIndex);
+                            Assert(channel->mPositionKeys[keyframeIndex].mTime == channel->mRotationKeys[keyframeIndex].mTime);
+                            Assert(channel->mPositionKeys[keyframeIndex].mTime == channel->mScalingKeys[keyframeIndex].mTime);
+                            // Assert(channel->mPositionKeys[keyframeIndex].mTime == keyframeIndex);
                             keyframe.boneKeyframes.push_back(BoneKeyframe {
                                 .boneIndex = boneId,
                                 .translation = AssimpVecToGLM(channel->mPositionKeys[keyframeIndex].mValue),
@@ -430,7 +430,7 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
         // }
 
         int rootBoneIndex = bones.has_value() ? BuildBoneHierarchy(bones.value(), scene->mRootNode) : 0; // setup bone hierarchy and find the root bone
-        assert(rootBoneIndex != -1); 
+        Assert(rootBoneIndex != -1); 
         if (bones.has_value()) {
             //DebugLogInfo("The root of ", mesh->mName.C_Str(), " is ", rootBoneIndex, " aka ", bones->at(rootBoneIndex).name);
         }
@@ -444,6 +444,7 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
             vertices, 
             indices, 
             makeMeshParams,
+            false,
             false, 
             (bones.has_value() && bones->size() > 0) ? bones: std::nullopt, 
             (animations.has_value() && animations->size() > 0) ? animations : std::nullopt,

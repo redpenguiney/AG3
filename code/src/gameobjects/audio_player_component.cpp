@@ -1,18 +1,18 @@
 #include "audio_player_component.hpp" 
 #include "component_registry.hpp"
 #include "../audio/checked_openal_call.cpp"
-#include <cassert>
+#include "debug/assert.hpp"
 
 // TODO: can we just call the OAL functions as soon as it starts? might be bad for perf idk prob fine
 
 void AudioPlayerComponent::Init(GameObject* gameObject, std::optional<std::shared_ptr<Sound>> soundToUse) {
     CheckedOpenALCall(alGenSources(1, &audioSourceId));
 
-    assert(gameObject != nullptr);
+    Assert(gameObject != nullptr);
     object = gameObject;
 
     if (soundToUse.has_value()) {
-        assert(soundToUse.value() != nullptr);
+        Assert(soundToUse.value() != nullptr);
         sound = *soundToUse;
         CheckedOpenALCall(alSourcei(audioSourceId, AL_BUFFER, sound->alAudioBufferId));
     }
@@ -47,11 +47,11 @@ void AudioPlayerComponent::Update(glm::dvec3 microphonePosition) {
         CheckedOpenALCall(alSourcef(audioSourceId, AL_ROLLOFF_FACTOR, rolloff));
 
         if (positional) {
-            assert(object->transformComponent);
+            Assert(object->transformComponent);
             glm::vec3 relPos = object->transformComponent->Position() - microphonePosition;
             CheckedOpenALCall(alSourcefv(audioSourceId, AL_POSITION, (float*)&relPos));
             if (doppler) {
-                assert(object->rigidbodyComponent);
+                Assert(object->rigidbodyComponent);
                 CheckedOpenALCall(alSourcefv(audioSourceId, AL_VELOCITY, (float*)&object->rigidbodyComponent->velocity));
             }
             
@@ -74,13 +74,13 @@ void AudioPlayerComponent::SetSound(std::shared_ptr<Sound> newSound) {
 }
 
 void AudioPlayerComponent::Play(float startTime) {
-    assert(sound != nullptr);
+    Assert(sound != nullptr);
     CheckedOpenALCall(alSourcef(audioSourceId, AL_SEC_OFFSET, startTime));
     Resume();
 }
 
 void AudioPlayerComponent::Pause() {
-    assert(sound != nullptr);
+    Assert(sound != nullptr);
     // if (isPlaying) {
     //     startPlaying 
     // }
@@ -89,13 +89,13 @@ void AudioPlayerComponent::Pause() {
 }
 
 void AudioPlayerComponent::Resume() {
-    assert(sound != nullptr);
+    Assert(sound != nullptr);
 
     CheckedOpenALCall(alSourcePlay(audioSourceId))
 }
 
 void AudioPlayerComponent::Stop() {
-    assert(sound != nullptr);
+    Assert(sound != nullptr);
     CheckedOpenALCall(alSourceStop(audioSourceId));
 }
  

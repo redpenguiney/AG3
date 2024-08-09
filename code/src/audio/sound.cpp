@@ -1,7 +1,7 @@
 #include "sound.hpp"
 #include "checked_openal_call.cpp"
 #include "../external_headers/wav_loader/wav_loader.h"
-#include <cassert>
+#include "debug/assert.hpp"
 #include <memory>
 #include "aengine.hpp"
 

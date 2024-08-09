@@ -26,11 +26,17 @@ class Event: BaseEvent {
 	}
 
 	// Connects the given function to the event, so that it will be called every time the event is fired.
+	// WARNING: if the function is a lambda which captures a shared_ptr, then that shared_ptr gets stored in this event.
 	// TODO: disconnecting events
 	// TODO: might not work with templated functions? do we care?
 	void Connect(ConnectableFunction function) {
 		connectedFunctions.push_back(function);
 	}
+
+	// returns true if anything is connected to this event.
+	bool HasConnections() {
+		return connectedFunctions.size() > 0;
+	};
 
 	private:
 

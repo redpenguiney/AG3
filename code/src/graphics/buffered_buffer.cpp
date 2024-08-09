@@ -1,6 +1,6 @@
 #include "buffered_buffer.hpp"
 #include "debug/debug.hpp"
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cstddef>
 #include <cstdio>
 #include <cwchar>
@@ -11,7 +11,7 @@ BufferedBuffer::BufferedBuffer(GLenum bindingLocation, const unsigned int buffer
 bufferBindingLocation(bindingLocation),
 numBuffers(bufferCount)
 {
-    // assert(initalSize != 0);
+    // Assert(initalSize != 0);
     currentBuffer = 0;
     size = 0;
     if (initalSize != 0) {
@@ -50,10 +50,10 @@ void BufferedBuffer::Update() {
 // Doesn't touch vaos obviously so you still need to reset that after reallocation.
 // newSize must be >= size.
 void BufferedBuffer::Reallocate(unsigned int newSize) {
-    assert(newSize != 0);
+    Assert(newSize != 0);
     unsigned int oldSize = size;
     size = newSize;
-    assert(newSize >= size);
+    Assert(newSize >= size);
 
     // Create a new buffer with the desired size and get a pointer to its contents.
     GLuint newBufferId;
@@ -75,7 +75,7 @@ void BufferedBuffer::Reallocate(unsigned int newSize) {
 }
 
 void BufferedBuffer::Bind() {
-    assert(bufferId != 0);
+    Assert(bufferId != 0);
     glBindBuffer(bufferBindingLocation, bufferId);
 }
 

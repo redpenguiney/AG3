@@ -4,7 +4,7 @@
 #include "debug/log.hpp"
 #include "spatial_acceleration_structure.hpp"
 #include "../gameobjects/component_registry.hpp"
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cmath>
 #include <cstdio>
 #include <memory>
@@ -30,7 +30,7 @@ void PhysicsEngine::SetModulePhysicsEngine(PhysicsEngine* engine) {
 
 PhysicsEngine& PhysicsEngine::Get() {
     #ifdef IS_MODULE
-    assert(_PHYSICS_ENGINE_ != nullptr);
+    Assert(_PHYSICS_ENGINE_ != nullptr);
     return *_PHYSICS_ENGINE_;
     #else
     static PhysicsEngine engine; // yeah apparently you can have local static variables
@@ -43,7 +43,7 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
     // TODO: should REALLY use tight fitting AABB here
     auto aabbToTest = collider.GetAABB();
     std::vector<ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest);
-    // assert(potentialColliding.size() == 0);
+    // Assert(potentialColliding.size() == 0);
 
     // TODO: potential perf gains by using tight fitting AABB/OBB here after broadphase SAS query?
     
@@ -58,7 +58,7 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
             const ComponentHandle<RigidbodyComponent>& otherRigidbody = otherColliderPtr->GetGameObject()->rigidbodyComponent;
             const ComponentHandle<TransformComponent>& otherTransform = otherColliderPtr->GetGameObject()->transformComponent;
 
-            assert(collisionTestResult->contactPoints.size() > 0);
+            Assert(collisionTestResult->contactPoints.size() > 0);
             // if (otherRigidbody && collisionTestResult->contactPoints.size() > 4) {
             //     DebugLogInfo("Collision with ", collisionTestResult->contactPoints.size(), " points.");
                 // for (auto & p: collisionTestResult->contactPoints) {
@@ -157,7 +157,7 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
                         // DebugLogError("Calculated reduced contact mass of ", reducedMass, " (1/", 1.0/reducedMass , "). n = ", glm::to_string(normal), " d1 = ", glm::to_string(d1), " nxd1 = ", glm::to_string(torqueAxis1));
                     // }
 
-                    // assert(reducedMass <= rigidbody.InverseMass());
+                    // Assert(reducedMass <= rigidbody.InverseMass());
 
                 
                     float elasticity = otherColliderPtr->elasticity * collider.elasticity;
@@ -316,7 +316,7 @@ void PhysicsEngine::Step(const double timestep) {
 
                 // glm::quat spin = glm::quat(0, rigidbody.angularVelocity.x, rigidbody.angularVelocity.y, rigidbody.angularVelocity.z) * 0.5f * float(timestep);
                 //std::cout << "velocity " << glm::to_string(rigidbody.localMomentOfInertia) << " so we at " << glm::to_string(QuatAroundX) << " \n";
-                assert(!std::isnan(spin.x));
+                Assert(!std::isnan(spin.x));
                 transform.SetRot((spin * transform.Rotation()));
             }
         }

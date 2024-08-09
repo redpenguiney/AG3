@@ -4,7 +4,7 @@
 #include "modules/graphics_engine_export.hpp"
 #include "window.hpp"
 #include "shader_program.hpp"
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cstdio>
 #include <memory>
 #include <unordered_map>
@@ -140,7 +140,7 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
     friend class Mesh; // literally just friend so dynamic mesh support is less work for me idc about keeping it modular
     friend class RenderComponent;
     // friend class RenderComponentNoFO;
-
+    
     // SSBO that stores all points lights so that the GPU can use them.
     // Format is:
     // struct lightInfo {

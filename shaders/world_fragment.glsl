@@ -20,6 +20,11 @@ uniform bool parallaxMappingEnabled;
 uniform bool specularMappingEnabled;
 uniform bool colorMappingEnabled;
 
+uniform vec3 envLightDirection;
+uniform vec3 envLightColor;
+uniform float envLightDiffuse;
+uniform float envLightAmbient;
+
 struct pointLight {
     vec4 colorAndRange; // w-coord is range, xyz is rgb
     vec4 rel_pos; // w-coord is padding
@@ -86,6 +91,27 @@ vec2 CalculateTexCoords(vec3 texCoords) {
     return finalTexCoords;
 }
 
+vec3 CalculateEnvLightInfluence(vec3 realTexCoords, vec3 normal) {
+    float diff = max(dot(normal, envLightDirection), 0.0);
+    vec3 diffuse = envLightDiffuse * envLightColor;
+
+    float specularStrength = 0.8;
+    vec3 viewDir = normalize(-cameraToFragmentPosition);
+    // vec3 reflectDir = reflect(-lightDir, normal); // replace reflectDir with halfwayDir for blinn-phong lighting, which is better than phong lighting
+    vec3 halfwayDir = normalize(envLightDirection + viewDir);
+    float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 32);
+    vec3 specular = specularStrength * spec * lightColor;  
+
+    
+
+    vec3 ambient = envLightColor * envLightAmbient;
+
+    if (specularMappingEnabled) {
+        specular *= texture(specularMap, realTexCoords).x;
+    }
+
+    return ambient + diffuse + specular;
+}
 
 vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, vec3 normal, vec3 realTexCoords) {
     
@@ -134,6 +160,7 @@ void main()
     for (uint i = 0; i < pointLightCount; i++) {
         light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, normal, realTexCoords);
     }
+    light += CalculateEnvLightInfluence();
 
     vec4 tx;
     if (realTexCoords.z < 0) {

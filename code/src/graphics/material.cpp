@@ -1,6 +1,6 @@
 #include "material.hpp"
 #include "graphics/mesh.hpp"
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cstdlib>
 #include <iostream>
 #include <memory>
@@ -8,12 +8,12 @@
 #include <process.h>
 
 void Material::Destroy(const unsigned int id) {
-    assert(MeshGlobals::Get().MATERIALS.count(id));
+    Assert(MeshGlobals::Get().MATERIALS.count(id));
     MeshGlobals::Get().MATERIALS.erase(id);
 }
 
 std::shared_ptr<Material>& Material::Get(unsigned int materialId) {
-    assert(MeshGlobals::Get().MATERIALS.count(materialId));
+    Assert(MeshGlobals::Get().MATERIALS.count(materialId));
     return MeshGlobals::Get().MATERIALS.at(materialId);
 }
 

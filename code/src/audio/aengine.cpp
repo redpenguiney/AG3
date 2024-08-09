@@ -11,7 +11,7 @@ void AudioEngine::SetModuleAudioEngine(AudioEngine* engine) {
 
 AudioEngine& AudioEngine::Get() {
     #ifdef IS_MODULE
-    assert(_AUDIO_ENGINE_ != nullptr);
+    Assert(_AUDIO_ENGINE_ != nullptr);
     return *_AUDIO_ENGINE_;
     #else
     static AudioEngine engine;

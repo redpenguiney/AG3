@@ -1,5 +1,8 @@
 #include "mesh.hpp"
-#include <cassert>
+#include "debug/assert.hpp"
+
+
+
 
 // implementation for dual contouring to create mesh from terrain is in this file.
 
@@ -89,27 +92,48 @@ unsigned int IndexFromCell(glm::uvec3 xyz, glm::uvec3 dim) {
 	return xyz.x * dim.y * dim.z + xyz.y * dim.z + xyz.z;
 }
 
-std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
-	const MeshCreateParams& params, 
-	glm::vec3 p1,
-	glm::vec3 p2,
-	float resolution,
-	std::function<float(glm::vec3)> distanceFunction, 
-	std::optional<const TextureAtlas*> atlas, 
-	bool fixVertexCenters)
+//std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
+//	const MeshCreateParams& params, 
+//	glm::vec3 p1,
+//	glm::vec3 p2,
+//	float resolution,
+//	std::function<float(glm::vec3)> distanceFunction, 
+//	std::optional<const TextureAtlas*> atlas, 
+//	bool fixVertexCenters)
+//{
+//	
+//
+//	// create/return actual mesh object
+//	unsigned int meshId = MeshGlobals::Get().LAST_MESH_ID; // (creating a mesh increments this)
+//
+//	auto realParams = params;
+//	if (realParams.meshVertexFormat.has_value() == false) { realParams.meshVertexFormat.emplace(MeshVertexFormat::Default()); }
+//
+//	auto mesh = std::shared_ptr<Mesh>(new Mesh(vertices, indices, realParams));
+//	MeshGlobals::Get().LOADED_MESHES[meshId] = mesh;
+//	return mesh;
+//}
+
+DualContouringMeshProvider::DualContouringMeshProvider(const MeshCreateParams& params): MeshProvider(params)
+{
+
+}
+
+std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvider::GetMesh() const
 {
 	// based on https://github.com/BorisTheBrave/mc-dc/blob/a165b326849d8814fb03c963ad33a9faf6cc6dea/dual_contour_3d.py
-	p2 += resolution;
+	auto p1 = point1;
+	auto p2 = point2 + resolution;
 
-	assert(!atlas.has_value() || atlas.value() != nullptr);
+	Assert(!atlas.has_value() || atlas.value() != nullptr);
 
-	auto format = params.meshVertexFormat.value_or(MeshVertexFormat::Default());
-	assert(format.attributes.position.has_value() && format.attributes.position->nFloats == 3 && format.attributes.position->instanced == false);
-	assert(format.attributes.normal.has_value() && format.attributes.normal->nFloats == 3 && format.attributes.normal->instanced == false);
+	auto& format = meshParams.meshVertexFormat.value_or(MeshVertexFormat::Default());
+	Assert(format.attributes.position.has_value() && format.attributes.position->nFloats == 3 && format.attributes.position->instanced == false);
+	Assert(format.attributes.normal.has_value() && format.attributes.normal->nFloats == 3 && format.attributes.normal->instanced == false);
 	auto fdim = (p2 - p1);
-	assert(std::fmodf(fdim.x, resolution) == 0);
-	assert(std::fmodf(fdim.y, resolution) == 0);
-	assert(std::fmodf(fdim.z, resolution) == 0);
+	Assert(std::fmodf(fdim.x, resolution) == 0);
+	Assert(std::fmodf(fdim.y, resolution) == 0);
+	Assert(std::fmodf(fdim.z, resolution) == 0);
 	glm::uvec3 dim = glm::ceil((p2 - p1) / resolution);
 
 	// find vertices
@@ -121,8 +145,8 @@ std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
 		for (unsigned int cellY = 0; cellY < dim.y; cellY++) {
 			for (unsigned int cellZ = 0; cellZ < dim.z; cellZ++) {
 				glm::vec3 worldPos = glm::vec3(cellX, cellY, cellZ) * resolution + p1;
-				auto vert = FindBestVertex( worldPos, resolution, fixVertexCenters, distanceFunction);
-				
+				auto vert = FindBestVertex(worldPos, resolution, fixVertexCenters, distanceFunction);
+
 
 				if (vert.has_value()) {
 					if (cellX == 0) {
@@ -139,19 +163,19 @@ std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
 	// find indices
 	std::vector<GLuint> indices;
 
-	
+
 
 	// if one cell's edge has positive distance (outside terrain) and another has negative distance (inside terrain), then a face of the boundary should be between those two faces.
-	for (unsigned int cellX = 0; cellX < dim.x ; cellX++) {
-		for (unsigned int cellY = 0; cellY < dim.y ; cellY++) {
-			for (unsigned int cellZ = 0; cellZ < dim.z ; cellZ++) {
+	for (unsigned int cellX = 0; cellX < dim.x; cellX++) {
+		for (unsigned int cellY = 0; cellY < dim.y; cellY++) {
+			for (unsigned int cellZ = 0; cellZ < dim.z; cellZ++) {
 
 				bool cellHasFaces = false;
 
 				glm::vec3 worldPos = glm::vec3(cellX, cellY, cellZ) * resolution + p1;
 
 				if (cellX > 0 && cellY > 0) {
-					
+
 					bool positive1 = distanceFunction({ worldPos.x, worldPos.y, worldPos.z }) > 0;
 					bool positive2 = distanceFunction({ worldPos.x, worldPos.y, worldPos.z + resolution }) > 0;
 
@@ -160,10 +184,10 @@ std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 1, cellY - 1, cellZ }, dim)]);
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 0, cellY - 0, cellZ }, dim)]);
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 0, cellY - 1, cellZ }, dim)]);
-							
+
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 1, cellY - 1, cellZ }, dim)]);
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 1, cellY - 0, cellZ }, dim)]);
-							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 0, cellY - 0, cellZ }, dim)]);		
+							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 0, cellY - 0, cellZ }, dim)]);
 						}
 						else {
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 1, cellY - 1, cellZ }, dim)]);
@@ -187,10 +211,10 @@ std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 1, cellY, cellZ - 1 }, dim)]);
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 0, cellY, cellZ - 1 }, dim)]);
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 0, cellY, cellZ - 0 }, dim)]);
-							
+
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 1, cellY, cellZ - 1 }, dim)]);
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 0, cellY, cellZ - 0 }, dim)]);
-							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 1, cellY, cellZ - 0 }, dim)]);	
+							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 1, cellY, cellZ - 0 }, dim)]);
 						}
 						else {
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX - 1, cellY, cellZ - 1 }, dim)]);
@@ -214,7 +238,7 @@ std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX, cellY - 1, cellZ - 1 }, dim)]);
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX, cellY - 0, cellZ - 1 }, dim)]);
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX, cellY - 0, cellZ - 0 }, dim)]);
-							
+
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX, cellY - 1, cellZ - 0 }, dim)]);
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX, cellY - 1, cellZ - 1 }, dim)]);
 							indices.push_back(cellIndicesToVertexIndices[IndexFromCell({ cellX, cellY - 0, cellZ - 0 }, dim)]);
@@ -238,7 +262,7 @@ std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
 		for (float y = p1.y; y <= p2.y; y += resolution) {
 			for (float z = p1.z; z <= p2.z; z += resolution) {
 
-				
+
 
 			}
 		}
@@ -249,9 +273,9 @@ std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
 	std::vector<GLfloat> vertices;
 
 	// the +2 is because, to ensure the mesh is normalized in a way that leaves its originalSize at p2 - p1, we gonna have two dummy vertices at p1 and p2 that aren't drawn.
-	vertices.resize((vertexPositions.size() + 2)* format.GetNonInstancedVertexSize() / sizeof(GLfloat));
+	vertices.resize((vertexPositions.size() + 2) * format.GetNonInstancedVertexSize() / sizeof(GLfloat));
 
-	assert(indices.size() % 3 == 0);
+	Assert(indices.size() % 3 == 0);
 
 	for (unsigned int posI = 0; posI < vertexPositions.size(); posI++) {
 
@@ -265,7 +289,7 @@ std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
 		vertices.at(format.attributes.normal->offset / sizeof(GLfloat) + posI * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 2) = normal.z;
 	}
 
-	if (vertexPositions.size() == 0 || indices.size() == 0) { return std::nullopt; }
+	//if (vertexPositions.size() == 0 || indices.size() == 0) { return std::nullopt; }
 
 	// set dummy vertices at corners
 	vertices.at(format.attributes.position->offset / sizeof(GLfloat) + vertexPositions.size() * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 0) = 0;//p1.x;
@@ -275,13 +299,5 @@ std::optional<std::shared_ptr<Mesh>> Mesh::FromVoxels(
 	vertices.at(format.attributes.position->offset / sizeof(GLfloat) + (vertexPositions.size() + 1) * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 1) = p2.y - p1.y;
 	vertices.at(format.attributes.position->offset / sizeof(GLfloat) + (vertexPositions.size() + 1) * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 2) = p2.z - p1.z;
 
-	// create/return actual mesh object
-	unsigned int meshId = MeshGlobals::Get().LAST_MESH_ID; // (creating a mesh increments this)
-
-	auto realParams = params;
-	if (realParams.meshVertexFormat.has_value() == false) { realParams.meshVertexFormat.emplace(MeshVertexFormat::Default()); }
-
-	auto mesh = std::shared_ptr<Mesh>(new Mesh(vertices, indices, realParams));
-	MeshGlobals::Get().LOADED_MESHES[meshId] = mesh;
-	return mesh;
+	return std::pair(vertices, indices);
 }

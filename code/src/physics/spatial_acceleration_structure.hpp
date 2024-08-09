@@ -1,5 +1,5 @@
 #pragma once
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cstddef>
 #include <cstdio>
 #include <memory>

@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-#include "GLM/gtx/string_cast.hpp"
+#include <GLM/gtx/string_cast.hpp>
 
 #include "graphics/gengine.hpp"
 #include "graphics/mesh.hpp"
@@ -73,6 +73,9 @@ int main(int numArgs, const char *argPtrs[]) {
     auto & CR = ComponentRegistry::Get();
 
     atexit(Module::CloseAll); // this is placed here, after the component registry is initialized, because that guarantees that modules' references to gameobjects are destroyed before the gameobjects are (because static destructors/at exits are called in reverse order)
+
+    // conglomerate init
+    Gui::Init();
 
     DebugLogInfo("Calling gameInit().");
     GameInit();
@@ -160,7 +163,6 @@ int main(int numArgs, const char *argPtrs[]) {
 
         BaseEvent::FlushEventQueue();
         LUA.PreRenderCallbacks();
-        Gui::UpdateBillboardGuis();
 
         GE.RenderScene(elapsedTime);
 

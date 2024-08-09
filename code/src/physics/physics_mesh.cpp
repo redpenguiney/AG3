@@ -2,7 +2,7 @@
 #include "../graphics/mesh.hpp"
 #include <algorithm>
 #include <array>
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cmath>
 #include <iostream>
 #include <tuple>
@@ -31,8 +31,8 @@ std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, unsig
 // Returns a vector of ConvexMesh objects for a PhysicsMesh from the given Mesh. 
 // TODO: convex decomposition
 std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_ptr<Mesh>& mesh, float simplifyThreshold, bool convexDecomposition) {
-    assert(!mesh->dynamic);
-    assert(simplifyThreshold >= 1.0f);
+    Assert(!mesh->dynamic);
+    Assert(simplifyThreshold >= 1.0f);
     // DebugLogInfo("Here we go. ", mesh->meshId);
 
     // Graphics meshes contain extraneous data (UVs, colors, etc.) that isn't relevant to physics, so this function needs to get rid of that.
@@ -41,7 +41,7 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
     std::vector<std::array<glm::vec3, 3>> triangles;
     std::vector<std::pair<glm::vec3, glm::vec3>> edges;
 
-    assert(mesh->indices.size() % 3 == 0);
+    Assert(mesh->indices.size() % 3 == 0);
     for (auto it = mesh->indices.begin(); it != mesh->indices.end(); it+=3) {
         
         auto itCopy = it;
@@ -193,7 +193,7 @@ PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): meshes(me_when_i_so_i_but
 }
 
 // std::shared_ptr<PhysicsMesh>& PhysicsMesh::Get(unsigned int id) {
-    // assert(MeshGlobals::Get().LOADED_PHYS_MESHES.count(id));
+    // Assert(MeshGlobals::Get().LOADED_PHYS_MESHES.count(id));
     // return MeshGlobals::Get().LOADED_PHYS_MESHES[id];
 // }
 
@@ -228,8 +228,8 @@ float ComputeInertiaMoment(const glm::vec3& p1, const glm::vec3& p2, const glm::
 
 glm::mat3x3 PhysicsMesh::CalculateLocalMomentOfInertia(glm::vec3 objectScale, float objectMass) {
 
-    assert(objectMass > 0);
-    assert(glm::length2(objectScale) > 0);
+    Assert(objectMass > 0);
+    Assert(glm::length2(objectScale) > 0);
 
     // From http://number-none.com/blow/inertia/body_i.html and https://stackoverflow.com/questions/809832/how-can-i-compute-the-mass-and-moment-of-inertia-of-a-polyhedron 
     // and most especially https://www.youtube.com/watch?v=GYc99lMdcFE
@@ -261,7 +261,7 @@ glm::mat3x3 PhysicsMesh::CalculateLocalMomentOfInertia(glm::vec3 objectScale, fl
         }
     }
 
-    assert(volume > 0);
+    Assert(volume > 0);
 
     float density = objectMass / volume;
 

@@ -5,21 +5,23 @@
 #include <lua/lua_handler.hpp>
 #include <gameobjects/component_registry.hpp>
 
-#include "noise/noise.h"
 #include "physics/raycast.hpp"
 
 #include <conglomerates/gui.hpp>
 #include <memory>
 
 #include "modifier.hpp"
+#include "chunk.hpp"
 
 //auto n = FastNoise::New<FastNoise::Simplex>();
 //auto f = FastNoise::New<FastNoise::Generator>();
-noise::module::Perlin perlinNoiseGenerator;
+//noise::module::Perlin perlinNoiseGenerator;
 
-
+bool inMainMenu = true;
 
 void MakeMainMenu() {
+    inMainMenu = true;
+
     static std::vector<std::shared_ptr<Gui>> mainMenuGuis;
 
     auto& GE = GraphicsEngine::Get();
@@ -31,7 +33,7 @@ void MakeMainMenu() {
     ttfParams.format = Texture::Grayscale_8Bit;
     auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
 
-    // don't take by reference bc vector reallocation invalidates references
+    //// don't take by reference bc vector reallocation invalidates references/reference to temporary
     auto startGame = mainMenuGuis.emplace_back(std::move(std::make_shared<Gui>(true, std::optional(std::make_pair(arialLayer, arialFont )))));
 
     startGame->rgba = { 0, 0, 1, 1 };
@@ -41,11 +43,28 @@ void MakeMainMenu() {
     startGame->scaleSize = { 0, 0 };
     startGame->offsetSize = { 300, 60 };
     startGame->anchorPoint = { 0, 0 };
-    
+ 
     startGame->GetTextInfo().text = "START GAME";
     startGame->GetTextInfo().rgba = { 1, 0, 0, 1 };
     startGame->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
     startGame->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+
+    // note that we aren't passing in the shared_ptr but a normal pointer; if we didn't, the gui's event would store a shared_ptr to itself and it would never get destroyed.
+    startGame->onMouseEnter.Connect([p = startGame.get()]() {
+        p->GetTextInfo().rgba = { 1, 1, 0, 1 };
+        p->UpdateGuiGraphics();
+    });
+    startGame->onMouseExit.Connect([p = startGame.get()]() {
+        p->GetTextInfo().rgba = { 1, 0, 0, 1 };
+        p->UpdateGuiGraphics();
+    });
+    startGame->onInputEnd.Connect([](InputObject input) {
+        
+        if (input.input == InputObject::LMB) {
+            mainMenuGuis.clear();
+            LoadWorld(GraphicsEngine::Get().camera.position, 512);
+        }
+    });
 
     startGame->UpdateGuiGraphics();
     startGame->UpdateGuiTransform();
@@ -62,6 +81,16 @@ void GameInit()
     auto& CR = ComponentRegistry::Get();
 
     MakeMainMenu();
+
+    GE.SetDebugFreecamEnabled(true);
+
+    
+
+    GE.preRenderEvent.Connect([&GE](float dt) {
+        if (!inMainMenu) {
+            //LoadWorld(GE.camera.position, 512);
+        }
+    });
 
     // TODO BROKEN, prob just dll outdated
     //Module::LoadModule("..\\modules\\libtest_module.dll");

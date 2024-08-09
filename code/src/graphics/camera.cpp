@@ -1,5 +1,5 @@
 #include "camera.hpp"
-#include <cassert>
+#include "debug/assert.hpp"
 #include <iostream>
 #include "../debug/log.hpp"
 #include "glm/gtx/string_cast.hpp"
@@ -10,9 +10,9 @@ Camera::Camera() {
 
 
 glm::mat4x4 Camera::GetProj(float aspect) {
-    assert(aspect > 0);
-    assert(near > 0);
-    assert(far > near);
+    Assert(aspect > 0);
+    Assert(near > 0);
+    Assert(far > near);
     return glm::perspective(fieldOfView, aspect, near, far);
 }
 

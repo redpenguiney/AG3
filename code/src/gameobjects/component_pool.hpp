@@ -1,5 +1,5 @@
 #pragma once
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cstdio>
 #include <deque>
 #include <iostream>
@@ -60,7 +60,7 @@ T* ComponentPool<T>::GetNew() {
         if (firstAvailable[poolIndex] == nullptr) {continue;} // if the pool is full go to the next one
 
         foundObject = firstAvailable[poolIndex];
-        // assert(foundObject->live == false);
+        // Assert(foundObject->live == false);
         firstAvailable[poolIndex] = (T*)(foundObject->next);
 
         break;

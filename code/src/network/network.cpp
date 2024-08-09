@@ -1,4 +1,5 @@
 #include "network.hpp"
+#include "debug/assert.hpp"
 
 // PROTOCOL listed here.
 // Type of packets the engine sends.
@@ -48,7 +49,7 @@ NetworkStatus NetworkingEngine::GetStatus()
 }
 
 void NetworkingEngine::Host(int port) {
-    assert(status == NetworkStatus::Offline);
+    Assert(status == NetworkStatus::Offline);
     status = NetworkStatus::Server;
     
     // open socket and let anyone use it
@@ -57,7 +58,7 @@ void NetworkingEngine::Host(int port) {
 
 void NetworkingEngine::Connect(std::string ipAddress, int port, float timeout)
 {
-    assert(status == NetworkStatus::Offline);
+    Assert(status == NetworkStatus::Offline);
     status = NetworkStatus::Client;
 
 

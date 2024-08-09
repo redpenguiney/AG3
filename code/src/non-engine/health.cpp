@@ -1,6 +1,6 @@
 #include "health.hpp"
 #undef NDEBUG // SO ASSERTS ALWAYS FIRE
-#include <cassert>
+#include "debug/assert.hpp"
 
 BodyAttribute::BodyAttribute(const BodyPart& b): limb(b)
 {

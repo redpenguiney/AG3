@@ -1,5 +1,5 @@
 #include "framebuffer.hpp"
-#include <cassert>
+#include "debug/assert.hpp"
 #include "gengine.hpp"
 
 Framebuffer::Framebuffer(const unsigned int fbWidth, const unsigned int fbHeight, const std::vector<TextureCreateParams>& attachmentParams, const bool haveDepthRenderbuffer): 
@@ -29,7 +29,7 @@ bindingLocation(GL_FRAMEBUFFER)
     }
 
     // make sure framebuffer is "complete"? 
-    assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    Assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 }
 
 Framebuffer::~Framebuffer() {

@@ -1,12 +1,13 @@
 #include "animation.hpp"
 #include "debug/log.hpp"
+#include "debug/assert.hpp"
 #include "glm/gtx/quaternion.hpp"
 
 std::optional<glm::mat4x4> Animation::BoneTransformAtTime(unsigned int boneId, float time) const {
     for (unsigned int i = 0; i < keyframes.size(); i++) {
         const auto & keyframe = keyframes[i];
         if (keyframe.timestamp > time) { // then this is the next keyframe we're going to reach.
-            assert(i != 0); // we need to use the keyframe at i-1 so we can interpolate between.
+            Assert(i != 0); // we need to use the keyframe at i-1 so we can interpolate between.
             int boneIndex = -1;
             for (unsigned int ii = 0; ii < keyframe.boneKeyframes.size(); ii++) {
                 if (keyframe.boneKeyframes[ii].boneIndex == boneId) {

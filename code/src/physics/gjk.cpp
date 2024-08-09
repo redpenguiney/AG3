@@ -1,7 +1,7 @@
 #include "gjk.hpp"
 #include <algorithm>
 #include <array>
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
@@ -25,17 +25,17 @@ glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     // this way, to find the farthest vertex on a 10000-vertex mesh we don't need to do 10000 vertex transformations
     // TODO: this is still O(n vertices) complexity
 
-    assert(!std::isnan(directionInWorldSpace.x)); 
-    assert(!std::isnan(directionInWorldSpace.y)); 
-    assert(!std::isnan(directionInWorldSpace.z)); 
+    Assert(!std::isnan(directionInWorldSpace.x)); 
+    Assert(!std::isnan(directionInWorldSpace.y)); 
+    Assert(!std::isnan(directionInWorldSpace.z)); 
 
     // std::cout << "Normal matrix is " << glm::to_string(transform.GetNormalMatrix()) << "\n";
     auto worldToModel = glm::inverse(transform.GetNormalMatrix());
     auto directionInModelSpace = glm::vec3(glm::normalize(worldToModel * glm::vec4(directionInWorldSpace.x, directionInWorldSpace.y, directionInWorldSpace.z, 1)));
 
-    assert(!std::isnan(directionInModelSpace.x)); 
-    assert(!std::isnan(directionInModelSpace.y)); 
-    assert(!std::isnan(directionInModelSpace.z)); 
+    Assert(!std::isnan(directionInModelSpace.x)); 
+    Assert(!std::isnan(directionInModelSpace.y)); 
+    Assert(!std::isnan(directionInModelSpace.z)); 
 
 
     float farthestDistance = -FLT_MAX;
@@ -183,9 +183,9 @@ std::array<glm::dvec3, 3> NewSimplexPoint(
     auto a = FindFarthestVertexOnObject(searchDirection, transform1, collider1);
     auto b = FindFarthestVertexOnObject(-searchDirection, transform2, collider2);
 
-    assert(!std::isnan(a.x)); 
-    assert(!std::isnan(a.x)); 
-    assert(!std::isnan(a.x)); 
+    Assert(!std::isnan(a.x)); 
+    Assert(!std::isnan(a.x)); 
+    Assert(!std::isnan(a.x)); 
 
     // std::cout << "SUPPORT: Farthest point in " << glm::to_string(searchDirection) << " is " << glm::to_string(a - b) << ".\n";
     return {a-b, a, b};
@@ -220,7 +220,7 @@ std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNorma
     const std::vector<unsigned int>& faces) 
     {
 	std::vector<std::pair<glm::dvec3, double>> normals;
-    assert(faces.size() > 0);
+    Assert(faces.size() > 0);
 	size_t minTriangle = 0;
 	double  minDistance = FLT_MAX;
 
@@ -248,7 +248,7 @@ std::pair<std::vector<std::pair<glm::dvec3, double>>, unsigned int> GetFaceNorma
 		}
 	}
 
-    assert(normals.size() > 0);
+    Assert(normals.size() > 0);
 	return { normals, minTriangle };
 }
 
@@ -312,10 +312,10 @@ SatFacesResult SatFaces(
         }
         
         // std::cout << "d = " << distance << "\n";
-        assert(distance <= 0.1);
+        Assert(distance <= 0.1);
     }
 
-    assert(farthestFace != nullptr);
+    Assert(farthestFace != nullptr);
     return {farthestNormal, farthestDistance, farthestFace};
 }
 
@@ -343,8 +343,8 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
         }
     }
 
-    assert(incidentFace != nullptr); // mostly to shut up compiler 
-    assert(referenceFace != nullptr); // this one we actually had an issue
+    Assert(incidentFace != nullptr); // mostly to shut up compiler 
+    Assert(referenceFace != nullptr); // this one we actually had an issue
 
     // Get reference face and incident face in world space
     std::vector<glm::dvec3> referenceFaceInWorldSpace;
@@ -419,7 +419,7 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
                 }
             }  
             else if (distanceToV2 <= 0) { // then v1 is on wrong side and v2 is on right side, so we should add point of intersection (v2 itself will be added on next iteration)
-                assert(!std::isnan(intersectionPoint.x));
+                Assert(!std::isnan(intersectionPoint.x));
                 contactList.push_back(intersectionPoint);
                 // std::cout << "\tcase2: adding intersection point " << glm::to_string(intersectionPoint) << "\n";
             }
@@ -428,7 +428,7 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
 
     }
 
-    assert(contactList.size() > 0);
+    Assert(contactList.size() > 0);
 
     // Lastly, verify for each contact point that it's actually inside the reference face and if it is, move contact points onto the reference face (idk why lel).
     std::vector<std::pair<glm::dvec3, double>> contactPoints; 
@@ -436,9 +436,9 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
         
         // std::cout << "Testing point " << glm::to_string(p) << " against plane with normal " << glm::to_string(referenceNormal) << " and point " << glm::to_string(referenceFaceInWorldSpace.at(0)) << ".\n";
         
-        assert(p.x != NAN);
-        assert(p.y != NAN);
-        assert(p.z != NAN);
+        Assert(p.x != NAN);
+        Assert(p.y != NAN);
+        Assert(p.z != NAN);
 
         double distanceToPlane = glm::dot((glm::dvec3)referenceNormal, p - referenceFaceInWorldSpace.at(0));
 
@@ -451,8 +451,8 @@ std::vector<std::pair<glm::dvec3, double>> ClipFaceContactPoints(
         }
     }
     // DebugLogInfo("Of ", contactList.size(), " contact points, ", contactPoints.size(), " were accepted; rf ", referenceFaceInWorldSpace.size(), " if ", incidentFaceInWorldSpace.size(), " sp ", sidePlanes.size());
-    assert(contactList.size() <= std::max(referenceFace->size(), incidentFace->size()) * 2);
-    assert(contactPoints.size() > 0);
+    Assert(contactList.size() <= std::max(referenceFace->size(), incidentFace->size()) * 2);
+    Assert(contactPoints.size() > 0);
     return contactPoints;
 }
 
@@ -471,8 +471,8 @@ std::optional<CollisionInfo> FindContact(
 ) 
 {
     // if we have like spheres or something with no actual vertices that won't work for this, TODO fallback to EPA
-    assert(collider1.physicsMesh->meshes.size() > 0);
-    assert(collider2.physicsMesh->meshes.size() > 0);
+    Assert(collider1.physicsMesh->meshes.size() > 0);
+    Assert(collider2.physicsMesh->meshes.size() > 0);
 
     // Based on pg ~88 of https://media.steampowered.com/apps/valve/2015/DirkGregorius_Contacts.pdf
 
@@ -489,13 +489,13 @@ std::optional<CollisionInfo> FindContact(
     // Test faces of collider1 against vertices of collider2
     // std::cout << "TESTING FACE 1\n";
     auto Face1Result = SatFaces(transform1, collider1, transform2, collider2); 
-    assert(Face1Result.farthestDistance <= 0.1); // they must be colliding or we mad.    
+    Assert(Face1Result.farthestDistance <= 0.1); // they must be colliding or we mad.    
     if (Face1Result.farthestDistance > 0) {std::cout << "sus amogus\n"; return std::nullopt;}
 
     // Test faces of collider2 against vertices of collider1
     // std::cout << "TESTING FACE 2\n";
     auto Face2Result = SatFaces(transform2, collider2, transform1, collider1); 
-    assert(Face2Result.farthestDistance <= 0.1); // they must be colliding or we mad.
+    Assert(Face2Result.farthestDistance <= 0.1); // they must be colliding or we mad.
     if (Face2Result.farthestDistance > 0) {std::cout << "sus amogus\n"; return std::nullopt;}
 
     glm::vec3 farthestNormal(0, 0, 0); // in world space
@@ -586,7 +586,7 @@ std::optional<CollisionInfo> FindContact(
                 farthestEdge2Direction = edge2DirectionWorld;
             }
 
-            assert(distance <= 0.1); // if distance > 0, we have no collision and this function won't work
+            Assert(distance <= 0.1); // if distance > 0, we have no collision and this function won't work
             if (Face1Result.farthestDistance > 0) {std::cout << "sus amogus\n"; return std::nullopt;}
         }
     }
@@ -602,7 +602,7 @@ std::optional<CollisionInfo> FindContact(
 
     // std::cout << "Farthest edge distance is " << farthestEdgeDistance << ".\n";
 
-    assert(farthestDistance <= 0.1); // if this was > 0, then they wouldn't be colliding, and if you called this function they better be colliding
+    Assert(farthestDistance <= 0.1); // if this was > 0, then they wouldn't be colliding, and if you called this function they better be colliding
 
     std::vector<std::pair<glm::dvec3, double>> contactPoints;
 
@@ -637,12 +637,12 @@ std::optional<CollisionInfo> FindContact(
         // std::cout << "EDGE: n2= " << glm::to_string(n2) << ".\n";
         // std::cout << "EDGE: calculated point " << glm::to_string(closestPointOnEdge1ToEdge2) << ".\n";
 
-        assert(!std::isnan(closestPointOnEdge1ToEdge2.x));
-        assert(!std::isnan(closestPointOnEdge1ToEdge2.y));
-        assert(!std::isnan(closestPointOnEdge1ToEdge2.z));   
-        assert(!std::isnan(closestPointOnEdge2ToEdge1.x));
-        assert(!std::isnan(closestPointOnEdge2ToEdge1.y));
-        assert(!std::isnan(closestPointOnEdge2ToEdge1.z));  
+        Assert(!std::isnan(closestPointOnEdge1ToEdge2.x));
+        Assert(!std::isnan(closestPointOnEdge1ToEdge2.y));
+        Assert(!std::isnan(closestPointOnEdge1ToEdge2.z));   
+        Assert(!std::isnan(closestPointOnEdge2ToEdge1.x));
+        Assert(!std::isnan(closestPointOnEdge2ToEdge1.y));
+        Assert(!std::isnan(closestPointOnEdge2ToEdge1.z));  
 
         return CollisionInfo {.collisionNormal = farthestNormal, .contactPoints = {{point, abs(farthestEdgeDistance)}}};
         break;}
@@ -678,13 +678,13 @@ std::optional<CollisionInfo> FindContact(
 
 //     // vector<pair of normal + distance>, minFace = index to face with min distance
 // 	auto [normals, minFace] = GetFaceNormals(polytope, faces);
-//     assert(normals.size() == 4); // simplex should have 4 vertices and 4 faces
+//     Assert(normals.size() == 4); // simplex should have 4 vertices and 4 faces
 
 //     glm::dvec3 minNormal;
 // 	double minDistance = FLT_MAX;
 //     unsigned short nIterations = 0;
 // 	while (minDistance == FLT_MAX) {
-//         // assert(nIterations < 64);
+//         // Assert(nIterations < 64);
 //         // std::cout << "iteration " << nIterations << "\n";
 //         nIterations+=1;
 
@@ -714,7 +714,7 @@ std::optional<CollisionInfo> FindContact(
 //             std::vector<std::pair<unsigned int, unsigned int>> uniqueEdges;
 //             // std::cout << "before loop size is " << uniqueEdges.size() << "\n";
 
-//             assert(normals.size() > 0);
+//             Assert(normals.size() > 0);
 // 			for (unsigned int i = 0; i < normals.size(); i++) {
 
 //                  // check if after adding that support point, this face is no longer in the polytope and needs to go.
@@ -741,7 +741,7 @@ std::optional<CollisionInfo> FindContact(
 //                 // std::cout << "that just happened, size " << uniqueEdges.size() << "\n";
 // 			}
 //             // std::cout << "after everything there are still " << uniqueEdges.size() << "\n";
-//             assert(uniqueEdges.size() > 0);
+//             Assert(uniqueEdges.size() > 0);
 //             std::vector<unsigned int> newFaces;
 // 			for (auto [edgeIndex1, edgeIndex2] : uniqueEdges) {
 // 				newFaces.push_back(edgeIndex1);
@@ -752,7 +752,7 @@ std::optional<CollisionInfo> FindContact(
 			 
 // 			polytope.push_back(support);
             
-//             assert(newFaces.size() > 0);
+//             Assert(newFaces.size() > 0);
 //             auto [newNormals, newMinFace] = GetFaceNormals(polytope, newFaces);
 
 //             double oldMinDistance = FLT_MAX;
@@ -777,8 +777,8 @@ std::optional<CollisionInfo> FindContact(
 // 		}
 // 	}
 
-//     assert((minNormal != glm::dvec3(0,0,0)));
-//     // assert(minDistance != 0); // TODO: PROBABLY REMOVE
+//     Assert((minNormal != glm::dvec3(0,0,0)));
+//     // Assert(minDistance != 0); // TODO: PROBABLY REMOVE
 
 //     // find collision point
 //     // get verts of closest triangle to origin
@@ -824,7 +824,7 @@ std::optional<CollisionInfo> FindContact(
     
 //     // if (glm::length2(glm::cross(b[2] - a[2], c[2] - a[2])) == 0) {
 //     //     // TODO: this assumes that a and c are always the identical points, which is literally wrong
-//     //     //assert(a[2] != b[2]);
+//     //     //Assert(a[2] != b[2]);
 //     //     // std::cout << "Executing EPA degenerate contact point case.\n";
 //     //     // std::cout << "\tCross is  = " << glm::to_string(glm::cross(b[2] - a[2], b[2] - projectedPoint)) << "\n";
 //     //     // // std::cout << "\tLerp between " << glm::to_string(a[2]) << " and " << glm::to_string(b[2]) << "\n";

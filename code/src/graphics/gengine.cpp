@@ -1,6 +1,6 @@
 #include "graphics/gengine.hpp"
 #include <algorithm>
-#include <cassert>
+#include "debug/assert.hpp"
 #include <tuple>
 #include <execution>
 #include <vector>
@@ -20,7 +20,7 @@ void GraphicsEngine::SetModuleGraphicsEngine(GraphicsEngine* eng) {
 
 GraphicsEngine& GraphicsEngine::Get() {
     #ifdef IS_MODULE
-    assert(_GRAPHICS_ENGINE_ != nullptr);
+    Assert(_GRAPHICS_ENGINE_ != nullptr);
     return *_GRAPHICS_ENGINE_;
     #else
     static GraphicsEngine engine;
@@ -62,7 +62,7 @@ const std::vector<GLuint> screenQuadIndices = {
 
 GraphicsEngine::GraphicsEngine():
 pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)),
-screenQuad(Mesh::FromVertices(screenQuadVertices, screenQuadIndices, MeshCreateParams {.meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false, .dynamic = false}))
+screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false))
 {
 
     debugFreecamEnabled = false;
@@ -380,32 +380,32 @@ void GraphicsEngine::UpdateLights() {
 }
 
 // void GraphicsEngine::SetColor(const RenderComponent& comp, const glm::vec4& rgba) {
-//     assert(comp.meshpoolId != -1);
+//     Assert(comp.meshpoolId != -1);
 //     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetColor(comp.meshpoolSlot, comp.meshpoolInstance, rgba);
 // }
 
 void GraphicsEngine::SetModelMatrix(const RenderComponent& comp, const glm::mat4x4& model) {
-    assert(comp.meshpoolId != -1);
+    Assert(comp.meshpoolId != -1);
     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetModelMatrix(comp.meshpoolSlot, comp.meshpoolInstance, model);
 }
 
 void GraphicsEngine::SetNormalMatrix(const RenderComponent& comp, const glm::mat3x3& normal) {
-    assert(comp.meshpoolId != -1);
+    Assert(comp.meshpoolId != -1);
     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetNormalMatrix(comp.meshpoolSlot, comp.meshpoolInstance, normal);
 }
 
 void GraphicsEngine::SetBoneState(const RenderComponent& comp, unsigned int nBones, glm::mat4x4* offsets) {
-    assert(comp.meshpoolId != -1);
+    Assert(comp.meshpoolId != -1);
     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetBoneState(comp.meshpoolSlot, comp.meshpoolInstance, nBones, offsets);
 }
 
 // void GraphicsEngine::SetTextureZ(const RenderComponent& comp, const float textureZ) {
-//     assert(comp.meshpoolId != -1);
+//     Assert(comp.meshpoolId != -1);
 //     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetTextureZ(comp.meshpoolSlot, comp.meshpoolInstance, textureZ);
 // }
 
 // void GraphicsEngine::SetArbitrary1(const RenderComponent& comp, const float arb) {
-//     assert(comp.meshpoolId != -1);
+//     Assert(comp.meshpoolId != -1);
 //     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetArbitrary1(comp.meshpoolSlot, comp.meshpoolInstance, arb);
 // }
 
@@ -650,7 +650,7 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     //     // TODO: this will redundantly send identity matrices for every bone when something isn't getting animated. Difficult to fix bc triple buffering, prob not big deal anyways.
     //     // TOOD: FRUSTRUM culling would actually be big brain here.
 
-        assert(animComp->mesh->bones.has_value());
+        Assert(animComp->mesh->bones.has_value());
         std::vector<glm::mat4x4> boneOffsets;
         std::vector<float> bonePriorities;
         boneOffsets.resize(animComp->mesh->bones->size());
@@ -673,9 +673,9 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
                 
 
                 for (auto & bone: animComp->mesh->bones.value()) {
-                    assert(bone.id < animComp->mesh->bones->size());
+                    Assert(bone.id < animComp->mesh->bones->size());
                     if (animation.anim->priority > bonePriorities[bone.id]) {
-                        assert(animation.playbackPosition < animation.anim->duration);
+                        Assert(animation.playbackPosition < animation.anim->duration);
                         // DebugLogInfo("At bone ", bone.id, " placing ", glm::to_string(animation.anim->BoneTransformAtTime(bone.id, animation.playbackPosition)));
 
                         auto transform = animation.anim->BoneTransformAtTime(bone.id, animation.playbackPosition);
@@ -719,10 +719,10 @@ void GraphicsEngine::SetDebugFreecamEnabled(bool enabled) {
 }
 
 void GraphicsEngine::UpdateDebugFreecam() {
-    assert(debugFreecamEnabled);
+    Assert(debugFreecamEnabled);
 
     // camera acceleration
-    if (window.PRESSED_KEYS[GLFW_KEY_W] || window.PRESSED_KEYS[GLFW_KEY_S] || window.PRESSED_KEYS[GLFW_KEY_A] || window.PRESSED_KEYS[GLFW_KEY_D] || window.PRESSED_KEYS[GLFW_KEY_Q] || window.PRESSED_KEYS[GLFW_KEY_E]) {
+    if (window.PRESSED_KEYS.contains(InputObject::W) || window.PRESSED_KEYS.contains(InputObject::S) || window.PRESSED_KEYS.contains(InputObject::A) || window.PRESSED_KEYS.contains(InputObject::D) || window.PRESSED_KEYS.contains(InputObject::Q) || window.PRESSED_KEYS.contains(InputObject::E)) {
         debugFreecamSpeed += debugFreecamAcceleration;
     }
     else {
@@ -746,9 +746,9 @@ void GraphicsEngine::UpdateDebugFreecam() {
     auto look = LookVector(glm::radians(debugFreecamPitch), glm::radians(debugFreecamYaw));
     auto right = LookVector(0, glm::radians(debugFreecamYaw + 90));
     auto up = glm::cross(look, right);
-    glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(window.PRESSED_KEYS[GLFW_KEY_D] - window.PRESSED_KEYS[GLFW_KEY_A]);
-    glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(window.PRESSED_KEYS[GLFW_KEY_Q] - window.PRESSED_KEYS[GLFW_KEY_E]);
-    glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(window.PRESSED_KEYS[GLFW_KEY_W] - window.PRESSED_KEYS[GLFW_KEY_S]);
+    glm::dvec3 rightMovement = right * debugFreecamSpeed * (double)(window.PRESSED_KEYS.contains(InputObject::D) - window.PRESSED_KEYS.contains(InputObject::A));
+    glm::dvec3 upMovement = up * debugFreecamSpeed * (double)(window.PRESSED_KEYS.contains(InputObject::Q) - window.PRESSED_KEYS.contains(InputObject::E));
+    glm::dvec3 forwardMovement = look * debugFreecamSpeed * (double)(window.PRESSED_KEYS.contains(InputObject::W) - window.PRESSED_KEYS.contains(InputObject::S));
     debugFreecamCamera.position += rightMovement + forwardMovement + upMovement;
 }
 

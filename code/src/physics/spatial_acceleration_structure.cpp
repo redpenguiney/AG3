@@ -232,11 +232,11 @@ void SpatialAccelerationStructure::DebugVisualize() {
 void SpatialAccelerationStructure::SasNode::Split() {
     // std::cout << "splitting.\n";
 
-    assert(objects.size() >= NODE_SPLIT_THRESHOLD);
+    Assert(objects.size() >= NODE_SPLIT_THRESHOLD);
     // unsigned int countbefore = objects.size();
 
     // std::cout << "Before split, node has " << objects.size() << " objects\n";
-    assert(!split);
+    Assert(!split);
 
     // calculate split point
     glm::dvec3 meanPosition = {0, 0, 0};
@@ -253,7 +253,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
                 auto node = new SasNode();
                 node->parent = this;
                 (*children).at((x + 1) * 9 + (y + 1) * 3 + z + 1) = node;
-                assert(node->objects.size() == 0);
+                Assert(node->objects.size() == 0);
             }
         }
     }
@@ -284,7 +284,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
 
     // iterate backwards through indicesToRemove to preserve index correctness
     for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); ++it ) {
-        assert(*it < objects.size());
+        Assert(*it < objects.size());
         objects.erase(objects.begin() + *it);
     }
 
@@ -295,7 +295,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
     // }
     // std::cout << "After split, node has " << countafter << " objects\n";
 
-    // assert(countbefore == countafter);
+    // Assert(countbefore == countafter);
 }
 
 void SpatialAccelerationStructure::SasNode::RecalculateAABB() {
@@ -312,7 +312,7 @@ void SpatialAccelerationStructure::SasNode::RecalculateAABB() {
                 break;
             }
         }
-        assert(found);
+        Assert(found);
     }
 
     // now aabb is within the real aabb, we get to real aabb by growing aabb to contain every child node and object
@@ -367,7 +367,7 @@ SpatialAccelerationStructure::SasNode* SpatialAccelerationStructure::SasInsertHe
         z -= 1;
     }
 
-    assert(&node != (*node.children)[x * 9 + y * 3 + z]);
+    Assert(&node != (*node.children)[x * 9 + y * 3 + z]);
     return (*node.children)[x * 9 + y * 3 + z];
 }  
 
@@ -535,7 +535,7 @@ void SpatialAccelerationStructure::SetModuleSpatialAccelerationStructure(Spatial
 
 SpatialAccelerationStructure& SpatialAccelerationStructure::Get() {
     #ifdef IS_MODULE
-    assert(_SPATIAL_ACCELERATION_STRUCTURE_ != nullptr);
+    Assert(_SPATIAL_ACCELERATION_STRUCTURE_ != nullptr);
     return *_SPATIAL_ACCELERATION_STRUCTURE_;
     #else
     static SpatialAccelerationStructure structure;

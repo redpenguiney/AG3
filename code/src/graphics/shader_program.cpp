@@ -1,6 +1,6 @@
 #include "gengine.hpp"
 #include "shader_program.hpp"
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cstring>
 #include <memory>
 #include <string>
@@ -38,7 +38,7 @@ std::string Shader::GetInfoLog() {
         delete[] InfoLog;
     };
 
-    assert(false);
+    Assert(false);
 }
 
 Shader::Shader(const char* path, GLenum shaderType, const std::vector<const char*>& includedFiles) {   
@@ -48,7 +48,7 @@ Shader::Shader(const char* path, GLenum shaderType, const std::vector<const char
     GLint mainSourceLength = mainShaderSource.length();
 
     // tell opengl about the files the shader source wants to include
-    assert(includedFiles.empty()); // openGL support for #include is a sham, we're gonna have to add support ourselves at some point
+    Assert(includedFiles.empty()); // openGL support for #include is a sham, we're gonna have to add support ourselves at some point
     // for (auto & includePath: includedFiles) {
     //     std::string source = LoadFile(includePath);
     //     const char* sourcePtr = source.c_str();
@@ -90,13 +90,13 @@ std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const 
 }
 
 std::shared_ptr<ShaderProgram>& ShaderProgram::Get(unsigned int shaderProgramId) {
-    assert(MeshGlobals::Get().LOADED_PROGRAMS.count(shaderProgramId) != 0 && "ShaderProgram::Get() was given an invalid shaderProgramId.");
+    Assert(MeshGlobals::Get().LOADED_PROGRAMS.count(shaderProgramId) != 0 && "ShaderProgram::Get() was given an invalid shaderProgramId.");
     return MeshGlobals::Get().LOADED_PROGRAMS[shaderProgramId];
 }
 
 void ShaderProgram::Unload(unsigned int shaderProgramId) {
-    assert(GraphicsEngine::Get().IsShaderProgramInUse(shaderProgramId));
-    assert(MeshGlobals::Get().LOADED_PROGRAMS.count(shaderProgramId) != 0 && "ShaderProgram::Unload() was given an invalid shaderProgramId.");
+    Assert(GraphicsEngine::Get().IsShaderProgramInUse(shaderProgramId));
+    Assert(MeshGlobals::Get().LOADED_PROGRAMS.count(shaderProgramId) != 0 && "ShaderProgram::Unload() was given an invalid shaderProgramId.");
     MeshGlobals::Get().LOADED_PROGRAMS.erase(shaderProgramId);
 }
 

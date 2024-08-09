@@ -2,7 +2,7 @@
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
 #include "GLM/vec2.hpp"
-#include <unordered_map>
+#include <unordered_set>
 #include "events/event.hpp"
 
 // Object representing any kind of input.
@@ -75,6 +75,18 @@ class InputObject {
     bool altDown;
     bool ctrlDown;
     bool shiftDown;
+
+    bool operator== (const InputObject&) const = default;
+};
+
+// hash inputobject so it can go in unordered map
+template <>
+struct std::hash<InputObject> {
+    std::size_t operator()(const InputObject& io) const noexcept {
+        size_t h1 = io.capitalized + io.altDown * 8 + io.ctrlDown * 256 + io.shiftDown * 2048;
+        size_t h2 = io.input;
+        return h1 ^ (h2 << 1);
+    }
 };
 
 class Window {
@@ -84,6 +96,13 @@ class Window {
     
     Event<InputObject> InputDown;
     Event<InputObject> InputUp;
+    
+    // fired after Update() finishes
+    Event<> postInputProccessing;
+
+    // fired during Update() before postInputProccesing if the window was resized that frame.
+    // first uvec2 is old window size, secon is new window size
+    Event<glm::uvec2, glm::uvec2> onWindowResize;
 
     Window() = delete; 
 
@@ -92,7 +111,7 @@ class Window {
 
     float Aspect() const {return float(width)/float(height);}
 
-    // Processes user input
+    // Processes user input and fires PostInputProcessing
     void Update();
 
     // If VSync is enabled, will yield until the frame can be displayed.
@@ -112,20 +131,20 @@ class Window {
     // User input stuff.
     // index is key enums provided by GLFW
     // TODO: these maps are def not thread safe, probably needs a rwlock
-    std::unordered_map<unsigned int, bool> PRESSED_KEYS;
-    std::unordered_map<unsigned int, bool> PRESS_BEGAN_KEYS;
-    std::unordered_map<unsigned int, bool> PRESS_ENDED_KEYS;
+    std::unordered_set<InputObject::InputType> PRESSED_KEYS;
+    std::unordered_set<InputObject> PRESS_BEGAN_KEYS;
+    std::unordered_set<InputObject> PRESS_ENDED_KEYS;
 
-    bool IsPressed(int key);
+    /*bool IsPressed(int key);
     bool IsPressBegan(int key);
-    bool IsPressEnded(int key);
+    bool IsPressEnded(int key);*/
 
-    bool LMB_DOWN = false;
+    /*bool LMB_DOWN = false;
     bool RMB_DOWN = false;
     bool LMB_BEGAN = false;
     bool RMB_BEGAN = false;
     bool LMB_ENDED = false;
-    bool RMB_ENDED = false;
+    bool RMB_ENDED = false;*/
 
     //bool SHIFT_DOWN; // TODO
     //bool CTRL_DOWN; // TODO
@@ -138,6 +157,7 @@ class Window {
     bool mouseLocked = false;
 
     GLFWwindow* glfwWindow;
+    // callbacks are called when glfwPollEvents() is called (in Update())
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindowHeight);
     static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);

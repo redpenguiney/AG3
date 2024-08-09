@@ -2,6 +2,7 @@
 #include <iostream>
 #include "glm/gtx/string_cast.hpp"
 #include "debug/log.hpp"
+#include "debug/assert.hpp"
 
 const glm::dvec3& TransformComponent::Position() const {
     return position;
@@ -77,7 +78,7 @@ void TransformComponent::SetPos(glm::dvec3 pos) {
 }
 
 void TransformComponent::SetRot(glm::quat rot) {
-    assert(glm::length(rot)  > 0.001);
+    Assert(glm::length(rot)  > 0.001);
     rot = glm::normalize(rot);
 
     // // fun fact: quaternions can go up to 720 degrees, but the physics engine has a stroke when it goes past 360 (idk why)
@@ -161,7 +162,7 @@ const glm::mat3& TransformComponent::GetNormalMatrix() const {
 void TransformComponent::UpdateRotScaleMatrix() {
     // normalMatrix = glm::toMat3(rotation);
     rotScaleMatrix = glm::mat4x4(rotation) * glm::scale(glm::identity<glm::mat4x4>(), (glm::vec3)scale);
-    assert(!std::isnan(rotation[0]));
+    Assert(!std::isnan(rotation[0]));
     normalMatrix = glm::inverseTranspose(glm::mat3x3(rotScaleMatrix));
-    assert(!std::isnan(normalMatrix[0][0]));
+    Assert(!std::isnan(normalMatrix[0][0]));
 }

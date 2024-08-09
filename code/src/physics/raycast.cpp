@@ -1,4 +1,4 @@
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cmath>
 #define GLM_FORCE_SWIZZLE
 #include "raycast.hpp"
@@ -30,7 +30,7 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
     for (auto & comp: possible_colliding) {
         auto& mesh = comp->physicsMesh;
         auto obj = comp->GetGameObject();
-        assert(obj != nullptr);
+        Assert(obj != nullptr);
         // std::cout << "Could be colliding with " << obj->name << ".\n";
         auto modelMatrix = obj->transformComponent->GetPhysicsModelMatrix();
 

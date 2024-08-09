@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "modifier.hpp"
+#include <memory>
 
 // Attributes represent stuff like entity/item stats that need to support various kinds of complex modifiers.
 class Attribute {

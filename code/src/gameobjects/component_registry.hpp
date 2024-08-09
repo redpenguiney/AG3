@@ -8,7 +8,7 @@
 #pragma once
 #include <array>
 #include <bitset>
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cstddef>
 #include <cstdio>
 #include <memory>
@@ -74,10 +74,10 @@ ComponentHandle<T>::operator bool() const {
 }
 
 template<typename T>
-T& ComponentHandle<T>::operator*() const {assert(ptr != nullptr); return *ptr;}
+T& ComponentHandle<T>::operator*() const {Assert(ptr != nullptr); return *ptr;}
 
 template<typename T>
-T* ComponentHandle<T>::operator->() const {assert(ptr != nullptr); return ptr;};
+T* ComponentHandle<T>::operator->() const {Assert(ptr != nullptr); return ptr;};
 
 template<typename T>
 T* const ComponentHandle<T>::GetPtr() const {return ptr;}
@@ -241,7 +241,7 @@ class ComponentRegistry {
 
         Iterator(bool end)
         {
-            assert(end);
+            Assert(end);
             isEnd = true;
         }
 
@@ -291,7 +291,7 @@ class ComponentRegistry {
 
         template<typename T>
         T* getRef() {
-            //assert(currentPoolArray != nullptr);
+            //Assert(currentPoolArray != nullptr);
             //std::cout << "Getting ref for type " << typeid(T).name() << ", currentPoolArray=" << currentPoolArray << ".\n";
             //currentPoolArray = &(pools.at(poolIndex));
             

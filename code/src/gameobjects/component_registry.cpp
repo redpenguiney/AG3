@@ -1,7 +1,7 @@
 #include "component_registry.hpp"
 #include <algorithm>
 #include <array>
-#include <cassert>
+#include "debug/assert.hpp"
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
@@ -35,7 +35,7 @@ inline std::shared_ptr<GameObject> protected_make_shared(Args&&... args)
 
 std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCreateParams& params) {
     if (params.requestedComponents[RenderComponentBitIndex]) { 
-        assert(!params.requestedComponents[RenderComponentNoFOBitIndex]); // Can't have both kinds of render components.
+        Assert(!params.requestedComponents[RenderComponentNoFOBitIndex]); // Can't have both kinds of render components.
     }
 
     // make sure there are the needed component pools for this kind of gameobject
@@ -118,7 +118,7 @@ void ComponentRegistry::SetModuleComponentRegistry(ComponentRegistry* reg) {
 
 ComponentRegistry& ComponentRegistry::Get() {
     #ifdef IS_MODULE
-    assert(_COMPONENT_REGISTRY_ != nullptr);
+    Assert(_COMPONENT_REGISTRY_ != nullptr);
     return *_COMPONENT_REGISTRY_;
     #else
     static ComponentRegistry registry;
@@ -161,10 +161,10 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     animationComponent((AnimationComponent*)components[ComponentRegistry::AnimationComponentBitIndex])
 {
     
-    assert(transformComponent); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
+    Assert(transformComponent); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
     transformComponent->Init();
     if (renderComponent) {
-        assert(Mesh::Get(params.meshId)); // verify that we were given a valid meshId
+        Assert(Mesh::Get(params.meshId)); // verify that we were given a valid meshId
         renderComponent->Init(params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
     }
     
@@ -185,7 +185,7 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
             
         }
 
-        assert(physMesh != nullptr);
+        Assert(physMesh != nullptr);
 
         if (colliderComponent) colliderComponent->Init(this, physMesh);
         if (rigidbodyComponent) rigidbodyComponent->Init(physMesh);
@@ -194,7 +194,7 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     if (pointLightComponent) {pointLightComponent->Init();}
     if (audioPlayerComponent) {audioPlayerComponent->Init(this, params.sound);}
     if (animationComponent) {
-        assert(renderComponent);
+        Assert(renderComponent);
         animationComponent->Init(renderComponent.GetPtr());
     }
     name = "GameObject";

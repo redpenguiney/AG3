@@ -5,12 +5,12 @@
 #include "gameobjects/rigidbody_component.hpp"
 #include "gameobjects/transform_component.hpp"
 #include "physics/physics_mesh.hpp"
-#include <cassert>
+#include "debug/assert.hpp"
 #include <iostream>
 #include <limits>
 
 void RigidbodyComponent::Init(const std::shared_ptr<PhysicsMesh>& physMesh) {
-    assert(physMesh != nullptr);
+    Assert(physMesh != nullptr);
 
     kinematic = false;
     velocity = {0, 0, 0};
@@ -33,7 +33,7 @@ float RigidbodyComponent::InverseMass() const {
 }
 
 void RigidbodyComponent::SetMass(float newMass, const TransformComponent& transform) {
-    assert(newMass != 0);
+    Assert(newMass != 0);
     inverseMass = 1.0f/newMass;
     UpdateMomentOfInertia(transform);
 }
@@ -60,13 +60,13 @@ static_assert(std::numeric_limits<double>::is_iec559, "Physics engine expects IE
 static_assert(std::numeric_limits<float>::is_iec559, "Physics engine expects IEEE floating point compliance.");
 
 float RigidbodyComponent::InverseMomentOfInertiaAroundAxis(const TransformComponent& transform, glm::vec3 axis) {
-    assert(glm::length2(axis) != 0);
+    Assert(glm::length2(axis) != 0);
     // DebugLogInfo("Rot is ", glm::to_string(transform.Rotation()), " inverse rot is ", glm::to_string(glm::inverse(transform.Rotation())));
     glm::vec3 axisInLocalSpace = glm::inverse(transform.Rotation()) * axis;
     glm::vec3 inertiaAxis = localMomentOfInertia * axisInLocalSpace;
     float dot = glm::dot(axisInLocalSpace, inertiaAxis);
     // DebugLogInfo("\tReturning dot ", dot, ", 1.0/that is ", 1.0/dot, " from i-axis ", glm::to_string(inertiaAxis), " local ", glm::to_string(axisInLocalSpace), " localmomomiooii = ", glm::to_string(localMomentOfInertia));
-    assert(!std::isnan(1.0/dot));
+    Assert(!std::isnan(1.0/dot));
 	return 1.0/dot;
 }
 

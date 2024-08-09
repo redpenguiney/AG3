@@ -13,7 +13,7 @@ inline void DebugLogLineReached(const char *file, int line){
 }
 #define DebugLogLineReached() DebugLogLineReached(__FILE__, __LINE__)
 
-// void _assert(const char *file, int line, bool condition, std::string failureMessage) {
+// void _Assert(const char *file, int line, bool condition, std::string failureMessage) {
 //     #ifdef DEBUG_ASSERT_ENABLED
 //     if (!condition) {
 //         std::cout << "\nAssertion at line " << line << " in " << file << " failed: " << failureMessage; 
@@ -21,7 +21,7 @@ inline void DebugLogLineReached(const char *file, int line){
     
 //     #endif
 // }
-// #define assert() _assert(__FILE__, __LINE__, )
+// #define Assert() _Assert(__FILE__, __LINE__, )
 
 // prints time between start and now
 inline void LogElapsed(double start, std::string message = "\nElapsed ") {
