@@ -277,7 +277,7 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
         std::optional<std::vector<Animation>> animations;
         std::optional<std::vector<Bone>> bones;
         
-        DebugLogInfo("There are, ", mesh->mNumBones);
+        //DebugLogInfo("There are, ", mesh->mNumBones);
         if (mesh->mNumBones > 0) {
             bones.emplace();
 
@@ -452,7 +452,7 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
         ));
         MeshGlobals::Get().LOADED_MESHES[meshId] = meshPtr;
             
-        DebugLogInfo("ADDING ", meshPtr);
+        //DebugLogInfo("ADDING ", meshPtr);
         returnValue.push_back(std::make_tuple(meshPtr, matPtr, textureZ, glm::vec3(0, 0, 0)));
     }
 

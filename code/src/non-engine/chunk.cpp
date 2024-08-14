@@ -82,16 +82,22 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	mesh(Mesh::New(RawMeshProvider(), true)),
 	object(ComponentRegistry::Get().NewGameObject(MakeCGOParams(mesh->meshId)))
 {
+	Assert(lodLevel < MAX_LOD_LEVELS);
+
 	object->transformComponent->SetPos(pos);
 	object->transformComponent->SetScl(glm::vec3(Size()));
+	object->renderComponent->SetColor({ 0.5, 0.7, 0.5, 1.0 });
 	Update();
 }
 
 Chunk::~Chunk()
 {
+	if (mesh) {
+		Mesh::Unload(mesh->meshId);
+		mesh = nullptr;
+		object = nullptr;
+	}
 	
-	Mesh::Unload(mesh->meshId);
-	mesh = nullptr; 
 }
 
 float Chunk::Size() {
@@ -107,8 +113,10 @@ void Chunk::Update()
 		provider.fixVertexCenters = false;
 		provider.resolution = MAX_CHUNK_RESOLUTION * powf(2, -lod);
 		provider.distanceFunction = CalcWorldHeightmap;
+		
 		mesh->Remesh(provider);
 
+		//DebugLogInfo("Chunk at ", glm::to_string(object->transformComponent->Position()), " size ", object->transformComponent->Scale(), " verts ", mesh->indices.size(), " lod ", lod);
 	}
 }
 

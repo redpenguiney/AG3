@@ -198,17 +198,17 @@ enum class VerticalAlignMode {
 };
 
 struct TextMeshCreateParams {
-	float leftMargin, rightMargin, topMargin, bottomMargin; // in pixels, 0 is the center of the ui text is being put on. top and bottom margin are only respected for top and bottom vertical alignment respectively.
-	float lineHeightMultiplier; // 1 is single spaced, 2 is double spaced, etc.
-	HorizontalAlignMode horizontalAlignMode;
-	VerticalAlignMode verticalAlignMode;
+	float leftMargin = -1000, rightMargin = 1000, topMargin = 0, bottomMargin = 0; // in pixels, 0 is the center of the ui text is being put on. top and bottom margin are only respected for top and bottom vertical alignment respectively.
+	float lineHeightMultiplier = 1; // 1 is single spaced, 2 is double spaced, etc.
+	HorizontalAlignMode horizontalAlignMode = HorizontalAlignMode::Center;
+	VerticalAlignMode verticalAlignMode = VerticalAlignMode::Center;
 	bool wrapText = true;
 };
 
 // Mesh provider that creates a mesh for text.
 class TextMeshProvider: public MeshProvider {
 public:
-    TextMeshProvider(const MeshCreateParams& = MeshCreateParams::Default());
+    TextMeshProvider(const MeshCreateParams& = MeshCreateParams::Default(), const std::shared_ptr<Material>& font = nullptr);
 
     std::pair < std::vector < float >, std::vector< unsigned int> > GetMesh() const override;
 

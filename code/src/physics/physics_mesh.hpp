@@ -13,9 +13,13 @@ class Mesh;
 // Also calculates mass moment of inertia for arbitrary shapes.
 class PhysicsMesh {
     public:
+
+    ~PhysicsMesh();
+
     // static std::shared_ptr<PhysicsMesh>& Get(unsigned int id);
 
     // Creates a physics mesh based on the vertices of the (graphical) mesh.
+    // If the given mesh is dynamic, then changes to the mesh will affect the physics mesh automatically.
     // If you call this function twice with the same arguments, you'll (hopefully) get 2 pointers to the same PhysicsMesh.
     // simplifyThreshold is TODO
     // convexDecomposition is TODO
@@ -47,13 +51,23 @@ class PhysicsMesh {
         std::vector<std::pair<glm::vec3, glm::vec3>> edges;
     };
 
-    // To allow for accurate, fast, and simple collisions with concave and convex objects, stores a vector of convex meshes
-    const std::vector<ConvexMesh> meshes; 
+    // To allow for accurate, fast, and simple collisions with concave and convex objects, stores a vector of convex meshes.
+    // Not const.
+    std::vector<ConvexMesh> meshes; 
 
     glm::mat3x3 CalculateLocalMomentOfInertia(glm::vec3 objectScale, float objectMass);
 
+
+    
+
     private:
+    friend class Mesh;
+    // overwrites "meshes" with new data
+    void RefreshMesh();
     PhysicsMesh(std::shared_ptr<Mesh>& mesh);
+
+    // nullptr if physicsMesh was not created from a Mesh object; used to refresh the mesh.
+    std::shared_ptr<Mesh> origin = nullptr;
 
     // the moi for this mesh when it is 1x1x1 size. TODO, might not actually be possible to get scaled moi from unscaled moi, but if it is, would make nice optimization.
     // const glm::mat3x3 baseMomentOfInertia;

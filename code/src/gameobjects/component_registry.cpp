@@ -48,7 +48,8 @@ std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCre
             params.requestedComponents[PointlightComponentBitIndex] ? new ComponentPool<PointLightComponent>() : nullptr,
             params.requestedComponents[RenderComponentNoFOBitIndex] ? new ComponentPool<RenderComponentNoFO>() : nullptr,
             params.requestedComponents[AudioPlayerComponentBitIndex] ? new ComponentPool<AudioPlayerComponent>() : nullptr,
-            params.requestedComponents[AnimationComponentBitIndex] ? new ComponentPool<AnimationComponent>() : nullptr
+            params.requestedComponents[AnimationComponentBitIndex] ? new ComponentPool<AnimationComponent>() : nullptr,
+            params.requestedComponents[SpotlightComponentBitIndex] ? new ComponentPool<SpotLightComponent>() : nullptr
         }};
         //std::cout << "RENDER COMP POOL PAGE AT " << ((ComponentPool<RenderComponent>*)(componentBuckets[params.requestedComponents][RenderComponentBitIndex]))->pools[0] << "\n";
     }
@@ -81,6 +82,9 @@ std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCre
             break;
             case AnimationComponentBitIndex:
             components[i] = ((ComponentPool<AnimationComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
+            break;
+            case SpotlightComponentBitIndex:
+            components[i] = ((ComponentPool<SpotLightComponent>*)(componentBuckets.at(params.requestedComponents).at(i)))->GetNew();
             break;
             default:
             std::printf("you goofy goober you didn't make a case here for index %u\n", i);
@@ -140,6 +144,7 @@ void GameObject::Destroy() {
     pointLightComponent.Clear();
     audioPlayerComponent.Clear();
     animationComponent.Clear();
+    spotLightComponent.Clear();
 }
 
 GameObject::~GameObject() {
@@ -158,7 +163,8 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     colliderComponent((ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex]),
     pointLightComponent((PointLightComponent*)components[ComponentRegistry::PointlightComponentBitIndex]),
     audioPlayerComponent((AudioPlayerComponent*)components[ComponentRegistry::AudioPlayerComponentBitIndex]),
-    animationComponent((AnimationComponent*)components[ComponentRegistry::AnimationComponentBitIndex])
+    animationComponent((AnimationComponent*)components[ComponentRegistry::AnimationComponentBitIndex]),
+    spotLightComponent((SpotLightComponent*)components[ComponentRegistry::SpotlightComponentBitIndex])
 {
     
     Assert(transformComponent); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
@@ -192,11 +198,13 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     };
     
     if (pointLightComponent) {pointLightComponent->Init();}
+    
     if (audioPlayerComponent) {audioPlayerComponent->Init(this, params.sound);}
     if (animationComponent) {
         Assert(renderComponent);
         animationComponent->Init(renderComponent.GetPtr());
     }
+    if (spotLightComponent) { spotLightComponent->Init(); }
     name = "GameObject";
 };
 

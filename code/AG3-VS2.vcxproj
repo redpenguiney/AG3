@@ -236,10 +236,13 @@
     <ClCompile Include="src\gameobjects\pointlight_component.cpp" />
     <ClCompile Include="src\gameobjects\render_component.cpp" />
     <ClCompile Include="src\gameobjects\rigidbody_component.cpp" />
+    <ClCompile Include="src\gameobjects\spotlight_component.cpp" />
     <ClCompile Include="src\gameobjects\transform_component.cpp" />
     <ClCompile Include="src\graphics\animation.cpp" />
+    <ClCompile Include="src\graphics\base_shader_program.cpp" />
     <ClCompile Include="src\graphics\buffered_buffer.cpp" />
     <ClCompile Include="src\graphics\camera.cpp" />
+    <ClCompile Include="src\graphics\compute_shader_program.cpp" />
     <ClCompile Include="src\graphics\framebuffer.cpp" />
     <ClCompile Include="src\graphics\gengine.cpp" />
     <ClCompile Include="src\graphics\gl_error_handler.cpp" />
@@ -276,10 +279,7 @@
     <ClCompile Include="src\non-engine\health.cpp" />
     <ClCompile Include="src\non-engine\humanoid.cpp" />
     <ClCompile Include="src\non-engine\modifier.cpp" />
-<<<<<<< HEAD
     <ClCompile Include="src\non-engine\worldgen.cpp" />
-=======
->>>>>>> a972f8359ae07dd03a8c96b1b4c0914f98b8b242
     <ClCompile Include="src\non-engine\world_loader.cpp" />
     <ClCompile Include="src\physics\gjk.cpp" />
     <ClCompile Include="src\physics\mesh_simplification.cpp" />
@@ -311,10 +311,13 @@
     <ClInclude Include="src\gameobjects\pointlight_component.hpp" />
     <ClInclude Include="src\gameobjects\render_component.hpp" />
     <ClInclude Include="src\gameobjects\rigidbody_component.hpp" />
+    <ClInclude Include="src\gameobjects\spotlight_component.hpp" />
     <ClInclude Include="src\gameobjects\transform_component.hpp" />
     <ClInclude Include="src\graphics\animation.hpp" />
+    <ClInclude Include="src\graphics\base_shader_program.hpp" />
     <ClInclude Include="src\graphics\buffered_buffer.hpp" />
     <ClInclude Include="src\graphics\camera.hpp" />
+    <ClInclude Include="src\graphics\compute_shader_program.hpp" />
     <ClInclude Include="src\graphics\framebuffer.hpp" />
     <ClInclude Include="src\graphics\gengine.hpp" />
     <ClInclude Include="src\graphics\material.hpp" />

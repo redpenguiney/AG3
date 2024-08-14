@@ -10,7 +10,7 @@ void PointLightComponent::Destroy() {
 }
 
 void PointLightComponent::Init() {
-    lightColor = {0, 0, 0};
+    lightColor = {1, 1, 1};
     lightRange = 100;
 } 
 

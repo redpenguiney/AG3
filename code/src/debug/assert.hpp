@@ -9,7 +9,7 @@
 inline void private_assert(const char* file, int line, bool predicate, const char* assertion) {
 #ifdef DO_ASSERTS
 	if (!predicate) {
-		DebugLogError("Assertion ", assertion, " not met at line ", line, " of \"", file, "\". ");
+		DebugLogError("\nAssertion \"", assertion, "\" not met at line ", line, " of \"", file, "\". ");
 		abort();
 	}
 #endif

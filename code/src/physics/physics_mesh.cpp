@@ -15,6 +15,22 @@
 
 
 
+PhysicsMesh::~PhysicsMesh()
+{
+    if (origin != nullptr) {
+        unsigned int i = 0;
+        for (auto& ptr : origin->physicsUsers) {
+            if (ptr == this) {
+                origin->physicsUsers[i] = origin->physicsUsers.back();
+                origin->physicsUsers.pop_back();
+                return;
+            }
+            i++;
+        }
+    }
+    
+}
+
 std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, unsigned int simplifyThreshold, bool convexDecomposition) {
     auto tuple = std::make_tuple(mesh->meshId, simplifyThreshold, convexDecomposition);
     if (MeshGlobals::Get().MESHES_TO_PHYS_MESHES.count(tuple)) { // TODO: once we have simplifyThreshold and convexDecomposition, we need to make sure that matches up too
@@ -23,15 +39,20 @@ std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, unsig
     else {
         auto ptr = std::shared_ptr<PhysicsMesh>(new PhysicsMesh(mesh));
         // MeshGlobals::Get().LOADED_PHYS_MESHES[ptr->physMeshId] = ptr;
+        if (mesh->dynamic) {
+            mesh->physicsUsers.push_back(ptr.get());
+        }
         MeshGlobals::Get().MESHES_TO_PHYS_MESHES[tuple] = ptr;
         return ptr;
     } 
 }
 
+
+
 // Returns a vector of ConvexMesh objects for a PhysicsMesh from the given Mesh. 
 // TODO: convex decomposition
-std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_ptr<Mesh>& mesh, float simplifyThreshold, bool convexDecomposition) {
-    Assert(!mesh->dynamic);
+std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(const std::shared_ptr<Mesh>& mesh, float simplifyThreshold, bool convexDecomposition) {
+    //Assert(!mesh->dynamic);
     Assert(simplifyThreshold >= 1.0f);
     // DebugLogInfo("Here we go. ", mesh->meshId);
 
@@ -188,8 +209,18 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(std::shared_
     return {PhysicsMesh::ConvexMesh {.triangles = triangles, .faces = faces, .edges = edges}};
 }
 
-PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): meshes(me_when_i_so_i_but_then_i_so_i(mesh, 1.0, false)) {
+void PhysicsMesh::RefreshMesh()
+{
+    assert(origin != nullptr);
+    meshes = (me_when_i_so_i_but_then_i_so_i(origin, 1.0, false));
+}
 
+PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): 
+    origin(mesh->dynamic ? mesh : nullptr), 
+    meshes(me_when_i_so_i_but_then_i_so_i(mesh, 1.0, false))
+{
+    
+    //RefreshMesh();
 }
 
 // std::shared_ptr<PhysicsMesh>& PhysicsMesh::Get(unsigned int id) {

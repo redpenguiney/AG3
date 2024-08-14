@@ -42,9 +42,10 @@ class MeshGlobals {
     std::unordered_map<unsigned int,  std::shared_ptr<Material>> MATERIALS;
     friend class Material;
 
-    GLuint LOADED_PROGRAM_ID = 0; // id of the currently loaded shader program
-    std::unordered_map<unsigned int, std::shared_ptr<ShaderProgram>> LOADED_PROGRAMS; 
-    friend class ShaderProgram;
+    
+    //friend class BaseShaderProgram;
+    //friend class ShaderProgram;
+    //friend class ComputeShaderProgram;
 
     // std::unordered_map<unsigned int, std::shared_ptr<PhysicsMesh>> LOADED_PHYS_MESHES;
 
@@ -173,6 +174,11 @@ class Mesh {
     //static std::shared_ptr<Mesh> Text(const MeshCreateParams& params = MeshCreateParams::DefaultGui());
 
     private:
+
+    // so PhysicsMesh can access physicsUsers
+    friend class PhysicsMesh;
+    // A list of physics meshes made using this mesh. We need to store this so that when the mesh is modified (assuming it's dynamic), it can update the physics mesh too.
+    std::vector <PhysicsMesh*> physicsUsers;
 
     // true if the mesh was created using Mesh::FromText(). If that's the case, TODO WHAT WAS SUPPOSED TO FINISH THIS COMMENT LOL
     const bool wasCreatedFromText;

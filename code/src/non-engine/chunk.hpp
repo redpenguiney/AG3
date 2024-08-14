@@ -4,10 +4,10 @@
 #include "utility/hash_glm.hpp"
 
 
-const unsigned int MAX_LOD_LEVELS = 4;
-const float MAX_CHUNK_SIZE = 32 * powf(2, MAX_LOD_LEVELS - 1); // size of the lowest-detail possible chunk
-const float MAX_CHUNK_RESOLUTION = 1 * powf(2, MAX_LOD_LEVELS - 1); // resolution of the lowest-detail possible chunk; meters per sample
-unsigned int MAX_LOADED_CHUNKS_PER_FRAME = 4;
+const inline unsigned int MAX_LOD_LEVELS = 1;
+const inline float MAX_CHUNK_SIZE = 32 * powf(2, MAX_LOD_LEVELS - 1); // size of the lowest-detail possible chunk
+const inline float MAX_CHUNK_RESOLUTION = 4 * powf(2, MAX_LOD_LEVELS - 1); // resolution of the lowest-detail possible chunk; meters per sample
+const inline unsigned int MAX_LOADED_CHUNKS_PER_FRAME = 4000000;
 
 // returns pairs of <lodLevel, relPos> for chunks.
 //std::vector <std::pair<unsigned int, glm::vec3 >> CalculateChunkLoadOrder();
@@ -19,13 +19,13 @@ struct OctreeNode;
 class Chunk {
 public:
 	// defined in world_loader.cpp. loads/unloads chunks, call every frame.
-	static void LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance, unsigned int baseGridSize);
+	static void LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance);
 
 	// center position
 	const glm::vec3 pos;
 
-	// higher is more detail, maximum is MAX_LOD_LEVELS - 1. Size of the chunk is MAX_CHUNK_SIZE * 2 ^ (-lod)
-	const unsigned int lod;
+	// higher is more detail, must be less than MAX_LOD_LEVELS. Size of the chunk is MAX_CHUNK_SIZE * 2 ^ (-lod)
+	const int lod;
 
 	float Size();
 
@@ -42,15 +42,19 @@ public:
 	
 
 private:
-	static void RecursiveLoad(OctreeNode*);
+	static void RecursiveLoad(OctreeNode*, int& loadedSoFar);
 
-	static inline std::unordered_map<glm::vec3, std::unique_ptr<Chunk>> chunks;
+	// exists because when the chunks unordered_map was a static variable, the undefined destruction order caused issues
+	static std::unordered_map<glm::vec3, std::unique_ptr<Chunk>>& GetChunks();
 
 	bool toDelete;
 
 	// true if mesh needs to be modified
 	bool dirty;
 
+	// nullptr when no mesh bc empty
 	std::shared_ptr<Mesh> mesh;
+
+	// nullptr when no mesh bc empty
 	std::shared_ptr<GameObject> object;
 };

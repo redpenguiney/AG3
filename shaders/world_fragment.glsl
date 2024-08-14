@@ -24,6 +24,7 @@ uniform vec3 envLightDirection;
 uniform vec3 envLightColor;
 uniform float envLightDiffuse;
 uniform float envLightAmbient;
+uniform float envLightSpecular;
 
 struct pointLight {
     vec4 colorAndRange; // w-coord is range, xyz is rgb
@@ -36,6 +37,20 @@ layout(std430, binding = 0) buffer pointLightSSBO {
     float morePaddingLol;
     float alsoPadding;
     pointLight pointLights[];
+};
+
+struct spotLight {
+    vec4 colorAndRange; // w-coord is range, xyz is rgb
+    vec4 relPosAndInnerAngle; // w-coord is cos(inner angle)
+    vec4 directionAndOuterAngle; // w-coord is cos(outer angle)
+};
+
+layout(std430, binding = 0) buffer pointLightSSBO {
+    uint spotLightCount;
+    float stillPadding2;
+    float morePaddingLol2;
+    float alsoPadding2;
+    spotLight spotLights[];
 };
 
 // parallax mapping
@@ -91,29 +106,41 @@ vec2 CalculateTexCoords(vec3 texCoords) {
     return finalTexCoords;
 }
 
-vec3 CalculateEnvLightInfluence(vec3 realTexCoords, vec3 normal) {
+vec3 CalculateEnvLightInfluence( float specularStrength, vec3 normal) {
     float diff = max(dot(normal, envLightDirection), 0.0);
-    vec3 diffuse = envLightDiffuse * envLightColor;
+    vec3 diffuse = diff * envLightDiffuse * envLightColor;
 
-    float specularStrength = 0.8;
     vec3 viewDir = normalize(-cameraToFragmentPosition);
     // vec3 reflectDir = reflect(-lightDir, normal); // replace reflectDir with halfwayDir for blinn-phong lighting, which is better than phong lighting
     vec3 halfwayDir = normalize(envLightDirection + viewDir);
     float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 32);
-    vec3 specular = specularStrength * spec * lightColor;  
-
-    
+    vec3 specular = specularStrength * spec * envLightSpecular * envLightColor;  
 
     vec3 ambient = envLightColor * envLightAmbient;
-
-    if (specularMappingEnabled) {
-        specular *= texture(specularMap, realTexCoords).x;
-    }
 
     return ambient + diffuse + specular;
 }
 
-vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, vec3 normal, vec3 realTexCoords) {
+vec3 CalculateSpotlightInfluence(vec3 lightColor, vec3 rel_pos, float range, float innerAngle, float outerAngle, vec3 lightDirection, float specularStrength, vec3 normal) {
+    float distance = length(rel_pos - cameraToFragmentPosition);
+    vec3 lightDir = normalize(rel_pos - cameraToFragmentPosition); 
+    
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = diff * lightColor;
+
+    vec3 viewDir = normalize(-cameraToFragmentPosition);
+    // vec3 reflectDir = reflect(-lightDir, normal); // replace reflectDir with halfwayDir for blinn-phong lighting, which is better than phong lighting
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 32);
+    vec3 specular = specularStrength * spec * lightColor;
+
+    float theta = dot(lightDir, normalize(-lightDir));
+    float spotlightStrength = range/pow(distance, 2) * (theta - outerAngle)/(innerAngle - outerAngle);
+    
+    return spotlightStrength * (diffuse + specular);
+}
+
+vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, float specularStrength, vec3 normal) {
     
     float distance = length(rel_pos - cameraToFragmentPosition);
     vec3 lightDir = normalize(rel_pos - cameraToFragmentPosition); 
@@ -121,21 +148,16 @@ vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, vec3 no
     float diff = max(dot(normal, lightDir), 0.0);
     vec3 diffuse = diff * lightColor;
 
-    float specularStrength = 0.8;
     vec3 viewDir = normalize(-cameraToFragmentPosition);
     // vec3 reflectDir = reflect(-lightDir, normal); // replace reflectDir with halfwayDir for blinn-phong lighting, which is better than phong lighting
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 32);
     vec3 specular = specularStrength * spec * lightColor;  
 
-    
-
     vec3 ambient = lightColor * 0.1;
 
     float strength = range/pow(distance, 2);
-    if (specularMappingEnabled) {
-        specular *= texture(specularMap, realTexCoords).x;
-    }
+    
     return strength * (ambient + diffuse + specular);
 };
 
@@ -153,14 +175,22 @@ void main()
         realTexCoords = fragmentTexCoords;
     }
     
-    vec3 normal = fragmentNormal;
+    vec3 normal = normalize(fragmentNormal);
     if (normalMappingEnabled) {normal = normalize(TBNmatrix * (texture(normalMap, realTexCoords).rgb * 2.0 - 1.0));} // todo: matrix multiplication in fragment shader is really bad, maybe?
+
+    float specularStrength = 0.5;
+    if (specularMappingEnabled) {
+        specularStrength = texture(specularMap, realTexCoords).x;
+    }
 
     vec3 light = vec3(0, 0, 0);
     for (uint i = 0; i < pointLightCount; i++) {
-        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, normal, realTexCoords);
+        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, specularStrength, normal);
     }
-    light += CalculateEnvLightInfluence();
+    for (uint i = 0; i < spotLightCount; i++) {
+        light += CalculateSpotlightInfluence(spotLights[i].colorAndRange.xyz, spotLights[i].relPosAndInnerAngle.xyz, spotLights[i].colorAndRange.w, spotLights[i].relPosAndInnerAngle.w, spotLights[i].directionAndOuterAngle.w, spotLights[i].directionAndOuterAngle.xyz, specularStrength, normal);
+    }
+    light += CalculateEnvLightInfluence(specularStrength, normal);
 
     vec4 tx;
     if (realTexCoords.z < 0) {
@@ -176,5 +206,8 @@ void main()
     vec3 globalAmbient = vec3(0.1, 0.1, 0.1);
     vec4 color = tx * fragmentColor * vec4((light + globalAmbient), 1);
     Output = color;
+    //Output = vec4(normalize(fragmentNormal), 1.0);
+    //Output = vec4(-envLightDirection, 1.0);
     //Output = fragmentColor;
+    //Output = vec4(dot(normal, envLightDirection));
 };

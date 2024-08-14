@@ -6,11 +6,11 @@
 
 // implementation for dual contouring to create mesh from terrain is in this file.
 
-glm::vec3 GetNormalAtPoint(glm::vec3 pos, std::function<float(glm::vec3)> distanceFunction, float precision = 0.01) {
+glm::vec3 GetNormalAtPoint(glm::vec3 pos, std::function<float(glm::vec3)> distanceFunction, float precision = 0.001) {
 	return glm::normalize(glm::vec3 {
-		distanceFunction({pos.x + precision, pos.y, pos.z}) - distanceFunction({pos.x - precision, pos.y, pos.z}),
-		distanceFunction({pos.x, pos.y + precision, pos.z}) - distanceFunction({pos.x, pos.y - precision, pos.z}),
-		distanceFunction({pos.x, pos.y, pos.z + precision}) - distanceFunction({pos.x, pos.y, pos.z - precision}),
+		(distanceFunction({pos.x + precision, pos.y, pos.z}) - distanceFunction({pos.x - precision, pos.y, pos.z})) / (precision * 2),
+		(distanceFunction({pos.x, pos.y + precision, pos.z}) - distanceFunction({pos.x, pos.y - precision, pos.z})) / (precision * 2),
+		(distanceFunction({pos.x, pos.y, pos.z + precision}) - distanceFunction({pos.x, pos.y, pos.z - precision})) / (precision * 2),
 	});
 }
 
@@ -27,12 +27,18 @@ std::optional<glm::vec3> FindBestVertex(
 
 		// evaluate the distance function at each corner of the cell
 		float distances[2][2][2];
+		int insideCount = 0;
 		for (unsigned int x = 0; x < 2; x++) {
 			for (unsigned int y = 0; y < 2; y++) {
 				for (unsigned int z = 0; z < 2; z++) {
-					distances[x][y][z] = distanceFunction({ cellPos.x + resolution * x, cellPos.y + resolution * y, cellPos.z + resolution * z });
+					float distance = distanceFunction({ cellPos.x + resolution * x, cellPos.y + resolution * y, cellPos.z + resolution * z });
+					distances[x][y][z] = distance;
+					insideCount += distance <= 0;
 				}
 			}
+		}
+		if (insideCount == 0 || insideCount == 8) { // then voxel is either empty or full, nothing to render here
+			return std::nullopt;
 		}
 
 		// for each edge between those corners, see if there's a sign change and if so store its position
@@ -80,11 +86,17 @@ std::optional<glm::vec3> FindBestVertex(
 
 			glm::vec3 total = {0, 0, 0};
 			for (unsigned int i = 0; i < nChanges; i++) {
-				total += signChanges[i];
+				total += signChanges[i] - cellPos;
 			}
 			total /= float(nChanges);
-			return total;
+			
+			// clamp position (while preserving direction)
+			//total -= total * resolution / glm::length(total - cellPos);
+			//total = glm::min(glm::max(total, cellPos - resolution/2), cellPos + resolution/2);
+			return total + cellPos;
 		}
+
+
 	//}
 }
 
@@ -122,6 +134,7 @@ DualContouringMeshProvider::DualContouringMeshProvider(const MeshCreateParams& p
 std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvider::GetMesh() const
 {
 	// based on https://github.com/BorisTheBrave/mc-dc/blob/a165b326849d8814fb03c963ad33a9faf6cc6dea/dual_contour_3d.py
+	// and now that it doesn't work, also https://github.com/emilk/Dual-Contouring/blob/master/src/vol/Contouring.cpp
 	auto p1 = point1;
 	auto p2 = point2 + resolution;
 
@@ -150,7 +163,7 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 
 				if (vert.has_value()) {
 					if (cellX == 0) {
-						DebugLogInfo("P1 = ", glm::to_string(p1), " vPos = ", glm::to_string(*vert));
+						//DebugLogInfo("P1 = ", glm::to_string(p1), " vPos = ", glm::to_string(*vert));
 					}
 					unsigned int i = IndexFromCell({ cellX, cellY, cellZ }, dim);
 					cellIndicesToVertexIndices.at(i) = vertexPositions.size();
@@ -283,10 +296,33 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 		vertices.at(format.attributes.position->offset / sizeof(GLfloat) + posI * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 1) = vertexPositions[posI].y;
 		vertices.at(format.attributes.position->offset / sizeof(GLfloat) + posI * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 2) = vertexPositions[posI].z;
 
-		glm::vec3 normal = GetNormalAtPoint(vertexPositions[posI], distanceFunction);
+		/*glm::vec3 normal = GetNormalAtPoint(vertexPositions[posI], distanceFunction);
 		vertices.at(format.attributes.normal->offset / sizeof(GLfloat) + posI * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 0) = normal.x;
 		vertices.at(format.attributes.normal->offset / sizeof(GLfloat) + posI * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 1) = normal.y;
-		vertices.at(format.attributes.normal->offset / sizeof(GLfloat) + posI * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 2) = normal.z;
+		vertices.at(format.attributes.normal->offset / sizeof(GLfloat) + posI * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 2) = normal.z;*/
+	}
+
+	// Write normals; each vertex has a few faces attached to it with different normals, so we'll just add all those normals together and let the shader normalize it.
+	for (unsigned int triangle = 0; triangle < indices.size() / 3; triangle++) {
+		glm::vec3 triangleVerts[3];
+		for (unsigned int i = 0; i < 3; i++) {
+			unsigned int vertexIndex = indices.at(triangle * 3 + i);
+			triangleVerts[i] = vertexPositions[vertexIndex];
+		}
+
+		glm::vec3 normal = glm::normalize(glm::cross(triangleVerts[2] - triangleVerts[0], triangleVerts[2] - triangleVerts[1]));
+		
+		for (unsigned int i = 0; i < 3; i++) {
+			unsigned int vertexIndex = indices[triangle * 3 + i];
+			vertices.at(format.attributes.normal->offset / sizeof(GLfloat) + vertexIndex * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 0) += normal.x;
+			vertices.at(format.attributes.normal->offset / sizeof(GLfloat) + vertexIndex * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 1) += normal.y;
+			vertices.at(format.attributes.normal->offset / sizeof(GLfloat) + vertexIndex * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 2) += normal.z;
+			if (glm::length(glm::cross(triangleVerts[2] - triangleVerts[0], triangleVerts[2] - triangleVerts[1])) == 0) {
+				DebugLogInfo("Verts = ", glm::to_string(triangleVerts[2]), ", ", glm::to_string(triangleVerts[1]), ", ", glm::to_string(triangleVerts[0]));
+				DebugLogInfo("Adding normal ", glm::to_string(normal), " to vertex ", vertexIndex);
+			}
+			
+		}
 	}
 
 	//if (vertexPositions.size() == 0 || indices.size() == 0) { return std::nullopt; }

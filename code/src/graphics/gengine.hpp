@@ -154,6 +154,7 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
     
     
     BufferedBuffer pointLightDataBuffer;
+    BufferedBuffer spotLightDataBuffer;
 
     RenderableMesh* skybox; 
 

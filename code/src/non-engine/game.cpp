@@ -13,10 +13,13 @@
 #include "modifier.hpp"
 #include "chunk.hpp"
 
+#include "noise/noise.h"
+
 //auto n = FastNoise::New<FastNoise::Simplex>();
 //auto f = FastNoise::New<FastNoise::Generator>();
 //noise::module::Perlin perlinNoiseGenerator;
-noise::module::Perlin perlinNoiseGenerator;
+
+
 
 bool inMainMenu = true;
 
@@ -28,11 +31,11 @@ void MakeMainMenu() {
     auto& GE = GraphicsEngine::Get();
     auto& AE = AudioEngine::Get();
     auto& CR = ComponentRegistry::Get();
-
+    
     auto ttfParams = TextureCreateParams({ "../fonts/arial.ttf", }, Texture::FontMap);
     ttfParams.fontHeight = 24;
     ttfParams.format = Texture::Grayscale_8Bit;
-    auto [arialLayer, arialFont] = Material::New({ttfParams}, Texture::Texture2D, true);
+    auto [arialLayer, arialFont] = Material::New({ ttfParams }, Texture::Texture2D, true);
 
     //// don't take by reference bc vector reallocation invalidates references/reference to temporary
     auto startGame = mainMenuGuis.emplace_back(std::move(std::make_shared<Gui>(true, std::optional(std::make_pair(arialLayer, arialFont )))));
@@ -62,8 +65,9 @@ void MakeMainMenu() {
     startGame->onInputEnd.Connect([](InputObject input) {
         
         if (input.input == InputObject::LMB) {
+            inMainMenu = false;
             mainMenuGuis.clear();
-            LoadWorld(GraphicsEngine::Get().camera.position, 512);
+            //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
         }
     });
 
@@ -85,11 +89,37 @@ void GameInit()
 
     GE.SetDebugFreecamEnabled(true);
 
-    
+    auto ttfParams = TextureCreateParams({ "../fonts/arial.ttf", }, Texture::FontMap);
+    ttfParams.fontHeight = 16;
+    ttfParams.format = Texture::Grayscale_8Bit;
+    auto [arialLayer, arialFont] = Material::New({ ttfParams }, Texture::Texture2D, true);
 
-    GE.preRenderEvent.Connect([&GE](float dt) {
+    auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
+
+    debugText->rgba = { 1, 1, 1, 0 };
+    debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
+
+    debugText->scalePos = { 0, 1 };
+    debugText->scaleSize = { 0, 0 };
+    debugText->offsetSize = { 300, 60 };
+    debugText->offsetPos = { 200, -200 };
+    debugText->anchorPoint = { 0, 0 };
+
+    debugText->GetTextInfo().text = "---";
+    debugText->GetTextInfo().rgba = { 1, 1, 1, 0.6 };
+    debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+    debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+
+    debugText->UpdateGuiGraphics();
+    debugText->UpdateGuiTransform();
+
+    GE.preRenderEvent.Connect([&GE, debugText](float dt) {
+
+        debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
+        debugText->UpdateGuiText();
+
         if (!inMainMenu) {
-            //LoadWorld(GE.camera.position, 512);
+            Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
         }
     });
 
@@ -111,12 +141,20 @@ void GameInit()
     //    //soundSounder->audioPlayerComponent->Play();
     //}
 
-    //auto makeMparams = MeshCreateParams{ .textureZ = -1.0, .opacity = 1, .expectedCount = 16384 };
+    auto makeMparams = MeshCreateParams{ .textureZ = -1.0, .opacity = 1, .expectedCount = 16384 };
     //// auto m2 = Mesh::FromFile("../models/rainbowcube.obj", makeMparams);
-    //auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/rainbowcube.obj", makeMparams).at(0);
+    auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/rainbowcube.obj", makeMparams).at(0);
 
+    GE.defaultShaderProgram->Uniform("envLightDiffuse", 0.0f);
 
-    //auto [grassTextureZ, grassMaterial] = Material::New({ TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap} }, Texture::Texture2D);
+    auto [grassTextureZ, grassMaterial] = Material::New({ TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap} }, Texture::Texture2D);
+
+    GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::SpotlightComponentBitIndex });
+    auto coolerLight = CR.NewGameObject(params);
+    coolerLight->transformComponent->SetPos({ 8, 5, 0 });
+    coolerLight->spotLightComponent->SetRange(200);
+    coolerLight->spotLightComponent->SetColor({ 1, 1, 0.7 });
+    //coolerLight->spotLightComponent->Se
 
     //auto [brickTextureZ, brickMaterial] = Material::New({
     //    TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap},
@@ -126,18 +164,18 @@ void GameInit()
     //    }, Texture::Texture2D);
 
     //{
-    //    GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
-    //    params.meshId = m->meshId;
-    //    params.materialId = grassMaterial->id;
+        /*GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+        params.meshId = m->meshId;
+        params.materialId = grassMaterial->id;
 
-    //    auto floor = CR.NewGameObject(params);
-    //    floor->transformComponent->SetPos({ 0, 0, 0 });
-    //    floor->transformComponent->SetRot(glm::vec3{ 0.0, glm::radians(0.0), glm::radians(0.0) });
-    //    floor->colliderComponent->elasticity = 1.0;
-    //    floor->transformComponent->SetScl({ 10, 1, 10 });
-    //    floor->renderComponent->SetColor({ 0, 1, 0, 1.0 });
-    //    floor->renderComponent->SetTextureZ(grassTextureZ);
-    //    floor->name = "ah yes the floor here is made of floor";
+        auto floor = CR.NewGameObject(params);
+        floor->transformComponent->SetPos({ 0, 0, 0 });
+        floor->transformComponent->SetRot(glm::vec3{ 0.0, glm::radians(0.0), glm::radians(0.0) });
+        floor->colliderComponent->elasticity = 1.0;
+        floor->transformComponent->SetScl({ 10, 1, 10 });
+        floor->renderComponent->SetColor({ 0, 1, 0, 1.0 });
+        floor->renderComponent->SetTextureZ(grassTextureZ);
+        floor->name = "ah yes the floor here is made of floor";*/
     //}
 
     //GameobjectCreateParams wallParams({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
@@ -225,22 +263,22 @@ void GameInit()
 
     //}
 
-    //auto skyboxFaces = std::vector<std::string>(
-    //    {
-    //        "../textures/sky/right.png",
-    //        "../textures/sky/left.png",
-    //        "../textures/sky/top.png",
-    //        "../textures/sky/bottom.png",
-    //        "../textures/sky/back.png",
-    //        "../textures/sky/front.png"
-    //    });
+    auto skyboxFaces = std::vector<std::string>(
+        {
+            "../textures/sky/right.png",
+            "../textures/sky/left.png",
+            "../textures/sky/top.png",
+            "../textures/sky/bottom.png",
+            "../textures/sky/back.png",
+            "../textures/sky/front.png"
+        });
 
-    //{
-    //    auto [index, sky_m_ptr] = Material::New({ TextureCreateParams {skyboxFaces, Texture::ColorMap} }, Texture::TextureCubemap);
-    //    GE.skyboxMaterial = sky_m_ptr;
-    //    GE.skyboxMaterialLayer = index;
-    //}
-    //GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
+    {
+        auto [index, sky_m_ptr] = Material::New({ TextureCreateParams {skyboxFaces, Texture::ColorMap} }, Texture::TextureCubemap);
+        GE.skyboxMaterial = sky_m_ptr;
+        GE.skyboxMaterialLayer = index;
+    }
+    GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 
 
     //int nObjs = 0;
@@ -317,16 +355,16 @@ void GameInit()
     //}*/
 
     //// make light
-    //{
-    //    GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
-    //    params.meshId = m->meshId;
-    //    params.materialId = 0;
-    //    auto coolLight = CR.NewGameObject(params);
-    //    coolLight->renderComponent->SetTextureZ(-1);
-    //    coolLight->transformComponent->SetPos({ 8, 5, 0 });
-    //    coolLight->pointLightComponent->SetRange(200);
-    //    coolLight->pointLightComponent->SetColor({ 1, 1, 1 });
-    //}
+    {
+        GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+        params.meshId = m->meshId;
+        params.materialId = 0;
+        auto coolLight = CR.NewGameObject(params);
+        coolLight->renderComponent->SetTextureZ(-1);
+        coolLight->transformComponent->SetPos({ 80, 5, 0 });
+        coolLight->pointLightComponent->SetRange(100);
+        coolLight->pointLightComponent->SetColor({ 1, 1, 1 });
+    }
     //{
     //    GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
     //    params.meshId = m->meshId;

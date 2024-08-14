@@ -23,6 +23,7 @@
 #include "pointlight_component.hpp"
 #include "rigidbody_component.hpp"
 #include "audio_player_component.hpp"
+#include "spotlight_component.hpp"
 #include <optional>
 
 #include "modules/component_registry_export.hpp"
@@ -107,11 +108,12 @@ class ComponentRegistry {
         PointlightComponentBitIndex = 4,
         RenderComponentNoFOBitIndex = 5,
         AudioPlayerComponentBitIndex = 6,
-        AnimationComponentBitIndex = 7
+        AnimationComponentBitIndex = 7,
+        SpotlightComponentBitIndex = 8
     };
 
     // How many different component classes there are. (can be greater just not less)
-    static inline const unsigned int N_COMPONENT_TYPES = 8; 
+    static inline const unsigned int N_COMPONENT_TYPES = 9; 
 
     // Returns a new game object with the given components.
     // TODO: return weak_ptr instead?
@@ -338,6 +340,9 @@ class ComponentRegistry {
         if constexpr((std::is_same_v<AnimationComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::AnimationComponentBitIndex);
         }
+        if constexpr ((std::is_same_v<SpotLightComponent, Args> || ...)) {
+            indices.push_back(ComponentRegistry::SpotlightComponentBitIndex);
+        }
         return indices;
     }
 
@@ -403,6 +408,10 @@ template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegist
 template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<AnimationComponent>() {
     return ComponentRegistry::AnimationComponentBitIndex;
 }
+template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<SpotLightComponent>() {
+    return ComponentRegistry::SpotlightComponentBitIndex;
+}
+
 
 struct GameobjectCreateParams {
     std::optional<std::shared_ptr<class PhysicsMesh>> physMesh;
@@ -456,6 +465,7 @@ class GameObject {
     ComponentHandle<PointLightComponent> pointLightComponent;
     ComponentHandle<AudioPlayerComponent> audioPlayerComponent;
     ComponentHandle<AnimationComponent> animationComponent;
+    ComponentHandle<SpotLightComponent> spotLightComponent;
 
     LuaComponentHandle<TransformComponent> LuaGetTransform();
     LuaComponentHandle<RenderComponent> LuaGetRender();

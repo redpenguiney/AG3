@@ -18,7 +18,7 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat, unsigned int numVer
     meshVerticesSize(((((int)std::pow(2, 1 + (int)std::log2(numVertices * nonInstancedVertexSize))) + nonInstancedVertexSize - 1)/nonInstancedVertexSize) * nonInstancedVertexSize), // makes meshVerticesSize a power of two rounded to the nearest multiple of vertexSize (must be multiple of vertexSize for OpenGL base vertex argument to work)
     meshIndicesSize(meshVerticesSize),
     vertexFormat(meshVertexFormat),
-    baseMeshCapacity((TARGET_VBO_SIZE/meshVerticesSize) + 1), // +1 just in case the base capacity was somehow 0
+    baseMeshCapacity((Assert(meshVerticesSize != 0), (TARGET_VBO_SIZE / meshVerticesSize) + 1)), // +1 just in case the base capacity was somehow 0
     baseInstanceCapacity((TARGET_VBO_SIZE/instancedVertexSize) + 1),
 
     // TOM REMEMEMBER: IF YOU INCREASE BUFFER COUNT FOR VERTEX BUFFER, YOU NEED TO FILL ALL OF THEM IN FILLSLOT. (TODO that might be needed for stuff like minecraft chunks?)

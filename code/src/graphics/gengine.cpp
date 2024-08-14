@@ -5,6 +5,7 @@
 #include <execution>
 #include <vector>
 #include "gameobjects/pointlight_component.hpp"
+#include "gameobjects/spotlight_component.hpp"
 #include "gameobjects/component_registry.hpp"
 #include "GLM/gtx/string_cast.hpp"
 #include "gameobjects/animation_component.hpp"
@@ -34,6 +35,12 @@ struct PointLightInfo {
     glm::vec4 relPos; // w-coord is padding; openGL wants everything on a vec4 alignment
 };
 
+struct SpotLightInfo {
+    glm::vec4 colorAndRange; // w-coord is range, xyz is rgb
+    glm::vec4 relPosAndInnerAngle; // w-coord is cos(inner angle); openGL wants everything on a vec4 alignment
+    glm::vec4 directionAndOuterAngle; // w-coord is cos(outer angle)
+};
+
 // XYZ, UV
 const std::vector<GLfloat> screenQuadVertices = {
     -1.0, -1.0, 0.0,   0.0, 0.0,
@@ -56,12 +63,13 @@ MeshVertexFormat screenQuadVertexFormat = MeshVertexFormat({
 });
 
 const std::vector<GLuint> screenQuadIndices = {
-    0, 1, 2,
+    0, 2, 1,
     1, 2, 3
 };
 
 GraphicsEngine::GraphicsEngine():
-pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec3)),
+pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec4)),
+spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(SpotLightInfo) * 1024) + sizeof(glm::vec4)),
 screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false))
 {
 
@@ -71,12 +79,12 @@ screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, Mesh
 
     
 
-    defaultShaderProgram = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl");
-    defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", {}, false, false, false, true, true);
-    defaultBillboardGuiShaderProgram = ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", {}, true, true, false, true, true);
+    defaultShaderProgram = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl", {}, true, true, false);
+    defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", {}, false, false, true);
+    defaultBillboardGuiShaderProgram = ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", {}, true, false, true);
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
-    crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, true, false);
+    crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", {}, false, false, true);
 
     auto [skyboxBoxmesh, skyboxMat, skyboxTz, _] = Mesh::MultiFromFile("../models/skybox.obj", MeshCreateParams{.textureZ = -1.0, .opacity = 1, .expectedCount = 1, .normalizeSize = false}).at(0);
     skybox = new RenderableMesh(skyboxBoxmesh);
@@ -92,6 +100,12 @@ screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, Mesh
     //     std::cout << v << ", ";
     // }
     // std::cout << "\n";
+
+    defaultShaderProgram->Uniform("envLightDirection", glm::normalize(glm::vec3(1, 1, 1)));
+    defaultShaderProgram->Uniform("envLightColor", glm::vec3(0.7, 0.7, 1));
+    defaultShaderProgram->Uniform("envLightDiffuse", 0.2f);
+    defaultShaderProgram->Uniform("envLightAmbient", 0.05f);
+    defaultShaderProgram->Uniform("envLightSpecular", 0.0f);
 
     auto pair = Material::New({TextureCreateParams({"../textures/error_texture.bmp"}, Texture::TextureUsage::ColorMap)}, Texture::TextureType::Texture2D);
     errorMaterial = pair.second;
@@ -298,13 +312,14 @@ void GraphicsEngine::RenderScene(float dt) {
 
     // tell opengl how to do transparency
     glEnable(GL_BLEND); 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
+
+    UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
+    
 
     DrawWorld(true);
+    DrawSkybox(); // Draw skybox afterwards to encourage early z-test
     
-    UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
-    // Draw skybox afterwards to encourage early z-test
-    DrawSkybox();
 
     // Go back to drawing on the window.
     Framebuffer::Unbind();
@@ -320,9 +335,10 @@ void GraphicsEngine::RenderScene(float dt) {
 
     DrawWorld(false);
 
+
     // Debugging stuff
     // TODO: actual settings to toggle debug stuff
-    // SpatialAccelerationStructure::Get().DebugVisualize();
+     //SpatialAccelerationStructure::Get().DebugVisualize();
     DebugAxis();
 
     glFlush(); // Tell OpenGL we're done drawing.
@@ -343,19 +359,19 @@ void GraphicsEngine::DrawSkybox() {
 }
 
 void GraphicsEngine::UpdateLights() {
-    // Get components of all gameobjects that have a transform and point light component
-    auto components = ComponentRegistry::Get().GetSystemComponents<PointLightComponent, TransformComponent>();
-
-    
-
-    // set properties of point lights on gpu
-    const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
-    unsigned int lightCount = 0;
-    unsigned int i = 0;
 
     glm::dvec3 cameraPos = GetCurrentCamera().position;
 
-    for (auto & tuple : components) {
+    // Point lights
+    // Get components of all gameobjects that have a transform and point light component
+    auto pcomponents = ComponentRegistry::Get().GetSystemComponents<PointLightComponent, TransformComponent>();
+
+    // set properties of point lights on gpu
+    const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
+    unsigned int pointLightCount = 0;
+    unsigned int i = 0;
+
+    for (auto & tuple : pcomponents) {
 
         PointLightComponent& pointLight = *std::get<0>(tuple);
         TransformComponent& transform = *std::get<1>(tuple);
@@ -370,13 +386,47 @@ void GraphicsEngine::UpdateLights() {
             //std::printf("byte offset %llu\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
             (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))) = info;
 
-            lightCount++;
+            pointLightCount++;
         }
         i++;
     }
 
     // say how many point lights there are
-    *(GLuint*)(pointLightDataBuffer.Data()) = lightCount;
+    *(GLuint*)(pointLightDataBuffer.Data()) = pointLightCount;
+
+    // Spot lights
+    // Get components of all gameobjects that have a transform and point light component
+    auto scomponents = ComponentRegistry::Get().GetSystemComponents<SpotLightComponent, TransformComponent>();
+
+    // set properties of point lights on gpu
+    const unsigned int SPOT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
+    unsigned int spotLightCount = 0;
+    i = 0;
+
+    for (auto& tuple : scomponents) {
+
+        SpotLightComponent& spotLight = *std::get<0>(tuple);
+        TransformComponent& transform = *std::get<1>(tuple);
+
+        if (spotLight.live) {
+            glm::vec3 relCamPos = transform.Position() - cameraPos;
+            // std::printf("rel pos = %f %f %f %f\n", relCamPos.x, relCamPos.y, relCamPos.z, pointLight.Range());
+            glm::vec3 spotlightDirection = transform.Rotation() * glm::vec3(0, 0, 1);
+            auto info = SpotLightInfo{
+                .colorAndRange = glm::vec4(spotLight.Color().x, spotLight.Color().y, spotLight.Color().z, spotLight.Range()),
+                .relPosAndInnerAngle = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, cos(glm::radians(spotLight.InnerAngle()))),
+                .directionAndOuterAngle = glm::vec4(spotlightDirection, cos(glm::radians(spotLight.OuterAngle()))),
+            };
+            //std::printf("byte offset %llu\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
+            (*(SpotLightInfo*)(spotLightDataBuffer.Data() + SPOT_LIGHT_OFFSET + (i * sizeof(SpotLightInfo)))) = info;
+
+            spotLightCount++;
+        }
+        i++;
+    }
+
+    // say how many spot lights there are
+    *(GLuint*)(spotLightDataBuffer.Data()) = spotLightCount;
 }
 
 // void GraphicsEngine::SetColor(const RenderComponent& comp, const glm::vec4& rgba) {
@@ -421,7 +471,7 @@ void GraphicsEngine::UpdateMeshpools() {
 
 void GraphicsEngine::DrawWorld(bool postProc)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear screen
+    glClear(postProc ? GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT : GL_DEPTH_BUFFER_BIT); // clear screen, but if we've already drawn stuff then only clear depth buffer
 
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
@@ -441,6 +491,7 @@ void GraphicsEngine::DrawWorld(bool postProc)
         }
         shader->Use();
         pointLightDataBuffer.BindBase(0);
+        spotLightDataBuffer.BindBase(1);
         for (auto& [materialId, map2] : map1) {
             if (materialId == 0) { // 0 means no material
                 Material::Unbind();
@@ -587,7 +638,7 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
         //auto & transformComp = *std::get<1>(tuple);
         auto& renderComp = *rc;
         auto& transformComp = *tc;
-        if (renderComp.live) {
+        if (renderComp.live) { 
             // std::cout << "Component at " << &renderComp << " is live \n";
             // if (renderComp.componentPoolId != i) {
             //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
@@ -784,7 +835,9 @@ void GraphicsEngine::AddCachedMeshes() {
                 if (bestPoolId == -1) { // if we didn't find a suitable pool just make one
                     // DebugLogInfo("must create pool for new mesh. ", " size ", m->vertices.size() * m->vertexFormat.GetNonInstancedVertexSize()/sizeof(GLfloat));
                     bestPoolId = lastPoolId++;
-                    meshpools[shaderId][materialId][bestPoolId] = new Meshpool(m->vertexFormat, m->vertices.size() * sizeof(GLfloat) / m->vertexFormat.GetNonInstancedVertexSize());
+
+                    int nVertices = m->vertices.size() * sizeof(GLfloat) / m->vertexFormat.GetNonInstancedVertexSize();
+                    meshpools[shaderId][materialId][bestPoolId] = new Meshpool(m->vertexFormat, nVertices == 0 ? 1 : nVertices); // make the meshpool have a minimum of 1 vertex to avoid problems with empty meshes. 
                 }
                 // std::cout << "\tmesh pool id is " << bestPoolId << "\n"; 
 

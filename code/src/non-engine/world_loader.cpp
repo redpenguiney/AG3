@@ -13,7 +13,7 @@ struct OctreeNode {
 	glm::vec3 position;
 
 	// equivalent to its depth in the octree; higher is more detail, maximum is MAX_LOD_LEVELS - 1. Size of the chunk is MAX_CHUNK_SIZE * 2^(-lod)
-	unsigned int lod;
+	int lod = 0;
 
 
 	
@@ -24,7 +24,7 @@ struct OctreeNode {
 
 	void Split() {
 		Assert(children == nullptr);
-		Assert(lod != MAX_LOD_LEVELS - 1);
+		Assert(lod != MAX_LOD_LEVELS);
 		children = new OctreeNode[8];
 		for ( float x = 0; x < 2; x ++) {
 			for (float y = 0; y < 2; y ++) {
@@ -46,7 +46,7 @@ struct OctreeNode {
 };
 
 void RecursiveSplit(OctreeNode* n, unsigned int targetDepth, float splitDistanceSquared, glm::vec3 cameraPos) {
-	if (n->lod == targetDepth) {
+	if (n->lod == targetDepth - 1) { // split node's lod level will be targetDepth
 		if (glm::length2(cameraPos - n->position) <= splitDistanceSquared) {
 			n->Split();
 		}
@@ -60,16 +60,20 @@ void RecursiveSplit(OctreeNode* n, unsigned int targetDepth, float splitDistance
 	}
 }
 
-void Chunk::RecursiveLoad(OctreeNode* n) {
+void Chunk::RecursiveLoad(OctreeNode* n, int& loadedSoFar) {
+	if (loadedSoFar == MAX_LOADED_CHUNKS_PER_FRAME) {
+		return;
+	}
+
 	if (n->children) {
 		for (unsigned int i = 0; i < 8; i++) {
-			RecursiveLoad(&n->children[i]);
+			RecursiveLoad(&n->children[i], loadedSoFar);
 		}
 	}
 	else {
 		// see if there's already a chunk here
-		if (chunks.count(n->position)) {
-			auto& c = chunks.at(n->position);
+		if (GetChunks().count(n->position)) {
+			auto& c = GetChunks().at(n->position);
 
 			// if the chunk has the same lod as this node, we keep it.
 			if (c->lod == n->lod) {
@@ -78,20 +82,29 @@ void Chunk::RecursiveLoad(OctreeNode* n) {
 			}
 			// otherwise, the chunk goes bye bye and is replaced with a new one at the proper lod.
 			else {
-				chunks.erase(n->position);
+				GetChunks().erase(n->position);
 				// (chunk emplaced outside the if statement)
 			}
 		}
 		// if not, make one
-		chunks.emplace(std::make_pair(n->position, std::make_unique<Chunk>(n->position, n->lod)));
+		GetChunks().emplace(std::make_pair(n->position, std::make_unique<Chunk>(n->position, n->lod)));
+		loadedSoFar++;
 	}
 }
 
-constexpr unsigned int BASE_GRID_SIZE = 4;
-void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance, unsigned int baseGridSize) {
+std::unordered_map<glm::vec3, std::unique_ptr<Chunk>>& Chunk::GetChunks()
+{
+	static std::unordered_map<glm::vec3, std::unique_ptr<Chunk>> chunks;
+	return chunks;
+}
 
+constexpr int BASE_GRID_SIZE = 2;
+void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance) {
+
+	
+	
 	// mark all existing chunks for deletion
-	for (auto& [pos, c] : chunks) {
+	for (auto& [pos, c] : GetChunks()) {
 		(void)pos;
 		c->toDelete = true;
 	}
@@ -102,6 +115,7 @@ void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance, unsigned in
 		for (int y = -BASE_GRID_SIZE; y <= BASE_GRID_SIZE; y++) {
 			for (int z = -BASE_GRID_SIZE; z <= BASE_GRID_SIZE; z++) {
 				nodes[x + BASE_GRID_SIZE][y + BASE_GRID_SIZE][z + BASE_GRID_SIZE].position = glm::roundMultiple(cameraPos, glm::vec3(MAX_CHUNK_SIZE)) + MAX_CHUNK_SIZE * glm::vec3(x, y, z);
+				//DebugLogInfo("Rounded c is ", glm::to_string(glm::roundMultiple(cameraPos, glm::vec3(MAX_CHUNK_SIZE)) + MAX_CHUNK_SIZE * glm::vec3(x, y, z)));
 			}
 		}
 	}
@@ -126,18 +140,19 @@ void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance, unsigned in
 
 		float splitThresholdSquared = powf(minBaseLodDistance * powf(2, -float(depth)), 2);
 
+		int loadedSoFar = 0;
 		for (unsigned int ix = 0; ix < BASE_GRID_SIZE * 2 + 1; ix++) {
 			for (unsigned int iy = 0; iy < BASE_GRID_SIZE * 2 + 1; iy++) {
 				for (unsigned int iz = 0; iz < BASE_GRID_SIZE * 2 + 1; iz++) {
-					RecursiveLoad(&nodes[ix][iy][iz]);
+					RecursiveLoad(&nodes[ix][iy][iz], loadedSoFar);
 				}
 			}
 		}
 	}
 
 	// lastly delete every chunk that remained marked for deletion. (RecursiveLoad() will have unmarked chunks that should have stayed loaded)
-	std::erase_if(chunks, [](const auto& item) {
-		return item->toDelete;
+	std::erase_if(GetChunks(), [](const auto& item) {
+		return item.second->toDelete;
 	});
 
 }

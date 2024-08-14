@@ -8,7 +8,7 @@ class BaseEvent {
 
 	protected:
 	BaseEvent();
-	~BaseEvent();
+	virtual ~BaseEvent();
 
 	public:
 
