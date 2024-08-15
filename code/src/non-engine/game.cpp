@@ -361,7 +361,7 @@ void GameInit()
         params.materialId = 0;
         auto coolLight = CR.NewGameObject(params);
         coolLight->renderComponent->SetTextureZ(-1);
-        coolLight->transformComponent->SetPos({ 80, 5, 0 });
+        coolLight->transformComponent->SetPos({ 30, 5, 0 });
         coolLight->pointLightComponent->SetRange(100);
         coolLight->pointLightComponent->SetColor({ 1, 1, 1 });
     }

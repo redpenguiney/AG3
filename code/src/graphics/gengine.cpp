@@ -68,8 +68,8 @@ const std::vector<GLuint> screenQuadIndices = {
 };
 
 GraphicsEngine::GraphicsEngine():
-pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec4)),
-spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(SpotLightInfo) * 1024) + sizeof(glm::vec4)),
+pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec4)),
+spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(SpotLightInfo) * 1024) + sizeof(glm::vec4)),
 screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false))
 {
 
@@ -290,6 +290,7 @@ void GraphicsEngine::RenderScene(float dt) {
     
     // std::cout << "\tUpdating lights.\n";
     UpdateLights();
+    glFinish();
     //CalculateLightingClusters();
 
     if (debugFreecamEnabled) {
@@ -315,7 +316,8 @@ void GraphicsEngine::RenderScene(float dt) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
 
     UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
-    
+    //pointLightDataBuffer.Update();
+    //spotLightDataBuffer.Update()
 
     DrawWorld(true);
     DrawSkybox(); // Draw skybox afterwards to encourage early z-test
@@ -378,7 +380,7 @@ void GraphicsEngine::UpdateLights() {
 
         if (pointLight.live) {
             glm::vec3 relCamPos = transform.Position() - cameraPos;
-            // std::printf("rel pos = %f %f %f %f\n", relCamPos.x, relCamPos.y, relCamPos.z, pointLight.Range());
+            DebugLogInfo("rel pos = ", glm::to_string(relCamPos));
             auto info = PointLightInfo {
                 .colorAndRange = glm::vec4(pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range()),
                 .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
