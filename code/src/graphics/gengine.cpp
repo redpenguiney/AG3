@@ -290,7 +290,7 @@ void GraphicsEngine::RenderScene(float dt) {
     
     // std::cout << "\tUpdating lights.\n";
     UpdateLights();
-    glFinish();
+    //glFinish();
     //CalculateLightingClusters();
 
     if (debugFreecamEnabled) {
@@ -315,9 +315,7 @@ void GraphicsEngine::RenderScene(float dt) {
     glEnable(GL_BLEND); 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
 
-    UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
-    //pointLightDataBuffer.Update();
-    //spotLightDataBuffer.Update()
+    
 
     DrawWorld(true);
     DrawSkybox(); // Draw skybox afterwards to encourage early z-test
@@ -342,6 +340,10 @@ void GraphicsEngine::RenderScene(float dt) {
     // TODO: actual settings to toggle debug stuff
      //SpatialAccelerationStructure::Get().DebugVisualize();
     DebugAxis();
+
+    UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
+    pointLightDataBuffer.Update();
+    spotLightDataBuffer.Update();
 
     glFlush(); // Tell OpenGL we're done drawing.
 

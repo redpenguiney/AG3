@@ -45,7 +45,7 @@ struct spotLight {
     vec4 directionAndOuterAngle; // w-coord is cos(outer angle)
 };
 
-layout(std430, binding = 0) buffer pointLightSSBO {
+layout(std430, binding = 1) buffer spotLightSSBO {
     uint spotLightCount;
     float stillPadding2;
     float morePaddingLol2;

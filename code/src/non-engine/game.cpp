@@ -13,7 +13,7 @@
 #include "modifier.hpp"
 #include "chunk.hpp"
 
-#include "noise/noise.h"
+//#include "noise/noise.h"
 
 //auto n = FastNoise::New<FastNoise::Simplex>();
 //auto f = FastNoise::New<FastNoise::Generator>();
@@ -150,10 +150,10 @@ void GameInit()
     auto [grassTextureZ, grassMaterial] = Material::New({ TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap} }, Texture::Texture2D);
 
     GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::SpotlightComponentBitIndex });
-    auto coolerLight = CR.NewGameObject(params);
-    coolerLight->transformComponent->SetPos({ 8, 5, 0 });
-    coolerLight->spotLightComponent->SetRange(200);
-    coolerLight->spotLightComponent->SetColor({ 1, 1, 0.7 });
+    //auto coolerLight = CR.NewGameObject(params);
+    //coolerLight->transformComponent->SetPos({ 8, 5, 0 });
+    //coolerLight->spotLightComponent->SetRange(200);
+    //coolerLight->spotLightComponent->SetColor({ 1, 1, 0.7 });
     //coolerLight->spotLightComponent->Se
 
     //auto [brickTextureZ, brickMaterial] = Material::New({

@@ -25,6 +25,7 @@ numBuffers(bufferCount)
 }
 
 BufferedBuffer::~BufferedBuffer() {
+    //glBindBuffer(bufferBindingLocation, 0);
     glDeleteBuffers(1, &_bufferId);
 }
 
