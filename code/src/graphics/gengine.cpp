@@ -68,8 +68,8 @@ const std::vector<GLuint> screenQuadIndices = {
 };
 
 GraphicsEngine::GraphicsEngine():
-pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec4)),
-spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(SpotLightInfo) * 1024) + sizeof(glm::vec4)),
+pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec4)),
+spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(SpotLightInfo) * 1024) + sizeof(glm::vec4)),
 screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false))
 {
 
@@ -292,6 +292,10 @@ void GraphicsEngine::DebugAxis() {
 
 void GraphicsEngine::RenderScene(float dt) {
 
+    FlipMeshpoolBuffers();
+    pointLightDataBuffer.Flip();
+    spotLightDataBuffer.Flip();
+
     preRenderEvent.Fire(dt);
     BaseEvent::FlushEventQueue(); // we want preRenderEvent to be fired NOW, not later, so if they make objects or whatever it gets rendered this frame.
 
@@ -310,9 +314,9 @@ void GraphicsEngine::RenderScene(float dt) {
     // std::cout << "\tUpdating lights.\n";
     UpdateLights();
 
-    UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
-    pointLightDataBuffer.Update();
-    spotLightDataBuffer.Update();
+    CommitMeshpools();
+    pointLightDataBuffer.Commit();
+    spotLightDataBuffer.Commit();
 
     //glFinish();
     //CalculateLightingClusters();
@@ -485,13 +489,24 @@ void GraphicsEngine::SetBoneState(const RenderComponent& comp, unsigned int nBon
 //     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetArbitrary1(comp.meshpoolSlot, comp.meshpoolInstance, arb);
 // }
 
-void GraphicsEngine::UpdateMeshpools() {
+void GraphicsEngine::CommitMeshpools() {
     for (auto & [shaderId, map1] : meshpools) {
         for (auto & [textureId, map2] : map1) {
             for (auto & [poolId, pool] : map2) {
-                pool->Update();
+                pool->Commit();
             } 
         } 
+    }
+}
+
+void GraphicsEngine::FlipMeshpoolBuffers()
+{
+    for (auto& [shaderId, map1] : meshpools) {
+        for (auto& [textureId, map2] : map1) {
+            for (auto& [poolId, pool] : map2) {
+                pool->FlipBuffers();
+            }
+        }
     }
 }
 

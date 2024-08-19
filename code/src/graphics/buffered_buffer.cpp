@@ -6,7 +6,6 @@
 #include <cwchar>
 #include <iostream>
 
-// bufferCount is no buffering (1), double buffering (2) or triple buffering (3). or higher, i guess.
 BufferedBuffer::BufferedBuffer(GLenum bindingLocation, const unsigned int bufferCount, GLuint initalSize): 
 bufferBindingLocation(bindingLocation),
 numBuffers(bufferCount)
@@ -29,30 +28,30 @@ BufferedBuffer::~BufferedBuffer() {
     glDeleteBuffers(1, &_bufferId);
 }
 
-// Must call every frame if you're updating every frame.
-// Call AFTER drawing please. (todo: wait what why?)
-void BufferedBuffer::Update() {
+void BufferedBuffer::Flip() {
     // Make the buffer section we just modified have a sync object so we won't write to it again until the GPU has finished using it.
-    sync[currentBuffer] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    //sync[currentBuffer] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
     currentBuffer += 1;
     if (currentBuffer == numBuffers) {
         currentBuffer = 0;
     }
+}
 
-    // Wait for the GPU to be finished with the new section of the buffer (triple buffering means this shouldn't happen much).
+void BufferedBuffer::Commit() {
+    // if the buffer we're about to write to is currently in use by the GPU we have to wait (should not happen often when multibuffering)
     if (sync[currentBuffer] != 0) {
-        // TODO: WHY DID WE COMMENT OUT THE SYNC HERE?? THAT SEEMS KINDA IMPORTANT LOW KEY
         auto syncStatus = glClientWaitSync(sync[currentBuffer], GL_SYNC_FLUSH_COMMANDS_BIT, SYNC_TIMEOUT);
         glDeleteSync(sync[currentBuffer]);
         sync[currentBuffer] = 0;
-        //std::printf("\nSync status was %x", syncStatus);
+        //if (syncStatus != GL_ALREADY_SIGNALED) { // then we had to wait or it errored (0x911c or 37148 means it waited successfully)
+            //DebugLogInfo("Sync status was ", syncStatus);
+        //}
+
     }
 }
 
-// Recreates the buffer with the given size, and copies the buffer's old data into the new one.
-// Doesn't touch vaos obviously so you still need to reset that after reallocation.
-// newSize must be >= size.
+
 void BufferedBuffer::Reallocate(unsigned int newSize) {
     Assert(newSize != 0);
     unsigned int oldSize = size;

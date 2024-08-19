@@ -342,14 +342,26 @@ void Meshpool::Draw() {
     
 }
 
-void Meshpool::Update() {
-    vertexBuffer.Update();
-    instancedVertexBuffer.Update();
-    indexBuffer.Update();
-    indirectDrawBuffer.Update();
+void Meshpool::Commit() {
+    vertexBuffer.Commit();
+    instancedVertexBuffer.Commit();
+    indexBuffer.Commit();
+    indirectDrawBuffer.Commit();
     if (boneBuffer) {
-        boneBuffer->Update();
-        boneOffsetBuffer->Update();
+        boneBuffer->Commit();
+        boneOffsetBuffer->Commit();
+    }
+}
+
+void Meshpool::FlipBuffers()
+{
+    vertexBuffer.Flip();
+    instancedVertexBuffer.Flip();
+    indexBuffer.Flip();
+    indirectDrawBuffer.Flip();
+    if (boneBuffer) {
+        boneBuffer->Flip();
+        boneOffsetBuffer->Flip();
     }
 }
 

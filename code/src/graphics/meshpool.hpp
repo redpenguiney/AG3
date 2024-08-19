@@ -58,8 +58,11 @@ class Meshpool {
     //std::tuple<GLfloat*, const unsigned int> ModifyVertices(const unsigned int meshId);
     void Draw();
 
-    // needed for BufferedBuffer's double/triple buffering, call every frame.
-    void Update();
+    // needed for BufferedBuffer's double/triple buffering, call every frame AFTER writing vertex/instance data and BEFORE calling Draw().
+    void Commit();
+    // needed for BufferedBuffer's double/triple buffering, call every frame BEFORE writing vertex/instance data and AFTER calling Draw(). 
+    // Might yield if GPU isn't ready for us to write the data, so call at the last possible second.
+    void FlipBuffers();
 
     // We want meshes to fit snugly in the slots of their meshpool.
     // Returns -1 if mesh is too big/incompatible format w/ meshpool, otherwise lower number = better fit for meshpool.

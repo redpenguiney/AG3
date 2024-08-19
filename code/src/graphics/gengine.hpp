@@ -201,7 +201,11 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
     // updates the freecam based off user input (WASD and mouse)
     void UpdateDebugFreecam();
     void AddCachedMeshes();
-    void UpdateMeshpools();
+
+    // Commits changes to vertex/instance data so that it's synced with the GPU.
+    void CommitMeshpools();
+
+    void FlipMeshpoolBuffers();
     // postProc is true if what's being drawn SHOULD do post proc
     void DrawWorld(bool postProc);
 
