@@ -131,6 +131,9 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
 
     private:
 
+    unsigned int pointLightCount; // updated every frame by UpdateLights()
+    unsigned int spotLightCount; // updated every frame by UpdateLights()
+
     bool wireframeDrawing = false;
 
     Camera debugFreecamCamera;

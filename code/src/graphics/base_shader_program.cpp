@@ -152,6 +152,16 @@ void BaseShaderProgram::Uniform(std::string uniformName, bool bval) {
     glUniform1i(uniform_locations.at(uniformName), bval);
 }
 
+void BaseShaderProgram::Uniform(std::string uniformName, unsigned int uval)
+{
+    if (uniform_locations.count(uniformName) == 0) {
+        uniform_locations[uniformName] = glGetUniformLocation(programId, uniformName.c_str());
+        //Assert(uniform_locations[uniformName] != -1); // verify that the uniform name exists
+    };
+    Use();
+    glUniform1ui(uniform_locations.at(uniformName), uval);
+}
+
 void BaseShaderProgram::Use() {
     if (LOADED_PROGRAM_ID != programId) {
         glUseProgram(programId);

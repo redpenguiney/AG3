@@ -39,8 +39,10 @@ class BufferedBuffer {
     void Bind();
     void BindBase(unsigned int index);
     char* Data();
+    // returns offset in bytes from start of _bufferData to Data()'s current value
     unsigned int GetOffset();
-    unsigned int GetSize(); // returns size as if there was no multiple buffering
+    // returns size in bytes as if there was no multiple buffering
+    unsigned int GetSize(); 
 
     private:
     // After we issue OpenGL commands using part of this buffer, we can't write to that part of that buffer until the command has finished.

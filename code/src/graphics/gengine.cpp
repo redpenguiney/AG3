@@ -397,8 +397,8 @@ void GraphicsEngine::UpdateLights() {
     auto pcomponents = ComponentRegistry::Get().GetSystemComponents<PointLightComponent, TransformComponent>();
 
     // set properties of point lights on gpu
-    const unsigned int POINT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
-    unsigned int pointLightCount = 0;
+    const unsigned int POINT_LIGHT_OFFSET = 0; //sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
+    pointLightCount = 0;
     unsigned int i = 0;
 
     for (auto & tuple : pcomponents) {
@@ -422,15 +422,15 @@ void GraphicsEngine::UpdateLights() {
     }
 
     // say how many point lights there are
-    *(GLuint*)(pointLightDataBuffer.Data()) = pointLightCount;
+    //*(GLuint*)(pointLightDataBuffer.Data()) = pointLightCount;
 
     // Spot lights
     // Get components of all gameobjects that have a transform and point light component
     auto scomponents = ComponentRegistry::Get().GetSystemComponents<SpotLightComponent, TransformComponent>();
 
     // set properties of point lights on gpu
-    const unsigned int SPOT_LIGHT_OFFSET = sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
-    unsigned int spotLightCount = 0;
+    const unsigned int SPOT_LIGHT_OFFSET = 0; //sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
+    spotLightCount = 0;
     i = 0;
 
     for (auto& tuple : scomponents) {
@@ -456,7 +456,7 @@ void GraphicsEngine::UpdateLights() {
     }
 
     // say how many spot lights there are
-    *(GLuint*)(spotLightDataBuffer.Data()) = spotLightCount;
+    //*(GLuint*)(spotLightDataBuffer.Data()) = spotLightCount;
 }
 
 // void GraphicsEngine::SetColor(const RenderComponent& comp, const glm::vec4& rgba) {
@@ -530,6 +530,14 @@ void GraphicsEngine::DrawWorld(bool postProc)
         if (shader->ignorePostProc == postProc) {
             continue;
         }
+
+        if (shader->useClusteredLighting) {
+            shader->Uniform("pointLightCount", pointLightCount);
+            shader->Uniform("spotLightCount", spotLightCount);
+            shader->Uniform("pointLightOffset", pointLightDataBuffer.GetOffset() / sizeof(PointLightInfo));
+            shader->Uniform("spotLightOffset", spotLightDataBuffer.GetOffset()/sizeof(SpotLightInfo));
+        }
+
         shader->Use();
         pointLightDataBuffer.BindBase(0);
         spotLightDataBuffer.BindBase(1);

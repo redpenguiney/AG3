@@ -33,6 +33,7 @@ class BaseShaderProgram {
     void Uniform(std::string uniformName, glm::vec3 vec);
     void Uniform(std::string uniformName, float fval);
     void Uniform(std::string uniformName, bool bval);
+    void Uniform(std::string uniformName, unsigned int uval);
 
     virtual ~BaseShaderProgram();
 

@@ -26,16 +26,17 @@ uniform float envLightDiffuse;
 uniform float envLightAmbient;
 uniform float envLightSpecular;
 
+uniform uint pointLightCount;
+uniform uint spotLightCount;
+uniform uint pointLightOffset;
+uniform uint spotLightOffset;
+
 struct pointLight {
     vec4 colorAndRange; // w-coord is range, xyz is rgb
     vec4 rel_pos; // w-coord is padding
 };
 
 layout(std430, binding = 0) buffer pointLightSSBO {
-    uint pointLightCount;
-    float stillPadding;
-    float morePaddingLol;
-    float alsoPadding;
     pointLight pointLights[];
 };
 
@@ -46,10 +47,6 @@ struct spotLight {
 };
 
 layout(std430, binding = 1) buffer spotLightSSBO {
-    uint spotLightCount;
-    float stillPadding2;
-    float morePaddingLol2;
-    float alsoPadding2;
     spotLight spotLights[];
 };
 
@@ -185,10 +182,10 @@ void main()
     }
 
     vec3 light = vec3(0, 0, 0);
-    for (uint i = 0; i < pointLightCount; i++) {
+    for (uint i = pointLightOffset; i < pointLightOffset + pointLightCount; i++) {
         light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, specularStrength, normal);
     }
-    for (uint i = 0; i < spotLightCount; i++) {
+    for (uint i = spotLightOffset; i < spotLightOffset + spotLightCount; i++) {
         light += CalculateSpotlightInfluence(spotLights[i].colorAndRange.xyz, spotLights[i].relPosAndInnerAngle.xyz, spotLights[i].colorAndRange.w, spotLights[i].relPosAndInnerAngle.w, spotLights[i].directionAndOuterAngle.w, spotLights[i].directionAndOuterAngle.xyz, specularStrength, normal);
     }
     light += CalculateEnvLightInfluence(specularStrength, normal);

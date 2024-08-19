@@ -25,7 +25,7 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat, unsigned int numVer
     vertexBuffer(GL_ARRAY_BUFFER, 1, 0), 
     instancedVertexBuffer(GL_ARRAY_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0),
     indexBuffer(GL_ELEMENT_ARRAY_BUFFER, 1, 0),
-    indirectDrawBuffer(GL_DRAW_INDIRECT_BUFFER, 1, 0)
+    indirectDrawBuffer(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0)
     
 { 
     // DebugLogInfo("SIZE is ", meshVerticesSize, " numVs was ", numVertices);
