@@ -134,9 +134,10 @@ vec3 CalculateSpotlightInfluence(vec3 lightColor, vec3 rel_pos, float range, flo
     float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 32);
     vec3 specular = specularStrength * spec * lightColor;
 
-    float theta = dot(lightDir, normalize(-lightDir));
-    float spotlightStrength = range/pow(distance, 2) * (theta - outerAngle)/(innerAngle - outerAngle);
+    float theta = dot(lightDir, lightDirection);
+    float spotlightStrength = range/pow(distance, 2) * max(0, (theta - outerAngle)/(innerAngle - outerAngle));
     
+    //return vec3(theta, theta, theta);
     return spotlightStrength * (diffuse + specular);
 }
 
@@ -206,6 +207,8 @@ void main()
     vec3 globalAmbient = vec3(0.1, 0.1, 0.1);
     vec4 color = tx * fragmentColor * vec4((light + globalAmbient), 1);
     Output = color;
+    //Output = vec4(light, 1.0);
+    //Output = vec4(spotLights[0].directionAndOuterAngle.xyz, 1.0);
     //Output = vec4(normalize(fragmentNormal), 1.0);
     //Output = vec4(-envLightDirection, 1.0);
     //Output = fragmentColor;

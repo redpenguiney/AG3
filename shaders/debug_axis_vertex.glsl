@@ -7,11 +7,11 @@ layout(location=2) in mat4 modelMatrix;
 
 out vec4 fragmentColor;
 
-uniform mat4 perspective;
+uniform float stretch;
 
 void main()
 {
-    gl_Position = modelMatrix * vec4(vertexPos, 1.0);
+    gl_Position = vec4(stretch, 1.0, 1.0, 1.0) * (modelMatrix * vec4(vertexPos, 1.0));
     fragmentColor = vertexColor;
 }
     

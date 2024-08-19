@@ -149,12 +149,13 @@ void GameInit()
 
     auto [grassTextureZ, grassMaterial] = Material::New({ TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap} }, Texture::Texture2D);
 
-    GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::SpotlightComponentBitIndex });
+    GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::SpotlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex });
+    params.meshId = m->meshId;
     //auto coolerLight = CR.NewGameObject(params);
     //coolerLight->transformComponent->SetPos({ 8, 5, 0 });
-    //coolerLight->spotLightComponent->SetRange(200);
-    //coolerLight->spotLightComponent->SetColor({ 1, 1, 0.7 });
-    //coolerLight->spotLightComponent->Se
+    //coolerLight->spotLightComponent->SetRange(20);
+    //coolerLight->spotLightComponent->SetColor({ 1, 0.3, 0.7 });
+    //coolerLight->transformComponent->SetRot(glm::quatLookAt(glm::vec3(0, -0.7, -0.7), glm::vec3(0, 0, 1)));
 
     //auto [brickTextureZ, brickMaterial] = Material::New({
     //    TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap},
@@ -281,27 +282,27 @@ void GameInit()
     GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 
 
-    //int nObjs = 0;
-    //for (int x = 0; x < 1; x++) {
-    //    for (int y = 0; y < 3; y++) {
-    //        for (int z = 0; z < 1; z++) {
-    //            GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex, ComponentRegistry::RigidbodyComponentBitIndex });
-    //            params.meshId = m->meshId;
-    //            params.materialId = brickMaterial->id;
-    //            auto g = CR.NewGameObject(params);
-    //            g->transformComponent->SetPos({ 0 + x * 3, 2 + y * 2, 0 + z * 3 });
-    //            g->colliderComponent->elasticity = 0.3;
-    //            g->colliderComponent->friction = 2.0;
-    //            // g->rigidbodyComponent->angularDrag = 1.0;
-    //            // g->rigidbodyComponent->linearDrag = 1.0;
-    //            // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
-    //            // g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
-    //            g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
-    //            g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-    //            g->renderComponent->SetTextureZ(brickTextureZ);
-    //            g->name = std::string("Gameobject #") + std::to_string(nObjs);
-    //            goWeakPtr = g;
-    //            nObjs++;
+    int nObjs = 0;
+    for (int x = 0; x < 100; x++) {
+        for (int y = 0; y < 3; y++) {
+            for (int z = 0; z < 10; z++) {
+                GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+                params.meshId = m->meshId;
+                //params.materialId = brickMaterial->id;
+                auto g = CR.NewGameObject(params);
+                g->transformComponent->SetPos({ 0 + x * 3, 2 + y * 2, 0 + z * 3 });
+                g->colliderComponent->elasticity = 0.3;
+                g->colliderComponent->friction = 2.0;
+                // g->rigidbodyComponent->angularDrag = 1.0;
+                // g->rigidbodyComponent->linearDrag = 1.0;
+                // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
+                // g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
+                g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
+                g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
+                //g->renderComponent->SetTextureZ(brickTextureZ);
+                g->name = std::string("Gameobject #") + std::to_string(nObjs);
+                //goWeakPtr = g;
+                nObjs++;
 
     //            g->rigidbodyComponent->SetMass(5.0, *g->transformComponent);
 
@@ -334,9 +335,9 @@ void GameInit()
 
     //            // g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(360.0), glm::radians(0.0), glm::radians(0.0))));
 
-    //        }
-    //    }
-    //}
+            }
+        }
+    }
 
     //// animation test
     ///*auto animShader = ShaderProgram::New("../shaders/world_vertex_animation.glsl", "../shaders/world_fragment.glsl");
@@ -356,14 +357,19 @@ void GameInit()
 
     //// make light
     {
-        GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+        GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::SpotlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
         params.meshId = m->meshId;
         params.materialId = 0;
         auto coolLight = CR.NewGameObject(params);
         coolLight->renderComponent->SetTextureZ(-1);
         coolLight->transformComponent->SetPos({ 30, 5, 0 });
-        coolLight->pointLightComponent->SetRange(100);
-        coolLight->pointLightComponent->SetColor({ 1, 1, 1 });
+        coolLight->spotLightComponent->SetRange(100);
+        coolLight->spotLightComponent->SetColor({ 1, 1, 1 });
+
+        PE.prePhysicsEvent.Connect([coolLight](float dt) {
+            coolLight->transformComponent->SetPos({ cos(Time()) * 10, 5.0, sin(Time()) * 10 });
+            coolLight->transformComponent->SetRot(glm::quatLookAt(glm::vec3(cos(Time()), 0.0, sin(Time())), glm::vec3(0, 1, 0)));
+        });
     }
     //{
     //    GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });

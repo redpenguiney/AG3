@@ -68,8 +68,8 @@ const std::vector<GLuint> screenQuadIndices = {
 };
 
 GraphicsEngine::GraphicsEngine():
-pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec4)),
-spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(SpotLightInfo) * 1024) + sizeof(glm::vec4)),
+pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec4)),
+spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 1, (sizeof(SpotLightInfo) * 1024) + sizeof(glm::vec4)),
 screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false))
 {
 
@@ -202,24 +202,42 @@ void GraphicsEngine::UpdateMainFramebuffer() {
 
 void GraphicsEngine::DebugAxis() {
 
-    crummyDebugShader->Use();
-    // TODO: i literally made the renderablemesh class for this sort of thing, use it
-    // xyz, rgb
-    const static std::vector<float> vertices = {0.0,  0.0,  0.0, 1.0, 0.0, 0.0,
+    const static std::vector<float> vertices = { 0.0,  0.0,  0.0, 1.0, 0.0, 0.0,
                                    0.2,  0.0,  0.0,    1.0, 0.0, 0.0,
                                   0.0, 0.0, 0.0,      0.0, 1.0, 0.0,
                                   0.0, 0.2, 0.0,  0.0, 1.0, 0.0,
                                   0.0, 0.0, 0.0,   0.0, 0.0, 1.0,
-                                  0.0, 0.0, 0.2, 0.0, 0.0, 1.0};
+                                  0.0, 0.0, 0.2, 0.0, 0.0, 1.0 };
+
+    /*const static std::vector<unsigned int> indices = { 0, 1, 2, 3, 4, 5 };
+
+    MeshCreateParams params;
+    params.meshVertexFormat.emplace(MeshVertexFormat::FormatVertexAttributes{
+        .position = VertexAttribute {
+            .nFloats = 3,
+        },
+        .color = VertexAttribute {
+            .nFloats = 3
+        }
+    });
+    static auto axisMesh = Mesh::New(RawMeshProvider(vertices, indices, params));
+    static RenderableMesh axisRenderer(axisMesh);*/
+    crummyDebugShader->Use();
+    crummyDebugShader->Uniform("stretch", (float)window.height / (float)window.width);
+    // TODO: i literally made the renderablemesh class for this sort of thing, use it
+    // xyz, rgb
+    
     
     glm::vec3 cpos = GetCurrentCamera().position;
-    glm::mat4x4 instancedVertexAttributes = {1, 0, 0, 0, 
+    glm::mat4x4 instancedVertexAttributes = { 1, 0, 0, 0,
                                                     0, 1, 0, 0,
                                                     0, 0, 1, 0,
                                                     cpos.x, cpos.y, cpos.z, 1}; // per object data. format is 4x4 model mat 
+    instancedVertexAttributes = glm::identity<glm::mat4x4>();
     // instancedVertexAttributes = (camera.GetProj((float)window.width/(float)window.height));
-    glm::mat4x4 cameraMatrix = GetCurrentCamera().GetCamera();
-    instancedVertexAttributes = glm::translate(cameraMatrix, (glm::vec3) -GetCurrentCamera().position);
+    glm::mat4x4 cameraMatrix = instancedVertexAttributes * GetCurrentCamera().GetCamera();
+    //instancedVertexAttributes = glm::scale(cameraMatrix, glm::vec3(1.0, 1.0, 1.0));
+    //instancedVertexAttributes = glm::identity<glm::mat4x4>();
     GLuint vao, vbo, ivbo;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -230,7 +248,7 @@ void GraphicsEngine::DebugAxis() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat), vertices.data(), GL_STREAM_DRAW);    
     glBindBuffer(GL_ARRAY_BUFFER, ivbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4x4), &cameraMatrix, GL_STREAM_DRAW);    
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4x4), &cameraMatrix, GL_STREAM_DRAW);
  
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
@@ -286,10 +304,16 @@ void GraphicsEngine::RenderScene(float dt) {
     // std::cout << "\tAdding cached meshes.\n";
     AddCachedMeshes();
     // std::cout << "\tUpdating RCs.\n";
-    UpdateRenderComponents(dt);      
+    UpdateRenderComponents(dt);    
+  
     
     // std::cout << "\tUpdating lights.\n";
     UpdateLights();
+
+    UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
+    pointLightDataBuffer.Update();
+    spotLightDataBuffer.Update();
+
     //glFinish();
     //CalculateLightingClusters();
 
@@ -341,9 +365,7 @@ void GraphicsEngine::RenderScene(float dt) {
      //SpatialAccelerationStructure::Get().DebugVisualize();
     DebugAxis();
 
-    UpdateMeshpools(); // NOTE: this does need to be at the end or the beginning, not the middle, i forget why
-    pointLightDataBuffer.Update();
-    spotLightDataBuffer.Update();
+    
 
     glFlush(); // Tell OpenGL we're done drawing.
 

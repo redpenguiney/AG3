@@ -37,7 +37,6 @@ class TransformComponent: public BaseComponent<TransformComponent> {
     }
 
     // cameraPosition used for floating origin
-    // TODO: option to not do floating origin
     const glm::mat4x4& GetGraphicsModelMatrix(const glm::dvec3 & cameraPosition);
     
     glm::dmat4x4 GetPhysicsModelMatrix() const;

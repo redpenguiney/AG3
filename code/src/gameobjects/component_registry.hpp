@@ -347,7 +347,6 @@ class ComponentRegistry {
     }
 
     // Gives an iterator so you can iterate through all gameobjects that have the requested components (except you don't actually get the gameobject, just a tuple of components)
-    // TODO: might be good to optimize by just precalculating this and updating when new gameobject component combination is added
     template <typename ... Args>
     Iterator<Args...> GetSystemComponents() {
         auto requestedComponents = requestedComponentIndicesFromTemplateArgs<Args...>();

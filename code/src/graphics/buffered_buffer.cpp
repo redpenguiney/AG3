@@ -43,7 +43,10 @@ void BufferedBuffer::Update() {
     // Wait for the GPU to be finished with the new section of the buffer (triple buffering means this shouldn't happen much).
     if (sync[currentBuffer] != 0) {
         // TODO: WHY DID WE COMMENT OUT THE SYNC HERE?? THAT SEEMS KINDA IMPORTANT LOW KEY
-        //std::printf("\nSync status was %x", glClientWaitSync(sync[currentBuffer], GL_SYNC_FLUSH_COMMANDS_BIT, SYNC_TIMEOUT));
+        auto syncStatus = glClientWaitSync(sync[currentBuffer], GL_SYNC_FLUSH_COMMANDS_BIT, SYNC_TIMEOUT);
+        glDeleteSync(sync[currentBuffer]);
+        sync[currentBuffer] = 0;
+        //std::printf("\nSync status was %x", syncStatus);
     }
 }
 

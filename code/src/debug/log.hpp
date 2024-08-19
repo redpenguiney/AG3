@@ -1,8 +1,6 @@
 #pragma once
 #include <iostream>
 
-// TODO: line numbers
-
 #if defined(_MSC_VER)
 #include <sstream>
 

@@ -325,10 +325,18 @@ void Meshpool::Draw() {
     }
     
     //double start1 = Time();
-   // glMultiDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, 0, drawCount, 0); // TODO: GET INDIRECT DRAWING TO WORK
+    //glPointSize(4.0);
+    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, drawCount, 0); // TODO: GET INDIRECT DRAWING TO WORK
+    unsigned int i = 0;
     for (auto & command: drawCommands) {
+        i++;
+        if (command.count == 1) {
+            DebugLogError("BRUH");
+        }
+        
         if (command.count == 0) {continue;}
-        glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)command.firstIndex, command.instanceCount, command.baseVertex, command.baseInstance + (instancedVertexBuffer.GetOffset()/instancedVertexSize));
+        //glDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)((i - 1) * sizeof(IndirectDrawCommand)));
+        //glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, command.count, GL_UNSIGNED_INT, (void*)(unsigned long long)(command.firstIndex * sizeof(GLuint)), command.instanceCount, command.baseVertex, command.baseInstance + (instancedVertexBuffer.GetOffset() / instancedVertexSize));
     }
     
     
@@ -433,7 +441,7 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
 
     // also update drawCommands before doing the indirect draw buffer
     drawCommands[slot].count = indices->size();
-    drawCommands[slot].firstIndex = (slot * meshIndicesSize);
+    drawCommands[slot].firstIndex = (slot * meshIndicesSize)/sizeof(GLuint);
     drawCommands[slot].baseVertex = slot * (meshVerticesSize/nonInstancedVertexSize);
     if (modifying != true) {
         drawCommands[slot].baseInstance = (slot == 0) ? 0: slotToInstanceLocations[slot - 1] + slotInstanceReservedCounts[slot - 1];
