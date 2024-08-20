@@ -12,7 +12,6 @@
 const unsigned int INSTANCED_VERTEX_BUFFERING_FACTOR = 3;
 
 // TODO: INDBO shouldn't be persistent, and arguably neither should the vertices/indices.
-// TODO: INDBO should just be written to directly instead of writing to drawCommands and then doing memcpy.
 // TODO: MASSIVE MEMORY OPTIMIZATION WHEN SAME OBJECT IS USED WITH MULTIPLE DIFFERENT SHADERS/MATERIALS: just one meshpool per object size, different indbos for different materials/shaders
 
 // Contains an arbitrary number of arbitary meshes and is used to render them very quickly.
@@ -109,16 +108,22 @@ class Meshpool {
     // neccesary for Meshpool::RemoveObject(); unordered_set instead of vector because RemoveObject needs to quickly determine if certain instances are in here
     
     std::unordered_map<unsigned int, unsigned int> slotToInstanceLocations; // corresponds slots in vertexBuffer with the instance slot of the first object using that meshId
-    std::vector<IndirectDrawCommand> drawCommands; // for indirect drawing
+    
+    
+    std::vector<IndirectDrawCommand> drawCommands;
+  
+    // for indirect drawing; TODO: INDBO should just be written to directly instead of writing to drawCommands and then doing memcpy. We don't do that right now because in the future we might want to support systems that don't support indirect drawing.
+    // key is slot
+    std::unordered_map<unsigned int, IndirectDrawCommandUpdate> pendingDrawCommandUpdates;
 
     inline static const unsigned int TARGET_VBO_SIZE = (unsigned int)pow(2, 24); // we want vbo base size to be around this size, so we set meshCapacity based off this value/meshVertexSize
                                                                         // 16MB might be too low if we're adding many different large meshes
 
     // inline static const unsigned int BONE_BUFFER_EXPANSION_SIZE = pow(2, 10) * sizeof(glm::mat4x4); 
     // inline static const unsigned int BONE_OFFSET_BUFFER_EXPANSION_SIZE = pow(2, 10) * sizeof(GLuint);
-    // (0 is used by lights)
-    inline static const unsigned int BONE_BUFFER_BINDING = 1;
-    inline static const unsigned int BONE_OFFSET_BUFFER_BINDING = 2;
+    // (0 & 1 are used by lights)
+    inline static const unsigned int BONE_BUFFER_BINDING = 2;
+    inline static const unsigned int BONE_OFFSET_BUFFER_BINDING = 3;
 
     
     // expands non-instanced buffers to accomodate baseMeshCapacity more unique meshes.

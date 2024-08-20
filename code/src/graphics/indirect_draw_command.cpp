@@ -17,3 +17,8 @@ struct IndirectDrawCommand {
     baseVertex(0),
     baseInstance(0) {}
 };
+
+struct IndirectDrawCommandUpdate {
+    GLuint updatesLeft;
+    //unsigned int commandSlotIndex; implicit
+};

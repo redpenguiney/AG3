@@ -343,6 +343,29 @@ void Meshpool::Draw() {
 }
 
 void Meshpool::Commit() {
+    // write indirect draw commands to buffer
+    for (auto it = pendingDrawCommandUpdates.begin(); it != pendingDrawCommandUpdates.end();) {
+        auto& [slot, update] = *it;
+        assert(update.updatesLeft != 0);
+        update.updatesLeft--;
+
+        DebugLogInfo("SO ", instanceCapacity, " size ", instancedVertexSize);
+        DebugLogInfo("Adding ", slot, ", current ", update.updatesLeft, " adding ", (indirectDrawBuffer.GetOffset() / indirectDrawBuffer.GetSize()));
+        
+        IndirectDrawCommand command = drawCommands[slot];
+        DebugLogInfo("BI = ", command.baseInstance);
+        command.baseInstance += instanceCapacity * (instancedVertexBuffer.GetOffset() / instancedVertexSize);
+        memcpy(indirectDrawBuffer.Data() + (slot * sizeof(IndirectDrawCommand)), &command, sizeof(IndirectDrawCommand));
+
+        if (update.updatesLeft == 0) {
+            it = pendingDrawCommandUpdates.erase(it);
+            DebugLogInfo("bye bye")
+        }
+        else {
+            it++;
+        }
+    }
+
     vertexBuffer.Commit();
     instancedVertexBuffer.Commit();
     indexBuffer.Commit();
@@ -479,8 +502,10 @@ void Meshpool::FillSlot(const unsigned int meshId, const unsigned int slot, cons
     UpdateIndirectDrawBuffer(slot);
 }
 
-void Meshpool::UpdateIndirectDrawBuffer(const unsigned int slot) {
-    memcpy(indirectDrawBuffer.Data() + (slot * sizeof(IndirectDrawCommand)), &drawCommands[slot], sizeof(IndirectDrawCommand));
+void Meshpool::UpdateIndirectDrawBuffer(const unsigned int slot) { 
+    pendingDrawCommandUpdates[slot] = IndirectDrawCommandUpdate{.updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR};
+
+    //memcpy(indirectDrawBuffer.Data() + (slot * sizeof(IndirectDrawCommand)), &drawCommands[slot], sizeof(IndirectDrawCommand));
 }
 
 int Meshpool::ScoreMeshFit(const unsigned int verticesNBytes, const unsigned int indicesNBytes, const MeshVertexFormat& meshVertexFormat) {

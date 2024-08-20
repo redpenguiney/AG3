@@ -534,8 +534,8 @@ void GraphicsEngine::DrawWorld(bool postProc)
         if (shader->useClusteredLighting) {
             shader->Uniform("pointLightCount", pointLightCount);
             shader->Uniform("spotLightCount", spotLightCount);
-            shader->Uniform("pointLightOffset", pointLightDataBuffer.GetOffset() / sizeof(PointLightInfo));
-            shader->Uniform("spotLightOffset", spotLightDataBuffer.GetOffset()/sizeof(SpotLightInfo));
+            shader->Uniform("pointLightOffset", unsigned int(pointLightDataBuffer.GetOffset() / sizeof(PointLightInfo)));
+            shader->Uniform("spotLightOffset", unsigned int(spotLightDataBuffer.GetOffset() / sizeof(SpotLightInfo)));
         }
 
         shader->Use();

@@ -85,7 +85,7 @@ void GameInit()
     //auto& LUA = LuaHandler::Get();
     auto& CR = ComponentRegistry::Get();
 
-    MakeMainMenu();
+    //MakeMainMenu();
 
     GE.SetDebugFreecamEnabled(true);
 
@@ -94,29 +94,29 @@ void GameInit()
     ttfParams.format = Texture::Grayscale_8Bit;
     auto [arialLayer, arialFont] = Material::New({ ttfParams }, Texture::Texture2D, true);
 
-    auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
+    //auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
 
-    debugText->rgba = { 1, 1, 1, 0 };
-    debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
+    //debugText->rgba = { 1, 1, 1, 0 };
+    //debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
 
-    debugText->scalePos = { 0, 1 };
-    debugText->scaleSize = { 0, 0 };
-    debugText->offsetSize = { 300, 60 };
-    debugText->offsetPos = { 200, -200 };
-    debugText->anchorPoint = { 0, 0 };
+    //debugText->scalePos = { 0, 1 };
+    //debugText->scaleSize = { 0, 0 };
+    //debugText->offsetSize = { 300, 60 };
+    //debugText->offsetPos = { 200, -200 };
+    //debugText->anchorPoint = { 0, 0 };
 
-    debugText->GetTextInfo().text = "---";
-    debugText->GetTextInfo().rgba = { 1, 1, 1, 0.6 };
-    debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
-    debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+    //debugText->GetTextInfo().text = "---";
+    //debugText->GetTextInfo().rgba = { 1, 1, 1, 0.6 };
+    //debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+    //debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
 
-    debugText->UpdateGuiGraphics();
-    debugText->UpdateGuiTransform();
+    //debugText->UpdateGuiGraphics();
+    //debugText->UpdateGuiTransform();
 
-    GE.preRenderEvent.Connect([&GE, debugText](float dt) {
+    GE.preRenderEvent.Connect([&GE](float dt) {
 
-        debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
-        debugText->UpdateGuiText();
+        //debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
+        //debugText->UpdateGuiText();
 
         if (!inMainMenu) {
             Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
