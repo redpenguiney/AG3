@@ -79,7 +79,7 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	toDelete(false),
 	dirty(true),
 
-	mesh(Mesh::New(RawMeshProvider(), true)),
+	mesh(Mesh::New(RawMeshProvider({}, {}, MeshCreateParams {.expectedCount = 1}), true)),
 	object(ComponentRegistry::Get().NewGameObject(MakeCGOParams(mesh->meshId)))
 {
 	Assert(lodLevel < MAX_LOD_LEVELS);

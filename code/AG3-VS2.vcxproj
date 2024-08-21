@@ -319,6 +319,7 @@
     <ClInclude Include="src\gameobjects\audio_player_component.hpp" />
     <ClInclude Include="src\gameobjects\base_component.hpp" />
     <ClInclude Include="src\gameobjects\collider_component.hpp" />
+    <ClInclude Include="src\gameobjects\component_group.hpp" />
     <ClInclude Include="src\gameobjects\component_pool.hpp" />
     <ClInclude Include="src\gameobjects\component_registry.hpp" />
     <ClInclude Include="src\gameobjects\lifetime.hpp" />

@@ -9,6 +9,12 @@
 #include "debug/log.hpp"
 #include "meshpool.hpp"
 
+// we want vbo base size to be around this size, so we set meshCapacity based off this value/meshVertexSize
+// 16MB might be too low if we're adding many different large meshes
+inline static const unsigned int TARGET_VBO_SIZE = (unsigned int)pow(2, 24); 
+
+inline static const unsigned int TARGET_IVBO_SIZE = (unsigned int)pow(2, 18);
+
 // TODO: use GL_SHORT for indices in meshpools where there are fewer than 65536 indices (wait is that even possible)
 // TODO: we assume indices size will never exceed vertices size which is very dangerous
 
@@ -19,7 +25,7 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat, unsigned int numVer
     meshIndicesSize(meshVerticesSize),
     vertexFormat(meshVertexFormat),
     baseMeshCapacity((Assert(meshVerticesSize != 0), (TARGET_VBO_SIZE / meshVerticesSize) + 1)), // +1 just in case the base capacity was somehow 0
-    baseInstanceCapacity((TARGET_VBO_SIZE/instancedVertexSize) + 1),
+    baseInstanceCapacity((TARGET_IVBO_SIZE /instancedVertexSize) + 1),
 
     // TOM REMEMEMBER: IF YOU INCREASE BUFFER COUNT FOR VERTEX BUFFER, YOU NEED TO FILL ALL OF THEM IN FILLSLOT. (TODO that might be needed for stuff like minecraft chunks?)
     vertexBuffer(GL_ARRAY_BUFFER, 1, 0), 
@@ -326,7 +332,7 @@ void Meshpool::Draw() {
     
     //double start1 = Time();
     //glPointSize(4.0);
-    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0, drawCount, 0); // TODO: GET INDIRECT DRAWING TO WORK
+    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)indirectDrawBuffer.GetOffset(), drawCount, 0); // TODO: GET INDIRECT DRAWING TO WORK
     unsigned int i = 0;
     for (auto & command: drawCommands) {
         i++;
@@ -349,17 +355,18 @@ void Meshpool::Commit() {
         assert(update.updatesLeft != 0);
         update.updatesLeft--;
 
-        DebugLogInfo("SO ", instanceCapacity, " size ", instancedVertexSize);
-        DebugLogInfo("Adding ", slot, ", current ", update.updatesLeft, " adding ", (indirectDrawBuffer.GetOffset() / indirectDrawBuffer.GetSize()));
+        //DebugLogInfo("SO ", instanceCapacity, " size ", instancedVertexSize);
+        //DebugLogInfo("Adding ", slot, ", current ", update.updatesLeft, " adding ", (indirectDrawBuffer.GetOffset() / indirectDrawBuffer.GetSize()));
         
         IndirectDrawCommand command = drawCommands[slot];
-        DebugLogInfo("BI = ", command.baseInstance);
-        command.baseInstance += instanceCapacity * (instancedVertexBuffer.GetOffset() / instancedVertexSize);
+        //DebugLogInfo("so ", instancedVertexBuffer.GetOffset(), " ", instanceCapacity, " ", instancedVertexBuffer.GetSize());
+        //DebugLogInfo("BI = ", command.baseInstance, " + ", instanceCapacity * (instancedVertexBuffer.GetOffset() / instancedVertexBuffer.GetSize()));
+        command.baseInstance  += instanceCapacity * (instancedVertexBuffer.GetOffset() / instancedVertexBuffer.GetSize());
         memcpy(indirectDrawBuffer.Data() + (slot * sizeof(IndirectDrawCommand)), &command, sizeof(IndirectDrawCommand));
 
         if (update.updatesLeft == 0) {
             it = pendingDrawCommandUpdates.erase(it);
-            DebugLogInfo("bye bye")
+            //DebugLogInfo("bye bye")
         }
         else {
             it++;

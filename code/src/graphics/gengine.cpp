@@ -68,8 +68,8 @@ const std::vector<GLuint> screenQuadIndices = {
 };
 
 GraphicsEngine::GraphicsEngine():
-pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(PointLightInfo) * 1024) + sizeof(glm::vec4)),
-spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(SpotLightInfo) * 1024) + sizeof(glm::vec4)),
+pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(PointLightInfo) * 1000)),
+spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(SpotLightInfo) * 1000)),
 screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false))
 {
 
@@ -447,7 +447,6 @@ void GraphicsEngine::UpdateLights() {
                 .relPosAndInnerAngle = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, cos(glm::radians(spotLight.InnerAngle()))),
                 .directionAndOuterAngle = glm::vec4(spotlightDirection, cos(glm::radians(spotLight.OuterAngle()))),
             };
-            //std::printf("byte offset %llu\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
             (*(SpotLightInfo*)(spotLightDataBuffer.Data() + SPOT_LIGHT_OFFSET + (i * sizeof(SpotLightInfo)))) = info;
 
             spotLightCount++;

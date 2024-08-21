@@ -116,8 +116,7 @@ class Meshpool {
     // key is slot
     std::unordered_map<unsigned int, IndirectDrawCommandUpdate> pendingDrawCommandUpdates;
 
-    inline static const unsigned int TARGET_VBO_SIZE = (unsigned int)pow(2, 24); // we want vbo base size to be around this size, so we set meshCapacity based off this value/meshVertexSize
-                                                                        // 16MB might be too low if we're adding many different large meshes
+    
 
     // inline static const unsigned int BONE_BUFFER_EXPANSION_SIZE = pow(2, 10) * sizeof(glm::mat4x4); 
     // inline static const unsigned int BONE_OFFSET_BUFFER_EXPANSION_SIZE = pow(2, 10) * sizeof(GLuint);

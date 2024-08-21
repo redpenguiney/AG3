@@ -8,7 +8,7 @@
 #include "base_shader_program.hpp"
 
 // TODO: custom procedural textures
-
+// TODO: potentially big optimizations to be made with program pipeline objects
 
 class ShaderProgram;
 

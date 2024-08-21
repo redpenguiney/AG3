@@ -118,9 +118,9 @@ void GameInit()
         //debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
         //debugText->UpdateGuiText();
 
-        if (!inMainMenu) {
+        //if (!inMainMenu) {
             Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
-        }
+        //}
     });
 
     // TODO BROKEN, prob just dll outdated
@@ -286,23 +286,23 @@ void GameInit()
     for (int x = 0; x < 100; x++) {
         for (int y = 0; y < 3; y++) {
             for (int z = 0; z < 10; z++) {
-                GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
-                params.meshId = m->meshId;
-                //params.materialId = brickMaterial->id;
-                auto g = CR.NewGameObject(params);
-                g->transformComponent->SetPos({ 0 + x * 3, 2 + y * 2, 0 + z * 3 });
-                g->colliderComponent->elasticity = 0.3;
-                g->colliderComponent->friction = 2.0;
-                // g->rigidbodyComponent->angularDrag = 1.0;
-                // g->rigidbodyComponent->linearDrag = 1.0;
-                // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
-                // g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
-                g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
-                g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-                //g->renderComponent->SetTextureZ(brickTextureZ);
-                g->name = std::string("Gameobject #") + std::to_string(nObjs);
-                //goWeakPtr = g;
-                nObjs++;
+                //GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+                //params.meshId = m->meshId;
+                ////params.materialId = brickMaterial->id;
+                //auto g = CR.NewGameObject(params);
+                //g->transformComponent->SetPos({ 0 + x * 3, 2 + y * 2, 0 + z * 3 });
+                //g->colliderComponent->elasticity = 0.3;
+                //g->colliderComponent->friction = 2.0;
+                //// g->rigidbodyComponent->angularDrag = 1.0;
+                //// g->rigidbodyComponent->linearDrag = 1.0;
+                //// g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
+                //// g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
+                //g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
+                //g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
+                ////g->renderComponent->SetTextureZ(brickTextureZ);
+                //g->name = std::string("Gameobject #") + std::to_string(nObjs);
+                ////goWeakPtr = g;
+                //nObjs++;
 
     //            g->rigidbodyComponent->SetMass(5.0, *g->transformComponent);
 
