@@ -3,6 +3,7 @@
 #pragma once
 #include <bitset>
 #include <vector>
+#include <memory>
 
 enum class ComponentBitIndex {
     Transform = 0,
@@ -14,6 +15,30 @@ enum class ComponentBitIndex {
     AudioPlayer = 6,
     Animation = 7,
     Spotlight = 8
+};
+
+template <class T, class Tuple>
+struct TupleIndex;
+
+template <class T, typename... Ts>
+struct TupleIndex<T, std::tuple<Ts...>>
+{
+
+	static constexpr std::size_t index = []() {
+		constexpr std::array<bool, sizeof...(Ts)> a{ { std::is_same<T, Ts>::value... } };
+
+		// You might easily handle duplicate index too (take the last, throw, ...)
+		// Here, we select the first one.
+		const auto it = std::find(a.begin(), a.end(), true);
+
+		// You might choose other options for not present.
+
+		// As we are in constant expression, we will have compilation error.
+		// and not a runtime expection :-)
+		if (it == a.end()) throw std::runtime_error("Not present");
+
+		return std::distance(a.begin(), it);
+		}();
 };
 
 //template <typename T>
@@ -89,7 +114,7 @@ class ComponentGroup: public ComponentGroupInterface {
 public:
 	ComponentGroup() :
 		ComponentGroupInterface(Archetype::FromComponents<Components>()),
-		archetypeSize(sizeof(Components) + ... + 0);
+		archetypeSize(sizeof(Components) + ... + 0)
 	{
 		Assert(archetypeSize >= sizeof(void*)); // can't do free list if we don't have room for a pointer
 		AddPage();
@@ -102,7 +127,6 @@ public:
 
 	// allocates (cheaply) and returns a pointer to the components for a new gameobject.
 	// Returned components are tightly packed and sorted by their ComponentBitIndex.
-	// Calls component constructors.
 	void* New() override {
 		void* foundComponents = nullptr;
 
@@ -135,12 +159,18 @@ public:
 	// Calls component destructors.
 	// There should, obviously, be no references to this component when this is called.
 	void Return(void* components, unsigned int index, unsigned int page) {
-
+		
 	}
 
 private:
 
+	template <typename Component>
+	void DestructComponent(void* slotPosition) {
+		std::destroy_at((Component*)((char*)slotPosition + componentOffsets.at(TupleIndex<Component, std::tuple<Components ...>>::value)));
+	}
+
 	const unsigned int archetypeSize;
+	const std::vector<unsigned int> componentOffsets;
 
 	// vector of arrays of components. Components are tightly packed and sorted by their ComponentBitIndex.
 	std::vector<void*> pages;
