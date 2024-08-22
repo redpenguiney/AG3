@@ -17,16 +17,18 @@ template<typename T>
 struct BaseComponent {
     public: // not private bc i couldn't make it work
     
+    // component group information is stored in the gameobject itself
+
     // indicates that the component is in use by a gameobject and not just sitting around in the object pool.
     // If this is set to false, the systems of ECS will skip this component when iterating through all components
-    bool live;
-    T* next; // pointer to next available component in pool
-    unsigned int componentPoolId; // index into pools vector
-    ComponentPool<T>* pool; // TODO: could probably find a way to get rid of the index if we have this?
+    //bool live;
+    //T* next; // pointer to next available component in pool, or nullptr if this component is alive.
+    //unsigned int componentPoolId; // index into pools vector
+    //ComponentPool<T>* pool; // TODO: could probably find a way to get rid of the index if we have this?
 
     // exists to let RenderComponentNoFO avoid type safety.
     // void* should be ptr to component pool
-    void SetPool(void* p) {
-        pool = (ComponentPool<T>*)p;
-    }
+    //void SetPool(void* p) {
+        //pool = (ComponentPool<T>*)p;
+    //}
 };

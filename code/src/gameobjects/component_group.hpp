@@ -1,20 +1,172 @@
+// This file is in charge of storing components in memory and providing functions with which to iterate through all gameobjects with certain components.
+
 #pragma once
+#include <bitset>
+#include <vector>
 
-// Stores a specfic combination of components. So all gameobjects with just a transform would store their components in ComponentGroup<TransformComponent>,
-// while those with transform and render would store them in ComponentGroup<TransformComponent, RenderComponent>.
-// Uses a free list/bucket list combo to store components for rapid iteration/extension + data locality
-template <typename ... T>
-class ComponentGroup {
+enum class ComponentBitIndex {
+    Transform = 0,
+    Render = 1,
+    Collider = 2,
+    Rigidbody = 3,
+    Pointlight = 4,
+    RenderNoFO = 5,
+    AudioPlayer = 6,
+    Animation = 7,
+    Spotlight = 8
+};
+
+//template <typename T>
+//class GetID {
+//	consteval int 
+//};
+
+// How many different component classes there are. (can be greater just not less)
+static inline const unsigned int N_COMPONENT_TYPES = 16;
+
+// Describes a specific combination of components for a gameobject.
+struct Archetype {
+	// Key is ComponentBitIndex, bit is set if the gameobject has that component.
+	std::bitset<N_COMPONENT_TYPES> componentIds;
+
+	template <typename ... Components>
+	static Archetype FromComponents() {
+		Archetype ids(false);
+		if constexpr ((std::is_same_v<TransformComponent, Args> || ...)) {
+			ids.componentIds.set(ComponentBitIndex::Transform, true);
+		}
+		if constexpr ((std::is_same_v<RenderComponent, Args> || ...)) {
+			ids.componentIds.set(ComponentBitIndex::Render, true);
+		}
+		if constexpr ((std::is_same_v<RenderComponentNoFO, Args> || ...)) {
+			ids.componentIds.set(ComponentBitIndex::RenderNoFO, true);
+		}
+		if constexpr ((std::is_same_v<ColliderComponent, Args> || ...)) {
+			ids.componentIds.set(ComponentBitIndex::Collider, true);
+		}
+		if constexpr ((std::is_same_v<RigidbodyComponent, Args> || ...)) {
+			ids.componentIds.set(ComponentBitIndex::Rigidbody, true);
+		}
+		if constexpr ((std::is_same_v<PointLightComponent, Args> || ...)) {
+			ids.componentIds.set(ComponentBitIndex::Pointlight, true);
+		}
+		if constexpr ((std::is_same_v<AudioPlayerComponent, Args> || ...)) {
+			ids.componentIds.set(ComponentBitIndex::AudioPlayer, true);
+		}
+		if constexpr ((std::is_same_v<AnimationComponent, Args> || ...)) {
+			ids.componentIds.set(ComponentBitIndex::Animation, true);
+		}
+		if constexpr ((std::is_same_v<SpotLightComponent, Args> || ...)) {
+			ids.componentIds.set(ComponentBitIndex::Spotlight, true);
+		}
+		return ids;
+	}
+};
+
+// type-erased interface for ComponentGroup.
+class ComponentGroupInterface {
 public:
-	typedef std::tuple<T...> Group;
+	// The components stored inside this group.
+	const Archetype contents;
 
-	// returns 
-	void New();
+	virtual ~ComponentGroupInterface();
+	
+
+	// allocates (cheaply) and returns a pointer to the components for a new gameobject.
+	// Returned components are tightly packed and sorted by their ComponentBitIndex.
+	virtual void* New() = 0;
+
+protected:
+	ComponentGroupInterface(const Archetype&);
+	
+};
+
+// Stores a specfic combination/archetype of components. So all gameobjects with just a transform would store their components in ComponentGroup<TransformComponent>,
+// while those with transform and render would store them in ComponentGroup<TransformComponent, RenderComponent>.
+// Uses a free list/bucket list combo to store components for rapid resizing + data locality
+template <typename ... Components>
+class ComponentGroup: public ComponentGroupInterface {
+public:
+	ComponentGroup() :
+		ComponentGroupInterface(Archetype::FromComponents<Components>()),
+		archetypeSize(sizeof(Components) + ... + 0);
+	{
+		Assert(archetypeSize >= sizeof(void*)); // can't do free list if we don't have room for a pointer
+		AddPage();
+	}
+	~ComponentGroup() {
+		for (auto& ptr : pages) {
+			free(ptr);
+		}
+	}
+
+	// allocates (cheaply) and returns a pointer to the components for a new gameobject.
+	// Returned components are tightly packed and sorted by their ComponentBitIndex.
+	// Calls component constructors.
+	void* New() override {
+		void* foundComponents = nullptr;
+
+		// We use something called a "free list" to find a component set. If a component is not in use, the start of its memory is a pointer to the next unallocated component.
+		for (unsigned int i = 0; i < firstAvailable.size(); i++) {
+			auto ptr = firstAvailable[i];
+			if (ptr != nullptr) {
+				// then this component will work
+				foundComponents = ptr;
+
+				// this ptr is pointing to a ptr to the next component set on this page (or nullptr if none); update firstAvailable which that
+				firstAvailable[i] = *(void**)foundComponents;
+
+				break;
+			}
+		}
+
+		// if none of the pages have any space, make a new one
+		if (!foundObject) {
+			AddPage();
+			foundComponents = firstAvailable.back();
+			firstAvailable.back() = *(void**)foundComponents;
+		}
+
+		
+		return foundComponents;
+	}
+
+	// Marks the components' memory as freed and available to new gameobjects.
+	// Calls component destructors.
+	// There should, obviously, be no references to this component when this is called.
+	void Return(void* components, unsigned int index, unsigned int page) {
+
+	}
 
 private:
-	// vector of arrays of groups
-	std::vector<Group*> pages;
 
-	// for free list; first unallocated group on each page  
-	std::vector<Group*> firstAvailable;
+	const unsigned int archetypeSize;
+
+	// vector of arrays of components. Components are tightly packed and sorted by their ComponentBitIndex.
+	std::vector<void*> pages;
+
+	// for free list; first unallocated group on each page. Nullptr if it's all in use.
+	std::vector<void*> firstAvailable;
+
+	constexpr static inline unsigned int COMPONENTS_PER_PAGE = 16384;
+
+	// adds new page with room for COMPONENTS_PER_PAGE more objects
+	void AddPage() {
+
+		unsigned int index = pages.size();
+		void* newPage = malloc(COMPONENTS_PER_PAGE * archetypeSize);
+
+		firstAvailable.push_back(newPage);
+		pages.push_back(newPage);
+
+		// for free list, we have to, for each location a set of components would be written, write a pointer to the next such location
+		for (unsigned int i = 0; i < COMPONENTS_PER_PAGE - 1; i++) {
+			*((char*)newPage + (archetypeSize * i)) = ((char*)newPage + (archetypeSize * (i + 1)));
+		}
+		// last location just has nullptr/end of free list
+		*((char*)newPage + (archetypeSize * i)) = nullptr;
+
+		
+
+	}
 };

@@ -14,7 +14,8 @@
 #include <memory>
 #include <tuple>
 #include <vector>
-#include "component_pool.hpp"
+//#include "component_pool.hpp"
+#include "component_group.hpp"
 #include <vector>
 #include "gameobjects/animation_component.hpp"
 #include "render_component.hpp"
