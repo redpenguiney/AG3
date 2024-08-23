@@ -7,19 +7,21 @@
 // TODO: use doubles in matrices for physics???
 // TODO: split off the matrices into their own component to enable graphics optimization (by reducing memory needing to be retrieved each frame in UpdateRenderComponents()).
 // Transform components store position/rotation/scale, they use a transform hierarchy (know that using it excessively carries a performance cost)
-class TransformComponent: public BaseComponent<TransformComponent> {
-    public:
-    
+class TransformComponent: public BaseComponent {
+public:
+    TransformComponent(const TransformComponent&) = delete;
+    TransformComponent();
+    ~TransformComponent();
 
     const glm::dvec3& Position() const; // Returns global (in world space) position of the object.
     const glm::quat& Rotation() const;// Returns global (in world space) rotation of the object. 
     const glm::vec3& Scale() const; // Returns global (in world space) scale of the object.
 
     // Called when a gameobject is given this component.
-    void Init();
+    //void Init();
 
     // Called when this component is returned to a pool.
-    void Destroy();
+    //void Destroy();
 
     // Sets position in WORLD space, regardless of the transform's parent, and affects the transform's children appropriately.
     void SetPos(glm::dvec3 pos);
@@ -49,14 +51,14 @@ class TransformComponent: public BaseComponent<TransformComponent> {
     // Returns the parent. Don't hold onto this pointer, as when the transform component gets deleted you're in trouble.
     TransformComponent* GetParent();
 
-    private:
+private:
     // after changing scale or rotation, we need to update the rot/scale matrix
     // we don't need to mess with position tho because its the only thing that touches the last column of the matrix and its set every frame anyways for floating origin
     // TODO: could instead of calling this when rot/scl changes, call this every frame if a rotSclChanged flag is set
     void UpdateRotScaleMatrix();
 
     // private constructor to enforce usage of object pool
-    friend class ComponentPool<TransformComponent>;
+    //friend class ComponentPool<TransformComponent>;
 
     // nullptr if no parent
     // Determines the transform that this transform inherits its position/rot/scl from

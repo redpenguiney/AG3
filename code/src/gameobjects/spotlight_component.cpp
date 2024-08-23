@@ -2,23 +2,24 @@
 
 SpotLightComponent::SpotLightComponent()
 {
+	lightColor = { 1, 1, 1 };
+	lightRange = 100;
+	innerAngle = 40;
+	outerAngle = 50;
 }
 
 SpotLightComponent::~SpotLightComponent()
 {
 }
 
-void SpotLightComponent::Destroy()
-{
-}
-
-void SpotLightComponent::Init()
-{
-	lightColor = { 1, 1, 1 };
-	lightRange = 100;
-	innerAngle = 40;
-	outerAngle = 50;
-}
+//void SpotLightComponent::Destroy()
+//{
+//}
+//
+//void SpotLightComponent::Init()
+//{
+//	
+//}
 
 float SpotLightComponent::Range()
 {

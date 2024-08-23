@@ -1,17 +1,16 @@
 #include "animation_component.hpp"
 #include "graphics/mesh.hpp"
 
-void AnimationComponent::Init(RenderComponent* comp) {
+AnimationComponent::AnimationComponent(RenderComponent* comp): 
+    renderComponent(comp) 
+{
     // DebugLogInfo("INITIALIZING ANIM COMP");
     Assert(comp != nullptr);
     mesh = Mesh::Get(comp->meshId);
     Assert(mesh->vertexFormat.supportsAnimation);
-    renderComponent = comp;
 
     currentlyPlaying = {};
 }
-
-AnimationComponent::AnimationComponent() {}
 
 bool AnimationComponent::IsPlaying(std::string animName) {
     for (auto & anim : currentlyPlaying) {
@@ -36,7 +35,7 @@ void AnimationComponent::StopAnimation(std::string animName) {
     std::erase_if(currentlyPlaying, [&animName](const PlayingAnimation& a) {return a.anim->name == animName;});
 }
 
-void AnimationComponent::Destroy() {
+AnimationComponent::~AnimationComponent() {
     renderComponent = nullptr;
     mesh = nullptr;
     currentlyPlaying.clear();

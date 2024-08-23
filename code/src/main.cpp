@@ -65,11 +65,12 @@ int main(int numArgs, const char *argPtrs[]) {
     std::set_terminate(TerminateHandler);
     atexit(AtExit);
 
-    // TODO: order does matter here, formalize that (TODO: wait it does? why?)
     auto & GE = GraphicsEngine::Get();
     auto & PE = PhysicsEngine::Get();
     auto & AE = AudioEngine::Get();
     auto & LUA = LuaHandler::Get();
+
+    // ComponentRegistry needs to be intitialized after all the other singletons so that component destructors are called before the singleton destructors are called.
     auto & CR = ComponentRegistry::Get();
 
     atexit(Module::CloseAll); // this is placed here, after the component registry is initialized, because that guarantees that modules' references to gameobjects are destroyed before the gameobjects are (because static destructors/at exits are called in reverse order)

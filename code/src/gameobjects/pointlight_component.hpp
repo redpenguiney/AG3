@@ -6,12 +6,13 @@
 
 class GraphicsEngine;
 
-class PointLightComponent: public BaseComponent<PointLightComponent> {
-    public:
+class PointLightComponent: public BaseComponent {
+public:
+    PointLightComponent(const PointLightComponent&) = delete;
     PointLightComponent();
     ~PointLightComponent();
-    void Destroy();
-    void Init();
+    //void Destroy();
+    //void Init();
 
     // get distance from light at which it isn't visible
     float Range();

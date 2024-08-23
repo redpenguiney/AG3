@@ -1,4 +1,5 @@
 // This file is in charge of storing components in memory and providing functions with which to iterate through all gameobjects with certain components.
+// Sorry for all the templates.
 
 #pragma once
 #include <bitset>
@@ -20,6 +21,7 @@ enum class ComponentBitIndex {
 template <class T, class Tuple>
 struct TupleIndex;
 
+// stolen from stack overflow
 template <class T, typename... Ts>
 struct TupleIndex<T, std::tuple<Ts...>>
 {
@@ -49,10 +51,20 @@ struct TupleIndex<T, std::tuple<Ts...>>
 // How many different component classes there are. (can be greater just not less)
 static inline const unsigned int N_COMPONENT_TYPES = 16;
 
+namespace {
+	// not stolen from stack overflow, surprisingly
+	template <std::derived_from<BaseComponent> ... Components>
+	std::vector<unsigned int> ComponentOffsets() {
+		std::vector<unsigned int> offsets;
+		int offset = 0;
+		using I = std::size_t[];
+		(void)(I{ 0u, (offsets.push_back(offset), offset += sizeof(TTypes))... });
+		return sum;
+	}
+}
+
 // Describes a specific combination of components for a gameobject.
 struct Archetype {
-	// Key is ComponentBitIndex, bit is set if the gameobject has that component.
-	std::bitset<N_COMPONENT_TYPES> componentIds;
 
 	template <typename ... Components>
 	static Archetype FromComponents() {
@@ -86,6 +98,17 @@ struct Archetype {
 		}
 		return ids;
 	}
+
+	// Key is ComponentBitIndex, bit is set if the gameobject has that component.
+	std::bitset<N_COMPONENT_TYPES> componentIds;
+
+	template <std::derived_from<BaseComponent> Component>
+	unsigned int GetOffset() const {
+		constexpr auto offsets = ComponentOffsets<Components>();
+		return offsets.at(TupleIndex<Component, std::tuple<Components ...>>::value);
+	}
+
+
 };
 
 // type-erased interface for ComponentGroup.
@@ -97,24 +120,33 @@ public:
 	virtual ~ComponentGroupInterface();
 	
 
-	// allocates (cheaply) and returns a pointer to the components for a new gameobject.
+	// allocates (cheaply) and returns a pointer to the components for a new gameobject, as well as the index and page in that order (needed to return the object).
 	// Returned components are tightly packed and sorted by their ComponentBitIndex.
-	virtual void* New() = 0;
+	// Does NOT call constructors.
+	virtual std::tuple<void*, unsigned int, unsigned int> New() = 0;
+
+	// Marks the components' memory as freed and available to new gameobjects.
+	// Calls component destructors.
+	// There should, obviously, be no references to this component when this is called.
+	virtual void Return(unsigned int index, unsigned int page) = 0;
 
 protected:
 	ComponentGroupInterface(const Archetype&);
 	
 };
 
+
+
 // Stores a specfic combination/archetype of components. So all gameobjects with just a transform would store their components in ComponentGroup<TransformComponent>,
 // while those with transform and render would store them in ComponentGroup<TransformComponent, RenderComponent>.
 // Uses a free list/bucket list combo to store components for rapid resizing + data locality
-template <typename ... Components>
+template <std::derived_from<BaseComponent> ... Components>
 class ComponentGroup: public ComponentGroupInterface {
 public:
 	ComponentGroup() :
 		ComponentGroupInterface(Archetype::FromComponents<Components>()),
-		archetypeSize(sizeof(Components) + ... + 0)
+		archetypeSize(sizeof(Components) + ... + 0),
+		componentOffsets(ComponentOffsets<Components>())
 	{
 		Assert(archetypeSize >= sizeof(void*)); // can't do free list if we don't have room for a pointer
 		AddPage();
@@ -125,20 +157,21 @@ public:
 		}
 	}
 
-	// allocates (cheaply) and returns a pointer to the components for a new gameobject.
+	// allocates (cheaply) and returns a pointer to the components for a new gameobject, as well as the index and page in that order (needed to return the object).
 	// Returned components are tightly packed and sorted by their ComponentBitIndex.
-	void* New() override {
+	// Does NOT call constructors.
+	std::tuple<void*, unsigned int, unsigned int> New() override {
 		void* foundComponents = nullptr;
 
 		// We use something called a "free list" to find a component set. If a component is not in use, the start of its memory is a pointer to the next unallocated component.
-		for (unsigned int i = 0; i < firstAvailable.size(); i++) {
-			auto ptr = firstAvailable[i];
+		for (unsigned int pageI = 0; pageI < firstAvailable.size(); pageI++) {
+			auto ptr = firstAvailable[pageI];
 			if (ptr != nullptr) {
 				// then this component will work
 				foundComponents = ptr;
 
 				// this ptr is pointing to a ptr to the next component set on this page (or nullptr if none); update firstAvailable which that
-				firstAvailable[i] = *(void**)foundComponents;
+				firstAvailable[pageI] = *(void**)foundComponents;
 
 				break;
 			}
@@ -151,20 +184,25 @@ public:
 			firstAvailable.back() = *(void**)foundComponents;
 		}
 
-		
-		return foundComponents;
+		unsigned int index = ((char*)foundComponents - (char*)pages[pageI]) / archetypeSize;
+		return std::make_tuple<foundComponents, index, pageI>;
 	}
 
 	// Marks the components' memory as freed and available to new gameobjects.
 	// Calls component destructors.
 	// There should, obviously, be no references to this component when this is called.
-	void Return(void* components, unsigned int index, unsigned int page) {
-		
+	void Return(unsigned int index, unsigned int page) override {
+		// call object destructors
+		(DestructComponent<Components>(), ...);
+
+		// make the components the first node in the free list and have it point to what was previously the first node
+		*(char*)components = firstAvailable.at(page);
+		firstAvailable.at(page) = components;
 	}
 
 private:
 
-	template <typename Component>
+	template <std::derived_from<BaseComponent> Component>
 	void DestructComponent(void* slotPosition) {
 		std::destroy_at((Component*)((char*)slotPosition + componentOffsets.at(TupleIndex<Component, std::tuple<Components ...>>::value)));
 	}
@@ -195,8 +233,6 @@ private:
 		}
 		// last location just has nullptr/end of free list
 		*((char*)newPage + (archetypeSize * i)) = nullptr;
-
-		
 
 	}
 };

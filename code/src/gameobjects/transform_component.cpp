@@ -17,7 +17,7 @@ const glm::quat& TransformComponent::Rotation() const {
     return rotation;
 }
 
-void TransformComponent::Init() {
+TransformComponent::TransformComponent() {
     rotation = glm::identity<glm::quat>();
     scale = {1, 1, 1};
     position = {0, 0, 0};
@@ -28,7 +28,7 @@ void TransformComponent::Init() {
     children = {};
 }
 
-void TransformComponent::Destroy() {}
+TransformComponent::~TransformComponent() {}
 
 // void TransformComponent::MakeChildrenDirty() {
 //     for (auto & c: children) {

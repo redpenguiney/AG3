@@ -13,7 +13,7 @@ enum BroadPhaseAABBType {
     //BoundingBox = TODO
 };
 
-class ColliderComponent: public BaseComponent<ColliderComponent> {
+class ColliderComponent: public BaseComponent {
     public:
     BroadPhaseAABBType aabbType;
 
@@ -27,10 +27,14 @@ class ColliderComponent: public BaseComponent<ColliderComponent> {
     float friction;
 
     // Called when collider is gotten from pool
-    void Init(GameObject* gameobject, std::shared_ptr<PhysicsMesh>& physMesh);
+    //void Init(GameObject* gameobject, std::shared_ptr<PhysicsMesh>& physMesh);
+
+    ColliderComponent(const ColliderComponent&) = delete;
+    ColliderComponent(GameObject* gameobject, std::shared_ptr<PhysicsMesh>& physMesh);
+    ~ColliderComponent() {}
 
     // Called before component is returned from pool
-    void Destroy();
+    //void Destroy();
 
     // Removes the collider from the spatial acceleration structure, meaning it will no longer do collisions.
     void RemoveFromSas();
@@ -44,7 +48,7 @@ class ColliderComponent: public BaseComponent<ColliderComponent> {
     std::shared_ptr<GameObject>& GetGameObject();
 
     // pointer to accurate collider for object
-    std::shared_ptr<PhysicsMesh> physicsMesh;
+    const std::shared_ptr<PhysicsMesh> physicsMesh;
 
     const AABB& GetAABB();
 
@@ -62,13 +66,11 @@ class ColliderComponent: public BaseComponent<ColliderComponent> {
     SpatialAccelerationStructure::SasNode* node;
 
     // pointer to gameobject using this collier. No, no way around this, we have to be able to get gameobjects from a collider stored in the SAS.
-    GameObject* gameobject;
-    friend class GameObject; // gameobject has to set the gameobject ptr after creating the collider for annoying reasons
+    GameObject* const gameobject;
     
     // private constructor to enforce usage of object pool
-    friend class ComponentPool<ColliderComponent>;
+    //friend class ComponentPool<ColliderComponent>;
     friend class SpatialAccelerationStructure;
-    ColliderComponent();
-    ~ColliderComponent() {}
+    
 
 };

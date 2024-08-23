@@ -7,16 +7,20 @@
 
 class GameObject;
 
-class AudioPlayerComponent: public BaseComponent<AudioPlayerComponent> {
-    public:
+class AudioPlayerComponent: public BaseComponent {
+public:
     
     // Called when a gameobject is given this component.
-    void Init(GameObject* object, std::optional<std::shared_ptr<Sound>> soundToUse = std::nullopt);
+    //void Init(GameObject* object, std::optional<std::shared_ptr<Sound>> soundToUse = std::nullopt);
 
     // Called when this component is returned to a pool.
-    void Destroy();
+    //void Destroy();
 
-    GameObject* object;
+    AudioPlayerComponent(const AudioPlayerComponent&) = delete;
+    AudioPlayerComponent(GameObject* object, std::optional<std::shared_ptr<Sound>> soundToUse = std::nullopt);
+    ~AudioPlayerComponent();
+
+    GameObject* const object;
 
     // Makes the output of the sound depend on its position
     bool positional;
@@ -35,9 +39,6 @@ class AudioPlayerComponent: public BaseComponent<AudioPlayerComponent> {
 
     bool looped;
 
-    // DONT call this unless you're the audio engine, sets 
-    void Update(glm::dvec3 microphonePosition);
-
     void Play(float startTime = 0); // plays the sound starting at the given number of seconds in 
     void Pause(); // stops playback of the sound
     void Resume(); // plays the sound at its current position
@@ -48,7 +49,12 @@ class AudioPlayerComponent: public BaseComponent<AudioPlayerComponent> {
     // stops any sounds currently playing fyi
     void SetSound(std::shared_ptr<Sound>);
 
-    private:
+private:
+
+    friend class AudioEngine;
+
+    // DONT call this unless you're the audio engine, sets 
+    void Update(glm::dvec3 microphonePosition);
 
     // // When Play()/similar is called, the sound doesn't actually start playing until Update() is called, these 2 variables keep track of whether/where to start playing 
     // std::optional<bool> startPlaying; // if value and its true, will start playing, if value and its false, will stop playing

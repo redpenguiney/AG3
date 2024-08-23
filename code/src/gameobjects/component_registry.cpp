@@ -32,7 +32,7 @@ inline std::shared_ptr<GameObject> protected_make_shared(Args&&... args)
 
 // template<typename ... PoolClasses>
 
-
+/*
 std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCreateParams& params) {
     if (params.requestedComponents[RenderComponentBitIndex]) { 
         Assert(!params.requestedComponents[RenderComponentNoFOBitIndex]); // Can't have both kinds of render components.
@@ -102,6 +102,7 @@ std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCre
     return ptr;
 
 }
+*/
 
 ComponentRegistry::ComponentRegistry() {
 
@@ -111,6 +112,10 @@ ComponentRegistry::~ComponentRegistry() {
     DebugLogInfo("Cleaning up all gameobjects.");
     GAMEOBJECTS.clear(); // no way its this simple
     DebugLogInfo("Cleaned up all gameobjects.");
+
+    for (auto& [archetype, cgi] : componentGroups) {
+        delete cgi;
+    }
 }
 
 #ifdef IS_MODULE
@@ -137,14 +142,6 @@ void GameObject::Destroy() {
         abort();
     }
     ComponentRegistry::Get().GAMEOBJECTS.erase(this);
-    transformComponent.Clear();
-    renderComponent.Clear();
-    colliderComponent.Clear();
-    rigidbodyComponent.Clear();
-    pointLightComponent.Clear();
-    audioPlayerComponent.Clear();
-    animationComponent.Clear();
-    spotLightComponent.Clear();
 }
 
 GameObject::~GameObject() {
@@ -157,14 +154,14 @@ GameObject::~GameObject() {
 
 GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):
     // a way to make this less verbose and more type safe would be nice
-    transformComponent((TransformComponent*)components[ComponentRegistry::TransformComponentBitIndex]),
-    renderComponent((RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] ? (RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] : (RenderComponentNoFO*)components[ComponentRegistry::RenderComponentNoFOBitIndex]),  
-    rigidbodyComponent((RigidbodyComponent*)components[ComponentRegistry::RigidbodyComponentBitIndex]),
-    colliderComponent((ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex]),
-    pointLightComponent((PointLightComponent*)components[ComponentRegistry::PointlightComponentBitIndex]),
-    audioPlayerComponent((AudioPlayerComponent*)components[ComponentRegistry::AudioPlayerComponentBitIndex]),
-    animationComponent((AnimationComponent*)components[ComponentRegistry::AnimationComponentBitIndex]),
-    spotLightComponent((SpotLightComponent*)components[ComponentRegistry::SpotlightComponentBitIndex])
+    //transformComponent((TransformComponent*)components[ComponentRegistry::TransformComponentBitIndex]),
+    //renderComponent((RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] ? (RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] : (RenderComponentNoFO*)components[ComponentRegistry::RenderComponentNoFOBitIndex]),  
+    //rigidbodyComponent((RigidbodyComponent*)components[ComponentRegistry::RigidbodyComponentBitIndex]),
+    //colliderComponent((ColliderComponent*)components[ComponentRegistry::ColliderComponentBitIndex]),
+    //pointLightComponent((PointLightComponent*)components[ComponentRegistry::PointlightComponentBitIndex]),
+    //audioPlayerComponent((AudioPlayerComponent*)components[ComponentRegistry::AudioPlayerComponentBitIndex]),
+    //animationComponent((AnimationComponent*)components[ComponentRegistry::AnimationComponentBitIndex]),
+    //spotLightComponent((SpotLightComponent*)components[ComponentRegistry::SpotlightComponentBitIndex])
 {
     
     Assert(transformComponent); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
@@ -208,30 +205,30 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     name = "GameObject";
 };
 
-LuaComponentHandle<TransformComponent> GameObject::LuaGetTransform() {
-    return LuaComponentHandle<TransformComponent>(&transformComponent);
-}
-
-LuaComponentHandle<RenderComponent> GameObject::LuaGetRender() {
-    return LuaComponentHandle<RenderComponent>(&renderComponent);
-}
-
-LuaComponentHandle<RigidbodyComponent> GameObject::LuaGetRigidbody() {
-    return LuaComponentHandle<RigidbodyComponent>(&rigidbodyComponent);
-}
-
-LuaComponentHandle<ColliderComponent> GameObject::LuaGetCollider() {
-    return LuaComponentHandle<ColliderComponent>(&colliderComponent);
-}
-
-LuaComponentHandle<AudioPlayerComponent> GameObject::LuaGetAudioPlayer() {
-    return LuaComponentHandle<AudioPlayerComponent>(&audioPlayerComponent);
-}
-
-LuaComponentHandle<PointLightComponent> GameObject::LuaGetPointLight() {
-    return LuaComponentHandle<PointLightComponent>(&pointLightComponent);
-}
-
-LuaComponentHandle<AnimationComponent> GameObject::LuaGetAnimation() {
-    return LuaComponentHandle<AnimationComponent>(&animationComponent);
-}
+//LuaComponentHandle<TransformComponent> GameObject::LuaGetTransform() {
+//    return LuaComponentHandle<TransformComponent>(&transformComponent);
+//}
+//
+//LuaComponentHandle<RenderComponent> GameObject::LuaGetRender() {
+//    return LuaComponentHandle<RenderComponent>(&renderComponent);
+//}
+//
+//LuaComponentHandle<RigidbodyComponent> GameObject::LuaGetRigidbody() {
+//    return LuaComponentHandle<RigidbodyComponent>(&rigidbodyComponent);
+//}
+//
+//LuaComponentHandle<ColliderComponent> GameObject::LuaGetCollider() {
+//    return LuaComponentHandle<ColliderComponent>(&colliderComponent);
+//}
+//
+//LuaComponentHandle<AudioPlayerComponent> GameObject::LuaGetAudioPlayer() {
+//    return LuaComponentHandle<AudioPlayerComponent>(&audioPlayerComponent);
+//}
+//
+//LuaComponentHandle<PointLightComponent> GameObject::LuaGetPointLight() {
+//    return LuaComponentHandle<PointLightComponent>(&pointLightComponent);
+//}
+//
+//LuaComponentHandle<AnimationComponent> GameObject::LuaGetAnimation() {
+//    return LuaComponentHandle<AnimationComponent>(&animationComponent);
+//}

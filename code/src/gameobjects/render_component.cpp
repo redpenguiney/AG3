@@ -1,7 +1,7 @@
 #include "render_component.hpp"
 
-void RenderComponent::Init(unsigned int mesh_id, unsigned int material_id, unsigned int shader_id) {
-    Assert(live);
+RenderComponent::RenderComponent(unsigned int mesh_id, unsigned int material_id, unsigned int shader_id) {
+    //Assert(live);
     Assert(mesh_id != 0);
 
     
@@ -26,8 +26,8 @@ void RenderComponent::Init(unsigned int mesh_id, unsigned int material_id, unsig
 
 };
 
-void RenderComponent::Destroy() {
-    Assert(live == true);
+RenderComponent::~RenderComponent() {
+    //Assert(live == true);
 
     if (Mesh::Get(meshId)->dynamic) {
         unsigned int i = 0;
@@ -61,9 +61,9 @@ void RenderComponent::Destroy() {
     }
 }
 
-RenderComponent::RenderComponent() {
+//RenderComponent::RenderComponent() {
 
-}
+//}
 
 void RenderComponent::SetInstancedVertexAttribute(const unsigned int attributeName, const float& value) {
     // todo: this is dumb type stuff for different nFloats values

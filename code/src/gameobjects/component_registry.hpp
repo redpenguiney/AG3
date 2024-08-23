@@ -48,7 +48,7 @@ class ComponentHandle {
     // only exists so you can pass a reference to a component to a function
     T* const GetPtr() const;
 
-    // If ptr != nullptr/it hasn't already been cleared, calls Destroy() on the component, returns it to the pool, and sets ptr to nullptr.
+    // If ptr != nullptr/it hasn't already been cleared, returns it to the pool (thus destructing the component), and sets ptr to nullptr.
     // Gameobjects do this for all their components when Destroy() is called on them.
     void Clear();
 
@@ -118,10 +118,21 @@ class ComponentRegistry {
 
     // Returns a new game object with the given components.
     // TODO: return weak_ptr instead?
-    std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params);
+    template <std::derived_from<BaseComponent> ... Components>
+    std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params) {
+        const Archetype archetype = Archetype::FromComponents<Components>();
+
+        if (!componentGroups.contains(archetype.componentTypes)) {
+            componentGroups.emplace(params., new ComponentGroup<Components>();
+        }
+        const ComponentGroupInterface* group = componentGroups[params.requestedComponents];
+
+        return std::make_shared<GameObject>(params, archetype, group.)
+    }
 
     static ComponentRegistry& Get();
 
+    /*
     // To hide all the non-type safe stuff, we need an iterator that just lets people iterate through the components of all gameobjects that have certain components (i.e give me all pairs of transform + render)
     template <typename ... Args>
     class Iterator {
@@ -304,14 +315,14 @@ class ComponentRegistry {
             return std::get<i>(currentPagePtrs) + componentIndex;
         }
     };
-
+    */
     std::unordered_map<GameObject*, std::shared_ptr<GameObject>> GAMEOBJECTS;
 
     // Stores all the component pools.
     // Bitset has a bit for each component class, if its 1 then the value corresonding to that key stores gameobjects with that component. (but only if the gameobject stores all the exact same components as the bitset describes)
     // DONT TOUCH PLS
     // TODO: make private somehow
-    std::unordered_map<std::bitset<N_COMPONENT_TYPES>, std::array<void*, N_COMPONENT_TYPES>> componentBuckets;
+    std::unordered_map<std::bitset<N_COMPONENT_TYPES>, ComponentGroupInterface*> componentGroups;
 
     // returns vector of bit indices from variadic template args
     template <typename ... Args>
@@ -320,33 +331,37 @@ class ComponentRegistry {
         if constexpr((std::is_same_v<TransformComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::TransformComponentBitIndex);
         }
-        if constexpr((std::is_same_v<RenderComponent, Args> || ...)) {
+        else if constexpr((std::is_same_v<RenderComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::RenderComponentBitIndex);
         }
-        if constexpr((std::is_same_v<RenderComponentNoFO, Args> || ...)) {
+        else if constexpr((std::is_same_v<RenderComponentNoFO, Args> || ...)) {
             indices.push_back(ComponentRegistry::RenderComponentNoFOBitIndex);
         }
-        if constexpr((std::is_same_v<ColliderComponent, Args> || ...)) {
+        else if constexpr((std::is_same_v<ColliderComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::ColliderComponentBitIndex);
         }
-        if constexpr((std::is_same_v<RigidbodyComponent, Args> || ...)) {
+        else if constexpr((std::is_same_v<RigidbodyComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::RigidbodyComponentBitIndex);
         }
-        if constexpr((std::is_same_v<PointLightComponent, Args> || ...)) {
+        else if constexpr((std::is_same_v<PointLightComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::PointlightComponentBitIndex);
         }
-        if constexpr((std::is_same_v<AudioPlayerComponent, Args> || ...)) {
+        else if constexpr((std::is_same_v<AudioPlayerComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::AudioPlayerComponentBitIndex);
         }
-        if constexpr((std::is_same_v<AnimationComponent, Args> || ...)) {
+        else if constexpr((std::is_same_v<AnimationComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::AnimationComponentBitIndex);
         }
-        if constexpr ((std::is_same_v<SpotLightComponent, Args> || ...)) {
+        else if constexpr ((std::is_same_v<SpotLightComponent, Args> || ...)) {
             indices.push_back(ComponentRegistry::SpotlightComponentBitIndex);
+        }
+        else {
+            Assert(false);
         }
         return indices;
     }
 
+    /*
     // Gives an iterator so you can iterate through all gameobjects that have the requested components (except you don't actually get the gameobject, just a tuple of components)
     template <typename ... Args>
     Iterator<Args...> GetSystemComponents() {
@@ -372,6 +387,7 @@ class ComponentRegistry {
 
         return Iterator<Args...>(poolsToReturn);
     }
+    */
         
     private:
     ComponentRegistry();
@@ -412,7 +428,7 @@ template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegist
     return ComponentRegistry::SpotlightComponentBitIndex;
 }
 
-
+// Specifies stuff about the gameobject to create. The actual components used to create the gameobject are specified as a variadic template parameter to ComponentRegistry::NewGameObject
 struct GameobjectCreateParams {
     std::optional<std::shared_ptr<class PhysicsMesh>> physMesh;
     unsigned int meshId; // ignore if not rendering
@@ -421,7 +437,7 @@ struct GameobjectCreateParams {
     
     std::optional<std::shared_ptr<Sound>> sound; // for audio player components
 
-    GameobjectCreateParams(const std::vector<ComponentRegistry::ComponentBitIndex> componentList):
+    GameobjectCreateParams():
     physMesh(std::nullopt),
     meshId(0),
     materialId(0),
@@ -429,20 +445,37 @@ struct GameobjectCreateParams {
     sound(std::nullopt)
     {
         // bitset defaults to all false so we good
-        for (auto & i : componentList) {
+        /*for (auto & i : componentList) {
             requestedComponents[i] = true;
-        }
+        }*/
     }
 
     private:
-    friend std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCreateParams& params);
-    std::bitset<ComponentRegistry::N_COMPONENT_TYPES> requestedComponents;
+    //friend std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCreateParams& params);
+    //std::bitset<ComponentRegistry::N_COMPONENT_TYPES> requestedComponents;
 };
 
 // The gameobject system uses ECS (google it).
 class GameObject {
-    public:
+public:
     std::string name; // just an identifier i have mainly for debug reasons, scripts could also use it i guess
+    const Archetype componentTypes;
+    
+    template <std::derived_from<BaseComponent> Component> 
+    Component& Get() {
+
+    }
+
+    // override Get() for rendercomponent so it handles RenderComponentNoFO
+    template <>
+    RenderComponent& Get<RenderComponent>() {
+
+    }
+
+    /*template <std::derived_from<BaseComponent> Component>
+    std::optional<Component*> MaybeGet() {
+
+    }*/
 
     struct GameObjectNetworkData {
         // Who owns this gameobject (and is sending sync data to other clients which recieve it)
@@ -457,23 +490,23 @@ class GameObject {
     std::optional<GameObjectNetworkData> networkData;
 
     // TODO: avoid not storing ptrs for components we don't have
-    ComponentHandle<TransformComponent> transformComponent;
-    ComponentHandle<RenderComponent> renderComponent;
+    //ComponentHandle<TransformComponent> transformComponent;
+    //ComponentHandle<RenderComponent> renderComponent;
     // ComponentHandle<RenderComponentNoFO> renderComponentNoFO; these two components have exact same size and methods and you can only have one of them so we store both with the same pointer
-    ComponentHandle<RigidbodyComponent> rigidbodyComponent;
-    ComponentHandle<ColliderComponent> colliderComponent;
-    ComponentHandle<PointLightComponent> pointLightComponent;
-    ComponentHandle<AudioPlayerComponent> audioPlayerComponent;
-    ComponentHandle<AnimationComponent> animationComponent;
-    ComponentHandle<SpotLightComponent> spotLightComponent;
+    //ComponentHandle<RigidbodyComponent> rigidbodyComponent;
+    //ComponentHandle<ColliderComponent> colliderComponent;
+    //ComponentHandle<PointLightComponent> pointLightComponent;
+    //ComponentHandle<AudioPlayerComponent> audioPlayerComponent;
+    //ComponentHandle<AnimationComponent> animationComponent;
+    //ComponentHandle<SpotLightComponent> spotLightComponent;
 
-    LuaComponentHandle<TransformComponent> LuaGetTransform();
-    LuaComponentHandle<RenderComponent> LuaGetRender();
-    LuaComponentHandle<RigidbodyComponent> LuaGetRigidbody();
-    LuaComponentHandle<ColliderComponent> LuaGetCollider();
-    LuaComponentHandle<PointLightComponent> LuaGetPointLight();
-    LuaComponentHandle<AudioPlayerComponent> LuaGetAudioPlayer();
-    LuaComponentHandle<AnimationComponent> LuaGetAnimation();
+    //LuaComponentHandle<TransformComponent> LuaGetTransform();
+    //LuaComponentHandle<RenderComponent> LuaGetRender();
+    //LuaComponentHandle<RigidbodyComponent> LuaGetRigidbody();
+    //LuaComponentHandle<ColliderComponent> LuaGetCollider();
+    //LuaComponentHandle<PointLightComponent> LuaGetPointLight();
+    //LuaComponentHandle<AudioPlayerComponent> LuaGetAudioPlayer();
+    //LuaComponentHandle<AnimationComponent> LuaGetAnimation();
 
     ~GameObject();
 
@@ -482,13 +515,15 @@ class GameObject {
     // Will error if you try to destroy the same gameobject twice.
     void Destroy();
 
-    protected:
+protected:
     
     // no copy constructing gameobjects.
     GameObject(const GameObject&) = delete; 
 
     // private because ComponentRegistry makes it and also because it needs to return a shared_ptr.
     friend class std::shared_ptr<GameObject>;
-    GameObject(const GameobjectCreateParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components); // components is not type safe because component registry weird, index is ComponentBitIndex, value is nullptr or ptr to componeny
-    
+    GameObject(const GameobjectCreateParams& params, const Archetype& cTypes, void* comps); // components is not type safe because component registry weird, index is ComponentBitIndex, value is nullptr or ptr to componeny
+   
+private:
+    void* components;
 };

@@ -4,30 +4,32 @@
 
 #include "physics/gjk.hpp"
 
-void ColliderComponent::Init(GameObject* gameobj, std::shared_ptr<PhysicsMesh>& physMesh) {
+ColliderComponent::ColliderComponent(GameObject* gameobj, std::shared_ptr<PhysicsMesh>& physMesh):
+    gameobject(gameobj),
+    physicsMesh(physMesh)
+{
     aabbType = AABBBoundingCube;
     node = nullptr;
-    gameobject = gameobj;
-    physicsMesh = physMesh;
+    
     elasticity = 1;
     friction = 0.2;
     density = 1.0;
-    SpatialAccelerationStructure::Get().AddCollider(this, *gameobject->transformComponent);
+    SpatialAccelerationStructure::Get().AddCollider(this, gameobject->Get<TransformComponent>());
 
 }
 
-ColliderComponent::ColliderComponent() {
-    // no point in initializing but makes msvc shut up
-    density = 0;
-    elasticity = 0;
-    friction = 0;
-    gameobject = nullptr;
-    physicsMesh = nullptr;
-    node = nullptr;
-}
+//ColliderComponent::ColliderComponent() {
+//    // no point in initializing but makes msvc shut up
+//    density = 0;
+//    elasticity = 0;
+//    friction = 0;
+//    gameobject = nullptr;
+//    physicsMesh = nullptr;
+//    node = nullptr;
+//}
 
-void ColliderComponent::Destroy() {
-    physicsMesh = nullptr;
+ColliderComponent::~ColliderComponent() {
+
 }
 
 std::shared_ptr<GameObject>& ColliderComponent::GetGameObject() {

@@ -9,8 +9,12 @@ class PhysicsMesh;
 
 // TODO: RIGIDBODIES CURRENTLY DON'T DO PHYSICS IF THEY DON'T HAVE A COLLIDER, MB.
 // Created rigidbodies are immobile (infinite mass & moi) until you call SetMass() on them.
-class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
+class RigidbodyComponent: public BaseComponent {
     public:
+    RigidbodyComponent(const RigidbodyComponent& other) = delete;
+    RigidbodyComponent(const std::shared_ptr<PhysicsMesh>& physMesh);
+    ~RigidbodyComponent();
+
     bool kinematic; // if true, the physics engine will do nothing to this component except change its position/rotation by its velocity
 
     glm::dvec3 velocity;
@@ -40,8 +44,8 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
     // You MUST call this if the transform component's scale changes to have correct physics results. TODO: kinda mid to have to do this
     void UpdateMomentOfInertia(const TransformComponent& transform);
 
-    void Init(const std::shared_ptr<PhysicsMesh>& physMesh);
-    void Destroy();
+    //void Init(const std::shared_ptr<PhysicsMesh>& physMesh);
+    //void Destroy();
 
     
 
@@ -64,11 +68,10 @@ class RigidbodyComponent: public BaseComponent<RigidbodyComponent> {
 
     private:
     //private constructor to enforce usage of object pool
-    friend class ComponentPool<RigidbodyComponent>;
-    RigidbodyComponent();
-    RigidbodyComponent(const RigidbodyComponent& other) = delete;
+    //friend class ComponentPool<RigidbodyComponent>;
+    
 
     float inverseMass; // we store 1/mass instead of mass because all the formulas use inverse mass and this saves us some division
 
-    std::shared_ptr<PhysicsMesh> physicsMesh;
+    const std::shared_ptr<PhysicsMesh> physicsMesh;
 };

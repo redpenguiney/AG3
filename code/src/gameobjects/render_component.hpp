@@ -4,18 +4,22 @@
 // Gameobjects that want to be rendered should have a pointer to one of these.
 // However, they are stored here in a vector because that's better for the cache. (google ECS).
 // NEVER DELETE THIS POINTER, JUST CALL Destroy(). DO NOT STORE OUTSIDE A GAMEOBJECT. THESE USE AN OBJECT POOL.
-class RenderComponent: public BaseComponent<RenderComponent> {
+class RenderComponent: public BaseComponent {
     public:
 
     // not const because object pool, don't actually change this
     unsigned int meshId;
     unsigned int shaderProgramId, materialId;
 
+    RenderComponent(const RenderComponent&) = delete;
+    RenderComponent(unsigned int meshId, unsigned int materialId, unsigned int shaderId = GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
+    ~RenderComponent();
+
     // called to initialize when given to a gameobject
-    void Init(unsigned int meshId, unsigned int materialId, unsigned int shaderId = GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
+    //void Init(unsigned int meshId, unsigned int materialId, unsigned int shaderId = GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
 
     // call before returning to pool
-    void Destroy();
+    //void Destroy();
 
     // Sets the instanced vertex attribute (which depends on the mesh, but could be color, textureZ, etc.)
     // Note: setting color, textureZ, etc. is complicated because A. needs to be fast for all meshes that have different instanced vertex attributes B. multibuffering means that to set color, one must set color 3 times over 3 frames C. we can't set those things until the render component gets its meshpool, and for perf reasons we cache mesh creation so that doesn't happen until RenderScene() is called.
@@ -57,27 +61,28 @@ class RenderComponent: public BaseComponent<RenderComponent> {
     friend class Mesh;
     
     //private constructor to enforce usage of object pool
-    friend class ComponentPool<RenderComponent>;
+    //friend class ComponentPool<RenderComponent>;
     friend class RenderComponentNoFO;
-    RenderComponent();
+    
 };
 
 // Identical to a RenderComponent in every way, except that it doesn't use floating origin. Not a bool flag on a normal render component bc i like premature optimization.
 class RenderComponentNoFO: public RenderComponent {
     public:
+    RenderComponentNoFO(const RenderComponentNoFO&) = delete;
     // TODO: implicit conversion to normal rendercomponent because they do the exact same things?
     
     private:
 
     //private constructor to enforce usage of object pool
-    friend class ComponentPool<RenderComponentNoFO>;
-    RenderComponentNoFO();
+    //friend class ComponentPool<RenderComponentNoFO>;
+    //RenderComponentNoFO();
 
     // exists to let RenderComponentNoFO avoid type safety.
     // void* should be ptr to component pool
-    void SetPool(void* p) {
-        pool = (ComponentPool<RenderComponent>*)p;
-    }
+    //void SetPool(void* p) {
+        //pool = (ComponentPool<RenderComponent>*)p;
+    //}
 };
 
 static_assert(sizeof(RenderComponent) == sizeof(RenderComponentNoFO), "These classes need the exact same memory layout or i'll be sad.\n");

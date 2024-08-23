@@ -10,10 +10,10 @@
 // Component pool needs components to have a few fields, so this makes sure it does.
 // TODO: how to make this compatible with free list memory optimization?
 
-template<typename T>
-class ComponentPool;
+//template<typename T>
+//class ComponentPool;
 
-template<typename T>
+//template<typename T>
 struct BaseComponent {
     public: // not private bc i couldn't make it work
     

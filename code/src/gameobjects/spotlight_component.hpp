@@ -3,12 +3,12 @@
 #include <glm/vec3.hpp>
 
 // Spotlight direction is determined by object's transform's forward vector.
-class SpotLightComponent : public BaseComponent<SpotLightComponent> {
+class SpotLightComponent : public BaseComponent {
 public:
     SpotLightComponent();
     ~SpotLightComponent();
-    void Destroy();
-    void Init();
+    //void Destroy();
+    //void Init();
 
     // get distance from light at which it isn't visible
     float Range();

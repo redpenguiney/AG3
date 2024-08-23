@@ -2,17 +2,20 @@
 #include "component_pool.hpp"
 #include <memory>
 
-PointLightComponent::PointLightComponent() {}
+PointLightComponent::PointLightComponent() {
+    lightColor = { 1, 1, 1 };
+    lightRange = 100;
+}
 PointLightComponent::~PointLightComponent() {}
 
-void PointLightComponent::Destroy() {
-
-}
-
-void PointLightComponent::Init() {
-    lightColor = {1, 1, 1};
-    lightRange = 100;
-} 
+//void PointLightComponent::Destroy() {
+//
+//}
+//
+//void PointLightComponent::Init() {
+//    lightColor = {1, 1, 1};
+//    lightRange = 100;
+//} 
 
 void PointLightComponent::SetColor(glm::vec3 color) {
     lightColor = color;

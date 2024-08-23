@@ -9,7 +9,7 @@
 #include <iostream>
 #include <limits>
 
-void RigidbodyComponent::Init(const std::shared_ptr<PhysicsMesh>& physMesh) {
+RigidbodyComponent::RigidbodyComponent(const std::shared_ptr<PhysicsMesh>& physMesh): physicsMesh(physMesh) {
     Assert(physMesh != nullptr);
 
     kinematic = false;
@@ -19,14 +19,17 @@ void RigidbodyComponent::Init(const std::shared_ptr<PhysicsMesh>& physMesh) {
     accumulatedTorque = {0, 0, 0};
     linearDrag = 0.99;
     angularDrag = 0.999;
-    physicsMesh = physMesh;
     
     MakeMassInfinite();
 }
 
-void RigidbodyComponent::Destroy() {
-    physicsMesh = nullptr;
+RigidbodyComponent::~RigidbodyComponent() {
+
 }
+
+//void RigidbodyComponent::Destroy() {
+//    physicsMesh = nullptr;
+//}
 
 float RigidbodyComponent::InverseMass() const {
     return inverseMass;
@@ -101,6 +104,6 @@ glm::dvec3 RigidbodyComponent::VelocityAtPoint(glm::vec3 position) {
     std::cout << "Rigidbody has angular velocity " << glm::to_string(angularVelocity) << " so at position " << glm::to_string(position) << " it has linear velocity " << glm::to_string(glm::cross(position, angularVelocity)) << ".\n";
     return glm::cross(position, glm::degrees(angularVelocity));
 }
-RigidbodyComponent::RigidbodyComponent() {
-    physicsMesh = nullptr;
-}
+//RigidbodyComponent::RigidbodyComponent() {
+//    physicsMesh = nullptr;
+//}
