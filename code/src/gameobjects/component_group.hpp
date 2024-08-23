@@ -53,6 +53,7 @@ static inline const unsigned int N_COMPONENT_TYPES = 16;
 
 namespace {
 	// not stolen from stack overflow, surprisingly
+	// i'll be a real template metaprogrammer some day!
 	template <std::derived_from<BaseComponent> ... Components>
 	std::vector<unsigned int> ComponentOffsets() {
 		std::vector<unsigned int> offsets;

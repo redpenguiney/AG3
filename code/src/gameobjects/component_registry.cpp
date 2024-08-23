@@ -152,7 +152,9 @@ GameObject::~GameObject() {
     // return transformComponent.GetPtr(); // TODO WHY WOULD I WRITE THAT WHAT IS WRONG WITH ME LUA SHOULD UNDER NO CIRCUMSTANCES HAVE RAW PTRS
 // }
 
-GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, ComponentRegistry::N_COMPONENT_TYPES> components):
+GameObject::GameObject(const GameobjectCreateParams& params, const Archetype& cTypes, void* comps):
+    components(comps),
+    componentTypes(cTypes)
     // a way to make this less verbose and more type safe would be nice
     //transformComponent((TransformComponent*)components[ComponentRegistry::TransformComponentBitIndex]),
     //renderComponent((RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] ? (RenderComponent*)components[ComponentRegistry::RenderComponentBitIndex] : (RenderComponentNoFO*)components[ComponentRegistry::RenderComponentNoFOBitIndex]),  
@@ -163,16 +165,16 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
     //animationComponent((AnimationComponent*)components[ComponentRegistry::AnimationComponentBitIndex]),
     //spotLightComponent((SpotLightComponent*)components[ComponentRegistry::SpotlightComponentBitIndex])
 {
-    
-    Assert(transformComponent); // if you want to make transform component optional, ur gonna have to mess with the postfix/prefix operators of the iterator (but lets be real, we always gonna have a transform component)
-    transformComponent->Init();
-    if (renderComponent) {
-        Assert(Mesh::Get(params.meshId)); // verify that we were given a valid meshId
-        renderComponent->Init(params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId: GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
+    // TODO: can the transform comp restriction ever be lifted?
+    Assert(componentTypes.componentIds[ComponentBitIndex::Transform]);
+    if (cTypes.componentIds[ComponentBitIndex::Transform]) {
+        std::construct_at(&Get<TransformComponent>());
     }
-    
-    
-    if (colliderComponent || rigidbodyComponent) {
+    if (componentTypes.componentIds[ComponentBitIndex::Render] || componentTypes.componentIds[ComponentBitIndex::RenderNoFO]) {
+        Assert(Mesh::Get(params.meshId)); // verify that we were given a valid meshId
+        std::construct_at(&Get<RenderComponent>(), params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId : GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
+    }
+    if (componentTypes.componentIds[ComponentBitIndex::Collider] || componentTypes.componentIds[ComponentBitIndex::Rigidbody]) {
         std::shared_ptr<PhysicsMesh> physMesh;
 
         if (params.physMesh == std::nullopt) {
@@ -190,18 +192,29 @@ GameObject::GameObject(const GameobjectCreateParams& params, std::array<void*, C
 
         Assert(physMesh != nullptr);
 
-        if (colliderComponent) colliderComponent->Init(this, physMesh);
-        if (rigidbodyComponent) rigidbodyComponent->Init(physMesh);
+        if (componentTypes.componentIds[ComponentBitIndex::Collider]) {
+            std::construct_at(&Get<ColliderComponent>(), this, physMesh);
+        }
+        if (componentTypes.componentIds[ComponentBitIndex::Rigidbody]) {
+            std::construct_at(&Get<RigidbodyComponent>(), physMesh);
+        }
     };
     
-    if (pointLightComponent) {pointLightComponent->Init();}
-    
-    if (audioPlayerComponent) {audioPlayerComponent->Init(this, params.sound);}
-    if (animationComponent) {
-        Assert(renderComponent);
-        animationComponent->Init(renderComponent.GetPtr());
+    if (componentTypes.componentIds[ComponentBitIndex::Pointlight]) {
+        std::construct_at(&Get<PointLightComponent>());
     }
-    if (spotLightComponent) { spotLightComponent->Init(); }
+    
+    if (componentTypes.componentIds[ComponentBitIndex::AudioPlayer]) {
+        std::construct_at(&Get<AudioPlayerComponent>(), this, params.sound);
+    }
+
+    if (componentTypes.componentIds[ComponentBitIndex::Animation]) {
+        Assert(componentTypes.componentIds[ComponentBitIndex::Render] || componentTypes.componentIds[ComponentBitIndex::RenderNoFO]);
+        std::construct_at(&Get<AnimationComponent>(), &Get<RenderComponent>());
+    }
+    if (componentTypes.componentIds[ComponentBitIndex::Spotlight]) { 
+        std::construct_at(&Get<SpotLightComponent>());
+    }
     name = "GameObject";
 };
 

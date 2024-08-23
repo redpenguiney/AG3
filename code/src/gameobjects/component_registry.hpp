@@ -33,65 +33,65 @@ struct GameobjectCreateParams;
 
 // Just a little pointer wrapper for gameobjects that throws an error when trying to dereference a nullptr to a component (gameobjects have a nullptr to any components they don't have, and when Destroy() is called all components are set to nullptr)
 // Still the gameobject's job to get and return objects to/from the pool since the pool used depends on the exact set of components the gameobject uses.
-template<typename T>
-class ComponentHandle {
-    public:
-    ComponentHandle(T* const comp_ptr);
-    ComponentHandle(const ComponentHandle<T>&) = delete;
-    T& operator*() const;
-    T* operator->() const;
-
-    // Returns true if not nullptr
-    explicit operator bool() const;
-
-    // might return nullptr, be careful.
-    // only exists so you can pass a reference to a component to a function
-    T* const GetPtr() const;
-
-    // If ptr != nullptr/it hasn't already been cleared, returns it to the pool (thus destructing the component), and sets ptr to nullptr.
-    // Gameobjects do this for all their components when Destroy() is called on them.
-    void Clear();
-
-    private:
-    // TODO: make unique?
-    T* ptr;
-};
+//template<typename T>
+//class ComponentHandle {
+//    public:
+//    ComponentHandle(T* const comp_ptr);
+//    ComponentHandle(const ComponentHandle<T>&) = delete;
+//    T& operator*() const;
+//    T* operator->() const;
+//
+//    // Returns true if not nullptr
+//    explicit operator bool() const;
+//
+//    // might return nullptr, be careful.
+//    // only exists so you can pass a reference to a component to a function
+//    T* const GetPtr() const;
+//
+//    // If ptr != nullptr/it hasn't already been cleared, returns it to the pool (thus destructing the component), and sets ptr to nullptr.
+//    // Gameobjects do this for all their components when Destroy() is called on them.
+//    void Clear();
+//
+//    private:
+//    // TODO: make unique?
+//    T* ptr;
+//};
 
 // We can't use normal ComponentHandle because sol would, if told it was like a pointer (which it is and it needs to know that), it would try to copy it, which is bad so we need to do this.
-template <typename T>
-class LuaComponentHandle {
-    public:
-    ComponentHandle<T>* const handle;
-    LuaComponentHandle(ComponentHandle<T>* ptr): handle(ptr) {}
-};
+//template <typename T>
+//class LuaComponentHandle {
+//    public:
+//    ComponentHandle<T>* const handle;
+//    LuaComponentHandle(ComponentHandle<T>* ptr): handle(ptr) {}
+//};
 
 // templates can't go in cpps
 // TODO: apparently they can
-template<typename T>
-ComponentHandle<T>::ComponentHandle(T* const comp_ptr) : ptr(comp_ptr) {}
-
-template<typename T>
-ComponentHandle<T>::operator bool() const {
-    return ptr != nullptr;
-}
-
-template<typename T>
-T& ComponentHandle<T>::operator*() const {Assert(ptr != nullptr); return *ptr;}
-
-template<typename T>
-T* ComponentHandle<T>::operator->() const {Assert(ptr != nullptr); return ptr;};
-
-template<typename T>
-T* const ComponentHandle<T>::GetPtr() const {return ptr;}
-
-template<typename T>
-void ComponentHandle<T>::Clear() {
-    if (ptr) {
-        ptr->Destroy();
-        ptr->pool->ReturnObject(ptr);
-        ptr = nullptr;
-    }
-}
+//template<typename T>
+//ComponentHandle<T>::ComponentHandle(T* const comp_ptr) : ptr(comp_ptr) {}
+//
+//template<typename T>
+//ComponentHandle<T>::operator bool() const {
+//    return ptr != nullptr;
+//}
+//
+//template<typename T>
+//T& ComponentHandle<T>::operator*() const {Assert(ptr != nullptr); return *ptr;}
+//
+//template<typename T>
+//T* ComponentHandle<T>::operator->() const {Assert(ptr != nullptr); return ptr;};
+//
+//template<typename T>
+//T* const ComponentHandle<T>::GetPtr() const {return ptr;}
+//
+//template<typename T>
+//void ComponentHandle<T>::Clear() {
+//    if (ptr) {
+//        ptr->Destroy();
+//        ptr->pool->ReturnObject(ptr);
+//        ptr = nullptr;
+//    }
+//}
 
 class RigidbodyComponent;
 
@@ -100,6 +100,20 @@ class RigidbodyComponent;
 
 class ComponentRegistry {
     public:
+    template<std::derived_from<BaseComponent> ... Components>
+    std::vector<ComponentGroupInterface*> GetGroupsWithComponents() {
+        auto targetBitset = Archetype::FromComponents<Components>().componentIds;
+
+        std::vector<ComponentGroupInterface*> matches;
+
+        for (auto& [archetype, group] : componentGroups) {
+            if ((group->contents.componentIds & targetBitset) == targetBitset) {
+                matches.push_back(group);
+            }
+        }
+
+        return matches;
+    }
 
     enum ComponentBitIndex {
         TransformComponentBitIndex = 0,
@@ -127,7 +141,7 @@ class ComponentRegistry {
         }
         const ComponentGroupInterface* group = componentGroups[params.requestedComponents];
 
-        return std::make_shared<GameObject>(params, archetype, group.)
+        return protected_make_shared<GameObject>(params, archetype, group.)
     }
 
     static ComponentRegistry& Get();
@@ -463,7 +477,7 @@ public:
     
     template <std::derived_from<BaseComponent> Component> 
     Component& Get() {
-
+        return componentTypes.GetOffset<Component>();
     }
 
     // override Get() for rendercomponent so it handles RenderComponentNoFO
