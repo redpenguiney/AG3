@@ -68,11 +68,13 @@ class RenderComponent: public BaseComponent {
 
 // Identical to a RenderComponent in every way, except that it doesn't use floating origin. Not a bool flag on a normal render component bc i like premature optimization.
 class RenderComponentNoFO: public RenderComponent {
-    public:
+public:
+    // idk if we even call this when making one
+    RenderComponentNoFO(unsigned int meshId, unsigned int materialId, unsigned int shaderId = GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
     RenderComponentNoFO(const RenderComponentNoFO&) = delete;
     // TODO: implicit conversion to normal rendercomponent because they do the exact same things?
     
-    private:
+private:
 
     //private constructor to enforce usage of object pool
     //friend class ComponentPool<RenderComponentNoFO>;

@@ -5,7 +5,7 @@
 // #endif
 
 #include "debug/log.hpp"
-#include "gameobjects/component_registry.hpp"
+#include "gameobjects/gameobject.hpp"
 // #include "lua/lua_component_wrappers.hpp"
 #ifndef SOL_ALL_SAFETIES_ON 
 #error bruh
@@ -17,8 +17,6 @@
 #include "debug/assert.hpp"
 #include <optional>
 
-#include "../gameobjects/component_registry.hpp"
-#include "../debug/log.hpp"
 #include "lua_constructor_wrappers.hpp"
 
 #include "physics/raycast.hpp"
@@ -177,14 +175,14 @@ LuaHandler::LuaHandler() {
 
     // // enums
     auto enumTable = LUA_STATE->create_table();
-    enumTable.new_enum<ComponentRegistry::ComponentBitIndex, true>("ComponentBitIndex", {
-            {"Transform", ComponentRegistry::TransformComponentBitIndex},
-            {"Render", ComponentRegistry::RenderComponentBitIndex}, 
-            {"RenderNoFloatingOrigin", ComponentRegistry::RenderComponentNoFOBitIndex},
-            {"Rigidbody", ComponentRegistry::RigidbodyComponentBitIndex},
-            {"Collider", ComponentRegistry::ColliderComponentBitIndex},
-            {"PointLight", ComponentRegistry::PointlightComponentBitIndex},
-            {"AudioPlayer", ComponentRegistry::AudioPlayerComponentBitIndex}
+    enumTable.new_enum<ComponentBitIndex::ComponentBitIndex, true>("ComponentBitIndex", {
+            {"Transform", ComponentBitIndex::Transform},
+            {"Render", ComponentBitIndex::Render}, 
+            {"RenderNoFloatingOrigin", ComponentBitIndex::RenderNoFO},
+            {"Rigidbody", ComponentBitIndex::Rigidbody},
+            {"Collider", ComponentBitIndex::Collider},
+            {"PointLight", ComponentBitIndex::Pointlight},
+            {"AudioPlayer", ComponentBitIndex::AudioPlayer}
         });
 
     enumTable.new_enum<Texture::TextureUsage, true>("TextureUsage", {
@@ -344,12 +342,12 @@ LuaHandler::LuaHandler() {
     audioPlayerComponentUsertype["positional"] = &AudioPlayerComponent::positional;
 
     auto gameObjectUsertype = LUA_STATE->new_usertype<GameObject>("GameObject", sol::factories(LuaGameobjectConstructor));
-    gameObjectUsertype["transform"] = sol::property(&GameObject::LuaGetTransform);
-    gameObjectUsertype["render"] = sol::property(&GameObject::LuaGetRender);
-    gameObjectUsertype["rigidbody"] = sol::property(&GameObject::LuaGetRigidbody);
-    gameObjectUsertype["collider"] = sol::property(&GameObject::LuaGetCollider);
-    gameObjectUsertype["pointLight"] = sol::property(&GameObject::LuaGetPointLight);
-    gameObjectUsertype["audioPlayer"] = sol::property(&GameObject::LuaGetAudioPlayer);
+    //gameObjectUsertype["transform"] = sol::property(&GameObject::LuaGetTransform);
+    //gameObjectUsertype["render"] = sol::property(&GameObject::LuaGetRender);
+    //gameObjectUsertype["rigidbody"] = sol::property(&GameObject::LuaGetRigidbody);
+    //gameObjectUsertype["collider"] = sol::property(&GameObject::LuaGetCollider);
+    //gameObjectUsertype["pointLight"] = sol::property(&GameObject::LuaGetPointLight);
+    //gameObjectUsertype["audioPlayer"] = sol::property(&GameObject::LuaGetAudioPlayer);
 
     gameObjectUsertype["Destroy"] = &GameObject::Destroy;
 

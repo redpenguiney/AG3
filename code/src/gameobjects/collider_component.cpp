@@ -1,6 +1,6 @@
 #include "physics/spatial_acceleration_structure.hpp"
 #include "gameobjects/collider_component.hpp"
-#include "gameobjects/component_registry.hpp"
+#include "gameobjects/gameobject.hpp"
 
 #include "physics/gjk.hpp"
 
@@ -14,7 +14,7 @@ ColliderComponent::ColliderComponent(GameObject* gameobj, std::shared_ptr<Physic
     elasticity = 1;
     friction = 0.2;
     density = 1.0;
-    SpatialAccelerationStructure::Get().AddCollider(this, gameobject->Get<TransformComponent>());
+    SpatialAccelerationStructure::Get().AddCollider(this, *gameobject->Get<TransformComponent>());
 
 }
 
@@ -33,7 +33,7 @@ ColliderComponent::~ColliderComponent() {
 }
 
 std::shared_ptr<GameObject>& ColliderComponent::GetGameObject() {
-    return ComponentRegistry::Get().GAMEOBJECTS[gameobject];
+    return GameObject::GAMEOBJECTS()[gameobject];
 }
 
 // bool ColliderComponent::IsCollidingWith(const ColliderComponent& other) const {

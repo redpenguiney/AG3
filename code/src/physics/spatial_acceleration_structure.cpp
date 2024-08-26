@@ -1,5 +1,5 @@
 #include "spatial_acceleration_structure.hpp"
-#include "gameobjects/component_registry.hpp"
+#include "gameobjects/gameobject.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "graphics/gengine.hpp"
 #include "gameobjects/collider_component.hpp"
@@ -7,18 +7,16 @@
 void SpatialAccelerationStructure::Update() {
     //auto start = Time();
     // Get components of all gameobjects that have a transform and collider component
-    auto components = ComponentRegistry::Get().GetSystemComponents<TransformComponent, ColliderComponent>();
 
-    for (auto & tuple: components) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, ColliderComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Collider }); it.Next();) {
+        auto & tuple = *it;
         auto& colliderComp = *std::get<1>(tuple);
         auto& transformComp = *std::get<0>(tuple);
-        if (colliderComp.live) {
-            if (transformComp.moved) {
-                transformComp.moved = false;
-                // std::cout << "Updating collider " << &colliderComp << "\n";
-                UpdateCollider(colliderComp, transformComp);
+        if (transformComp.moved) {
+            transformComp.moved = false;
+            // std::cout << "Updating collider " << &colliderComp << "\n";
+            UpdateCollider(colliderComp, transformComp);
                 
-            } 
         }      
     }
 

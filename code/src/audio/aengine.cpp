@@ -1,5 +1,5 @@
 #include "aengine.hpp"
-#include "../gameobjects/component_registry.hpp"
+#include "../gameobjects/gameobject.hpp"
 #include <vector>
 
 #ifdef IS_MODULE

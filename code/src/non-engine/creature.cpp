@@ -1,12 +1,6 @@
 #include "creature.hpp"
 
-GameobjectCreateParams creatureParams({
-	ComponentRegistry::RenderComponentBitIndex,
-	ComponentRegistry::AnimationComponentBitIndex,
-	ComponentRegistry::RenderComponentBitIndex,
-	ComponentRegistry::ColliderComponentBitIndex,
-	ComponentRegistry::RigidbodyComponentBitIndex
-});
+GameobjectCreateParams creatureParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody, ComponentBitIndex::Animation });
 
 GameobjectCreateParams GetCreatureCreateParams(unsigned int mId) {
 	auto & p = creatureParams;
@@ -32,7 +26,7 @@ void Creature::UpdateAll(float dt)
 
 Creature::Creature(const std::shared_ptr<Mesh>& mesh, const Body& b) :
 	body(b),
-	gameObject(ComponentRegistry::Get().NewGameObject(GetCreatureCreateParams(mesh->meshId)))
+	gameObject(GameObject::New(GetCreatureCreateParams(mesh->meshId)))
 {
 
 }

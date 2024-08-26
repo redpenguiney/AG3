@@ -62,7 +62,7 @@ class RigidbodyComponent: public BaseComponent {
     // glm::mat3x3 GetInverseGlobalMomentOfInertia(const TransformComponent& transform);
 
     // returns inverse mmoi of the rigidbody around the given axis. Axis is in world space.
-    float InverseMomentOfInertiaAroundAxis(const TransformComponent& transform, glm::vec3 axis);
+    float InverseMomentOfInertiaAroundAxis(const TransformComponent& transform, glm::vec3 axis) const;
 
     
 

@@ -1,8 +1,7 @@
 #pragma once
-#include "../gameobjects/component_registry.hpp"
+#include "../gameobjects/gameobject.hpp"
 #include <sol/sol.hpp>
 #include "glm/gtx/string_cast.hpp"
-#include "gameobjects/component_registry.hpp"
 #include "sol/variadic_args.hpp"
 
 struct LuaGameobjectCreateParams: GameobjectCreateParams {
@@ -12,22 +11,22 @@ struct LuaGameobjectCreateParams: GameobjectCreateParams {
 // see component.registry.hpp for def. and explanation of LuaComponentHandle
 // lets sol recognize LuaComponentHandle as a pointer-like object, see https://sol2.readthedocs.io/en/latest/api/unique_usertype_traits.html
 
-namespace sol {
-        template <typename T>
-        struct unique_usertype_traits<LuaComponentHandle<T>> {
-                typedef T type;
-                typedef LuaComponentHandle<T> actual_type;
-                static const bool value = true;
-
-                static bool is_null(const actual_type& ptr) {
-                        return ptr.handle->GetPtr() == nullptr;
-                }
-
-                static type* get (const actual_type& ptr) {
-                        return ptr.handle->GetPtr();
-                }
-        };
-}
+//namespace sol {
+//        template <typename T>
+//        struct unique_usertype_traits<LuaComponentHandle<T>> {
+//                typedef T type;
+//                typedef LuaComponentHandle<T> actual_type;
+//                static const bool value = true;
+//
+//                static bool is_null(const actual_type& ptr) {
+//                        return ptr.handle->GetPtr() == nullptr;
+//                }
+//
+//                static type* get (const actual_type& ptr) {
+//                        return ptr.handle->GetPtr();
+//                }
+//        };
+//}
 
 std::shared_ptr<GameObject> LuaGameobjectConstructor(sol::object args);
 

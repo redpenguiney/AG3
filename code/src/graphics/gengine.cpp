@@ -6,7 +6,7 @@
 #include <vector>
 #include "gameobjects/pointlight_component.hpp"
 #include "gameobjects/spotlight_component.hpp"
-#include "gameobjects/component_registry.hpp"
+#include "gameobjects/gameobject.hpp"
 #include "GLM/gtx/string_cast.hpp"
 #include "gameobjects/animation_component.hpp"
 #include "graphics/gengine.hpp"
@@ -393,31 +393,28 @@ void GraphicsEngine::UpdateLights() {
     glm::dvec3 cameraPos = GetCurrentCamera().position;
 
     // Point lights
-    // Get components of all gameobjects that have a transform and point light component
-    auto pcomponents = ComponentRegistry::Get().GetSystemComponents<PointLightComponent, TransformComponent>();
-
     // set properties of point lights on gpu
     const unsigned int POINT_LIGHT_OFFSET = 0; //sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
     pointLightCount = 0;
     unsigned int i = 0;
 
-    for (auto & tuple : pcomponents) {
+    // Get components of all gameobjects that have a transform and point light component
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, PointLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Pointlight }); it.Next();) {
+        auto& tuple = *it;
+        TransformComponent& transform = *std::get<0>(tuple);
+        PointLightComponent& pointLight = *std::get<1>(tuple);
 
-        PointLightComponent& pointLight = *std::get<0>(tuple);
-        TransformComponent& transform = *std::get<1>(tuple);
+        glm::vec3 relCamPos = transform.Position() - cameraPos;
+        DebugLogInfo("rel pos = ", glm::to_string(relCamPos));
+        auto info = PointLightInfo {
+            .colorAndRange = glm::vec4(pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range()),
+            .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
+        };
+        //std::printf("byte offset %llu\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
+        (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))) = info;
 
-        if (pointLight.live) {
-            glm::vec3 relCamPos = transform.Position() - cameraPos;
-            DebugLogInfo("rel pos = ", glm::to_string(relCamPos));
-            auto info = PointLightInfo {
-                .colorAndRange = glm::vec4(pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range()),
-                .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
-            };
-            //std::printf("byte offset %llu\n", POINT_LIGHT_OFFSET + (lightCount * sizeof(PointLightInfo)));
-            (*(PointLightInfo*)(pointLightDataBuffer.Data() + POINT_LIGHT_OFFSET + (i * sizeof(PointLightInfo)))) = info;
+        pointLightCount++;
 
-            pointLightCount++;
-        }
         i++;
     }
 
@@ -425,32 +422,29 @@ void GraphicsEngine::UpdateLights() {
     //*(GLuint*)(pointLightDataBuffer.Data()) = pointLightCount;
 
     // Spot lights
-    // Get components of all gameobjects that have a transform and point light component
-    auto scomponents = ComponentRegistry::Get().GetSystemComponents<SpotLightComponent, TransformComponent>();
-
     // set properties of point lights on gpu
     const unsigned int SPOT_LIGHT_OFFSET = 0; //sizeof(glm::vec4); // although the first value is just one uint (# of lights), we need vec4 alignment so yeah
     spotLightCount = 0;
     i = 0;
 
-    for (auto& tuple : scomponents) {
+    // Get components of all gameobjects that have a transform and point light component
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, SpotLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Spotlight }); it.Next();) {
+        auto& tuple = *it;
+        TransformComponent& transform = *std::get<0>(tuple);
+        SpotLightComponent& spotLight = *std::get<1>(tuple);
 
-        SpotLightComponent& spotLight = *std::get<0>(tuple);
-        TransformComponent& transform = *std::get<1>(tuple);
+        glm::vec3 relCamPos = transform.Position() - cameraPos;
+        // std::printf("rel pos = %f %f %f %f\n", relCamPos.x, relCamPos.y, relCamPos.z, pointLight.Range());
+        glm::vec3 spotlightDirection = transform.Rotation() * glm::vec3(0, 0, 1);
+        auto info = SpotLightInfo{
+            .colorAndRange = glm::vec4(spotLight.Color().x, spotLight.Color().y, spotLight.Color().z, spotLight.Range()),
+            .relPosAndInnerAngle = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, cos(glm::radians(spotLight.InnerAngle()))),
+            .directionAndOuterAngle = glm::vec4(spotlightDirection, cos(glm::radians(spotLight.OuterAngle()))),
+        };
+        (*(SpotLightInfo*)(spotLightDataBuffer.Data() + SPOT_LIGHT_OFFSET + (i * sizeof(SpotLightInfo)))) = info;
 
-        if (spotLight.live) {
-            glm::vec3 relCamPos = transform.Position() - cameraPos;
-            // std::printf("rel pos = %f %f %f %f\n", relCamPos.x, relCamPos.y, relCamPos.z, pointLight.Range());
-            glm::vec3 spotlightDirection = transform.Rotation() * glm::vec3(0, 0, 1);
-            auto info = SpotLightInfo{
-                .colorAndRange = glm::vec4(spotLight.Color().x, spotLight.Color().y, spotLight.Color().z, spotLight.Range()),
-                .relPosAndInnerAngle = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, cos(glm::radians(spotLight.InnerAngle()))),
-                .directionAndOuterAngle = glm::vec4(spotlightDirection, cos(glm::radians(spotLight.OuterAngle()))),
-            };
-            (*(SpotLightInfo*)(spotLightDataBuffer.Data() + SPOT_LIGHT_OFFSET + (i * sizeof(SpotLightInfo)))) = info;
+        spotLightCount++;
 
-            spotLightCount++;
-        }
         i++;
     }
 
@@ -679,14 +673,12 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     }  
     
     // Get components of all gameobjects that have a transform and render component
-    auto components = ComponentRegistry::Get().GetSystemComponents<RenderComponent, TransformComponent>();
-    for (auto& [rc, tc] : components) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Render}); it.Next();) {
     //std::for_each(std::execution::par, components.begin(), components.end(), [this, &cameraPos](std::tuple<RenderComponent*, TransformComponent*>& tuple) {
-        //auto & renderComp = *std::get<0>(tuple);
-        //auto & transformComp = *std::get<1>(tuple);
-        auto& renderComp = *rc;
-        auto& transformComp = *tc;
-        if (renderComp.live) { 
+        auto& tuple = *it;
+        auto & transformComp = *std::get<0>(tuple);
+        auto & renderComp = *std::get<1>(tuple);
+
             // std::cout << "Component at " << &renderComp << " is live \n";
             // if (renderComp.componentPoolId != i) {
             //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
@@ -695,19 +687,17 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
             // TODO: we only need to call SetNormalMatrix() when the object is rotated
             
             // tell shaders where the object is, rot/scl
-            SetNormalMatrix(renderComp, transformComp.GetNormalMatrix()); 
-            SetModelMatrix(renderComp, transformComp.GetGraphicsModelMatrix(cameraPos));
+        SetNormalMatrix(renderComp, transformComp.GetNormalMatrix()); 
+        SetModelMatrix(renderComp, transformComp.GetGraphicsModelMatrix(cameraPos));
 
             
-        }
     };
 
     // Get components of all gameobjects that have a transform and no floating origin render component
-    auto components2 = ComponentRegistry::Get().GetSystemComponents<RenderComponentNoFO, TransformComponent>();
-    for (auto& [rcnfo, tc] : components2) {
-        auto& renderCompNoFO = *rcnfo;
-        auto & transformComp = *tc;
-        if (renderCompNoFO.live) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponentNoFO>({ ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO }); it.Next();) {
+        auto& tuple = *it;
+        auto& transformComp = *std::get<0>(tuple);
+        auto& renderCompNoFO = *std::get<1>(tuple);
             
             //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
             // if (renderComp.componentPoolId != i) {
@@ -715,12 +705,11 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
             //     abort();
             // }
             // TODO: we only need to call SetNormalMatrix() when the object is rotated
-            SetNormalMatrix(renderCompNoFO, transformComp.GetNormalMatrix()); 
-            SetModelMatrix(renderCompNoFO, transformComp.GetGraphicsModelMatrix({0, 0, 0}));
+        SetNormalMatrix(renderCompNoFO, transformComp.GetNormalMatrix()); 
+        SetModelMatrix(renderCompNoFO, transformComp.GetGraphicsModelMatrix({0, 0, 0}));
             
             // if (renderCompNoFO.textureZChanged > 0) {renderCompNoFO.textureZChanged -= 1; SetTextureZ(renderCompNoFO, renderCompNoFO.textureZ);}
             // if (renderCompNoFO.colorChanged > 0) {renderCompNoFO.colorChanged -= 1; SetColor(renderCompNoFO, renderCompNoFO.color);}
-        }
     }
     //std::for_each(std::execution::, components2.begin(), components2.end(), [this](std::tuple<RenderComponentNoFO*, TransformComponent*>& tuple) {
     //    auto & renderCompNoFO = *std::get<0>(tuple);
@@ -742,10 +731,10 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     //});
 
     // animations
-    auto components3 = ComponentRegistry::Get().GetSystemComponents<AnimationComponent>();
-    for (auto & [animComp]: components3) {
-        if (!animComp->live) {continue;}
+    for (auto it = GameObject::SystemGetComponents<AnimationComponent>({ ComponentBitIndex::Animation }); it.Next();) {
 
+        auto& tuple = *it;
+        auto& animComp = std::get<0>(tuple);
     //     // TODO: this will redundantly send identity matrices for every bone when something isn't getting animated. Difficult to fix bc triple buffering, prob not big deal anyways.
     //     // TOOD: FRUSTRUM culling would actually be big brain here.
 

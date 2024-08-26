@@ -1,5 +1,5 @@
 #pragma once
-#include "gameobjects/component_registry.hpp"
+#include "gameobjects/gameobject.hpp"
 #include <glm/vec3.hpp>
 #include <memory>
 

@@ -85,6 +85,9 @@ void RenderComponent::SetInstancedVertexAttribute(const unsigned int attributeNa
     GraphicsEngine::Get().Instanced4ComponentVertexAttributeUpdates.push_back(std::make_tuple(this, attributeName, value, INSTANCED_VERTEX_BUFFERING_FACTOR));
 }
 
-RenderComponentNoFO::RenderComponentNoFO() {
+
+RenderComponentNoFO::RenderComponentNoFO(unsigned int meshId, unsigned int materialId, unsigned int shaderId): 
+    RenderComponent(meshId, materialId, shaderId) 
+{
 
 }

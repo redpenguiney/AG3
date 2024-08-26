@@ -1,6 +1,6 @@
 #pragma once
 #include "health.hpp"
-#include "gameobjects/component_registry.hpp"
+#include "gameobjects/gameobject.hpp"
 
 // Anything that needs AI should inherit from this class.
 class Creature {

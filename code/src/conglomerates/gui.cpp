@@ -100,14 +100,19 @@ void Gui::UpdateBillboardGuis(float) {
 }
 
 Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<BillboardGuiInfo> billboardGuiInfo, std::shared_ptr<ShaderProgram> guiShader) {
-    GameobjectCreateParams objectParams({ComponentRegistry::TransformComponentBitIndex, billboardGuiInfo ? ComponentRegistry::RenderComponentBitIndex : ComponentRegistry::RenderComponentNoFOBitIndex});
+    GameobjectCreateParams objectParams({ComponentBitIndex::Transform, billboardGuiInfo.has_value() ? ComponentBitIndex::Render : ComponentBitIndex::RenderNoFO});
 
     mouseHover = false;
 
     objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : 0);
     objectParams.meshId = Mesh::Square()->meshId;
     objectParams.shaderId = guiShader->shaderProgramId;
-    object = ComponentRegistry::Get().NewGameObject(objectParams);
+    if (billboardGuiInfo.has_value()) {
+        object = GameObject::New(objectParams);
+    }
+    else {
+        object = GameObject::New(objectParams);
+    }
     object->name = "GuiObject";
 
     guiScaleMode = ScaleXY;
@@ -127,7 +132,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     if (haveText) {
         Assert(fontMaterial.has_value() && fontMaterial->second->HasFontMap());
 
-        GameobjectCreateParams textObjectParams({ComponentRegistry::TransformComponentBitIndex, billboardGuiInfo ? ComponentRegistry::RenderComponentBitIndex : ComponentRegistry::RenderComponentNoFOBitIndex});
+        GameobjectCreateParams textObjectParams({ComponentBitIndex::Transform, billboardGuiInfo.has_value() ? ComponentBitIndex::Render : ComponentBitIndex::RenderNoFO });
         textObjectParams.materialId = fontMaterial->second->id;
         textObjectParams.shaderId = guiShader->shaderProgramId;
         auto textMesh = Mesh::New(TextMeshProvider(MeshCreateParams{ .meshVertexFormat = MeshVertexFormat::DefaultGui() }, fontMaterial->second), true);
@@ -146,7 +151,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
             .horizontalAlignment = HorizontalAlignMode::Left,
             .verticalAlignment = VerticalAlignMode::Top,
             .text = "Text",
-            .object = ComponentRegistry::Get().NewGameObject(textObjectParams),
+            .object = GameObject::New(textObjectParams),
             .fontMaterial = fontMaterial->second,
             .fontMaterialLayer = fontMaterial->first
         });
@@ -211,7 +216,7 @@ void Gui::UpdateGuiTransform() {
     //     size *= 0.01;
     // }
 
-    object->transformComponent->SetScl(glm::vec3(size.x, size.y, 1));
+    object->RawGet<TransformComponent>()->SetScl(glm::vec3(size.x, size.y, 1));
     
     glm::vec2 centerPosition = GetPixelPos();
 
@@ -220,11 +225,11 @@ void Gui::UpdateGuiTransform() {
     glm::vec3 realPosition(centerPosition.x, centerPosition.y, zLevel);
 
     // if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
-    //     realPosition = billboardInfo->followObject.lock()->transformComponent->Position();
+    //     realPosition = billboardInfo->followObject.lock()->Get<TransformComponent>().Position();
     // }
 
-    object->transformComponent->SetPos(realPosition);
-    // object->transformComponent->SetPos({0.0, 5.0, 0.0});
+    object->Get<TransformComponent>()->SetPos(realPosition);
+    // object->Get<TransformComponent>().SetPos({0.0, 5.0, 0.0});
 
     glm::quat rot = glm::angleAxis(rotation + (float)glm::radians(180.0), glm::vec3 {0.0f, 0.0f, 1.0f});
     glm::quat textRot = rot * glm::angleAxis(glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -241,12 +246,12 @@ void Gui::UpdateGuiTransform() {
 
     // }
 
-    object->transformComponent->SetRot(rot);
+    object->Get<TransformComponent>()->SetRot(rot);
 
     if (guiTextInfo.has_value()) {
-         //guiTextInfo->object->transformComponent->SetPos({50.0, 59.0, 0.0});
-        guiTextInfo->object->transformComponent->SetPos(realPosition + glm::vec3(0, 0.0, 0.1));
-        guiTextInfo->object->transformComponent->SetRot(textRot);
+         //guiTextInfo->object->Get<TransformComponent>().SetPos({50.0, 59.0, 0.0});
+        guiTextInfo->object->Get<TransformComponent>()->SetPos(realPosition + glm::vec3(0, 0.0, 0.1));
+        guiTextInfo->object->Get<TransformComponent>()->SetRot(textRot);
     }
 
 
@@ -263,14 +268,14 @@ Gui::BillboardGuiInfo& Gui::GetBillboardInfo() {
 }
 
 void Gui::UpdateGuiGraphics() {
-    object->renderComponent->SetColor(rgba);
-    object->renderComponent->SetTextureZ(materialLayer.value_or(-1.0));
-    object->renderComponent->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel);
+    object->Get<RenderComponent>()->SetColor(rgba);
+    object->Get<RenderComponent>()->SetTextureZ(materialLayer.value_or(-1.0));
+    object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel);
      
     if (guiTextInfo.has_value()) {
-        guiTextInfo->object->renderComponent->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel - 0.01);
-        guiTextInfo->object->renderComponent->SetColor(guiTextInfo->rgba);
-        guiTextInfo->object->renderComponent->SetTextureZ(guiTextInfo->fontMaterialLayer);
+        guiTextInfo->object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel - 0.01);
+        guiTextInfo->object->Get<RenderComponent>()->SetColor(guiTextInfo->rgba);
+        guiTextInfo->object->Get<RenderComponent>()->SetTextureZ(guiTextInfo->fontMaterialLayer);
     }
 }
 
@@ -282,7 +287,7 @@ void Gui::UpdateGuiText() {
 
     
 
-    auto & textMesh = Mesh::Get(guiTextInfo->object->renderComponent->meshId);
+    auto & textMesh = Mesh::Get(guiTextInfo->object->Get<RenderComponent>()->meshId);
     auto [vers, inds] = textMesh->StartModifying();
 
     // convert margins into weird unit i made the actual function take
@@ -327,8 +332,8 @@ glm::vec2 Gui::GetPixelSize() {
         abort();
     }    
 
-    if (object->transformComponent->GetParent() != nullptr) {
-        windowResolution *= glm::vec2 {object->transformComponent->GetParent()->Scale().x, object->transformComponent->GetParent()->Scale().y};
+    if (object->Get<TransformComponent>()->GetParent() != nullptr) {
+        windowResolution *= glm::vec2 {object->Get<TransformComponent>()->GetParent()->Scale().x, object->Get<TransformComponent>()->GetParent()->Scale().y};
     }
 
     glm::vec2 size = (scaleSize * windowResolution) + offsetSize;
@@ -343,7 +348,7 @@ glm::vec2 Gui::GetPixelPos()
 
     glm::vec2 modifiedScalePos = scalePos;
     if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
-        glm::vec3 projected = GraphicsEngine::Get().GetCurrentCamera().ProjectToScreen(billboardInfo->followObject.lock()->transformComponent->Position(), GraphicsEngine::Get().window.Aspect());
+        glm::vec3 projected = GraphicsEngine::Get().GetCurrentCamera().ProjectToScreen(billboardInfo->followObject.lock()->Get<TransformComponent>()->Position(), GraphicsEngine::Get().window.Aspect());
         modifiedScalePos += glm::vec2(projected);
         if (projected.z < 0 || projected.z > 1) { modifiedScalePos.x += 10000; }
     }

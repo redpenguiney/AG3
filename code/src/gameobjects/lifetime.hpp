@@ -1,4 +1,4 @@
-#include "component_registry.hpp"
+#include "gameobject.hpp"
 #include <memory>
 
 // gives the given object the given amount of time to live before they are destroyed.

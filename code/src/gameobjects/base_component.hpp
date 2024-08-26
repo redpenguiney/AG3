@@ -31,4 +31,6 @@ struct BaseComponent {
     //void SetPool(void* p) {
         //pool = (ComponentPool<T>*)p;
     //}
+
+
 };

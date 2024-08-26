@@ -3,7 +3,7 @@
 #include <physics/pengine.hpp>
 #include <audio/aengine.hpp>
 #include <lua/lua_handler.hpp>
-#include <gameobjects/component_registry.hpp>
+#include <gameobjects/gameobject.hpp>
 
 #include "physics/raycast.hpp"
 
@@ -30,7 +30,7 @@ void MakeMainMenu() {
 
     auto& GE = GraphicsEngine::Get();
     auto& AE = AudioEngine::Get();
-    auto& CR = ComponentRegistry::Get();
+    //auto& CR = ComponentRegistry::Get();
     
     auto ttfParams = TextureCreateParams({ "../fonts/arial.ttf", }, Texture::FontMap);
     ttfParams.fontHeight = 24;
@@ -83,7 +83,7 @@ void GameInit()
     auto& PE = PhysicsEngine::Get();
     //auto& AE = AudioEngine::Get();
     //auto& LUA = LuaHandler::Get();
-    auto& CR = ComponentRegistry::Get();
+    //auto& CR = ComponentRegistry::Get();
 
     //MakeMainMenu();
 
@@ -131,7 +131,7 @@ void GameInit()
 
     //auto garticSound = Sound::New("../sounds/garticphone.wav");
     //{
-    //    auto params = GameobjectCreateParams({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::AudioPlayerComponentBitIndex });
+    //    auto params = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentRegistry::AudioPlayerComponentBitIndex });
     //    params.sound = garticSound;
     //    auto soundSounder = ComponentRegistry::Get().NewGameObject(params);
     //    soundSounder->audioPlayerComponent->looped = true;
@@ -149,13 +149,13 @@ void GameInit()
 
     auto [grassTextureZ, grassMaterial] = Material::New({ TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap} }, Texture::Texture2D);
 
-    GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::SpotlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex });
+    GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Spotlight});
     params.meshId = m->meshId;
     //auto coolerLight = CR.NewGameObject(params);
-    //coolerLight->transformComponent->SetPos({ 8, 5, 0 });
+    //coolerLight->Get<TransformComponent>().SetPos({ 8, 5, 0 });
     //coolerLight->spotLightComponent->SetRange(20);
     //coolerLight->spotLightComponent->SetColor({ 1, 0.3, 0.7 });
-    //coolerLight->transformComponent->SetRot(glm::quatLookAt(glm::vec3(0, -0.7, -0.7), glm::vec3(0, 0, 1)));
+    //coolerLight->Get<TransformComponent>().SetRot(glm::quatLookAt(glm::vec3(0, -0.7, -0.7), glm::vec3(0, 0, 1)));
 
     //auto [brickTextureZ, brickMaterial] = Material::New({
     //    TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap},
@@ -165,64 +165,64 @@ void GameInit()
     //    }, Texture::Texture2D);
 
     //{
-        /*GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+        /*GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentRegistry::ColliderComponentBitIndex });
         params.meshId = m->meshId;
         params.materialId = grassMaterial->id;
 
         auto floor = CR.NewGameObject(params);
-        floor->transformComponent->SetPos({ 0, 0, 0 });
-        floor->transformComponent->SetRot(glm::vec3{ 0.0, glm::radians(0.0), glm::radians(0.0) });
+        floor->Get<TransformComponent>().SetPos({ 0, 0, 0 });
+        floor->Get<TransformComponent>().SetRot(glm::vec3{ 0.0, glm::radians(0.0), glm::radians(0.0) });
         floor->colliderComponent->elasticity = 1.0;
-        floor->transformComponent->SetScl({ 10, 1, 10 });
+        floor->Get<TransformComponent>().SetScl({ 10, 1, 10 });
         floor->renderComponent->SetColor({ 0, 1, 0, 1.0 });
         floor->renderComponent->SetTextureZ(grassTextureZ);
         floor->name = "ah yes the floor here is made of floor";*/
     //}
 
-    //GameobjectCreateParams wallParams({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+    //GameobjectCreateParams wallParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentRegistry::ColliderComponentBitIndex });
     //wallParams.meshId = m->meshId;
     //wallParams.materialId = brickMaterial->id;
     //auto wall1 = CR.NewGameObject(wallParams);
-    //wall1->transformComponent->SetPos({ 4, 4, 0 });
-    //wall1->transformComponent->SetRot(glm::vec3{ 0, 0, 0.0 });
+    //wall1->Get<TransformComponent>().SetPos({ 4, 4, 0 });
+    //wall1->Get<TransformComponent>().SetRot(glm::vec3{ 0, 0, 0.0 });
     //wall1->colliderComponent->elasticity = 1.0;
-    //wall1->transformComponent->SetScl({ 1, 8, 8 });
+    //wall1->Get<TransformComponent>().SetScl({ 1, 8, 8 });
     //wall1->renderComponent->SetColor({ 0, 1, 1, 1 });
     //wall1->renderComponent->SetTextureZ(brickTextureZ);
     //wall1->name = "wall";
     //{
 
     //    // auto wall2 = ComponentRegistry::NewGameObject(wallParams);
-    //    // wall2->transformComponent->SetPos({-4, 4, 0});
-    //    // wall2->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+    //    // wall2->Get<TransformComponent>().SetPos({-4, 4, 0});
+    //    // wall2->Get<TransformComponent>().SetRot(glm::vec3 {0, 0, 0.0});
     //    // wall2->colliderComponent->elasticity = 1.0;
-    //    // wall2->transformComponent->SetScl({1, 8, 8});
+    //    // wall2->Get<TransformComponent>().SetScl({1, 8, 8});
     //    // wall2->renderComponent->SetColor({1, 1, 1, 1.0});
     //    // wall2->renderComponent->SetTextureZ(brickTextureZ);
     //    // wall2->name = "wall";
     //    // auto wall3 = ComponentRegistry::NewGameObject(wallParams);
-    //    // wall3->transformComponent->SetPos({0, 4, 4});
-    //    // wall3->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+    //    // wall3->Get<TransformComponent>().SetPos({0, 4, 4});
+    //    // wall3->Get<TransformComponent>().SetRot(glm::vec3 {0, 0, 0.0});
     //    // wall3->colliderComponent->elasticity = 1.0;
-    //    // wall3->transformComponent->SetScl({8, 8, 1});
+    //    // wall3->Get<TransformComponent>().SetScl({8, 8, 1});
     //    // wall3->renderComponent->SetColor({1, 1, 1, 1});
     //    // wall3->renderComponent->SetTextureZ(brickTextureZ);
     //    // wall3->name = "wall";
     //    // auto wall4 = ComponentRegistry::NewGameObject(wallParams);
-    //    // wall4->transformComponent->SetPos({0, 4, -4});
-    //    // wall4->transformComponent->SetRot(glm::vec3 {0, 0, 0.0});
+    //    // wall4->Get<TransformComponent>().SetPos({0, 4, -4});
+    //    // wall4->Get<TransformComponent>().SetRot(glm::vec3 {0, 0, 0.0});
     //    // wall4->colliderComponent->elasticity = 1.0;
-    //    // wall4->transformComponent->SetScl({8, 8, 1});
+    //    // wall4->Get<TransformComponent>().SetScl({8, 8, 1});
     //    // wall4->renderComponent->SetColor({1, 1, 1, 1.0});
     //    // wall4->renderComponent->SetTextureZ(brickTextureZ);
     //    // wall4->name = "wall";
 
-    //    // wall2->transformComponent->SetParent(*wall1->transformComponent);
-    //    // wall3->transformComponent->SetParent(*wall2->transformComponent);
-    //    // wall4->transformComponent->SetParent(*wall3->transformComponent);
+    //    // wall2->Get<TransformComponent>().SetParent(*wall1->transformComponent);
+    //    // wall3->Get<TransformComponent>().SetParent(*wall2->transformComponent);
+    //    // wall4->Get<TransformComponent>().SetParent(*wall3->transformComponent);
 
-    //    // wall1->transformComponent->SetRot(wall1->transformComponent->Rotation() * glm::quat(glm::vec3(0.0, glm::radians(15.0), 0.0)));
-    //    // wall1->transformComponent->SetScl({1, 1, 3});
+    //    // wall1->Get<TransformComponent>().SetRot(wall1->Get<TransformComponent>().Rotation() * glm::quat(glm::vec3(0.0, glm::radians(15.0), 0.0)));
+    //    // wall1->Get<TransformComponent>().SetScl({1, 1, 3});
     //}
 
     //{
@@ -248,13 +248,13 @@ void GameInit()
     //        );
     //        if (!terrainMesh.has_value()) { continue; }
 
-    //        GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex });
+    //        GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
     //        params.meshId = terrainMesh.value()->meshId;
     //        params.materialId = grassMaterial->id;
 
     //        auto chunk = CR.NewGameObject(params);
-    //        chunk->transformComponent->SetPos({ 16 + i * s * 2, 0, 16 });
-    //        chunk->transformComponent->SetScl(terrainMesh.value()->originalSize);
+    //        chunk->Get<TransformComponent>().SetPos({ 16 + i * s * 2, 0, 16 });
+    //        chunk->Get<TransformComponent>().SetScl(terrainMesh.value()->originalSize);
     //        glm::vec4 color = { 0, 0, 0, 1 };
     //        color[i] = 1;
     //        //chunk->renderComponent->SetColor(color);
@@ -286,18 +286,18 @@ void GameInit()
     for (int x = 0; x < 100; x++) {
         for (int y = 0; y < 3; y++) {
             for (int z = 0; z < 10; z++) {
-                //GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+                //GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentRegistry::ColliderComponentBitIndex });
                 //params.meshId = m->meshId;
                 ////params.materialId = brickMaterial->id;
                 //auto g = CR.NewGameObject(params);
-                //g->transformComponent->SetPos({ 0 + x * 3, 2 + y * 2, 0 + z * 3 });
+                //g->Get<TransformComponent>().SetPos({ 0 + x * 3, 2 + y * 2, 0 + z * 3 });
                 //g->colliderComponent->elasticity = 0.3;
                 //g->colliderComponent->friction = 2.0;
                 //// g->rigidbodyComponent->angularDrag = 1.0;
                 //// g->rigidbodyComponent->linearDrag = 1.0;
                 //// g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 //// g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
-                //g->transformComponent->SetScl(glm::dvec3(1.0, 1.0, 1.0));
+                //g->Get<TransformComponent>().SetScl(glm::dvec3(1.0, 1.0, 1.0));
                 //g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
                 ////g->renderComponent->SetTextureZ(brickTextureZ);
                 //g->name = std::string("Gameobject #") + std::to_string(nObjs);
@@ -308,32 +308,32 @@ void GameInit()
 
     //            // for (float i = 0; i < 720; i += 15) {
     //            //     // DebugLogInfo(i, " degrees is ", glm::to_string(glm::quat(glm::vec3(glm::radians(i), glm::radians(0.0), glm::radians(0.0)))));
-    //            //     g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(i), glm::radians(0.0), glm::radians(0.0))));
+    //            //     g->Get<TransformComponent>().SetRot(glm::quat(glm::vec3(glm::radians(i), glm::radians(0.0), glm::radians(0.0))));
     //            //     DebugLogInfo("Rotation ", i, " inverse moi around x-axis is ", g->rigidbodyComponent->InverseMomentOfInertiaAroundAxis(*g->transformComponent, {1.0, 0.0, 0.0}));
     //            // }
 
-    //            // GameobjectCreateParams axisMarkerParams({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    //            // GameobjectCreateParams axisMarkerParams({ComponentBitIndex::Transform, ComponentBitIndex::Render});
     //            // axisMarkerParams.meshId= m->meshId;
 
     //            // auto xAxis = CR.NewGameObject(axisMarkerParams);
-    //            // xAxis->transformComponent->SetParent(*g->transformComponent);
-    //            // xAxis->transformComponent->SetPos(g->transformComponent->Position() + glm::dvec3(1.0, 0.0, 0.0));
-    //            // xAxis->transformComponent->SetScl({1.0, 0.1, 0.1});
+    //            // xAxis->Get<TransformComponent>().SetParent(*g->transformComponent);
+    //            // xAxis->Get<TransformComponent>().SetPos(g->Get<TransformComponent>().Position() + glm::dvec3(1.0, 0.0, 0.0));
+    //            // xAxis->Get<TransformComponent>().SetScl({1.0, 0.1, 0.1});
     //            // xAxis->renderComponent->SetColor({1.0, 0.0, 0.0, 1.0});
 
     //            // auto yAxis = CR.NewGameObject(axisMarkerParams);
-    //            // yAxis->transformComponent->SetParent(*g->transformComponent);
-    //            // yAxis->transformComponent->SetPos(g->transformComponent->Position() + glm::dvec3(0.0, 1.0, 0.0));
-    //            // yAxis->transformComponent->SetScl({0.1, 1.0, 0.1});
+    //            // yAxis->Get<TransformComponent>().SetParent(*g->transformComponent);
+    //            // yAxis->Get<TransformComponent>().SetPos(g->Get<TransformComponent>().Position() + glm::dvec3(0.0, 1.0, 0.0));
+    //            // yAxis->Get<TransformComponent>().SetScl({0.1, 1.0, 0.1});
     //            // yAxis->renderComponent->SetColor({0.0, 1.0, 0.0, 1.0});
 
     //            // auto zAxis = CR.NewGameObject(axisMarkerParams);
-    //            // zAxis->transformComponent->SetParent(*g->transformComponent);
-    //            // zAxis->transformComponent->SetPos(g->transformComponent->Position() + glm::dvec3(0.0, 0.0, 1.0));
-    //            // zAxis->transformComponent->SetScl({0.1, 0.1, 1.0});
+    //            // zAxis->Get<TransformComponent>().SetParent(*g->transformComponent);
+    //            // zAxis->Get<TransformComponent>().SetPos(g->Get<TransformComponent>().Position() + glm::dvec3(0.0, 0.0, 1.0));
+    //            // zAxis->Get<TransformComponent>().SetScl({0.1, 0.1, 1.0});
     //            // zAxis->renderComponent->SetColor({0.0, 0.0, 1.0, 1.0});
 
-    //            // g->transformComponent->SetRot(glm::quat(glm::vec3(glm::radians(360.0), glm::radians(0.0), glm::radians(0.0))));
+    //            // g->Get<TransformComponent>().SetRot(glm::quat(glm::vec3(glm::radians(360.0), glm::radians(0.0), glm::radians(0.0))));
 
             }
         }
@@ -343,41 +343,41 @@ void GameInit()
     ///*auto animShader = ShaderProgram::New("../shaders/world_vertex_animation.glsl", "../shaders/world_fragment.glsl");
     //auto stuff = Mesh::MultiFromFile("../models/test_anims.fbx");
     //for (auto & [mesh, mmat, matTexZ, offset] : stuff) {
-    //    GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::AnimationComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    //    GameobjectCreateParams params({ComponentBitIndex::Transform, ComponentRegistry::AnimationComponentBitIndex, ComponentBitIndex::Render});
     //    params.meshId = mesh->meshId;
     //    params.materialId = mmat != nullptr ? mmat->id : brickMaterial->id;
     //    params.shaderId = animShader->shaderProgramId;
     //    auto obj = CR.NewGameObject(params);
     //    obj->renderComponent->SetTextureZ(mmat != nullptr ? matTexZ : brickTextureZ);
-    //    obj->transformComponent->SetPos(glm::vec3(5, 3, 5) + offset);
-    //    obj->transformComponent->SetScl(mesh->originalSize);
+    //    obj->Get<TransformComponent>().SetPos(glm::vec3(5, 3, 5) + offset);
+    //    obj->Get<TransformComponent>().SetScl(mesh->originalSize);
 
     //    obj->animationComponent->PlayAnimation(mesh->animations->front().name);
     //}*/
 
     //// make light
     {
-        GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::SpotlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+        GameobjectCreateParams params({ ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Spotlight, ComponentBitIndex::Collider});
         params.meshId = m->meshId;
         params.materialId = 0;
-        auto coolLight = CR.NewGameObject(params);
-        coolLight->renderComponent->SetTextureZ(-1);
-        coolLight->transformComponent->SetPos({ 30, 5, 0 });
-        coolLight->spotLightComponent->SetRange(100);
-        coolLight->spotLightComponent->SetColor({ 1, 1, 1 });
+        auto coolLight = GameObject::New(params);
+        coolLight->Get<RenderComponent>()->SetTextureZ(-1);
+        coolLight->Get<TransformComponent>()->SetPos({ 30, 5, 0 });
+        coolLight->Get<SpotLightComponent>()->SetRange(100);
+        coolLight->Get<SpotLightComponent>()->SetColor({ 1, 1, 1 });
 
         PE.prePhysicsEvent.Connect([coolLight](float dt) {
-            coolLight->transformComponent->SetPos({ cos(Time()) * 10, 5.0, sin(Time()) * 10 });
-            coolLight->transformComponent->SetRot(glm::quatLookAt(glm::vec3(cos(Time()), 0.0, sin(Time())), glm::vec3(0, 1, 0)));
+            coolLight->Get<TransformComponent>()->SetPos({ cos(Time()) * 10, 5.0, sin(Time()) * 10 });
+            coolLight->Get<TransformComponent>()->SetRot(glm::quatLookAt(glm::vec3(cos(Time()), 0.0, sin(Time())), glm::vec3(0, 1, 0)));
         });
     }
     //{
-    //    GameobjectCreateParams params({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::PointlightComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+    //    GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentRegistry::PointlightComponentBitIndex, ComponentBitIndex::Render, ComponentRegistry::ColliderComponentBitIndex });
     //    params.meshId = m->meshId;
     //    params.materialId = grassMaterial->id;
     //    auto coolLight = ComponentRegistry::Get().NewGameObject(params);
     //    coolLight->renderComponent->SetTextureZ(-1);
-    //    coolLight->transformComponent->SetPos({ 40, 5, 40 });
+    //    coolLight->Get<TransformComponent>().SetPos({ 40, 5, 40 });
     //    coolLight->pointLightComponent->SetRange(1000);
     //    coolLight->pointLightComponent->SetColor({ 0.0, 1.0, 0.0 });
     //}
@@ -392,15 +392,15 @@ void GameInit()
     ////         "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ",
     ////         arialFont->fontMapConstAccess.value());
     ////     std::cout << "Textmesh id = "  << textMesh->meshId << ".\n";  
-    ////     GameobjectCreateParams params({ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex});
+    ////     GameobjectCreateParams params({ComponentBitIndex::Transform, ComponentBitIndex::Render});
     ////     params.meshId = textMesh->meshId;
     ////     params.shaderId = GE.defaultGuiShaderProgram->shaderProgramId;
     ////     params.materialId = arialFont->id;
     ////     auto text = ComponentRegistry::Get().NewGameObject(params);
     ////     text->renderComponent->SetTextureZ(arialLayer);
-    ////     text->transformComponent->SetPos({0, 0, 0});
-    ////     text->transformComponent->SetScl(textMesh->originalSize * 0.01f);
-    ////     text->transformComponent->SetRot(glm::quat(glm::vec3(0.0, 0.0, glm::radians(180.0))));
+    ////     text->Get<TransformComponent>().SetPos({0, 0, 0});
+    ////     text->Get<TransformComponent>().SetScl(textMesh->originalSize * 0.01f);
+    ////     text->Get<TransformComponent>().SetRot(glm::quat(glm::vec3(0.0, 0.0, glm::radians(180.0))));
 
     //// }
 
@@ -473,7 +473,7 @@ void GameInit()
     //        if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
 
     //            castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
-    //            //castResult.hitObject->transformComponent->SetPos(castResult.hitObject->transformComponent->position + castResult.hitNormal * 0.02);
+    //            //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
     //        }
     //        else {
     //            // std::cout << "LMB_DOWN but not hitting anything.\n";

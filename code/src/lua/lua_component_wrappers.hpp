@@ -1,11 +1,11 @@
-#pragma once
-#include "gameobjects/component_registry.hpp"
-#include "gameobjects/transform_component.hpp"
+//#pragma once
+//#include "gameobjects/component_registry.hpp"
+//#include "gameobjects/transform_component.hpp"
 
-template<typename T>
-class LuaComponentHandleWrapper {
-    ComponentHandle<T>& handle;
-};
+//template<typename T>
+//class LuaComponentHandleWrapper {
+//    ComponentHandle<T>& handle;
+//};
 
 // class LuaTransformComponent: ComponentHandle<TransformComponent> {
 //     public:

@@ -13,7 +13,7 @@
     <ClCompile Include="src\gameobjects\audio_player_component.cpp" />
     <ClCompile Include="src\gameobjects\base_component.cpp" />
     <ClCompile Include="src\gameobjects\collider_component.cpp" />
-    <ClCompile Include="src\gameobjects\component_registry.cpp" />
+    <ClCompile Include="src\gameobjects\old_component_registry.cpp" />
     <ClCompile Include="src\gameobjects\lifetime.cpp" />
     <ClCompile Include="src\gameobjects\pointlight_component.cpp" />
     <ClCompile Include="src\gameobjects\render_component.cpp" />
@@ -71,6 +71,8 @@
     <ClCompile Include="src\graphics\compute_shader_program.cpp" />
     <ClCompile Include="src\graphics\base_shader_program.cpp" />
     <ClCompile Include="src\gameobjects\spotlight_component.cpp" />
+    <ClCompile Include="src\gameobjects\gameobject.cpp" />
+    <ClCompile Include="src\gameobjects\component_pool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\asset_loader\base_asset_loader.hpp" />
@@ -87,8 +89,8 @@
     <ClInclude Include="src\gameobjects\audio_player_component.hpp" />
     <ClInclude Include="src\gameobjects\base_component.hpp" />
     <ClInclude Include="src\gameobjects\collider_component.hpp" />
-    <ClInclude Include="src\gameobjects\component_pool.hpp" />
-    <ClInclude Include="src\gameobjects\component_registry.hpp" />
+    <ClInclude Include="src\gameobjects\old_component_pool.hpp" />
+    <ClInclude Include="src\gameobjects\old_component_registry.hpp" />
     <ClInclude Include="src\gameobjects\lifetime.hpp" />
     <ClInclude Include="src\gameobjects\pointlight_component.hpp" />
     <ClInclude Include="src\gameobjects\render_component.hpp" />
@@ -140,5 +142,8 @@
     <ClInclude Include="src\graphics\compute_shader_program.hpp" />
     <ClInclude Include="src\gameobjects\spotlight_component.hpp" />
     <ClInclude Include="src\gameobjects\component_group.hpp" />
+    <ClInclude Include="src\gameobjects\component_id.hpp" />
+    <ClInclude Include="src\gameobjects\gameobject.hpp" />
+    <ClInclude Include="src\gameobjects\component_pool.hpp" />
   </ItemGroup>
 </Project>

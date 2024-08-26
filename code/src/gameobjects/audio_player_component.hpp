@@ -54,7 +54,7 @@ private:
     friend class AudioEngine;
 
     // DONT call this unless you're the audio engine, sets 
-    void Update(glm::dvec3 microphonePosition);
+    //void Update(glm::dvec3 microphonePosition);
 
     // // When Play()/similar is called, the sound doesn't actually start playing until Update() is called, these 2 variables keep track of whether/where to start playing 
     // std::optional<bool> startPlaying; // if value and its true, will start playing, if value and its false, will stop playing

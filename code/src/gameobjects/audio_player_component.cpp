@@ -1,5 +1,5 @@
 #include "audio_player_component.hpp" 
-#include "component_registry.hpp"
+#include "gameobject.hpp"
 #include "../audio/checked_openal_call.cpp"
 #include "debug/assert.hpp"
 
@@ -38,31 +38,31 @@ AudioPlayerComponent::~AudioPlayerComponent() {
     CheckedOpenALCall(alDeleteSources(1, &audioSourceId));
 }
 
-void AudioPlayerComponent::Update(glm::dvec3 microphonePosition) {
-    if (sound != nullptr) {
-        CheckedOpenALCall(alSourcef(audioSourceId, AL_PITCH, pitch));
-        CheckedOpenALCall(alSourcef(audioSourceId, AL_GAIN, volume));
-        CheckedOpenALCall(alSourcef(audioSourceId, AL_MAX_DISTANCE, maxDistance));
-        CheckedOpenALCall(alSourcef(audioSourceId, AL_ROLLOFF_FACTOR, rolloff));
-
-        if (positional) {
-            Assert(object->transformComponent);
-            glm::vec3 relPos = object->transformComponent->Position() - microphonePosition;
-            CheckedOpenALCall(alSourcefv(audioSourceId, AL_POSITION, (float*)&relPos));
-            if (doppler) {
-                Assert(object->rigidbodyComponent);
-                CheckedOpenALCall(alSourcefv(audioSourceId, AL_VELOCITY, (float*)&object->rigidbodyComponent->velocity));
-            }
-            
-        }
-        
-        CheckedOpenALCall(alSourcei(audioSourceId, AL_LOOPING, looped));
-
-        // sound uses floating origin too
-        CheckedOpenALCall(alSourcei(audioSourceId, AL_SOURCE_RELATIVE, true));
-    }
-    
-}
+//void AudioPlayerComponent::Update(glm::dvec3 microphonePosition) {
+//    if (sound != nullptr) {
+//        CheckedOpenALCall(alSourcef(audioSourceId, AL_PITCH, pitch));
+//        CheckedOpenALCall(alSourcef(audioSourceId, AL_GAIN, volume));
+//        CheckedOpenALCall(alSourcef(audioSourceId, AL_MAX_DISTANCE, maxDistance));
+//        CheckedOpenALCall(alSourcef(audioSourceId, AL_ROLLOFF_FACTOR, rolloff));
+//
+//        if (positional) {
+//            Assert(object->transformComponent);
+//            glm::vec3 relPos = object->Get<TransformComponent>().Position() - microphonePosition;
+//            CheckedOpenALCall(alSourcefv(audioSourceId, AL_POSITION, (float*)&relPos));
+//            if (doppler) {
+//                Assert(object->rigidbodyComponent);
+//                CheckedOpenALCall(alSourcefv(audioSourceId, AL_VELOCITY, (float*)&object->rigidbodyComponent->velocity));
+//            }
+//            
+//        }
+//        
+//        CheckedOpenALCall(alSourcei(audioSourceId, AL_LOOPING, looped));
+//
+//        // sound uses floating origin too
+//        CheckedOpenALCall(alSourcei(audioSourceId, AL_SOURCE_RELATIVE, true));
+//    }
+//    
+//}
 
 void AudioPlayerComponent::SetSound(std::shared_ptr<Sound> newSound) {
     if (sound != nullptr) {

@@ -12,7 +12,7 @@
 #include <vector>
 #include <iostream>
 #include "glm/gtx/string_cast.hpp"
-#include "gameobjects/component_registry.hpp"
+#include "gameobjects/gameobject.hpp"
 #include "debug/log.hpp"
 
 // DEAR GOD. YOU DON'T KNOW. A MONTH AND A HALF WAS SPENT SUFFERING IN THIS FILE. I NEVER WANT TO TOUCH THIS AGAIN.

@@ -17,14 +17,7 @@
 //#include "component_pool.hpp"
 #include "component_group.hpp"
 #include <vector>
-#include "gameobjects/animation_component.hpp"
-#include "render_component.hpp"
-#include "collider_component.hpp"
-#include "transform_component.hpp"
-#include "pointlight_component.hpp"
-#include "rigidbody_component.hpp"
-#include "audio_player_component.hpp"
-#include "spotlight_component.hpp"
+
 #include <optional>
 
 #include "modules/component_registry_export.hpp"
@@ -98,6 +91,11 @@ class RigidbodyComponent;
 
 
 
+//template <std::derived_from<BaseComponent> ... Components>
+//class SystemDependencies {
+//    using components = Components...;
+//};
+
 class ComponentRegistry {
     public:
     template<std::derived_from<BaseComponent> ... Components>
@@ -115,33 +113,18 @@ class ComponentRegistry {
         return matches;
     }
 
-    enum ComponentBitIndex {
-        TransformComponentBitIndex = 0,
-        RenderComponentBitIndex = 1,
-        ColliderComponentBitIndex = 2,
-        RigidbodyComponentBitIndex = 3,
-        PointlightComponentBitIndex = 4,
-        RenderComponentNoFOBitIndex = 5,
-        AudioPlayerComponentBitIndex = 6,
-        AnimationComponentBitIndex = 7,
-        SpotlightComponentBitIndex = 8
-    };
-
-    // How many different component classes there are. (can be greater just not less)
-    static inline const unsigned int N_COMPONENT_TYPES = 9; 
-
     // Returns a new game object with the given components.
     // TODO: return weak_ptr instead?
     template <std::derived_from<BaseComponent> ... Components>
     std::shared_ptr<GameObject> NewGameObject(const GameobjectCreateParams& params) {
-        const Archetype archetype = Archetype::FromComponents<Components>();
+        static const Archetype archetype = Archetype::FromComponents<Components...>();
 
-        if (!componentGroups.contains(archetype.componentTypes)) {
-            componentGroups.emplace(params., new ComponentGroup<Components>();
+        if (componentGroups.count(archetype.GetBitset()) == 0) {
+            componentGroups.emplace(archetype.GetBitset(), new ComponentGroup<Components...>());
         }
-        const ComponentGroupInterface* group = componentGroups[params.requestedComponents];
-
-        return protected_make_shared<GameObject>(params, archetype, group.)
+        ComponentGroupInterface* group = componentGroups[archetype.GetBitset()];
+        auto [components, index, page] = group->New();
+        return protected_make_shared(params, archetype, components, index, page);
     }
 
     static ComponentRegistry& Get();
@@ -192,7 +175,7 @@ class ComponentRegistry {
         template<typename T>
         T* setPgPtr() {
             
-            constexpr unsigned int poolTypeIndex = indexFromClass<T>();
+            constexpr unsigned int poolTypeIndex = ComponentIdFromType<T>();
             ComponentPool<T>* pool = (ComponentPool<T>*)((*currentPoolArray)[poolTypeIndex]);
             return pool->pages[pageIndex];
         }
@@ -330,6 +313,9 @@ class ComponentRegistry {
         }
     };
     */
+    
+    
+
     std::unordered_map<GameObject*, std::shared_ptr<GameObject>> GAMEOBJECTS;
 
     // Stores all the component pools.
@@ -339,41 +325,47 @@ class ComponentRegistry {
     std::unordered_map<std::bitset<N_COMPONENT_TYPES>, ComponentGroupInterface*> componentGroups;
 
     // returns vector of bit indices from variadic template args
-    template <typename ... Args>
-    std::vector<ComponentRegistry::ComponentBitIndex> requestedComponentIndicesFromTemplateArgs() {
-        std::vector<ComponentRegistry::ComponentBitIndex> indices;
+    /*template <typename ... Args>
+    std::vector<ComponentBitIndex::ComponentBitIndex> requestedComponentIndicesFromTemplateArgs() {
+        std::vector<ComponentBitIndex::ComponentBitIndex> indices;
         if constexpr((std::is_same_v<TransformComponent, Args> || ...)) {
-            indices.push_back(ComponentRegistry::TransformComponentBitIndex);
+            indices.push_back(ComponentBitIndex::Transform);
         }
         else if constexpr((std::is_same_v<RenderComponent, Args> || ...)) {
-            indices.push_back(ComponentRegistry::RenderComponentBitIndex);
+            indices.push_back(ComponentBitIndex::Render);
         }
         else if constexpr((std::is_same_v<RenderComponentNoFO, Args> || ...)) {
-            indices.push_back(ComponentRegistry::RenderComponentNoFOBitIndex);
+            indices.push_back(ComponentBitIndex::RenderNoFO);
         }
         else if constexpr((std::is_same_v<ColliderComponent, Args> || ...)) {
-            indices.push_back(ComponentRegistry::ColliderComponentBitIndex);
+            indices.push_back(ComponentBitIndex::Collider);
         }
         else if constexpr((std::is_same_v<RigidbodyComponent, Args> || ...)) {
-            indices.push_back(ComponentRegistry::RigidbodyComponentBitIndex);
+            indices.push_back(ComponentBitIndex::Rigidbody);
         }
         else if constexpr((std::is_same_v<PointLightComponent, Args> || ...)) {
-            indices.push_back(ComponentRegistry::PointlightComponentBitIndex);
+            indices.push_back(ComponentBitIndex::Pointlight);
         }
         else if constexpr((std::is_same_v<AudioPlayerComponent, Args> || ...)) {
-            indices.push_back(ComponentRegistry::AudioPlayerComponentBitIndex);
+            indices.push_back(ComponentBitIndex::AudioPlayer);
         }
         else if constexpr((std::is_same_v<AnimationComponent, Args> || ...)) {
-            indices.push_back(ComponentRegistry::AnimationComponentBitIndex);
+            indices.push_back(ComponentBitIndex::Animation);
         }
         else if constexpr ((std::is_same_v<SpotLightComponent, Args> || ...)) {
-            indices.push_back(ComponentRegistry::SpotlightComponentBitIndex);
+            indices.push_back(ComponentBitIndex::Spotlight);
         }
         else {
             Assert(false);
         }
         return indices;
-    }
+    }*/
+
+    // Calls the given function for every gameobject with all RequiredComponents, also passing OptionalComponents if the object has them (or nullptr if not).
+    /*template <typename RequiredComponents, typename OptionalComponents>
+    void GetSystemComponents(std::function<void(std::tuple<typename RequiredComponents::components& ...>, std::tuple<typename OptionalComponents::components* ...>)> function) {
+
+    }*/
 
     /*
     // Gives an iterator so you can iterate through all gameobjects that have the requested components (except you don't actually get the gameobject, just a tuple of components)
@@ -408,66 +400,10 @@ class ComponentRegistry {
 
     // Won't work if there are shared_ptr<GameObject>s outside the GAMEOBJECTS map (inside lua code), so make sure all lua code is eliminated before calling (supposedly/allegedly?? why???) TODO.
     ~ComponentRegistry();
-
-    template<typename T>
-    static constexpr ComponentRegistry::ComponentBitIndex indexFromClass();
    
 };
 
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<TransformComponent>() {
-    return ComponentRegistry::TransformComponentBitIndex;
-}
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<RenderComponent>() {
-    return ComponentRegistry::RenderComponentBitIndex;
-}
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<RenderComponentNoFO>() {
-    return ComponentRegistry::RenderComponentNoFOBitIndex;
-}
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<ColliderComponent>() {
-    return ComponentRegistry::ColliderComponentBitIndex;
-}
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<RigidbodyComponent>() {
-    return ComponentRegistry::RigidbodyComponentBitIndex;
-}
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<PointLightComponent>() {
-    return ComponentRegistry::PointlightComponentBitIndex;
-}
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<AudioPlayerComponent>() {
-    return ComponentRegistry::AudioPlayerComponentBitIndex;
-}
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<AnimationComponent>() {
-    return ComponentRegistry::AnimationComponentBitIndex;
-}
-template<> constexpr inline ComponentRegistry::ComponentBitIndex ComponentRegistry::indexFromClass<SpotLightComponent>() {
-    return ComponentRegistry::SpotlightComponentBitIndex;
-}
 
-// Specifies stuff about the gameobject to create. The actual components used to create the gameobject are specified as a variadic template parameter to ComponentRegistry::NewGameObject
-struct GameobjectCreateParams {
-    std::optional<std::shared_ptr<class PhysicsMesh>> physMesh;
-    unsigned int meshId; // ignore if not rendering
-    unsigned int materialId; // defaults to 0 for no material. ignore if not rendering
-    unsigned int shaderId; // defaults to 0 for default shader. ignore if not rendering
-    
-    std::optional<std::shared_ptr<Sound>> sound; // for audio player components
-
-    GameobjectCreateParams():
-    physMesh(std::nullopt),
-    meshId(0),
-    materialId(0),
-    shaderId(0),
-    sound(std::nullopt)
-    {
-        // bitset defaults to all false so we good
-        /*for (auto & i : componentList) {
-            requestedComponents[i] = true;
-        }*/
-    }
-
-    private:
-    //friend std::shared_ptr<GameObject> ComponentRegistry::NewGameObject(const GameobjectCreateParams& params);
-    //std::bitset<ComponentRegistry::N_COMPONENT_TYPES> requestedComponents;
-};
 
 // The gameobject system uses ECS (google it).
 class GameObject {
@@ -477,7 +413,9 @@ public:
     
     template <std::derived_from<BaseComponent> Component> 
     Component& Get() {
-        return componentTypes.GetOffset<Component>();
+        short offset = componentTypes.GetOffset<Component>();
+        assert(offset != -1);
+        return *(Component*)((char*)components + offset);
     }
 
     // override Get() for rendercomponent so it handles RenderComponentNoFO
@@ -486,10 +424,16 @@ public:
 
     }
 
-    /*template <std::derived_from<BaseComponent> Component>
+    template <std::derived_from<BaseComponent> Component>
     std::optional<Component*> MaybeGet() {
-
-    }*/
+        short offset = componentTypes.GetOffset<Component>();
+        if (offset == -1) {
+            return std::nullopt;
+        }
+        else {
+            return (Component*)((char*)components + componentTypes.GetOffset<Component>());
+        }
+    }
 
     struct GameObjectNetworkData {
         // Who owns this gameobject (and is sending sync data to other clients which recieve it)
@@ -536,8 +480,12 @@ protected:
 
     // private because ComponentRegistry makes it and also because it needs to return a shared_ptr.
     friend class std::shared_ptr<GameObject>;
-    GameObject(const GameobjectCreateParams& params, const Archetype& cTypes, void* comps); // components is not type safe because component registry weird, index is ComponentBitIndex, value is nullptr or ptr to componeny
+    
+    // groupIndex/Page are for returning the components to their ComponentGroup.
+    GameObject(const GameobjectCreateParams& params, const Archetype& cTypes, void* comps, unsigned int cgroupIndex, unsigned int cgroupPage);
    
 private:
-    void* components;
+    const unsigned int groupIndex;
+    const unsigned int groupPage;
+    void* const components;
 };

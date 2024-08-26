@@ -62,7 +62,7 @@ void RigidbodyComponent::MakeMassInfinite() { // TODO: untested.
 static_assert(std::numeric_limits<double>::is_iec559, "Physics engine expects IEEE floating point compliance.");
 static_assert(std::numeric_limits<float>::is_iec559, "Physics engine expects IEEE floating point compliance.");
 
-float RigidbodyComponent::InverseMomentOfInertiaAroundAxis(const TransformComponent& transform, glm::vec3 axis) {
+float RigidbodyComponent::InverseMomentOfInertiaAroundAxis(const TransformComponent& transform, glm::vec3 axis) const {
     Assert(glm::length2(axis) != 0);
     // DebugLogInfo("Rot is ", glm::to_string(transform.Rotation()), " inverse rot is ", glm::to_string(glm::inverse(transform.Rotation())));
     glm::vec3 axisInLocalSpace = glm::inverse(transform.Rotation()) * axis;

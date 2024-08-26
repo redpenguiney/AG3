@@ -31,7 +31,7 @@ class ColliderComponent: public BaseComponent {
 
     ColliderComponent(const ColliderComponent&) = delete;
     ColliderComponent(GameObject* gameobject, std::shared_ptr<PhysicsMesh>& physMesh);
-    ~ColliderComponent() {}
+    ~ColliderComponent();
 
     // Called before component is returned from pool
     //void Destroy();
@@ -58,6 +58,10 @@ class ColliderComponent: public BaseComponent {
     // Returns all colliders the collider is currently intersecting.
     std::vector<ColliderComponent*> GetColliding() const;
 
+    // pointer to gameobject using this collier. No, no way around this, we have to be able to get gameobjects from a collider stored in the SAS.
+    // The lifetime of this pointer is as long as the lifetime of the component. Use GetGameObject() if you want to make sure the object doesn't get deleted while you're using it.
+    GameObject* const gameobject;
+
     private:
 
     AABB aabb;
@@ -65,8 +69,7 @@ class ColliderComponent: public BaseComponent {
     // pointer to node the component is stored in
     SpatialAccelerationStructure::SasNode* node;
 
-    // pointer to gameobject using this collier. No, no way around this, we have to be able to get gameobjects from a collider stored in the SAS.
-    GameObject* const gameobject;
+    
     
     // private constructor to enforce usage of object pool
     //friend class ComponentPool<ColliderComponent>;

@@ -5,19 +5,19 @@
 #include <tuple>
 #include <vector>
 
-std::vector<ComponentRegistry::ComponentBitIndex> GetComponents(sol::lua_table args) {
-    std::vector<ComponentRegistry::ComponentBitIndex> components;
+std::vector<ComponentBitIndex::ComponentBitIndex> GetComponents(sol::lua_table args) {
+    std::vector<ComponentBitIndex::ComponentBitIndex> components;
     for (const auto & keyValuePair: args) {
         sol::object component = keyValuePair.second;
-        if (!component.is<ComponentRegistry::ComponentBitIndex>()) {
+        if (!component.is<ComponentBitIndex::ComponentBitIndex>()) {
             throw sol::error("LuaGenGameobjectCreateParams takes an array of ComponentBitIndex as an argument. You gave it something else. Please don't.");
         }
-        components.push_back(component.as<ComponentRegistry::ComponentBitIndex>());
+        components.push_back(component.as<ComponentBitIndex::ComponentBitIndex>());
     }
     return components;
 }
 
-LuaGameobjectCreateParams::LuaGameobjectCreateParams(sol::lua_table args): GameobjectCreateParams(GetComponents(args)) {}
+//LuaGameobjectCreateParams::LuaGameobjectCreateParams(sol::lua_table args): GameobjectCreateParams(GetComponents(args)) {}
 
 std::shared_ptr<GameObject> LuaGameobjectConstructor(sol::object args) {
     if (!args.is<LuaGameobjectCreateParams>()) {
@@ -27,7 +27,7 @@ std::shared_ptr<GameObject> LuaGameobjectConstructor(sol::object args) {
     if (!Mesh::IsValidForGameObject(params.meshId)) {
         throw sol::error("Invalid mesh id given. Please use a real mesh that can actually be rendered.");
     }
-    return ComponentRegistry::Get().NewGameObject(params);
+    return GameObject::New(params);
 }
 
 sol::variadic_results LuaMeshConstructor(sol::object arg1, sol::object arg2) {

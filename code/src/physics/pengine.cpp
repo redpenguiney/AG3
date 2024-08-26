@@ -3,7 +3,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include "debug/log.hpp"
 #include "spatial_acceleration_structure.hpp"
-#include "../gameobjects/component_registry.hpp"
+#include "../gameobjects/gameobject.hpp"
 #include "debug/assert.hpp"
 #include <cmath>
 #include <cstdio>
@@ -52,11 +52,11 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
     for (auto & otherColliderPtr: potentialColliding) {
         if (otherColliderPtr == &collider) {continue;} // collider shouldn't collide with itself lol
         
-        auto collisionTestResult = IsColliding(*otherColliderPtr->GetGameObject()->transformComponent.GetPtr(), *otherColliderPtr, transform, collider);
+        auto collisionTestResult = IsColliding(*otherColliderPtr->gameobject->RawGet<TransformComponent>(), *otherColliderPtr, transform, collider);
         if (collisionTestResult) {
 
-            const ComponentHandle<RigidbodyComponent>& otherRigidbody = otherColliderPtr->GetGameObject()->rigidbodyComponent;
-            const ComponentHandle<TransformComponent>& otherTransform = otherColliderPtr->GetGameObject()->transformComponent;
+            const RigidbodyComponent* otherRigidbody = otherColliderPtr->gameobject->RawGet<RigidbodyComponent>();
+            const TransformComponent* otherTransform = otherColliderPtr->gameobject->RawGet<TransformComponent>();
 
             Assert(collisionTestResult->contactPoints.size() > 0);
             // if (otherRigidbody && collisionTestResult->contactPoints.size() > 4) {
@@ -278,47 +278,44 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
 
 void PhysicsEngine::Step(const double timestep) {
 
-    // iterate through all sets of colliderComponent + rigidBodyComponent + transformComponent
-    auto components = ComponentRegistry::Get().GetSystemComponents<TransformComponent, ColliderComponent, RigidbodyComponent>();
-
+    // iterate through all sets of rigidBodyComponent + transformComponent
     // first pass, apply gravity, convert applied force to velocity, apply drag, and move everything by its velocity
-    for (auto & tuple: components) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, RigidbodyComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Rigidbody}); it.Next();) {
+        auto& tuple = *it;
         TransformComponent& transform = *std::get<0>(tuple);
-        ColliderComponent& collider = *std::get<1>(tuple);
-        RigidbodyComponent& rigidbody = *std::get<2>(tuple);
-        if (collider.live) {
-            // transform.SetRot(glm::normalize(transform.Rotation()));
-            rigidbody.velocity += PhysicsEngine::Get().GRAVITY * timestep;
+        RigidbodyComponent& rigidbody = *std::get<1>(tuple);
 
-            // exponentiation is used to make the drag work consistently across all timesteps
-            rigidbody.velocity *= powf(rigidbody.linearDrag, float(timestep));
-            rigidbody.angularVelocity *= powf(rigidbody.angularDrag, float(timestep));
+        // transform.SetRot(glm::normalize(transform.Rotation()));
+        rigidbody.velocity += PhysicsEngine::Get().GRAVITY * timestep;
 
-            // f = ma, so a = f/m
+        // exponentiation is used to make the drag work consistently across all timesteps
+        rigidbody.velocity *= powf(rigidbody.linearDrag, float(timestep));
+        rigidbody.angularVelocity *= powf(rigidbody.angularDrag, float(timestep));
+
+        // f = ma, so a = f/m
             
-            rigidbody.velocity += rigidbody.accumulatedForce * rigidbody.InverseMass();
-            rigidbody.accumulatedForce = {0, 0, 0};
+        rigidbody.velocity += rigidbody.accumulatedForce * rigidbody.InverseMass();
+        rigidbody.accumulatedForce = {0, 0, 0};
 
-            // a = t/i
-            // glm::mat3 globalInverseInertiaTensor = rigidbody.GetInverseGlobalMomentOfInertia(transform); 
-            // rigidbody.angularVelocity += globalInverseInertiaTensor * rigidbody.accumulatedTorque;
-            rigidbody.angularVelocity += glm::vec3(rigidbody.InverseMomentOfInertiaAroundAxis(transform, {1, 0, 0}), rigidbody.InverseMomentOfInertiaAroundAxis(transform, {0, 1, 0}), rigidbody.InverseMomentOfInertiaAroundAxis(transform, {0, 0, 1})) * rigidbody.accumulatedTorque;
-            rigidbody.accumulatedTorque = {0, 0, 0};
+        // a = t/i
+        // glm::mat3 globalInverseInertiaTensor = rigidbody.GetInverseGlobalMomentOfInertia(transform); 
+        // rigidbody.angularVelocity += globalInverseInertiaTensor * rigidbody.accumulatedTorque;
+        rigidbody.angularVelocity += glm::vec3(rigidbody.InverseMomentOfInertiaAroundAxis(transform, {1, 0, 0}), rigidbody.InverseMomentOfInertiaAroundAxis(transform, {0, 1, 0}), rigidbody.InverseMomentOfInertiaAroundAxis(transform, {0, 0, 1})) * rigidbody.accumulatedTorque;
+        rigidbody.accumulatedTorque = {0, 0, 0};
 
-            if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {
-                transform.SetPos(transform.Position() + rigidbody.velocity * timestep);
-            }
+        if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {
+            transform.SetPos(transform.Position() + rigidbody.velocity * timestep);
+        }
            
-            if (glm::length2(rigidbody.angularVelocity) != 0) {
-                // to integrate angular velocity (rotate by angular velocity), you can't just rotate by x, then by y, then by z. 
-                // Order of those 3 rotations would matter, and all of them would be wrong, because in reality all three rotations are happening simultaneously/continuously.
-                glm::quat spin = glm::angleAxis(glm::length(rigidbody.angularVelocity) * float(timestep), glm::normalize(rigidbody.angularVelocity));
+        if (glm::length2(rigidbody.angularVelocity) != 0) {
+            // to integrate angular velocity (rotate by angular velocity), you can't just rotate by x, then by y, then by z. 
+            // Order of those 3 rotations would matter, and all of them would be wrong, because in reality all three rotations are happening simultaneously/continuously.
+            glm::quat spin = glm::angleAxis(glm::length(rigidbody.angularVelocity) * float(timestep), glm::normalize(rigidbody.angularVelocity));
 
-                // glm::quat spin = glm::quat(0, rigidbody.angularVelocity.x, rigidbody.angularVelocity.y, rigidbody.angularVelocity.z) * 0.5f * float(timestep);
-                //std::cout << "velocity " << glm::to_string(rigidbody.localMomentOfInertia) << " so we at " << glm::to_string(QuatAroundX) << " \n";
-                Assert(!std::isnan(spin.x));
-                transform.SetRot((spin * transform.Rotation()));
-            }
+            // glm::quat spin = glm::quat(0, rigidbody.angularVelocity.x, rigidbody.angularVelocity.y, rigidbody.angularVelocity.z) * 0.5f * float(timestep);
+            //std::cout << "velocity " << glm::to_string(rigidbody.localMomentOfInertia) << " so we at " << glm::to_string(QuatAroundX) << " \n";
+            Assert(!std::isnan(spin.x));
+            transform.SetRot((spin * transform.Rotation()));
         }
     }
     
@@ -329,11 +326,12 @@ void PhysicsEngine::Step(const double timestep) {
     // TODO: NOT THREAD SAFE MY BAD DO NOT FORGET TO FIX
     std::vector<std::pair<TransformComponent*, glm::dvec3>> separations; // to separate colliding objects, since we can't change position in this pass, DoPhysics() adds desired translations to this std::vector, and 3rd pass actually sets position 
     
-    for (auto & tuple: components) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, ColliderComponent, RigidbodyComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody }); it.Next();) {
+        auto& tuple = *it;
         TransformComponent& transform = *std::get<0>(tuple);
         ColliderComponent& collider = *std::get<1>(tuple);
         RigidbodyComponent& rigidbody = *std::get<2>(tuple);
-        if (collider.live && !rigidbody.kinematic) {
+        if (!rigidbody.kinematic) {
             DoPhysics(timestep, collider, transform, rigidbody, separations);
         }
     }

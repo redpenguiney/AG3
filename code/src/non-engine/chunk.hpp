@@ -1,6 +1,6 @@
 #pragma once
 #include "graphics/mesh.hpp"
-#include <gameobjects/component_registry.hpp>
+#include <gameobjects/gameobject.hpp>
 #include "utility/hash_glm.hpp"
 
 

@@ -32,7 +32,7 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
         auto obj = comp->GetGameObject();
         Assert(obj != nullptr);
         // std::cout << "Could be colliding with " << obj->name << ".\n";
-        auto modelMatrix = obj->transformComponent->GetPhysicsModelMatrix();
+        auto modelMatrix = obj->Get<TransformComponent>()->GetPhysicsModelMatrix();
 
         for (auto & convexMesh: mesh->meshes) {
             for (auto & triangle: convexMesh.triangles) {
@@ -47,7 +47,8 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
                 
                 
                 // TODO rework physics_mesh.cpp so that triangles have clockwise winding; in the meantime we have to check normals because sometimes they backwards
-                if (glm::dot(normal, trianglePoints[0] - obj->transformComponent->Position()) < 0) {
+                // TODO i thought i already did?
+                if (glm::dot(normal, trianglePoints[0] - obj->Get<TransformComponent>()->Position()) < 0) {
                     normal *= -1;
                 }
 

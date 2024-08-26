@@ -67,7 +67,7 @@
 //}
 
 GameobjectCreateParams MakeCGOParams(int meshId) {
-	GameobjectCreateParams p({ ComponentRegistry::TransformComponentBitIndex, ComponentRegistry::RenderComponentBitIndex, ComponentRegistry::ColliderComponentBitIndex });
+	GameobjectCreateParams p({ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider});
 	p.meshId = meshId;
 	return p;
 }
@@ -80,13 +80,13 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	dirty(true),
 
 	mesh(Mesh::New(RawMeshProvider({}, {}, MeshCreateParams {.expectedCount = 1}), true)),
-	object(ComponentRegistry::Get().NewGameObject(MakeCGOParams(mesh->meshId)))
+	object(GameObject::New(MakeCGOParams(mesh->meshId)))
 {
 	Assert(lodLevel < MAX_LOD_LEVELS);
 
-	object->transformComponent->SetPos(pos);
-	object->transformComponent->SetScl(glm::vec3(Size()));
-	object->renderComponent->SetColor({ 0.5, 0.7, 0.5, 1.0 });
+	object->Get<TransformComponent>()->SetPos(pos);
+	object->Get<TransformComponent>()->SetScl(glm::vec3(Size()));
+	object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
 	Update();
 }
 
@@ -116,7 +116,7 @@ void Chunk::Update()
 		
 		mesh->Remesh(provider);
 
-		//DebugLogInfo("Chunk at ", glm::to_string(object->transformComponent->Position()), " size ", object->transformComponent->Scale(), " verts ", mesh->indices.size(), " lod ", lod);
+		//DebugLogInfo("Chunk at ", glm::to_string(object->Get<TransformComponent>().Position()), " size ", object->Get<TransformComponent>().Scale(), " verts ", mesh->indices.size(), " lod ", lod);
 	}
 }
 
