@@ -6,11 +6,17 @@
 #include "texture.hpp"
 #include <optional>
 
+struct MaterialCreateParams {
+    std::vector<TextureCreateParams> textureParams;
+    Texture::TextureType type;
+    bool depthMask;
+};
+
 // A material is just a collection of textures.
 // On the GPU, each object has a materialId that it uses to get color, normal, etc. textures.
 // On the CPU, meshpools are sorted by their material to minimize texture bindings.
 class Material {
-    public:
+public:
     enum MaterialTextureIndex {
         COLORMAP_TEXTURE_INDEX = 0,
         NORMALMAP_TEXTURE_INDEX = 1,
@@ -57,14 +63,14 @@ class Material {
     const std::optional<Texture>& colorMapConstAccess = colorMap;
     const std::optional<Texture>& fontMapConstAccess = fontMap;
 
-    private:
+private:
     
     // For optimization purposes, when you ask for a new texture, it will try to simply add a new layer to an existing material of the same size if it can.
     // If the given textures are compatible with this material and it successfully adds a new layer for them, it will return the textureZ they were put on.
     // If not, it returns std::nullopt.
-    std::optional<float> TryAppendLayer(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type);
+    std::optional<float> TryAppendLayer(const MaterialCreateParams& params);
 
-    Material(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask);
+    Material(const MaterialCreateParams& params);
 
     std::optional<Texture> colorMap;
     std::optional<Texture> normalMap; 

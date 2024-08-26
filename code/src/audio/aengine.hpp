@@ -19,6 +19,7 @@ class AudioEngine {
 
         void Update();
 
+        // Basically where the camera is, but for audio. Used for stereo/directional sound.
         glm::dvec3 microphonePosition;
 
     private:

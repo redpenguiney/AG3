@@ -50,9 +50,33 @@ AudioEngine::AudioEngine() {
 
 void AudioEngine::Update() {
 
+    
+    for (auto it = GameObject::SystemGetComponents<AudioPlayerComponent, TransformComponent, RigidbodyComponent>({ ComponentBitIndex::AudioPlayer }); it.Next();) {
+        auto& [audioPlayerComponent, transformComponent, rigidBodyComponent] = *it;
 
-    for (auto & [audioPlayerComponent]: ComponentRegistry::Get().GetSystemComponents<AudioPlayerComponent>()) {
-        audioPlayerComponent->Update(microphonePosition);
+        if (audioPlayerComponent->sound != nullptr) {
+            CheckedOpenALCall(alSourcef(audioPlayerComponent->audioSourceId, AL_PITCH, audioPlayerComponent->pitch));
+            CheckedOpenALCall(alSourcef(audioPlayerComponent->audioSourceId, AL_GAIN, audioPlayerComponent->volume));
+            CheckedOpenALCall(alSourcef(audioPlayerComponent->audioSourceId, AL_MAX_DISTANCE, audioPlayerComponent->maxDistance));
+            CheckedOpenALCall(alSourcef(audioPlayerComponent->audioSourceId, AL_ROLLOFF_FACTOR, audioPlayerComponent->rolloff));
+            
+            if (audioPlayerComponent->positional) {
+                Assert(transformComponent != nullptr);
+                glm::vec3 relPos = transformComponent->Position() - microphonePosition;
+                CheckedOpenALCall(alSourcefv(audioPlayerComponent->audioSourceId, AL_POSITION, (float*)&relPos));
+                if (audioPlayerComponent->doppler) {
+                    Assert(rigidBodyComponent != nullptr);
+                    CheckedOpenALCall(alSourcefv(audioPlayerComponent->audioSourceId, AL_VELOCITY, (float*)&rigidbodyComponent->velocity));
+                }
+                        
+            }
+                    
+            CheckedOpenALCall(alSourcei(audioPlayerComponent->audioSourceId, AL_LOOPING, audioPlayerComponent->looped));
+            
+            // sound uses floating origin too
+            CheckedOpenALCall(alSourcei(audioPlayerComponent->audioSourceId, AL_SOURCE_RELATIVE, true));
+        }
+
     }
 }
 

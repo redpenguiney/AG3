@@ -5,8 +5,6 @@
 #include <optional>
 #include <glm/vec3.hpp>
 
-class GameObject;
-
 class AudioPlayerComponent: public BaseComponent {
 public:
     
@@ -17,10 +15,10 @@ public:
     //void Destroy();
 
     AudioPlayerComponent(const AudioPlayerComponent&) = delete;
-    AudioPlayerComponent(GameObject* object, std::optional<std::shared_ptr<Sound>> soundToUse = std::nullopt);
+    AudioPlayerComponent(std::optional<std::shared_ptr<Sound>> soundToUse = std::nullopt);
     ~AudioPlayerComponent();
 
-    GameObject* const object;
+    //GameObject* const object; no longer needed
 
     // Makes the output of the sound depend on its position
     bool positional;

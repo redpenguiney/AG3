@@ -5,10 +5,8 @@
 
 // TODO: can we just call the OAL functions as soon as it starts? might be bad for perf idk prob fine
 
-AudioPlayerComponent::AudioPlayerComponent(GameObject* gameObject, std::optional<std::shared_ptr<Sound>> soundToUse): object(gameObject) {
+AudioPlayerComponent::AudioPlayerComponent(std::optional<std::shared_ptr<Sound>> soundToUse) {
     CheckedOpenALCall(alGenSources(1, &audioSourceId));
-
-    Assert(object != nullptr);
 
     if (soundToUse.has_value()) {
         Assert(soundToUse.value() != nullptr);

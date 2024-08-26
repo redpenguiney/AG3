@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <variant>
 
 // TODO: we need to get textures to actually tile
 // TODO: BINDLESS TEXTURE SUPPORT would be awesome
@@ -139,6 +140,29 @@ class Texture {
 
     // If this texture is a font, then this map exists and will store information (uvs, spacing, etc.) for each character
     std::optional<std::unordered_map<char, Glyph>> fontGlyphs;
+};
+
+struct Image {
+    // array of pixels
+    uint8_t* imageData;
+
+    // length of imageData
+    unsigned int len;
+
+    // format of imageData
+    Texture::TextureFormat format;
+};
+
+class TextureSource {
+public:
+    TextureSource(std::string imagePath);
+    TextureSource(Image image);
+
+    // returns the contained Image if it was provided, or otherwise loads the filepath to generate an Image and returns that.
+    Image GetImage();
+
+private:
+    const std::variant<std::string, Image> imageData;
 };
 
 struct TextureCreateParams {

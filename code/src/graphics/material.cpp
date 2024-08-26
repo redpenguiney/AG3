@@ -24,10 +24,17 @@ std::pair<float, std::shared_ptr<Material>> Material::New(const std::vector<Text
     return std::make_pair(0, ptr);
 }
 
-Material::Material(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask): 
+std::optional<float> Material::TryAppendLayer(const MaterialCreateParams& params)
+{
+    if (params.depthMask != depthMaskEnabled || materialType != params.type) {
+        return std::nullopt;
+    }
+}
+
+Material::Material(const MaterialCreateParams& params):
 id(MeshGlobals::Get().LAST_MATERIAL_ID++),
-materialType(type),
-depthMaskEnabled(depthMask),
+materialType(params.type),
+depthMaskEnabled(params.depthMask),
 colorMap(std::nullopt),
 normalMap(std::nullopt),
 specularMap(std::nullopt),
@@ -36,7 +43,7 @@ fontMap(std::nullopt)
 {
     // Just go through textureParams and create each texture they ask for
     // TODO: lots of sanity checks should be made here on the params for each texture
-    for (auto & textureToMake: textureParams) {
+    for (auto & textureToMake: params.textureParams) {
         switch (textureToMake.usage) {
             case Texture::ColorMap:
             if (colorMap) { // Make sure bro isn't trying to create a material with two different textures for color map

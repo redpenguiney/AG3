@@ -77,7 +77,7 @@ GameObject::GameObject(const GameobjectCreateParams& params, void* components, C
     }
     
     if (params.requestedComponents[ComponentBitIndex::AudioPlayer]) {
-        std::construct_at(RawGet<AudioPlayerComponent>(), this, params.sound);
+        std::construct_at(RawGet<AudioPlayerComponent>(), params.sound);
     }
 
     if (params.requestedComponents[ComponentBitIndex::Animation]) {
