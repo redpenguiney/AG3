@@ -7,9 +7,16 @@
 #include <optional>
 
 struct MaterialCreateParams {
+
+    // textureParams must at minimum contain a TextureCreateParams for color.
     std::vector<TextureCreateParams> textureParams;
+
+
     Texture::TextureType type;
-    bool depthMask;
+
+    // set to true for fonts.
+    //TODO remember what this does
+    bool depthMask = false;
 };
 
 // A material is just a collection of textures.
@@ -49,20 +56,23 @@ public:
     // makes all things not be drawn with any material (until Use() is called on a material)
     static void Unbind();
 
-    // textureParams must at minimum contain a TextureCreateParams for color.
+    
     // If possible, will not to create a new material, but simply add the requested textures to an existing compatible material.
     // Returns a pair of (textureZ, ptr to the created material).
     // Take care that any shaders you use with this material actually use the requested color/normal/specular.
     // TODO: default normal/specular option?
     // Aborts if arguments are inherently invalid, but throws an exception if texture files is nonexistent/incompatible with those arguments.
-    static std::pair<float, std::shared_ptr<Material>> New(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask = true);
+    static std::pair<float, std::shared_ptr<Material>> New(const MaterialCreateParams& params);
 
     //~Material(); implicit destructor fine
     
-    // read only access to materials (TODO other ones if needed)
+    // read only access to materials
     const std::optional<Texture>& colorMapConstAccess = colorMap;
+    const std::optional<Texture>& normalMapConstAccess = normalMap;
+    const std::optional<Texture>& specularMapConstAccess = specularMap;
+    const std::optional<Texture>& displacementMapConstAccess = displacementMap;
     const std::optional<Texture>& fontMapConstAccess = fontMap;
-
+    
 private:
     
     // For optimization purposes, when you ask for a new texture, it will try to simply add a new layer to an existing material of the same size if it can.
@@ -70,6 +80,7 @@ private:
     // If not, it returns std::nullopt.
     std::optional<float> TryAppendLayer(const MaterialCreateParams& params);
 
+    // private constructor to enforce usage of factory method
     Material(const MaterialCreateParams& params);
 
     std::optional<Texture> colorMap;

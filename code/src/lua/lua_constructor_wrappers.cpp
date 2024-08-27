@@ -17,11 +17,11 @@ std::vector<ComponentBitIndex::ComponentBitIndex> GetComponents(sol::lua_table a
     return components;
 }
 
-//LuaGameobjectCreateParams::LuaGameobjectCreateParams(sol::lua_table args): GameobjectCreateParams(GetComponents(args)) {}
+LuaGameobjectCreateParams::LuaGameobjectCreateParams(sol::lua_table args): GameobjectCreateParams(GetComponents(args)) {}
 
 std::shared_ptr<GameObject> LuaGameobjectConstructor(sol::object args) {
     if (!args.is<LuaGameobjectCreateParams>()) {
-        sol::error("Gameobject.new() takes a GameobjectCreateParams as an argument, nothing else.");
+        throw sol::error("Gameobject.new() takes a GameobjectCreateParams as an argument, nothing else.");
     }
     auto params = args.as<LuaGameobjectCreateParams>();
     if (!Mesh::IsValidForGameObject(params.meshId)) {
@@ -71,24 +71,11 @@ TextureCreateParams LuaTextureCreateParamsConstructor(sol::object filepath, sol:
     } 
 }
 
-std::tuple<std::shared_ptr<Material>, float> LuaMaterialConstructor(sol::variadic_args args) {
-    if (args.size() < 2 || !args[0].is<Texture::TextureType>()) {
-        throw sol::error("Material.new() expects at least two arguments, the first of which should be a TextureType enum and all following arguments should be instances of TextureCreateParams.");
+std::tuple<std::shared_ptr<Material>, float> LuaMaterialConstructor(sol::object params) {
+    if (!params.is<MaterialCreateParams>()) {
+        throw sol::error("Material.new() expects a single MaterialCreateParams argument.");
     }
 
-    unsigned int i = 1; // we start iterating from 2nd arg because those are the texture create params
-    std::vector<TextureCreateParams> params;
-    for (auto it = args.begin() + 1; it != args.end(); it++) {
-        auto obj = *it;
-        if (!obj.is<TextureCreateParams>()) {
-            throw sol::error(std::string("Argument at index ") + std::to_string(i) + " to Material.new() is not a TextureCreateParams. Please fix that.");
-        }
-        else {
-            params.push_back(obj);
-        }
-        i++;
-    }
-
-    auto [textureZ, material] = Material::New(params, args[0]);
+    auto [textureZ, material] = Material::New(params.as<MaterialCreateParams>());
     return std::make_tuple(material, textureZ);
 }

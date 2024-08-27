@@ -283,8 +283,8 @@ LuaHandler::LuaHandler() {
     textureCreateParamsUsertype["filteringBehaviour"] = &TextureCreateParams::filteringBehaviour;
     textureCreateParamsUsertype["mipmapBehaviour"] = &TextureCreateParams::mipmapBehaviour;
 
-    auto materialUsertype = LUA_STATE->new_usertype<Material>("Material", sol::factories(LuaMaterialConstructor));
-    materialUsertype["id"] = &Material::id;
+    //auto materialUsertype = LUA_STATE->new_usertype<Material>("Material", sol::factories(LuaMaterialConstructor));
+    //materialUsertype["id"] = &Material::id;
 
     // sound
     auto soundUsertype = LUA_STATE->new_usertype<Sound>("Sound", sol::factories(&Sound::New));

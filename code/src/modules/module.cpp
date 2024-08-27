@@ -6,7 +6,7 @@
 #include "graphics/gengine.hpp"
 #include "physics/pengine.hpp"
 #include "physics/spatial_acceleration_structure.hpp"
-#include "gameobjects/component_registry.hpp"
+#include "gameobjects/gameobject.hpp"
 #include "conglomerates/gui.hpp"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)

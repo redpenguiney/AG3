@@ -40,7 +40,8 @@ GameObject::GameObject(const GameobjectCreateParams& params, void* components, C
     // TODO: can the transform comp restriction ever be lifted?
     Assert(params.requestedComponents[ComponentBitIndex::Transform]);
     if (params.requestedComponents[ComponentBitIndex::Transform]) {
-        std::construct_at(RawGet<TransformComponent>());
+        auto ptr = RawGet<TransformComponent>();
+        std::construct_at(ptr);
     }
     if (params.requestedComponents[ComponentBitIndex::Render] || params.requestedComponents[ComponentBitIndex::RenderNoFO]) {
         Assert(Mesh::Get(params.meshId)); // verify that we were given a valid meshId

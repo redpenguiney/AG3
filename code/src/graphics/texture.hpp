@@ -143,7 +143,7 @@ class Texture {
 };
 
 struct Image {
-    // array of pixels
+    // array of pixels, owned by stbi, needs to be explictly destroyed.
     uint8_t* imageData;
 
     // length of imageData
@@ -153,6 +153,8 @@ struct Image {
     Texture::TextureFormat format;
 };
 
+// Generates (or already contains) an image.
+// Basically MeshProvider but for textures and simpler.
 class TextureSource {
 public:
     TextureSource(std::string imagePath);

@@ -14,7 +14,7 @@ ColliderComponent::ColliderComponent(GameObject* gameobj, std::shared_ptr<Physic
     elasticity = 1;
     friction = 0.2;
     density = 1.0;
-    SpatialAccelerationStructure::Get().AddCollider(this, *gameobject->Get<TransformComponent>());
+    SpatialAccelerationStructure::Get().AddCollider(this, *gameobject->RawGet<TransformComponent>());
 
 }
 

@@ -106,4 +106,5 @@ sol::variadic_results LuaMeshConstructor(sol::object arg1, sol::object arg2); //
 
 // filepath can be a string or an array of filepaths.
 TextureCreateParams LuaTextureCreateParamsConstructor(sol::object filepath, sol::object textureUsage);
-std::tuple<std::shared_ptr<Material>, float> LuaMaterialConstructor(sol::variadic_args args);
+
+std::tuple<std::shared_ptr<Material>, float> LuaMaterialConstructor(sol::object params);

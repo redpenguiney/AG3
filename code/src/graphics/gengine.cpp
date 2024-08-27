@@ -107,7 +107,7 @@ screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, Mesh
     defaultShaderProgram->Uniform("envLightAmbient", 0.05f);
     defaultShaderProgram->Uniform("envLightSpecular", 0.0f);
 
-    auto pair = Material::New({TextureCreateParams({"../textures/error_texture.bmp"}, Texture::TextureUsage::ColorMap)}, Texture::TextureType::Texture2D);
+    auto pair = Material::New({ .textureParams = {TextureCreateParams({"../textures/error_texture.bmp"}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D });
     errorMaterial = pair.second;
     errorMaterialTextureZ = pair.first;
 

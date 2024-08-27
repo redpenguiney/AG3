@@ -39,7 +39,7 @@ AudioEngine::AudioEngine() {
         attributes.push_back(/*ALC_HRTF_DISABLED_SOFT*/ 0x0000);   
     }
     else {
-        std::cout << "WARNING: ALC_SOFT_HRTF was not found! Audio quality may be severely effected!\n";
+        DebugLogError("WARNING: ALC_SOFT_HRTF was not found! Audio quality may be severely effected!");
     }
 
     attributes.push_back(0);    
@@ -52,7 +52,7 @@ void AudioEngine::Update() {
 
     
     for (auto it = GameObject::SystemGetComponents<AudioPlayerComponent, TransformComponent, RigidbodyComponent>({ ComponentBitIndex::AudioPlayer }); it.Next();) {
-        auto& [audioPlayerComponent, transformComponent, rigidBodyComponent] = *it;
+        auto& [audioPlayerComponent, transformComponent, rigidbodyComponent] = *it;
 
         if (audioPlayerComponent->sound != nullptr) {
             CheckedOpenALCall(alSourcef(audioPlayerComponent->audioSourceId, AL_PITCH, audioPlayerComponent->pitch));
@@ -65,7 +65,7 @@ void AudioEngine::Update() {
                 glm::vec3 relPos = transformComponent->Position() - microphonePosition;
                 CheckedOpenALCall(alSourcefv(audioPlayerComponent->audioSourceId, AL_POSITION, (float*)&relPos));
                 if (audioPlayerComponent->doppler) {
-                    Assert(rigidBodyComponent != nullptr);
+                    Assert(rigidbodyComponent != nullptr);
                     CheckedOpenALCall(alSourcefv(audioPlayerComponent->audioSourceId, AL_VELOCITY, (float*)&rigidbodyComponent->velocity));
                 }
                         

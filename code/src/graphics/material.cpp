@@ -18,8 +18,8 @@ std::shared_ptr<Material>& Material::Get(unsigned int materialId) {
 }
 
 // TODO: needs to try to append to existing material
-std::pair<float, std::shared_ptr<Material>> Material::New(const std::vector<TextureCreateParams>& textureParams, Texture::TextureType type, const bool depthMask) {
-    auto ptr = std::shared_ptr<Material>(new Material(textureParams, type, depthMask));
+std::pair<float, std::shared_ptr<Material>> Material::New(const MaterialCreateParams& params) {
+    auto ptr = std::shared_ptr<Material>(new Material(params));
     MeshGlobals::Get().MATERIALS[ptr->id] = ptr;
     return std::make_pair(0, ptr);
 }
@@ -50,35 +50,35 @@ fontMap(std::nullopt)
                 std::cout << "PROBLEM: you tried to give us two different color textures for this material. Thats bad.\n";
                 abort();
             }
-            colorMap.emplace(textureToMake, COLORMAP_TEXTURE_INDEX, type); // constructs the texture inside the optional without copying
+            colorMap.emplace(textureToMake, COLORMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
             break;
             case Texture::NormalMap:
             if (normalMap) { // Make sure bro isn't trying to create a material with two different textures for normal map
                 std::cout << "PROBLEM: you tried to give us two different normal textures for this material. Thats bad.\n";
                 abort();
             }
-            normalMap.emplace(textureToMake, NORMALMAP_TEXTURE_INDEX, type); // constructs the texture inside the optional without copying
+            normalMap.emplace(textureToMake, NORMALMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
             break;
             case Texture::SpecularMap:
             if (specularMap) { // Make sure bro isn't trying to create a material with two different textures for specular map
                 std::cout << "PROBLEM: you tried to give us two different specular textures for this material. Thats bad.\n";
                 abort();
             }
-            specularMap.emplace(textureToMake, SPECULARMAP_TEXTURE_INDEX, type); // constructs the texture inside the optional without copying
+            specularMap.emplace(textureToMake, SPECULARMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
             break;
             case Texture::DisplacementMap:
             if (displacementMap) { // Make sure bro isn't trying to create a material with two different textures for displacement map
                 std::cout << "PROBLEM: you tried to give us two different displacement textures for this material. Thats bad.\n";
                 abort();
             }
-            displacementMap.emplace(textureToMake, DISPLACEMENTMAP_TEXTURE_INDEX, type); // constructs the texture inside the optional without copying
+            displacementMap.emplace(textureToMake, DISPLACEMENTMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
             break;
             case Texture::FontMap:
             if (fontMap) { // only one fontmap per material
                 std::cout << "PROBLEM: you tried to give us two different font textures for this material. Thats bad.\n";
                 abort();
             }
-            fontMap.emplace(textureToMake, FONTMAP_TEXTURE_INDEX, type);
+            fontMap.emplace(textureToMake, FONTMAP_TEXTURE_INDEX, params.type);
             break;
             default:
             std::cout << "material constructor: what are you doing???\n";

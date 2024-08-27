@@ -116,6 +116,7 @@ std::tuple<void*, int, int> ComponentPool::GetObject() {
 	}
 
 	unsigned int index = ((char*)foundComponents - (char*)pages[pageI]) / objectSize;
+	Assert(foundComponents != nullptr);
 	return std::make_tuple(foundComponents, index, pageI);
 }
 
@@ -131,15 +132,16 @@ void ComponentPool::ReturnObject(int pageIndex, int objectIndex) {
 void ComponentPool::AddPage() {
 
 	unsigned int index = pages.size();
-	uint8_t* newPage = new uint8_t(COMPONENTS_PER_PAGE * objectSize);
+	uint8_t* newPage = new uint8_t[COMPONENTS_PER_PAGE * objectSize];
 
 	firstFree.push_back(newPage);
 	pages.push_back(newPage);
 
 	// for free list, we have to, for each location a set of components would be written, write a pointer to the next such location
 	for (unsigned int i = 0; i < COMPONENTS_PER_PAGE - 1; i++) {
-		*((uint8_t**)newPage + (objectSize * i)) = ((uint8_t*)newPage + (objectSize * (i + 1)));
+
+		*((uint8_t**)(newPage + (objectSize * i))) = ((uint8_t*)newPage + (objectSize * (i + 1)));
 	}
 	// last location just has LAST_COMPONENT/end of free list
-	*((uint8_t**)newPage + (objectSize * (COMPONENTS_PER_PAGE - 1))) = LAST_COMPONENT;
+	*((uint8_t**)(newPage + (objectSize * (COMPONENTS_PER_PAGE - 1)))) = LAST_COMPONENT;
 }

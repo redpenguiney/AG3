@@ -263,7 +263,7 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
             ProcessTextures(texParams, aiTextureType_NORMALS, Texture::TextureUsage::NormalMap, material, scene);
             
             try {
-            auto pair = Material::New(texParams, Texture::TextureType::Texture2D);
+                auto pair = Material::New(MaterialCreateParams{.textureParams = texParams, .type = Texture::TextureType::Texture2D });
             matPtr = pair.second;
             textureZ = pair.first;
             }

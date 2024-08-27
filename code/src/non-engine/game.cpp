@@ -35,7 +35,7 @@ void MakeMainMenu() {
     auto ttfParams = TextureCreateParams({ "../fonts/arial.ttf", }, Texture::FontMap);
     ttfParams.fontHeight = 24;
     ttfParams.format = Texture::Grayscale_8Bit;
-    auto [arialLayer, arialFont] = Material::New({ ttfParams }, Texture::Texture2D, true);
+    auto [arialLayer, arialFont] = Material::New(MaterialCreateParams{ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = true });
 
     //// don't take by reference bc vector reallocation invalidates references/reference to temporary
     auto startGame = mainMenuGuis.emplace_back(std::move(std::make_shared<Gui>(true, std::optional(std::make_pair(arialLayer, arialFont )))));
@@ -92,7 +92,7 @@ void GameInit()
     auto ttfParams = TextureCreateParams({ "../fonts/arial.ttf", }, Texture::FontMap);
     ttfParams.fontHeight = 16;
     ttfParams.format = Texture::Grayscale_8Bit;
-    auto [arialLayer, arialFont] = Material::New({ ttfParams }, Texture::Texture2D, true);
+    auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = true });
 
     //auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
 
@@ -147,7 +147,7 @@ void GameInit()
 
     GE.defaultShaderProgram->Uniform("envLightDiffuse", 0.0f);
 
-    auto [grassTextureZ, grassMaterial] = Material::New({ TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap} }, Texture::Texture2D);
+    //auto [grassTextureZ, grassMaterial] = Material::New(MaterialCreateParams{ .textureParams = { TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap} }, .type = Texture::Texture2D });
 
     GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Spotlight});
     params.meshId = m->meshId;
@@ -275,9 +275,9 @@ void GameInit()
         });
 
     {
-        auto [index, sky_m_ptr] = Material::New({ TextureCreateParams {skyboxFaces, Texture::ColorMap} }, Texture::TextureCubemap);
+        /*auto [index, sky_m_ptr] = Material::New(MaterialCreateParams{ .textureParams = { TextureCreateParams {skyboxFaces, Texture::ColorMap} }, .type = Texture::TextureCubemap });
         GE.skyboxMaterial = sky_m_ptr;
-        GE.skyboxMaterialLayer = index;
+        GE.skyboxMaterialLayer = index;*/
     }
     GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 

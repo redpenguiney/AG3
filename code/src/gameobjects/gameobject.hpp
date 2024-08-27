@@ -47,7 +47,7 @@ public:
 	
 	// If ptr != nullptr/it hasn't already been cleared, returns it to the pool (thus destructing the component), and sets ptr to nullptr.
 	// Gameobjects do this for all their components when Destroy() is called on them.
-	void Clear();
+	//void Clear();
 	
 private:
 	const std::shared_ptr<GameObject> object;
@@ -86,7 +86,7 @@ private:
 // Ditch for performance?
 // The gameobject system uses ECS (google it).
 // If you don't know what a gameobject is, no offense but maybe you shouldn't be reading this..
-class GameObject: std::enable_shared_from_this<GameObject> {
+class GameObject: public std::enable_shared_from_this<GameObject> {
 public:
 	// name is not used anywhere except for debugging and by the user; set as you please
 	std::string name;
@@ -103,6 +103,8 @@ public:
 
 	// Returns the given component (or an empty handle if it doesn't exist). The component handle will evalulate to true if the component exists.
 	// The ComponentHandle contains a shared_ptr to the gameobject, so the gameobject will not be destroyed and the component will always remain valid for the entirety of the handle's lifetime.
+	// WARNING!!! WARNING!!! You cannot call Get() inside component constructors. 
+		// (Maybe)RawGet is fine, but because this will attempt to get a shared_ptr using shared_from_this before GameObject::New() makes a shared_ptr, std::bad_weak_ptr will be thrown.
 	template <std::derived_from<BaseComponent> Component>
 	ComponentHandle<Component> Get() {
 		return ComponentHandle<Component>(MaybeRawGet<Component>(), shared_from_this());
@@ -135,7 +137,8 @@ public:
 			return nullptr;
 		}
 
-		return (Component*)(pool->pages.at(page)[objectIndex * pool->objectSize + offset]);
+		uint8_t* pagePtr = pool->pages[page];
+		return (Component*)(pagePtr + (objectIndex * pool->objectSize + offset));
 	}
 
 	// DOES NOT neccesarily destroy the gameobject. 
@@ -165,7 +168,9 @@ private:
 			pageIndex(0),
 			objectIndex(0)
 		{
-			WriteCurrentTuple();
+			if (pools.size() > 0) { // if we have nothing to iterate through we can't write the tuple
+				WriteCurrentTuple();
+			}
 		}
 
 		template <typename T> 
@@ -177,10 +182,15 @@ private:
 
 		// call in for loop to check when the iterator has nothing left to offer and simultaneously increment the iterator.
 		bool Next() {
+			if (pools.size() == 0) { // TODO: is compiler smart enough to optimize this out after the first check?
+				return false;
+			}
+
 			objectIndex++;
 			if (objectIndex == ComponentPool::COMPONENTS_PER_PAGE) {
 				objectIndex = 0;
 				pageIndex++;
+
 				if (pageIndex == pools[poolIndex]->pages.size()) {
 					pageIndex = 0;
 					poolIndex++;
