@@ -43,6 +43,10 @@ void AtExit() {
     DebugLogInfo("Program ran successfully. Exiting.");
 }
 
+void RecordSingletonClosing() {
+    DebugLogInfo("Singletons destroyed.");
+}
+
 // just prints about unhandled exceptions because visual studio won't.
 void TerminateHandler() {
     DebugLogError("Fatal error: Unhandled exception.");
@@ -71,6 +75,8 @@ int main(int numArgs, const char *argPtrs[]) {
     auto & PE = PhysicsEngine::Get();
     auto & AE = AudioEngine::Get();
     auto & LUA = LuaHandler::Get();
+
+    atexit(RecordSingletonClosing);
 
     // ComponentRegistry needs to be intitialized after all the other singletons so that component destructors are called before the singleton destructors are called.
     //auto & CR = ComponentRegistry::Get();

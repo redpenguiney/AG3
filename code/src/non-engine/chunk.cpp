@@ -93,9 +93,11 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 Chunk::~Chunk()
 {
 	if (mesh) {
+		object->Destroy();
+		object = nullptr;
+
 		Mesh::Unload(mesh->meshId);
 		mesh = nullptr;
-		object = nullptr;
 	}
 	
 }

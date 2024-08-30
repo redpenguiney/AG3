@@ -4,7 +4,7 @@
 
 int dbg_stream_for_cout::sync()
 {
-    OutputDebugString(str().c_str());
+    OutputDebugStringA(str().c_str());
     
     str(std::string()); // Clear the string buffer
     return 0;
@@ -17,5 +17,5 @@ dbg_stream_for_cout::~dbg_stream_for_cout() {
 #endif
 
 void TestPrint() {
-    OutputDebugString("OH NO");
+    OutputDebugStringA("OH NO");
 }

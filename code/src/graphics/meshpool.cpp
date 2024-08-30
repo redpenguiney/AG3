@@ -280,6 +280,8 @@ void Meshpool::SetModelMatrix(const unsigned int slot, const unsigned int instan
     Assert((char*)modelMatrixLocation <= instancedVertexBuffer.Data() + (instancedVertexSize * instanceCapacity)); 
     Assert((char*)modelMatrixLocation >= instancedVertexBuffer.Data());
     *modelMatrixLocation = matrix;
+
+    //DebugLogInfo("writing to slot ", slot);
 }
 
 void Meshpool::SetNormalMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat3x3& normal) {

@@ -8,7 +8,7 @@ void SpatialAccelerationStructure::Update() {
     //auto start = Time();
     // Get components of all gameobjects that have a transform and collider component
 
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, ColliderComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Collider }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, ColliderComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Collider });  it.Valid(); it++) {
         auto & tuple = *it;
         auto& colliderComp = *std::get<1>(tuple);
         auto& transformComp = *std::get<0>(tuple);

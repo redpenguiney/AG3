@@ -21,7 +21,7 @@ std::shared_ptr<GameObject> GameObject::New(const GameobjectCreateParams& params
     }
 
     std::unique_ptr<ComponentPool>& pool = COMPONENT_POOLS.at(params.requestedComponents);
-    auto& [components, page, objectIndex] = pool->GetObject();
+    auto [components, page, objectIndex] = pool->GetObject();
 
     // we NEVER delete pools except when program ends (before which all gameobjects are destroyed) so this is fine
     auto ptr = protected_make_shared(params, components, pool.get(), page, objectIndex);

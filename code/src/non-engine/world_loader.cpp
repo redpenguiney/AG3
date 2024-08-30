@@ -18,7 +18,7 @@ struct OctreeNode {
 
 	
 	
-	float Size() {
+	float Size() const {
 		return MAX_CHUNK_SIZE * powf(2, -lod);
 	}
 

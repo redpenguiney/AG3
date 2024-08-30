@@ -5,7 +5,7 @@
 #include "attribute.hpp"
 #include "injury.hpp"
 
-class BodyPart;
+struct BodyPart;
 
 // body parts need a special attribute type that accounts for condition/health/etc.
 class BodyAttribute: public Attribute {

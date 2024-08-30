@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{e0588bfe-718e-448c-af53-2615647914d8}</ProjectGuid>
+    <RootNamespace>AG3</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>SOL_ALL_SAFETIES_ON;GLM_ENABLE_EXPERIMENTAL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\external_headers;C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <StackReserveSize>4194304 </StackReserveSize>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>SOL_ALL_SAFETIES_ON;GLM_ENABLE_EXPERIMENTAL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\external_headers;C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <StackReserveSize>4194304 </StackReserveSize>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>SOL_ALL_SAFETIES_ON;GLM_ENABLE_EXPERIMENTAL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\external_headers;C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <StackReserveSize>4194304 </StackReserveSize>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>SOL_ALL_SAFETIES_ON;GLM_ENABLE_EXPERIMENTAL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\external_headers;C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <StackReserveSize>4194304 </StackReserveSize>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\code\src\audio\aengine.cpp" />
+    <ClCompile Include="..\code\src\audio\checked_openal_call.cpp" />
+    <ClCompile Include="..\code\src\audio\sound.cpp" />
+    <ClCompile Include="..\code\src\conglomerates\gui.cpp" />
+    <ClCompile Include="..\code\src\conglomerates\tilemap.cpp" />
+    <ClCompile Include="..\code\src\debug\log.cpp" />
+    <ClCompile Include="..\code\src\events\base_event.cpp" />
+    <ClCompile Include="..\code\src\events\event.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\animation_component.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\audio_player_component.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\base_component.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\collider_component.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\component_pool.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\gameobject.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\lifetime.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\old_component_registry.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\pointlight_component.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\render_component.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\rigidbody_component.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\spotlight_component.cpp" />
+    <ClCompile Include="..\code\src\gameobjects\transform_component.cpp" />
+    <ClCompile Include="..\code\src\graphics\animation.cpp" />
+    <ClCompile Include="..\code\src\graphics\base_shader_program.cpp" />
+    <ClCompile Include="..\code\src\graphics\buffered_buffer.cpp" />
+    <ClCompile Include="..\code\src\graphics\camera.cpp" />
+    <ClCompile Include="..\code\src\graphics\compute_shader_program.cpp" />
+    <ClCompile Include="..\code\src\graphics\framebuffer.cpp" />
+    <ClCompile Include="..\code\src\graphics\gengine.cpp" />
+    <ClCompile Include="..\code\src\graphics\gl_error_handler.cpp" />
+    <ClCompile Include="..\code\src\graphics\indirect_draw_command.cpp" />
+    <ClCompile Include="..\code\src\graphics\material.cpp" />
+    <ClCompile Include="..\code\src\graphics\mesh.cpp" />
+    <ClCompile Include="..\code\src\graphics\meshpool.cpp" />
+    <ClCompile Include="..\code\src\graphics\mesh_multifromfile.cpp" />
+    <ClCompile Include="..\code\src\graphics\mesh_provider.cpp" />
+    <ClCompile Include="..\code\src\graphics\mesh_voxels.cpp" />
+    <ClCompile Include="..\code\src\graphics\renderable_mesh.cpp" />
+    <ClCompile Include="..\code\src\graphics\shader_program.cpp" />
+    <ClCompile Include="..\code\src\graphics\stb_image.cpp" />
+    <ClCompile Include="..\code\src\graphics\texture.cpp" />
+    <ClCompile Include="..\code\src\graphics\texture_atlas.cpp" />
+    <ClCompile Include="..\code\src\graphics\text_mesh.cpp" />
+    <ClCompile Include="..\code\src\graphics\tinyobjloader.cpp" />
+    <ClCompile Include="..\code\src\graphics\window.cpp" />
+    <ClCompile Include="..\code\src\lua\lua_component_wrappers.cpp" />
+    <ClCompile Include="..\code\src\lua\lua_constructor_wrappers.cpp" />
+    <ClCompile Include="..\code\src\lua\lua_handler.cpp" />
+    <ClCompile Include="..\code\src\lua\lua_usertype_initialization.cpp" />
+    <ClCompile Include="..\code\src\main.cpp" />
+    <ClCompile Include="..\code\src\modules\component_registry_export.cpp" />
+    <ClCompile Include="..\code\src\modules\graphics_engine_export.cpp" />
+    <ClCompile Include="..\code\src\modules\module.cpp" />
+    <ClCompile Include="..\code\src\network\client.cpp" />
+    <ClCompile Include="..\code\src\network\network.cpp" />
+    <ClCompile Include="..\code\src\network\protocol.cpp" />
+    <ClCompile Include="..\code\src\non-engine\attribute.cpp" />
+    <ClCompile Include="..\code\src\non-engine\chunk.cpp" />
+    <ClCompile Include="..\code\src\non-engine\creature.cpp" />
+    <ClCompile Include="..\code\src\non-engine\game.cpp" />
+    <ClCompile Include="..\code\src\non-engine\health.cpp" />
+    <ClCompile Include="..\code\src\non-engine\humanoid.cpp" />
+    <ClCompile Include="..\code\src\non-engine\modifier.cpp" />
+    <ClCompile Include="..\code\src\non-engine\worldgen.cpp" />
+    <ClCompile Include="..\code\src\non-engine\world_loader.cpp" />
+    <ClCompile Include="..\code\src\physics\gjk.cpp" />
+    <ClCompile Include="..\code\src\physics\mesh_simplification.cpp" />
+    <ClCompile Include="..\code\src\physics\pengine.cpp" />
+    <ClCompile Include="..\code\src\physics\physics_mesh.cpp" />
+    <ClCompile Include="..\code\src\physics\raycast.cpp" />
+    <ClCompile Include="..\code\src\physics\spatial_acceleration_structure.cpp" />
+    <ClCompile Include="..\code\src\utility\let_me_hash_a_tuple.cpp" />
+    <ClCompile Include="..\code\src\utility\utility.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\code\src\asset_loader\base_asset_loader.hpp" />
+    <ClInclude Include="..\code\src\audio\aengine.hpp" />
+    <ClInclude Include="..\code\src\audio\sound.hpp" />
+    <ClInclude Include="..\code\src\conglomerates\gui.hpp" />
+    <ClInclude Include="..\code\src\conglomerates\tilemap.hpp" />
+    <ClInclude Include="..\code\src\debug\assert.hpp" />
+    <ClInclude Include="..\code\src\debug\debug.hpp" />
+    <ClInclude Include="..\code\src\debug\log.hpp" />
+    <ClInclude Include="..\code\src\events\base_event.hpp" />
+    <ClInclude Include="..\code\src\events\event.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\animation_component.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\audio_player_component.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\base_component.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\collider_component.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\component_group.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\component_id.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\component_pool.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\gameobject.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\lifetime.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\old_component_pool.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\old_component_registry.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\pointlight_component.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\render_component.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\rigidbody_component.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\spotlight_component.hpp" />
+    <ClInclude Include="..\code\src\gameobjects\transform_component.hpp" />
+    <ClInclude Include="..\code\src\graphics\animation.hpp" />
+    <ClInclude Include="..\code\src\graphics\base_shader_program.hpp" />
+    <ClInclude Include="..\code\src\graphics\buffered_buffer.hpp" />
+    <ClInclude Include="..\code\src\graphics\camera.hpp" />
+    <ClInclude Include="..\code\src\graphics\compute_shader_program.hpp" />
+    <ClInclude Include="..\code\src\graphics\framebuffer.hpp" />
+    <ClInclude Include="..\code\src\graphics\gengine.hpp" />
+    <ClInclude Include="..\code\src\graphics\material.hpp" />
+    <ClInclude Include="..\code\src\graphics\mesh.hpp" />
+    <ClInclude Include="..\code\src\graphics\meshpool.hpp" />
+    <ClInclude Include="..\code\src\graphics\mesh_provider.hpp" />
+    <ClInclude Include="..\code\src\graphics\renderable_mesh.hpp" />
+    <ClInclude Include="..\code\src\graphics\shader_program.hpp" />
+    <ClInclude Include="..\code\src\graphics\texture.hpp" />
+    <ClInclude Include="..\code\src\graphics\texture_atlas.hpp" />
+    <ClInclude Include="..\code\src\graphics\window.hpp" />
+    <ClInclude Include="..\code\src\lua\lua_component_wrappers.hpp" />
+    <ClInclude Include="..\code\src\lua\lua_constructor_wrappers.hpp" />
+    <ClInclude Include="..\code\src\lua\lua_handler.hpp" />
+    <ClInclude Include="..\code\src\modules\component_registry_export.hpp" />
+    <ClInclude Include="..\code\src\modules\dll_memory_allocator.hpp" />
+    <ClInclude Include="..\code\src\modules\graphics_engine_export.hpp" />
+    <ClInclude Include="..\code\src\modules\module.hpp" />
+    <ClInclude Include="..\code\src\modules\module_globals_pointers.hpp" />
+    <ClInclude Include="..\code\src\modules\shared_global.hpp" />
+    <ClInclude Include="..\code\src\network\client.hpp" />
+    <ClInclude Include="..\code\src\network\network.hpp" />
+    <ClInclude Include="..\code\src\network\protocol.hpp" />
+    <ClInclude Include="..\code\src\non-engine\attribute.hpp" />
+    <ClInclude Include="..\code\src\non-engine\chunk.hpp" />
+    <ClInclude Include="..\code\src\non-engine\creature.hpp" />
+    <ClInclude Include="..\code\src\non-engine\game.hpp" />
+    <ClInclude Include="..\code\src\non-engine\health.hpp" />
+    <ClInclude Include="..\code\src\non-engine\humanoid.hpp" />
+    <ClInclude Include="..\code\src\non-engine\injury.hpp" />
+    <ClInclude Include="..\code\src\non-engine\modifier.hpp" />
+    <ClInclude Include="..\code\src\non-engine\player.hpp" />
+    <ClInclude Include="..\code\src\non-engine\worldgen.hpp" />
+    <ClInclude Include="..\code\src\physics\aabb.hpp" />
+    <ClInclude Include="..\code\src\physics\gjk.hpp" />
+    <ClInclude Include="..\code\src\physics\pengine.hpp" />
+    <ClInclude Include="..\code\src\physics\physics_mesh.hpp" />
+    <ClInclude Include="..\code\src\physics\raycast.hpp" />
+    <ClInclude Include="..\code\src\physics\spatial_acceleration_structure.hpp" />
+    <ClInclude Include="..\code\src\saving\loader.hpp" />
+    <ClInclude Include="..\code\src\utility\hash_glm.hpp" />
+    <ClInclude Include="..\code\src\utility\let_me_hash_a_tuple.hpp" />
+    <ClInclude Include="..\code\src\utility\triangle_intersection.hpp" />
+    <ClInclude Include="..\code\src\utility\utility.hpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

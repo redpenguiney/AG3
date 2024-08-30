@@ -100,6 +100,8 @@ class Mesh {
     // Mesh must be dynamic.
     std::pair<std::vector<GLfloat>&, std::vector<GLuint>&> StartModifying();
     
+    ~Mesh();
+
     // Updates all objects using this mesh after you changed the mesh via StartModifying().
     // Must only be called after a call to StartModifying().
     void StopModifying(bool normalizeSize);

@@ -280,7 +280,7 @@ void PhysicsEngine::Step(const double timestep) {
 
     // iterate through all sets of rigidBodyComponent + transformComponent
     // first pass, apply gravity, convert applied force to velocity, apply drag, and move everything by its velocity
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, RigidbodyComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Rigidbody}); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, RigidbodyComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Rigidbody}); it.Valid(); it++) {
         auto& tuple = *it;
         TransformComponent& transform = *std::get<0>(tuple);
         RigidbodyComponent& rigidbody = *std::get<1>(tuple);
@@ -326,7 +326,7 @@ void PhysicsEngine::Step(const double timestep) {
     // TODO: NOT THREAD SAFE MY BAD DO NOT FORGET TO FIX
     std::vector<std::pair<TransformComponent*, glm::dvec3>> separations; // to separate colliding objects, since we can't change position in this pass, DoPhysics() adds desired translations to this std::vector, and 3rd pass actually sets position 
     
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, ColliderComponent, RigidbodyComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, ColliderComponent, RigidbodyComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody });  it.Valid(); it++) {
         auto& tuple = *it;
         TransformComponent& transform = *std::get<0>(tuple);
         ColliderComponent& collider = *std::get<1>(tuple);

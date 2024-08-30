@@ -51,7 +51,7 @@ AudioEngine::AudioEngine() {
 void AudioEngine::Update() {
 
     
-    for (auto it = GameObject::SystemGetComponents<AudioPlayerComponent, TransformComponent, RigidbodyComponent>({ ComponentBitIndex::AudioPlayer }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<AudioPlayerComponent, TransformComponent, RigidbodyComponent>({ ComponentBitIndex::AudioPlayer });  it.Valid(); it++) {
         auto& [audioPlayerComponent, transformComponent, rigidbodyComponent] = *it;
 
         if (audioPlayerComponent->sound != nullptr) {

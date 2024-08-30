@@ -399,7 +399,7 @@ void GraphicsEngine::UpdateLights() {
     unsigned int i = 0;
 
     // Get components of all gameobjects that have a transform and point light component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, PointLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Pointlight }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, PointLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Pointlight });  it.Valid(); it++) {
         auto& tuple = *it;
         TransformComponent& transform = *std::get<0>(tuple);
         PointLightComponent& pointLight = *std::get<1>(tuple);
@@ -428,7 +428,7 @@ void GraphicsEngine::UpdateLights() {
     i = 0;
 
     // Get components of all gameobjects that have a transform and point light component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, SpotLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Spotlight }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, SpotLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Spotlight });  it.Valid(); it++) {
         auto& tuple = *it;
         TransformComponent& transform = *std::get<0>(tuple);
         SpotLightComponent& spotLight = *std::get<1>(tuple);
@@ -519,7 +519,7 @@ void GraphicsEngine::DrawWorld(bool postProc)
 
     // Draw world stuff.
     for (auto& [shaderId, map1] : meshpools) {
-        auto& shader = ShaderProgram::Get(shaderId);
+        auto shader = ShaderProgram::Get(shaderId);
         if (shader->ignorePostProc == postProc) {
             continue;
         }
@@ -673,20 +673,20 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     }  
     
     // Get components of all gameobjects that have a transform and render component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Render}); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Render});  it.Valid(); it++) {
     //std::for_each(std::execution::par, components.begin(), components.end(), [this, &cameraPos](std::tuple<RenderComponent*, TransformComponent*>& tuple) {
         auto& tuple = *it;
         auto & transformComp = *std::get<0>(tuple);
         auto & renderComp = *std::get<1>(tuple);
 
-            // std::cout << "Component at " << &renderComp << " is live \n";
+        DebugLogInfo("Component at ", &renderComp, " is live");
             // if (renderComp.componentPoolId != i) {
             //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
             //     abort();
             // }
             // TODO: we only need to call SetNormalMatrix() when the object is rotated
             
-            // tell shaders where the object is, rot/scl
+        // tell shaders where the object is, rot/scl
         SetNormalMatrix(renderComp, transformComp.GetNormalMatrix()); 
         SetModelMatrix(renderComp, transformComp.GetGraphicsModelMatrix(cameraPos));
 
@@ -694,11 +694,12 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     };
 
     // Get components of all gameobjects that have a transform and no floating origin render component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponentNoFO>({ ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponentNoFO>({ ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO });  it.Valid(); it++) {
         auto& tuple = *it;
         auto& transformComp = *std::get<0>(tuple);
         auto& renderCompNoFO = *std::get<1>(tuple);
-            
+        
+        DebugLogInfo("Component (NO FO) at ", &renderCompNoFO, " is live");
             //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
             // if (renderComp.componentPoolId != i) {
             //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
@@ -731,7 +732,7 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     //});
 
     // animations
-    for (auto it = GameObject::SystemGetComponents<AnimationComponent>({ ComponentBitIndex::Animation }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<AnimationComponent>({ ComponentBitIndex::Animation });  it.Valid(); it++) {
 
         auto& tuple = *it;
         auto& animComp = std::get<0>(tuple);

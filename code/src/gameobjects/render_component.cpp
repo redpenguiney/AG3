@@ -29,6 +29,7 @@ RenderComponent::RenderComponent(unsigned int mesh_id, unsigned int material_id,
 RenderComponent::~RenderComponent() {
     //Assert(live == true);
 
+    // tell them we're not a dynamic mesh user anymore since we dying
     if (Mesh::Get(meshId)->dynamic) {
         unsigned int i = 0;
         for (auto & component : GraphicsEngine::Get().dynamicMeshUsers.at(meshId)) {
