@@ -1,8 +1,35 @@
 ﻿  Microsoft (R) C/C++ Optimizing Compiler Version 19.41.34120 for x64
   Copyright (C) Microsoft Corporation.  All rights reserved.
-  cl /c /I"C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\external_headers" /I"C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src" /I"C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\vcpkg_installed\x64-windows\x64-windows\include" /ZI /JMC /W3 /WX- /diagnostics:column /sdl /MP /Od /D SOL_ALL_SAFETIES_ON /D GLM_ENABLE_EXPERIMENTAL /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++20 /permissive- /Fo"AG3\x64\Debug\\" /Fd"AG3\x64\Debug\vc143.pdb" /external:W3 /Gd /TP /FC /errorReport:prompt /bigobj "..\code\src\non-engine\game.cpp"
-  game.cpp
-  GLM_GTX_hash requires C++11 standard library support
+  cl /c /I"C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\external_headers" /I"C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src" /I"C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\vcpkg_installed\x64-windows\x64-windows\include" /ZI /JMC /W3 /WX- /diagnostics:column /sdl /MP /Od /D SOL_ALL_SAFETIES_ON /D GLM_ENABLE_EXPERIMENTAL /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm- /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++20 /permissive- /Fo"AG3\x64\Debug\\" /Fd"AG3\x64\Debug\vc143.pdb" /external:W3 /Gd /TP /FC /errorReport:prompt /bigobj ..\code\src\graphics\gengine.cpp
+  gengine.cpp
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(92,27): warning C4244: '=': conversion from '_This' to 'unsigned int', possible loss of data
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(92,27): warning C4244:         with
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(92,27): warning C4244:         [
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(92,27): warning C4244:             _This=float
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(92,27): warning C4244:         ]
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(206,36): warning C4305: 'initializing': truncation from 'double' to '_Ty'
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(206,36): warning C4305:         with
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(206,36): warning C4305:         [
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(206,36): warning C4305:             _Ty=float
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(206,36): warning C4305:         ]
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(208,40): warning C4305: 'initializing': truncation from 'double' to '_Ty'
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(208,40): warning C4305:         with
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(208,40): warning C4305:         [
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(208,40): warning C4305:             _Ty=float
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(208,40): warning C4305:         ]
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(210,45): warning C4305: 'initializing': truncation from 'double' to '_Ty'
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(210,45): warning C4305:         with
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(210,45): warning C4305:         [
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(210,45): warning C4305:             _Ty=float
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(210,45): warning C4305:         ]
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(786,77): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(857,72): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(857,51): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(858,70): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(858,50): warning C4267: 'initializing': conversion from 'size_t' to 'const unsigned int', possible loss of data
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(875,44): warning C4244: '=': conversion from 'unsigned __int64' to 'int', possible loss of data
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(877,35): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src\graphics\gengine.cpp(882,127): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
   AG3.vcxproj -> C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\AG3\x64\Debug\AG3.exe
   'pwsh.exe' is not recognized as an internal or external command,
   operable program or batch file.
