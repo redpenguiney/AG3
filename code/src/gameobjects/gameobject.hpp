@@ -249,7 +249,7 @@ private:
 		}
 
 		value_type& operator*() {
-			//DebugLogInfo("Deref, return ", std::get<0>(currentTuple));
+			//DebugLogInfo("Deref, return ", objectIndex);
 			return currentTuple;
 		}
 

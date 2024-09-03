@@ -71,14 +71,16 @@ int main(int numArgs, const char *argPtrs[]) {
 
     
     // We need to make sure that all the singletons components need for their destructors to work are destructed after all gameobjects are destructed, which they need to be constructed first.
-    auto & GE = GraphicsEngine::Get();
-    auto & PE = PhysicsEngine::Get();
-    auto & AE = AudioEngine::Get();
-    auto & LUA = LuaHandler::Get();
+    auto& GE = GraphicsEngine::Get();
+    auto& PE = PhysicsEngine::Get();
+    auto& AE = AudioEngine::Get();
+    auto& SAS = SpatialAccelerationStructure::Get();
+    auto& LUA = LuaHandler::Get();
 
     atexit(RecordSingletonClosing);
 
-    // ComponentRegistry needs to be intitialized after all the other singletons so that component destructors are called before the singleton destructors are called.
+    // GAMEOBJECTS needs to be intitialized after all the other singletons so that component destructors are called before the singleton destructors are called.
+    GameObject::GAMEOBJECTS();
     //auto & CR = ComponentRegistry::Get();
 
     atexit(Module::CloseAll); // this is placed here, after the component registry is initialized, because that guarantees that modules' references to gameobjects are destroyed before the gameobjects are (because static destructors/at exits are called in reverse order)
@@ -86,7 +88,7 @@ int main(int numArgs, const char *argPtrs[]) {
     // conglomerate init
     Gui::Init();
 
-    DebugLogInfo("Calling gameInit().");
+    DebugLogInfo("Calling GameInit().");
     GameInit();
 
     DebugLogInfo("Starting main loop.");

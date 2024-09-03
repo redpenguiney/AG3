@@ -67,7 +67,9 @@ void MakeMainMenu() {
         if (input.input == InputObject::LMB) {
             inMainMenu = false;
             mainMenuGuis.clear();
-            //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
+            //DebugLogInfo("STARTING GAME");
+            Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
+            
         }
     });
 
@@ -119,7 +121,7 @@ void GameInit()
         debugText->UpdateGuiText();
 
         if (!inMainMenu) {
-            Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
+            //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
         }
     });
 
@@ -275,32 +277,32 @@ void GameInit()
         });
 
     {
-        /*auto [index, sky_m_ptr] = Material::New(MaterialCreateParams{ .textureParams = { TextureCreateParams {skyboxFaces, Texture::ColorMap} }, .type = Texture::TextureCubemap });
+        auto [index, sky_m_ptr] = Material::New(MaterialCreateParams{ .textureParams = { TextureCreateParams {skyboxFaces, Texture::ColorMap} }, .type = Texture::TextureCubemap });
         GE.skyboxMaterial = sky_m_ptr;
-        GE.skyboxMaterialLayer = index;*/
+        GE.skyboxMaterialLayer = index;
     }
     GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 
 
     int nObjs = 0;
-    for (int x = 0; x < 100; x++) {
+    for (int x = 0; x < 1; x++) {
         for (int y = 0; y < 3; y++) {
-            for (int z = 0; z < 10; z++) {
-                //GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentRegistry::ColliderComponentBitIndex });
-                //params.meshId = m->meshId;
-                ////params.materialId = brickMaterial->id;
-                //auto g = CR.NewGameObject(params);
-                //g->Get<TransformComponent>().SetPos({ 0 + x * 3, 2 + y * 2, 0 + z * 3 });
-                //g->colliderComponent->elasticity = 0.3;
-                //g->colliderComponent->friction = 2.0;
-                //// g->rigidbodyComponent->angularDrag = 1.0;
-                //// g->rigidbodyComponent->linearDrag = 1.0;
-                //// g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
-                //// g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
-                //g->Get<TransformComponent>().SetScl(glm::dvec3(1.0, 1.0, 1.0));
-                //g->renderComponent->SetColor(glm::vec4(1, 1, 1, 1));
-                ////g->renderComponent->SetTextureZ(brickTextureZ);
-                //g->name = std::string("Gameobject #") + std::to_string(nObjs);
+            for (int z = 0; z < 2; z++) {
+                GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
+                params.meshId = m->meshId;
+                //params.materialId = brickMaterial->id;
+                auto g = GameObject::New(params);
+                g->Get<TransformComponent>()->SetPos({ 0 + x * 3, 2 + y * 2, 0 + z * 3 });
+                g->Get<ColliderComponent>()->elasticity = 0.3;
+                g->Get<ColliderComponent>()->friction = 2.0;
+                // g->rigidbodyComponent->angularDrag = 1.0;
+                // g->rigidbodyComponent->linearDrag = 1.0;
+                // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
+                // g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
+                g->Get<TransformComponent>()->SetScl(glm::dvec3(1.0, 1.0, 1.0));
+                g->Get<RenderComponent>()->SetColor(glm::vec4(1, 1, 1, 1));
+                //g->renderComponent->SetTextureZ(brickTextureZ);
+                g->name = std::string("Gameobject #") + std::to_string(nObjs);
                 ////goWeakPtr = g;
                 //nObjs++;
 
@@ -461,6 +463,33 @@ void GameInit()
     ///*GE.window.InputDown.Connect([](InputObject input) {
     //    DebugLogInfo("Input = ", input.input);
     //});*/
+
+    GE.window.InputDown.Connect([m](InputObject input) {
+        if (input.input == InputObject::LMB) {
+            auto castResult = Raycast(GraphicsEngine::Get().GetDebugFreecamCamera().position, LookVector(glm::radians(GraphicsEngine::Get().debugFreecamPitch), glm::radians(GraphicsEngine::Get().debugFreecamYaw)));
+
+            if (castResult.hitObject != nullptr) {
+
+                GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
+                params.meshId = m->meshId;
+                //params.materialId = brickMaterial->id;
+                auto g = GameObject::New(params);
+                g->Get<TransformComponent>()->SetPos(castResult.hitPoint + castResult.hitNormal * 0.5);
+
+                //if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
+
+                    //castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
+                    //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
+                //}    
+            }
+
+            //        if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
+
+            //            castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
+            //            //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
+            //        }
+        }
+    });
 
     //PE.prePhysicsEvent.Connect([&GE](float dt) {
     //    if (GE.window.LMB_DOWN) {

@@ -4,8 +4,6 @@ RenderComponent::RenderComponent(unsigned int mesh_id, unsigned int material_id,
     //Assert(live);
     Assert(mesh_id != 0);
 
-    
-
     // color = glm::vec4(1, 1, 1, 1);
     // textureZ = -1.0;
     meshId = mesh_id;
@@ -58,6 +56,7 @@ RenderComponent::~RenderComponent() {
         vec.erase(vec.begin() + index); // todo: pop erase
     }
     else { // otherwise just remove object from graphics engine
+        DebugLogInfo("Please remove thyself.")
         GraphicsEngine::Get().meshpools[shaderId][textureId][meshpoolId]->RemoveObject(meshpoolSlot, meshpoolInstance);
     }
 }
@@ -90,5 +89,5 @@ void RenderComponent::SetInstancedVertexAttribute(const unsigned int attributeNa
 RenderComponentNoFO::RenderComponentNoFO(unsigned int meshId, unsigned int materialId, unsigned int shaderId): 
     RenderComponent(meshId, materialId, shaderId) 
 {
-
+    DebugLogInfo("Made render NOFO");
 }

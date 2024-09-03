@@ -26,7 +26,7 @@ std::shared_ptr<GameObject> GameObject::New(const GameobjectCreateParams& params
     // we NEVER delete pools except when program ends (before which all gameobjects are destroyed) so this is fine
     auto ptr = protected_make_shared(params, components, pool.get(), page, objectIndex);
 
-
+    GAMEOBJECTS()[ptr.get()] = ptr;
 
     return ptr;
 }
@@ -43,6 +43,8 @@ GameObject::GameObject(const GameobjectCreateParams& params, void* components, C
         auto ptr = RawGet<TransformComponent>();
         std::construct_at(ptr);
     }
+    // can't have both kinds of rendercomponent
+    Assert((params.requestedComponents[ComponentBitIndex::Render] && params.requestedComponents[ComponentBitIndex::RenderNoFO]) == false);
     if (params.requestedComponents[ComponentBitIndex::Render] || params.requestedComponents[ComponentBitIndex::RenderNoFO]) {
         Assert(Mesh::Get(params.meshId)); // verify that we were given a valid meshId
         std::construct_at(RawGet<RenderComponent>(), params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId : GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
@@ -82,7 +84,7 @@ GameObject::GameObject(const GameobjectCreateParams& params, void* components, C
     }
 
     if (params.requestedComponents[ComponentBitIndex::Animation]) {
-        Assert(params.requestedComponents[ComponentBitIndex::Render] || params.requestedComponents[ComponentBitIndex::RenderNoFO]);
+        Assert(params.requestedComponents[ComponentBitIndex::Render]); // TODO: RenderNoFO???? How????
         std::construct_at(RawGet<AnimationComponent>(), RawGet<RenderComponent>());
     }
     if (params.requestedComponents[ComponentBitIndex::Spotlight]) {
@@ -115,10 +117,13 @@ GameObject::~GameObject() {
     if (MaybeRawGet<AudioPlayerComponent>()) {
         std::destroy_at(RawGet<AudioPlayerComponent>());
     }
+
+    pool->ReturnObject(page, objectIndex);
 }
 
 void GameObject::Destroy() {
     // TODO
+    Assert(GAMEOBJECTS().count(this));
     GAMEOBJECTS().erase(this);
 }
 

@@ -8,6 +8,7 @@
 // Because they work asyncronously, this means you need to use double/triple buffering (triple to account for drivers).
 // This does double/triple memory footprint, which is why there is a constant to control whether it does single/double/triple buffering.
 // Sorry for the bad name.
+// TODO: for indirect drawing on platforms that don't support them, we can just make it call glBufferData when Commit() is called.
 class BufferedBuffer {
     public:
     const GLenum bufferBindingLocation;

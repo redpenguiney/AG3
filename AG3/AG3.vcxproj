@@ -187,10 +187,11 @@
     <ClCompile Include="..\code\src\graphics\framebuffer.cpp" />
     <ClCompile Include="..\code\src\graphics\gengine.cpp" />
     <ClCompile Include="..\code\src\graphics\gl_error_handler.cpp" />
-    <ClCompile Include="..\code\src\graphics\indirect_draw_command.cpp" />
+    <ClInclude Include="..\code\src\graphics\indirect_draw_command.hpp" />
     <ClCompile Include="..\code\src\graphics\material.cpp" />
     <ClCompile Include="..\code\src\graphics\mesh.cpp" />
     <ClCompile Include="..\code\src\graphics\meshpool.cpp" />
+    <ClCompile Include="..\code\src\graphics\old_meshpool.cpp" />
     <ClCompile Include="..\code\src\graphics\mesh_multifromfile.cpp" />
     <ClCompile Include="..\code\src\graphics\mesh_provider.cpp" />
     <ClCompile Include="..\code\src\graphics\mesh_voxels.cpp" />
@@ -268,6 +269,7 @@
     <ClInclude Include="..\code\src\graphics\material.hpp" />
     <ClInclude Include="..\code\src\graphics\mesh.hpp" />
     <ClInclude Include="..\code\src\graphics\meshpool.hpp" />
+    <ClInclude Include="..\code\src\graphics\old_meshpool.hpp" />
     <ClInclude Include="..\code\src\graphics\mesh_provider.hpp" />
     <ClInclude Include="..\code\src\graphics\renderable_mesh.hpp" />
     <ClInclude Include="..\code\src\graphics\shader_program.hpp" />

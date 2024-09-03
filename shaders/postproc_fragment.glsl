@@ -42,7 +42,7 @@ void main()
     FragColor = vec4(mapped, 1.0);
     // FragColor = vec4(texture(screenTexture, vec2(TexCoords.x, 1-TexCoords.y)).xxx, 1.0);
     //FragColor = vec4(TexCoords, 0.5, 1.0);
-    // FragColor = vec4(1, 1, 1, 1);
+    // FragColor = vec4(0, 1, 1, 1);
     //float depthValue = texture(screenTexture, TexCoords).r;
     // FragColor = vec4(vec3(depthValue), 1.0);
 }

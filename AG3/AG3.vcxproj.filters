@@ -150,7 +150,7 @@
     <ClCompile Include="..\code\src\graphics\renderable_mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\code\src\graphics\meshpool.cpp">
+    <ClCompile Include="..\code\src\graphics\old_meshpool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\code\src\graphics\mesh_voxels.cpp">
@@ -163,9 +163,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\code\src\graphics\mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\code\src\graphics\indirect_draw_command.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\code\src\graphics\material.cpp">
@@ -229,6 +226,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\code\src\gameobjects\base_component.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\code\src\graphics\meshpool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -374,7 +374,7 @@
     <ClInclude Include="..\code\src\graphics\renderable_mesh.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\code\src\graphics\meshpool.hpp">
+    <ClInclude Include="..\code\src\graphics\old_meshpool.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\code\src\graphics\mesh_provider.hpp">
@@ -456,6 +456,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\code\src\events\event.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\code\src\graphics\meshpool.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\code\src\graphics\indirect_draw_command.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

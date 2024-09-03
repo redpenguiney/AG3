@@ -1,146 +1,167 @@
 #pragma once
-#include <deque>
-#include <tuple>
+
+#include <optional>
+#include <array>
 #include <vector>
-#include <unordered_map>
-#include <unordered_set>
 #include <memory>
+
 #include "buffered_buffer.hpp"
-#include "mesh.hpp"
-#include "indirect_draw_command.cpp"
+#include "mesh_provider.hpp"
+#include "indirect_draw_command.hpp"
+
+#include <glm/mat4x4.hpp>
+#include <glm/mat3x3.hpp>
 
 const unsigned int INSTANCED_VERTEX_BUFFERING_FACTOR = 3;
+const unsigned int MESH_BUFFERING_FACTOR = 1; /// TODO; meshpool supports >1 but GE doesn't
 
-// TODO: INDBO shouldn't be persistent, and arguably neither should the vertices/indices.
-// TODO: MASSIVE MEMORY OPTIMIZATION WHEN SAME OBJECT IS USED WITH MULTIPLE DIFFERENT SHADERS/MATERIALS: just one meshpool per object size, different indbos for different materials/shaders
+class Mesh;
 
-// Contains an arbitrary number of arbitary meshes and is used to render them very quickly.
+// Contains an arbitrary number of arbitary meshes (of the same MeshVertexFormat) and is used to render them very quickly.
 class Meshpool {
-    public:
+public:
 
-    // constructor takes mesh format reference to set variables, doesn't actually add the given mesh or anything
-    // numVertices is number of actual vertices, not size of vertices vector in the mesh
-    Meshpool(const MeshVertexFormat& meshVertexFormat, unsigned int numVertices);
+    
+
+    // Each object that gets rendered needs a DrawHandle to describe where its data is stored in its meshpool.
+    struct DrawHandle {
+        // An index, in terms of vertexSize, to where the mesh vertices are stored in the vertices buffer, and in terms of indexSize to where the mesh indices are stored in the index buffer. 
+        // So if meshIndex was 3000, the first byte of the mesh would be at vertices.Data() + (3000 * vertexSize)
+        unsigned int meshIndex;
+
+        // An index (in terms of instanceSize) to where the object's instance data is stored in the instances buffer.
+        unsigned int instanceSlot;
+    };
+
+    
+
+    // Only meshes with this format can be stored in this meshpool.
+    const MeshVertexFormat format;
+
+    Meshpool(const MeshVertexFormat& meshVertexFormat);
 
     Meshpool(const Meshpool&) = delete; // try to copy construct and i will end you
 
-    // Adds count identical meshes to pool, and returns a vector of pairs of (slot, instanceOffset) used to access the object.
-    std::vector<std::pair<unsigned int, unsigned int>> AddObject(const unsigned int meshId, unsigned int count);
+    ~Meshpool();
+
+    // Adds count identical objects to the pool with the given mesh, and returns a DrawHandle for each object.
+    std::vector<DrawHandle> AddObject(const std::shared_ptr<Mesh>& mesh, unsigned int count);
 
     // Frees the given object from the meshpool, so something else can use that space.
-    void RemoveObject(const unsigned int slot, const unsigned int instanceId); 
+    void RemoveObject(const DrawHandle& handle);
 
     // Makes the given instance use the given normal matrix.
     // Will abort if mesh uses per-vertex normal matrix instead of per-instance normal matrix. (though who would do that???)
-    void SetNormalMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat3x3& normal);
+    void SetNormalMatrix(const DrawHandle& handle, const glm::mat3x3& normal);
 
     // Makes the given instance use the given model matrix.
     // Will abort if mesh uses per-vertex model matrix instead of per-instance model matrix. (though who would do that???)
-    void SetModelMatrix(const unsigned int slot, const unsigned int instanceId, const glm::mat4x4& model);
+    void SetModelMatrix(const DrawHandle& handle, const glm::mat4x4& model);
 
     // Sets the bone transforms. Do not call if the meshpool vertex format does not support animation.
-    void SetBoneState(const unsigned int slot, const unsigned int instanceId, unsigned int nBones, glm::mat4x4* offsets);
-
-    // // Makes the given instance the given textureZ. Internally just makes the equivalent call to SetInstancedVertexAttribute().
-    // // Will abort if mesh uses per-vertex textureZ instead of per-instance textureZ.
-    // void SetTextureZ(const unsigned int slot, const unsigned int instanceId, const float textureZ);
-
-    // // Makes the given instance the given color. Internally just makes the equivalent call to SetInstancedVertexAttribute().
-    // // Will abort if mesh uses per-vertex color instead of per-instance color.
-    // void SetColor(const unsigned int slot, const unsigned int instanceId, const glm::vec4& rgba);
+    void SetBoneState(const DrawHandle& handle, unsigned int nBones, glm::mat4x4* offsets);
 
     // Set the given instanced vertex attribute of the given instance to the given value.
     // Will abort if nFloats does not match the mesh's vertex format or if the vertex attribute is not instanced.
     template<unsigned int nFloats>
-    void SetInstancedVertexAttribute(const unsigned int slot, const unsigned int instanceId, const unsigned int attributeName, const glm::vec<nFloats, float>& value);
+    void SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeName, const glm::vec<nFloats, float>& value);
 
-    //std::tuple<GLfloat*, const unsigned int> ModifyVertices(const unsigned int meshId);
+    // idk what to put here, you probably know what this does
     void Draw();
 
     // needed for BufferedBuffer's double/triple buffering, call every frame AFTER writing vertex/instance data and BEFORE calling Draw().
     void Commit();
+
     // needed for BufferedBuffer's double/triple buffering, call every frame BEFORE writing vertex/instance data and AFTER calling Draw(). 
     // Might yield if GPU isn't ready for us to write the data, so call at the last possible second.
     void FlipBuffers();
 
-    // We want meshes to fit snugly in the slots of their meshpool.
-    // Returns -1 if mesh is too big/incompatible format w/ meshpool, otherwise lower number = better fit for meshpool.
-    // The engine will put meshes in the best fitting pool.
-    int ScoreMeshFit(const unsigned int verticesNBytes, const unsigned int indicesNBytes, const MeshVertexFormat& meshVertexFormat);
 
-    private:
-    friend class Mesh; // for dynamic mesh support, idc about modularity
-
-    const unsigned int instancedVertexSize; // Each gameobject has one instance containing its data (at minimum a model matrix)
-    const unsigned int nonInstancedVertexSize; // the size of a single vertex in bytes. (not to be confused with meshVertexSize, the maximum combined size of a mesh's vertices allowed by the pool)
-    const unsigned int meshVerticesSize; // The vertex data of meshes inside the pool can be smaller but no bigger than this ( in bytes) (if they're way smaller they should still go in a new mesh pool)
-    const unsigned int meshIndicesSize; // same as meshVertexSize but for the indices of a mesh, again in bytes
-    const MeshVertexFormat vertexFormat; // only meshes that store their vertices in the same way can go in the same meshpool, so we store it here to check
-
-    const unsigned int baseMeshCapacity; // everytime the mesh pool expands its non-instanced vertex buffer, it will add room for this many meshes (or a multiple of this number if more than baseMeshCapacity meshes were added at once)
-    const unsigned int baseInstanceCapacity; // same as baseMeshCapacity but for the instanced vertex buffer
-    unsigned int meshCapacity; // how many different meshes the pool can store
-    unsigned int instanceCapacity; // how many instances the pool can store (every gameobject being rendered needs exactly one instance with position and what not, but they can share meshes)
-
-    unsigned int drawCount;
-
-    GLuint vao; // tells opengl how vertices are formatted
-
-    // TODO: all these unordered maps are probably overkill, vectors would probably be faster.
-
-    BufferedBuffer vertexBuffer; // holds per-vertex data (like normals)
-    BufferedBuffer instancedVertexBuffer; // holds per-instance/per-object data (like model matrix)
-    BufferedBuffer indexBuffer; // holds mesh indices
-    BufferedBuffer indirectDrawBuffer; // stores rendering commands, used for an optimization called indirect drawing
-    // Bones and instances have 1-1 correspondence. The nth instance has the nth boneOffset and entry in the bonebuffer
-    std::optional<BufferedBuffer> boneBuffer; // if the shader/mesh combo supports animations, this will store the bone transform matrices (and the count)
-    std::optional<BufferedBuffer> boneOffsetBuffer; // if the shader/mesh combo supports animations, stores offsets into the bone buffer for each object
-
-
-    std::unordered_map<unsigned int, std::deque<unsigned int>> availableMeshSlots; // key is mesh instanceCapacity (or 0 if slot does not yet have instanceCapacity forced into it), value is deque of available slots
-    //std::deque<unsigned int> availableInstancedSlots;
-    std::unordered_map<unsigned int, std::vector<unsigned int>> slotContents; // key is meshId, value is a vector of indices/slots in the vertexBuffer containing this mesh (0 for first mesh, 1 for second, etc.)
-                                                                              // needed for instancing
-
-    std::unordered_map<unsigned int, unsigned int> slotInstanceReservedCounts; // key is slot, value is number of instances reserved by that slot 
-
-    std::unordered_map<unsigned int, std::unordered_set<unsigned int>> slotInstanceSpaces; // key is slot, value is set of instances that aren't actually being drawn as their model matrix is set to all 0s (TODO: WAIT WHAT WHY DO WE DO IT LIKE THAT) 
-    // neccesary for Meshpool::RemoveObject(); unordered_set instead of vector because RemoveObject needs to quickly determine if certain instances are in here
-    
-    std::unordered_map<unsigned int, unsigned int> slotToInstanceLocations; // corresponds slots in vertexBuffer with the instance slot of the first object using that meshId
-    
-    
-    std::vector<IndirectDrawCommand> drawCommands;
-  
-    // for indirect drawing; TODO: INDBO should just be written to directly instead of writing to drawCommands and then doing memcpy. We don't do that right now because in the future we might want to support systems that don't support indirect drawing.
-    // key is slot
-    std::unordered_map<unsigned int, IndirectDrawCommandUpdate> pendingDrawCommandUpdates;
-
-    
-
-    // inline static const unsigned int BONE_BUFFER_EXPANSION_SIZE = pow(2, 10) * sizeof(glm::mat4x4); 
-    // inline static const unsigned int BONE_OFFSET_BUFFER_EXPANSION_SIZE = pow(2, 10) * sizeof(GLuint);
-    // (0 & 1 are used by lights)
+private:
     inline static const unsigned int BONE_BUFFER_BINDING = 2;
     inline static const unsigned int BONE_OFFSET_BUFFER_BINDING = 3;
 
+    struct MeshUpdate {
+        unsigned int updatesLeft;
+        std::shared_ptr<Mesh> mesh;
+        unsigned int meshIndex;
+    };
+
+    struct CommandLocation {
+        unsigned int drawCommandIndex;
+
+        // Here, command.baseInstance and command.baseVertex presume no multiple buffering. Meshpool::Commit() corrects that.
+        IndirectDrawCommand command;
+    };
+
+    // the size of a single instance for a single object in bytes. Equal to the InstancedSize() of the vertex format.
+    const unsigned int instanceSize; 
+
+    // the size of a single vertex for a single mesh in bytes. Equal to the NonInstancedSize() of the vertex format.
+    const unsigned int vertexSize;
+
+    constexpr static unsigned int indexSize = sizeof(GLuint);
+
+    unsigned int currentVertexCapacity;
+    unsigned int currentInstanceCapacity;
+    unsigned int currentDrawCommandCapacity;
+
+    // number of commands in drawCommands
+    unsigned int drawCount;
+
+    // if you want to allocate memory for a mesh more than vertexSize * 2^(n-1) bytes but less than vertexSize * 2^n bytes, the nth vector in this array has room for that.
+    // When a mesh is removed from the pool, an index to its memory goes here.
+    // The unsigned ints in each vector are vertex indices (same unit as DrawHandle.meshIndex)
+    std::array<std::vector<unsigned int>, 32> availableMeshSlots;
+
+    // if availableMeshSlots is empty, this is the mesh index of the first available part of the vertices buffer
+    unsigned int meshIndexEnd;
     
-    // expands non-instanced buffers to accomodate baseMeshCapacity more unique meshes.
-    // also makes the vao
-    void ExpandNonInstanced();
 
-    // VAO MUST BE GENERATED BEFORE THIS FUNCTION IS CALLED.
-    // expands instance buffer to accomodate multiplier * baseInstanceCapacity more instances, or creates the instance buffer if needed.
-    // this one needs a multiplier argument because if we add like 20000 instances and the baseInstanceCapacity is 5000, there wouldn't be enough room and it would segfault
-    // also expands animation/bone buffers.
-    void ExpandInstanced(GLuint multiplier);
-    // void ExpandAnimationBuffers(GLuint multiplier);
+    std::vector<unsigned int> availableInstanceSlots;
+    unsigned int instanceEnd;
 
-    // if modifying == true, then the slot already contains this mesh and it's just resetting the vertex data within (solely for modifying dynamic meshes).
-    // (instanceCount argument is meaningless when modifying == true.)
-    // if modifying == false, it's adding a whole new mesh to a slot that was previously either empty or holding a different mesh before. TODO: possibly won't work idk
-    // Fills the given slot with the given mesh's vertices and indices.
-    void FillSlot(const unsigned int meshId, const unsigned int slot, const unsigned int instanceCount, bool modifiying);
+    // unlike the other two available<x>slots, this one does hold every slot that isn't taken and if this is empty, then you have to expand.
+    // Sorted from greatest to least.
+    std::vector<unsigned int> availableDrawCommandSlots;
 
-    void UpdateIndirectDrawBuffer(const unsigned int slot);
+    std::vector<IndirectDrawCommandUpdate> commandUpdates;
+    std::vector<MeshUpdate> meshUpdates;
+
+    // key is instance slot
+    std::vector<CommandLocation> instanceSlotsToCommands;
+
+    // the VAO basically tells openGL how our vertices are structured
+    unsigned int vaoId;
+
+	// stores vertices for all the pool's meshes.
+	BufferedBuffer vertices;
+
+	// stores instances for each object being drawn.
+	BufferedBuffer instances;
+
+	// stores indices for all the pool's indices
+	BufferedBuffer indices;
+
+	// stores indirect draw commands.
+	BufferedBuffer drawCommands;
+
+	// if the shader/mesh combo supports animations, stores the bone transform matrices (and the number of them)
+	std::optional<BufferedBuffer> boneBuffer; 
+
+	// if the shader/mesh combo supports animations, stores offsets into the bone buffer for each object
+	std::optional<BufferedBuffer> boneOffsetBuffer; 
+
+    // Expands vertices and indices so that they can contain at minimum meshIndexEnd. 
+    // Works by doubling the current capacity until it fits.
+        // TODO: is that really the strat?
+    void ExpandVertexCapacity();
+
+    // Doubles currentDrawCommandCapacity.
+    void ExpandDrawCountCapacity();
+
+    // Expands instances so that they can contain at minimum instanceEnd. 
+    // Works by doubling the current capacity until it fits.
+        // TODO: is that really the strat?
+    void ExpandInstanceCapacity();
 };
