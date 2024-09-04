@@ -13,13 +13,12 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
     vertices(GL_ARRAY_BUFFER, MESH_BUFFERING_FACTOR, 0),
     indices(GL_ELEMENT_ARRAY_BUFFER, MESH_BUFFERING_FACTOR, 0),
     instances(GL_ARRAY_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0),
-    drawCommands(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0),
+    drawCommands(),
     boneBuffer(std::nullopt),
     boneOffsetBuffer(std::nullopt),
 
     vaoId(0),
 
-    drawCount(0),
     currentVertexCapacity(0),
     currentInstanceCapacity(0),
     currentDrawCommandCapacity(0),
@@ -37,11 +36,13 @@ Meshpool::~Meshpool()
 	}
 }
 
-std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh>& mesh, unsigned int count)
+std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, const std::shared_ptr<ShaderProgram>& shader, unsigned int count)
 {
     // find valid slot for mesh
     unsigned int slot;
     {
+        // see if this mesh is already in the pool
+
         // for simplicity we like to assume indices and vertices are the same size in bytes and pad up the difference
         unsigned int meshNBytes = std::max(mesh->vertices.size() * vertexSize, mesh->indices.size() * indexSize);
 
@@ -89,6 +90,8 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             ExpandInstanceCapacity();
         }
 
+        DrawCommandBuffer& commandBuffer = drawCommands.
+
         // find slot for draw command
         if (availableDrawCommandSlots.size() == 0) {
             ExpandDrawCountCapacity();
@@ -104,6 +107,9 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             .baseInstance = firstInstance
         };
 
+        clientCommands[drawCommandIndex] = command;
+
+        // fortunately, the last added one will take precedence when multiple of these update the same command
         commandUpdates.emplace_back(IndirectDrawCommandUpdate{
             .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
             .command = command,
@@ -118,7 +124,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
                 .instanceSlot = firstInstance + i,  
             });
 
-            instanceSlotsToCommands[firstInstance + i] = CommandLocation{ .drawCommandIndex = drawCommandIndex, .command = command };
+            instanceSlotsToCommands[firstInstance + i] = CommandLocation{ .drawCommandIndex = drawCommandIndex};
         }
     }
     
@@ -131,28 +137,81 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
     // something else can use this instance
     availableInstanceSlots.push_back(handle.instanceSlot);
 
+    unsigned int originalNInstances = clientCommands[instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex].instanceCount;
+    IndirectDrawCommand emptyCommand(0, 0, 0, 0, 0);
+
     // to remove the object, we need to remove its draw command, or, if it's one of multiple instances being drawn in a single command, we have to split that command up.
-    if (instanceSlotsToCommands[handle.instanceSlot].command.instanceCount == 1) {
+    if (originalNInstances == 1) {
 
         // mark the draw command slot as free
         availableDrawCommandSlots.push_back(instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex);
-        
-        instanceSlotsToCommands
 
+        clientCommands[instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex] = emptyCommand;
         commandUpdates.emplace_back(IndirectDrawCommandUpdate{
             .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
+            .command = emptyCommand,
             .commandSlot = instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex
         });
     } 
-    else if (instanceSlotsToCommands[handle.instanceSlot].instanceId == handle.instanceSlot) {
+    else if (clientCommands[instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex].baseInstance == handle.instanceSlot) {
         // then this the first instance out of multiple being removed
+
+        unsigned int firstIndex = instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex;
+
+        IndirectDrawCommand firstHalf = clientCommands[firstIndex];
+        IndirectDrawCommand secondHalf = firstHalf;
+        
+        firstHalf.instanceCount = handle.instanceSlot - firstHalf.baseInstance;
+
+        if (firstHalf.instanceCount + 1 < originalNInstances) {
+            secondHalf.baseInstance = handle.instanceSlot + 1;
+            secondHalf.instanceCount = originalNInstances - firstHalf.instanceCount - 1;
+        }
+        else {
+            secondHalf.instanceCount = 0;
+        }
+
+        if (firstHalf.instanceCount == 0) {
+            std::swap(firstHalf, secondHalf);
+            if (firstHalf.instanceCount == 0) {
+                firstHalf = emptyCommand;
+            }
+        }
+
+            
+        clientCommands[firstIndex] = firstHalf;
+
+        // fortunately, the last added one will take precedence when multiple of these update the same command
+        commandUpdates.emplace_back(IndirectDrawCommandUpdate{
+            .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
+            .command = firstHalf,
+            .commandSlot = firstIndex
+        });
+
+        if (secondHalf.instanceCount == 0) {
+            // find slot for draw command
+            if (availableDrawCommandSlots.size() == 0) {
+                ExpandDrawCountCapacity();
+            }
+            unsigned int secondIndex = availableDrawCommandSlots.back();
+            availableDrawCommandSlots.pop_back();
+             
+
+            clientCommands[firstIndex] = secondHalf;
+
+            // fortunately, the last added one will take precedence when multiple of these update the same command
+            commandUpdates.emplace_back(IndirectDrawCommandUpdate{
+                .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
+                .command = secondHalf,
+                .commandSlot = firstIndex
+            });
+        }
     }
 }
 
 void Meshpool::Draw() {
     glBindVertexArray(vaoId);
     indices.Bind();
-    drawCommands.Bind();
     if (boneBuffer.has_value()) {
         boneBuffer->BindBase(BONE_BUFFER_BINDING);
         boneOffsetBuffer->BindBase(BONE_OFFSET_BUFFER_BINDING);
@@ -160,7 +219,11 @@ void Meshpool::Draw() {
     
     //double start1 = Time();
     //glPointSize(4.0);
-    glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)drawCommands.GetOffset(), drawCount, 0); // TODO: GET INDIRECT DRAWING TO WORK    
+    for (auto& command : drawCommands) {
+        command.buffer.Bind();
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)command.buffer.GetOffset(), command.drawCount, 0);
+    }
+     
     
 }
 
@@ -248,6 +311,8 @@ void Meshpool::ExpandDrawCountCapacity()
     else {
         currentDrawCommandCapacity *= 2;
     }
+
+    clientCommands.resize(currentDrawCommandCapacity, IndirectDrawCommand(0, 0, 0, 0, 0));
 
     // expand draw command buffer
     drawCommands.Reallocate(currentDrawCommandCapacity * sizeof(IndirectDrawCommand));

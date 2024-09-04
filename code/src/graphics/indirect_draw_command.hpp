@@ -22,7 +22,7 @@ struct IndirectDrawCommandUpdate {
     GLuint updatesLeft;
     
     // Here, command.baseInstance and command.baseVertex presume no multiple buffering. Meshpool::Commit() corrects that.
-    //IndirectDrawCommand command;
+    IndirectDrawCommand command;
 
     // the index of the IndirectDrawCommand that needs to be updated (equivalent to the slot of the mesh this command handles)
     unsigned int commandSlot;

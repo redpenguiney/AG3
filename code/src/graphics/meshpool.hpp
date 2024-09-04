@@ -16,24 +16,25 @@ const unsigned int INSTANCED_VERTEX_BUFFERING_FACTOR = 3;
 const unsigned int MESH_BUFFERING_FACTOR = 1; /// TODO; meshpool supports >1 but GE doesn't
 
 class Mesh;
+class Material;
+class ShaderProgram;
 
 // Contains an arbitrary number of arbitary meshes (of the same MeshVertexFormat) and is used to render them very quickly.
 class Meshpool {
 public:
 
-    
-
     // Each object that gets rendered needs a DrawHandle to describe where its data is stored in its meshpool.
     struct DrawHandle {
         // An index, in terms of vertexSize, to where the mesh vertices are stored in the vertices buffer, and in terms of indexSize to where the mesh indices are stored in the index buffer. 
         // So if meshIndex was 3000, the first byte of the mesh would be at vertices.Data() + (3000 * vertexSize)
-        unsigned int meshIndex;
+        const unsigned int meshIndex;
 
         // An index (in terms of instanceSize) to where the object's instance data is stored in the instances buffer.
-        unsigned int instanceSlot;
-    };
+        const unsigned int instanceSlot;
 
-    
+        // Index into drawCommands, which INDBO the object's draw command is stored in.
+        const unsigned int drawBufferIndex;
+    };
 
     // Only meshes with this format can be stored in this meshpool.
     const MeshVertexFormat format;
@@ -45,7 +46,7 @@ public:
     ~Meshpool();
 
     // Adds count identical objects to the pool with the given mesh, and returns a DrawHandle for each object.
-    std::vector<DrawHandle> AddObject(const std::shared_ptr<Mesh>& mesh, unsigned int count);
+    std::vector<DrawHandle> AddObject(const std::shared_ptr<Mesh>&, const std::shared_ptr<Material>&, const std::shared_ptr<ShaderProgram>&, unsigned int count);
 
     // Frees the given object from the meshpool, so something else can use that space.
     void RemoveObject(const DrawHandle& handle);
@@ -91,7 +92,30 @@ private:
         unsigned int drawCommandIndex;
 
         // Here, command.baseInstance and command.baseVertex presume no multiple buffering. Meshpool::Commit() corrects that.
-        IndirectDrawCommand command;
+        //IndirectDrawCommand command;
+    };
+
+    struct SlotUsageInfo {
+        // id of the mesh inside this slot
+        unsigned int meshId;
+    };
+
+    struct DrawCommandBuffer {
+        std::shared_ptr<ShaderProgram> shader;
+        std::shared_ptr<Material> material;
+        BufferedBuffer buffer;
+
+        // number of commands in buffer
+        unsigned int drawCount = 0;
+
+        // unlike the other two available<x>slots, this one does hold every slot that isn't taken and if this is empty, then you have to expand.
+    // Sorted from greatest to least.
+        std::vector<unsigned int> availableDrawCommandSlots;
+
+        std::vector<IndirectDrawCommandUpdate> commandUpdates;
+
+        // all 0s for empty/available command slots
+        std::vector<IndirectDrawCommand> clientCommands; // equivelent contents to drawCommands, but we can't read from that because its a GPU buffer
     };
 
     // the size of a single instance for a single object in bytes. Equal to the InstancedSize() of the vertex format.
@@ -106,8 +130,7 @@ private:
     unsigned int currentInstanceCapacity;
     unsigned int currentDrawCommandCapacity;
 
-    // number of commands in drawCommands
-    unsigned int drawCount;
+    
 
     // if you want to allocate memory for a mesh more than vertexSize * 2^(n-1) bytes but less than vertexSize * 2^n bytes, the nth vector in this array has room for that.
     // When a mesh is removed from the pool, an index to its memory goes here.
@@ -117,19 +140,19 @@ private:
     // if availableMeshSlots is empty, this is the mesh index of the first available part of the vertices buffer
     unsigned int meshIndexEnd;
     
+    // For each mesh slot, describes meshId.
+    std::vector<SlotUsageInfo> meshSlotContents;
 
     std::vector<unsigned int> availableInstanceSlots;
     unsigned int instanceEnd;
 
-    // unlike the other two available<x>slots, this one does hold every slot that isn't taken and if this is empty, then you have to expand.
-    // Sorted from greatest to least.
-    std::vector<unsigned int> availableDrawCommandSlots;
-
-    std::vector<IndirectDrawCommandUpdate> commandUpdates;
+    
     std::vector<MeshUpdate> meshUpdates;
 
     // key is instance slot
     std::vector<CommandLocation> instanceSlotsToCommands;
+
+    
 
     // the VAO basically tells openGL how our vertices are structured
     unsigned int vaoId;
@@ -143,8 +166,8 @@ private:
 	// stores indices for all the pool's indices
 	BufferedBuffer indices;
 
-	// stores indirect draw commands.
-	BufferedBuffer drawCommands;
+	// each buffer stores indirect draw commands, which basically tell the GPU which vertices/instances to draw.
+    std::vector<DrawCommandBuffer> drawCommands;
 
 	// if the shader/mesh combo supports animations, stores the bone transform matrices (and the number of them)
 	std::optional<BufferedBuffer> boneBuffer; 
@@ -164,4 +187,7 @@ private:
     // Works by doubling the current capacity until it fits.
         // TODO: is that really the strat?
     void ExpandInstanceCapacity();
+
+    // Returns a reference to the DrawCommandBuffer for the requested shader/material combo, creating the buffer if it doesn't already exist.
+    DrawCommandBuffer& GetCommandBuffer(const std::shared_ptr<ShaderProgram>&, const std::shared_ptr<Material>&);
 };
