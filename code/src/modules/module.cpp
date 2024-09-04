@@ -71,7 +71,7 @@ Module::Module(const char* filepath) {
     internalModule = nullptr;
     #ifdef WINDOWS
     internalModule = new HMODULE;
-    *(HMODULE*)internalModule = LoadLibrary(filepath);
+    *(HMODULE*)internalModule = LoadLibraryA(filepath);
     if ((*(HMODULE*)internalModule) == nullptr) {
         LPVOID lpMsgBuf;
         DWORD dw = GetLastError(); 

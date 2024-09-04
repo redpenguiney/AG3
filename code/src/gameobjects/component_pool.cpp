@@ -115,8 +115,12 @@ std::tuple<void*, int, int> ComponentPool::GetObject() {
 		firstFree.back() = *(uint8_t**)foundComponents;
 	}
 
+	// mark the ptr we got as in use
+	*(void**)foundComponents = nullptr;
+
 	unsigned int index = ((char*)foundComponents - (char*)pages[pageI]) / objectSize;
 	Assert(foundComponents != nullptr);
+
 	return std::make_tuple(foundComponents, index, pageI);
 }
 

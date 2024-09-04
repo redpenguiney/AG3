@@ -140,7 +140,7 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 
 	Assert(!atlas.has_value() || atlas.value() != nullptr);
 
-	auto& format = meshParams.meshVertexFormat.value_or(MeshVertexFormat::Default());
+	auto format = meshParams.meshVertexFormat.value_or(MeshVertexFormat::Default());
 	Assert(format.attributes.position.has_value() && format.attributes.position->nFloats == 3 && format.attributes.position->instanced == false);
 	Assert(format.attributes.normal.has_value() && format.attributes.normal->nFloats == 3 && format.attributes.normal->instanced == false);
 	auto fdim = (p2 - p1);

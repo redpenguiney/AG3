@@ -328,6 +328,10 @@ void Mesh::Unload(int meshId) {
 //     return greatest;
 // }
 
+Mesh::~Mesh() {
+    //DebugLogInfo("Deleting mesh with id ", meshId);
+}
+
 Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshCreateParams& params, bool dynamic, bool fromText, std::optional<std::vector<Bone>> bonez, std::optional<std::vector<Animation>> anims, unsigned int rootBoneIndex):
 dynamic(dynamic),
 meshId(MeshGlobals::Get().LAST_MESH_ID++),
@@ -343,7 +347,7 @@ meshAnimations(anims),
 rootBoneId(rootBoneIndex),
 originalSize(1)
 {    
-
+    //DebugLogInfo("New mesh with id ", meshId);
     //Assert(meshVertices.size() > 0);
     //Assert(meshIndices.size() > 0);
 
@@ -480,8 +484,8 @@ void Mesh::StopModifying(bool normalizeSize) {
 
 void Mesh::Remesh(const MeshProvider& provider)
 {
-    auto& [v, i] = StartModifying();
-    auto& [newV, newI] = provider.GetMesh();
+    auto [v, i] = StartModifying();
+    auto [newV, newI] = provider.GetMesh();
     v = newV;
     i = newI;
     StopModifying(true);

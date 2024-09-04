@@ -11,9 +11,9 @@ ColliderComponent::ColliderComponent(GameObject* gameobj, std::shared_ptr<Physic
     aabbType = AABBBoundingCube;
     node = nullptr;
     
-    elasticity = 1;
-    friction = 0.2;
-    density = 1.0;
+    elasticity = 1.0f;
+    friction = 0.2f;
+    density = 1.0f;
     SpatialAccelerationStructure::Get().AddCollider(this, *gameobject->RawGet<TransformComponent>());
 
 }

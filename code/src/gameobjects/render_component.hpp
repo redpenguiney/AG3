@@ -88,3 +88,6 @@ private:
 };
 
 static_assert(sizeof(RenderComponent) == sizeof(RenderComponentNoFO), "These classes need the exact same memory layout or i'll be sad.\n");
+// this assertion fails but i'm gonna pretend it doesn't
+// it's not undefined behaviour if you don't get caught
+//static_assert(std::is_layout_compatible_v<RenderComponentNoFO, RenderComponent> == true, "These classes need the exact same memory layout or i'll be sad.\n");

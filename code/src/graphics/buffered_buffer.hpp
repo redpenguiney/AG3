@@ -8,6 +8,7 @@
 // Because they work asyncronously, this means you need to use double/triple buffering (triple to account for drivers).
 // This does double/triple memory footprint, which is why there is a constant to control whether it does single/double/triple buffering.
 // Sorry for the bad name.
+// TODO: for indirect drawing on platforms that don't support them, we can just make it call glBufferData when Commit() is called.
 class BufferedBuffer {
     public:
     const GLenum bufferBindingLocation;
@@ -19,6 +20,13 @@ class BufferedBuffer {
     // bufferCount is no buffering (1), double buffering (2) or triple buffering (3). or higher, i guess.
     BufferedBuffer(GLenum bindingLocation, const unsigned int bufferCount, GLuint initalSize);
     ~BufferedBuffer();
+    
+
+    // can't copy
+    BufferedBuffer(const BufferedBuffer&) = delete;
+
+    // you CAN move (so we can put it in vectors for example)
+    BufferedBuffer(BufferedBuffer&&) noexcept;
 
     // Recreates the buffer with the given size, and copies the buffer's old data into the new one.
     // Doesn't touch vaos obviously so you still need to reset that after reallocation.
@@ -49,8 +57,6 @@ class BufferedBuffer {
     // Triple/double buffering means this usually won't be an issue, but just in case we have one sync object for each part of the buffer.
     // Array of numBuffers in length.
     GLsync* sync;
-
-    BufferedBuffer(const BufferedBuffer&) = delete;
     
     const unsigned int numBuffers;
     const static inline unsigned int SYNC_TIMEOUT = 1000000000;

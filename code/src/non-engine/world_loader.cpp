@@ -18,7 +18,7 @@ struct OctreeNode {
 
 	
 	
-	float Size() {
+	float Size() const {
 		return MAX_CHUNK_SIZE * powf(2, -lod);
 	}
 
@@ -98,7 +98,7 @@ std::unordered_map<glm::vec3, std::unique_ptr<Chunk>>& Chunk::GetChunks()
 	return chunks;
 }
 
-constexpr int BASE_GRID_SIZE = 2;
+constexpr int BASE_GRID_SIZE = 1;
 void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance) {
 
 	
@@ -155,4 +155,6 @@ void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance) {
 		return item.second->toDelete;
 	});
 
+
+	DebugLogInfo("THERE ARE ", GetChunks().size());
 }

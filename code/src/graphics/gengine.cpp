@@ -72,6 +72,8 @@ pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(PointLightInfo) * 1000
 spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(SpotLightInfo) * 1000)),
 screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false))
 {
+    pointLightCount = 0;
+    spotLightCount = 0;
 
     debugFreecamEnabled = false;
     debugFreecamPitch = 0.0;
@@ -336,22 +338,18 @@ void GraphicsEngine::RenderScene(float dt) {
     // Draw the world onto a framebuffer so we can draw the contents of that framebuffer onto the screen with a postprocessing shader.
     UpdateMainFramebuffer();
     mainFramebuffer->Bind();
-
-    
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // tell opengl how to do transparency
     glEnable(GL_BLEND); 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
 
-    
-
     DrawWorld(true);
     DrawSkybox(); // Draw skybox afterwards to encourage early z-test
-    
 
     // Go back to drawing on the window.
     Framebuffer::Unbind();
-    glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
 
     // Draw contents of main framebuffer on screen quad, using the postprocessing shader.
@@ -363,13 +361,13 @@ void GraphicsEngine::RenderScene(float dt) {
 
     DrawWorld(false);
 
-
     // Debugging stuff
     // TODO: actual settings to toggle debug stuff
-     //SpatialAccelerationStructure::Get().DebugVisualize();
+    //SpatialAccelerationStructure::Get().DebugVisualize();
+    glDisable(GL_DEPTH_TEST);
     DebugAxis();
 
-    
+    //DrawSkybox(); // Draw skybox afterwards to encourage early z-test
 
     glFlush(); // Tell OpenGL we're done drawing.
 
@@ -399,7 +397,7 @@ void GraphicsEngine::UpdateLights() {
     unsigned int i = 0;
 
     // Get components of all gameobjects that have a transform and point light component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, PointLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Pointlight }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, PointLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Pointlight });  it.Valid(); it++) {
         auto& tuple = *it;
         TransformComponent& transform = *std::get<0>(tuple);
         PointLightComponent& pointLight = *std::get<1>(tuple);
@@ -428,7 +426,7 @@ void GraphicsEngine::UpdateLights() {
     i = 0;
 
     // Get components of all gameobjects that have a transform and point light component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, SpotLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Spotlight }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, SpotLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Spotlight });  it.Valid(); it++) {
         auto& tuple = *it;
         TransformComponent& transform = *std::get<0>(tuple);
         SpotLightComponent& spotLight = *std::get<1>(tuple);
@@ -458,7 +456,7 @@ void GraphicsEngine::UpdateLights() {
 // }
 
 void GraphicsEngine::SetModelMatrix(const RenderComponent& comp, const glm::mat4x4& model) {
-    Assert(comp.meshpoolId != -1);
+    Assert(comp.meshpoolId != -1 && comp.meshpoolInstance != -1);
     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetModelMatrix(comp.meshpoolSlot, comp.meshpoolInstance, model);
 }
 
@@ -519,7 +517,7 @@ void GraphicsEngine::DrawWorld(bool postProc)
 
     // Draw world stuff.
     for (auto& [shaderId, map1] : meshpools) {
-        auto& shader = ShaderProgram::Get(shaderId);
+        auto shader = ShaderProgram::Get(shaderId);
         if (shader->ignorePostProc == postProc) {
             continue;
         }
@@ -672,33 +670,43 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
         Instanced1ComponentVertexAttributeUpdates.pop_back();
     }  
     
+    unsigned int nR = 0;
+
+    //DebugLogInfo("GOING IN:");
+
     // Get components of all gameobjects that have a transform and render component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Render}); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Render});  it.Valid(); it++) {
     //std::for_each(std::execution::par, components.begin(), components.end(), [this, &cameraPos](std::tuple<RenderComponent*, TransformComponent*>& tuple) {
         auto& tuple = *it;
         auto & transformComp = *std::get<0>(tuple);
         auto & renderComp = *std::get<1>(tuple);
 
-            // std::cout << "Component at " << &renderComp << " is live \n";
+        //DebugLogInfo("Component at ", &renderComp, " is live");
             // if (renderComp.componentPoolId != i) {
             //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
             //     abort();
             // }
             // TODO: we only need to call SetNormalMatrix() when the object is rotated
             
-            // tell shaders where the object is, rot/scl
+        // tell shaders where the object is, rot/scl
         SetNormalMatrix(renderComp, transformComp.GetNormalMatrix()); 
         SetModelMatrix(renderComp, transformComp.GetGraphicsModelMatrix(cameraPos));
 
-            
+        //DebugLogInfo("++");
+        nR++;
     };
 
+    //DebugLogInfo("Updated ", nR, " with FO.");
+
+    unsigned int nRNFO = 0;
+
     // Get components of all gameobjects that have a transform and no floating origin render component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponentNoFO>({ ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponentNoFO>({ ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO });  it.Valid(); it++) {
         auto& tuple = *it;
         auto& transformComp = *std::get<0>(tuple);
         auto& renderCompNoFO = *std::get<1>(tuple);
-            
+        
+        //DebugLogInfo("Component (NO FO) at ", &renderCompNoFO, " is live");
             //std::cout << "Component " << j <<  " at " << renderComp << " is live \n";
             // if (renderComp.componentPoolId != i) {
             //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
@@ -710,7 +718,12 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
             
             // if (renderCompNoFO.textureZChanged > 0) {renderCompNoFO.textureZChanged -= 1; SetTextureZ(renderCompNoFO, renderCompNoFO.textureZ);}
             // if (renderCompNoFO.colorChanged > 0) {renderCompNoFO.colorChanged -= 1; SetColor(renderCompNoFO, renderCompNoFO.color);}
+    
+        nRNFO++;
     }
+
+    //DebugLogInfo("Updated ", nRNFO, " without FO.");
+
     //std::for_each(std::execution::, components2.begin(), components2.end(), [this](std::tuple<RenderComponentNoFO*, TransformComponent*>& tuple) {
     //    auto & renderCompNoFO = *std::get<0>(tuple);
     //    auto & transformComp = *std::get<1>(tuple);
@@ -731,7 +744,7 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     //});
 
     // animations
-    for (auto it = GameObject::SystemGetComponents<AnimationComponent>({ ComponentBitIndex::Animation }); it.Next();) {
+    for (auto it = GameObject::SystemGetComponents<AnimationComponent>({ ComponentBitIndex::Animation });  it.Valid(); it++) {
 
         auto& tuple = *it;
         auto& animComp = std::get<0>(tuple);
@@ -841,10 +854,8 @@ void GraphicsEngine::UpdateDebugFreecam() {
 }
 
 void GraphicsEngine::AddCachedMeshes() {
-    if (renderComponentsToAdd.size() > 0) {
-        // std::cout << "There are " << renderComponentsToAdd.size() << " to add.\n";
-    }
     
+    unsigned int count = 0;
     for (auto & [shaderId, map1] : renderComponentsToAdd) {
         for (auto & [materialId, map2] : map1) {
             for (auto & [meshId, components] : map2) {
@@ -879,28 +890,36 @@ void GraphicsEngine::AddCachedMeshes() {
                 // std::cout << "\tmesh pool id is " << bestPoolId << "\n"; 
 
                 auto objectPositions = meshpools.at(shaderId).at(materialId).at(bestPoolId)->AddObject(meshId, components.size());
-                // std::cout << "\tAdded.\n";
                 for (unsigned int i = 0; i < components.size(); i++) { // todo: use iterator here???
                     components.at(i)->meshpoolId = bestPoolId;
                     components[i]->meshpoolSlot = objectPositions[i].first;
                     components[i]->meshpoolInstance = objectPositions[i].second;
+                    //DebugLogInfo("Wrote component to ", bestPoolId, " ", objectPositions[i].first, " ", objectPositions[i].second);
                     //std::cout  << "Initalized mesh location " << (meshLocations[i]) << ".\n";
 
                     if (m->dynamic) {
                         dynamicMeshUsers[meshId].push_back(components[i]);
                     }
+
+                    count++;
                 }
 
                 
             } 
         }
     }
+
+    if (count > 0) {
+        DebugLogInfo("There are ", count, " to add.");
+    }
+
     // TODO: instead of clearing the entire thing do something else
     // TODO: why did i write the above comment? clearing is fine???
     renderComponentsToAdd.clear();
 }
 
 void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, RenderComponent* component) {
+    //DebugLogInfo("Added");
     renderComponentsToAdd[shaderId][materialId][meshId].push_back(component);
 }
 

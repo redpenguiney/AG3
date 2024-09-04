@@ -25,7 +25,12 @@ numBuffers(bufferCount)
 
 BufferedBuffer::~BufferedBuffer() {
     //glBindBuffer(bufferBindingLocation, 0);
-    glDeleteBuffers(1, &_bufferId);
+
+    if (_bufferId != 0) { // if this buffer was leftover from a move, the destructor shouldn't do anything
+        glDeleteBuffers(1, &_bufferId);
+    }
+    
+    // TODO: delete sync?
 }
 
 void BufferedBuffer::Flip() {
@@ -51,6 +56,22 @@ void BufferedBuffer::Commit() {
     }
 }
 
+
+BufferedBuffer::BufferedBuffer(BufferedBuffer&& old) noexcept:
+    bufferBindingLocation(old.bufferBindingLocation),
+    numBuffers(old.numBuffers),
+    _bufferData(old.bufferData),
+    currentBuffer(old.currentBuffer),
+    sync(old.sync),
+    size(old.size),
+    _bufferId(old.bufferId)
+{
+    old._bufferId = 0;
+    old._bufferData = nullptr;
+    old.size = 0;
+    old.currentBuffer = 0;
+    old.sync = nullptr;
+}
 
 void BufferedBuffer::Reallocate(unsigned int newSize) {
     Assert(newSize != 0);

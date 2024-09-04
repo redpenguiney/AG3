@@ -74,7 +74,9 @@ class Mesh {
     public:
     const bool dynamic; // if a mesh is not dynamic, it saves memory and performance. If it is dynamic, you can modify the mesh using Start/StopModifying().
 
-    const int meshId; // meshes have an id so that the engine can easily determine that two objects use the same mesh and instance them
+    // meshes have an id so that the engine can easily determine that two objects use the same mesh and instance them
+    // It is absolutely critical that no two meshes have the same id, even if these meshes do not have overlapping lifetimes. Once a mesh gets an id, no other mesh gets that id, ever.
+    const int meshId; 
     const std::vector<GLfloat>& vertices = meshVertices; // read only access to vertices
     const std::vector<GLuint>& indices = meshIndices; // read only access to indices
     const std::optional<std::vector<Animation>>& animations = meshAnimations;
@@ -100,6 +102,8 @@ class Mesh {
     // Mesh must be dynamic.
     std::pair<std::vector<GLfloat>&, std::vector<GLuint>&> StartModifying();
     
+    ~Mesh();
+
     // Updates all objects using this mesh after you changed the mesh via StartModifying().
     // Must only be called after a call to StartModifying().
     void StopModifying(bool normalizeSize);

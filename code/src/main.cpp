@@ -43,6 +43,10 @@ void AtExit() {
     DebugLogInfo("Program ran successfully. Exiting.");
 }
 
+void RecordSingletonClosing() {
+    DebugLogInfo("Singletons destroyed.");
+}
+
 // just prints about unhandled exceptions because visual studio won't.
 void TerminateHandler() {
     DebugLogError("Fatal error: Unhandled exception.");
@@ -67,12 +71,16 @@ int main(int numArgs, const char *argPtrs[]) {
 
     
     // We need to make sure that all the singletons components need for their destructors to work are destructed after all gameobjects are destructed, which they need to be constructed first.
-    auto & GE = GraphicsEngine::Get();
-    auto & PE = PhysicsEngine::Get();
-    auto & AE = AudioEngine::Get();
-    auto & LUA = LuaHandler::Get();
+    auto& GE = GraphicsEngine::Get();
+    auto& PE = PhysicsEngine::Get();
+    auto& AE = AudioEngine::Get();
+    auto& SAS = SpatialAccelerationStructure::Get();
+    auto& LUA = LuaHandler::Get();
 
-    // ComponentRegistry needs to be intitialized after all the other singletons so that component destructors are called before the singleton destructors are called.
+    atexit(RecordSingletonClosing);
+
+    // GAMEOBJECTS needs to be intitialized after all the other singletons so that component destructors are called before the singleton destructors are called.
+    GameObject::GAMEOBJECTS();
     //auto & CR = ComponentRegistry::Get();
 
     atexit(Module::CloseAll); // this is placed here, after the component registry is initialized, because that guarantees that modules' references to gameobjects are destroyed before the gameobjects are (because static destructors/at exits are called in reverse order)
@@ -80,7 +88,7 @@ int main(int numArgs, const char *argPtrs[]) {
     // conglomerate init
     Gui::Init();
 
-    DebugLogInfo("Calling gameInit().");
+    DebugLogInfo("Calling GameInit().");
     GameInit();
 
     DebugLogInfo("Starting main loop.");

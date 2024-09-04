@@ -1,6 +1,6 @@
 #pragma once
-#include "component_id.hpp"
-#include "component_pool.hpp"
+#include "gameobjects/component_id.hpp"
+#include "gameobjects/component_pool.hpp"
 
 #include <type_traits>
 #include <bitset>
@@ -13,7 +13,7 @@
 template <std::derived_from<BaseComponent> Component>
 class ComponentHandle {
 public:
-	ComponentHandle(Component* const comp, const std::shared_ptr<GameObject>& obj):
+	ComponentHandle(Component* const comp, const std::shared_ptr<GameObject>& obj) :
 		object(obj),
 		component(comp)
 	{
@@ -26,29 +26,29 @@ public:
 	}
 
 	Component& operator*() const {
-		Assert(component != nullptr); 
+		Assert(component != nullptr);
 		return *component;
 	}
 	Component* operator->() const {
-		Assert(component != nullptr); 
+		Assert(component != nullptr);
 		return component;
 	}
-	
+
 	// Returns true if not nullptr
 	explicit operator bool() const {
 		return component != nullptr;
 	}
-	
+
 	// might return nullptr, be careful.
 	// only exists so you can pass a reference to a component to a function
-	Component* const GetPtr() const { 
-		return component; 
+	Component* const GetPtr() const {
+		return component;
 	}
-	
+
 	// If ptr != nullptr/it hasn't already been cleared, returns it to the pool (thus destructing the component), and sets ptr to nullptr.
 	// Gameobjects do this for all their components when Destroy() is called on them.
 	//void Clear();
-	
+
 private:
 	const std::shared_ptr<GameObject> object;
 	Component* const component;
@@ -72,7 +72,7 @@ struct GameobjectCreateParams {
 		sound(std::nullopt)
 	{
 		// bitset defaults to all false so we good
-		for (auto & i : componentList) {
+		for (auto& i : componentList) {
 			requestedComponents[i] = true;
 		}
 	}
@@ -86,7 +86,7 @@ private:
 // Ditch for performance?
 // The gameobject system uses ECS (google it).
 // If you don't know what a gameobject is, no offense but maybe you shouldn't be reading this..
-class GameObject: public std::enable_shared_from_this<GameObject> {
+class GameObject : public std::enable_shared_from_this<GameObject> {
 public:
 	// name is not used anywhere except for debugging and by the user; set as you please
 	std::string name;
@@ -141,6 +141,28 @@ public:
 		return (Component*)(pagePtr + (objectIndex * pool->objectSize + offset));
 	}
 
+	// Specialization for render components so that RenderComponentNoFO can be used as a RenderComponent.
+	template<>
+	RenderComponent* MaybeRawGet<RenderComponent>() {
+
+		// verify pool has component and if so find byte offset
+		int offset = -1;
+
+		for (auto& info : pool->componentLayout) {
+			if (info.componentId == ComponentBitIndex::Render || info.componentId == ComponentBitIndex::RenderNoFO) {
+				offset = info.offset;
+				break;
+			}
+		}
+
+		if (offset == -1) { // then component was not found
+			return nullptr;
+		}
+
+		uint8_t* pagePtr = pool->pages[page];
+		return (RenderComponent*)(pagePtr + (objectIndex * pool->objectSize + offset));
+	}
+
 	// DOES NOT neccesarily destroy the gameobject. 
 	// All it does is remove the shared_ptr stored in the GAMEOBJECTS map, meaning that when all references aka shared_ptrs you 
 		// have to the gameobject are destroyed (ComponentHandles count as references), the gameobject will be destroyed.
@@ -162,62 +184,72 @@ private:
 		using pointer = value_type*;
 		using reference = value_type&;
 
-		SystemForwardIterator(const std::vector<ComponentPool*>& poolVec): 
+		SystemForwardIterator(const std::vector<ComponentPool*>& poolVec) :
 			pools(poolVec),
 			poolIndex(0),
 			pageIndex(0),
-			objectIndex(0)
+			objectIndex(0),
+			currentLiveChecker(nullptr)
 		{
 			if (pools.size() > 0) { // if we have nothing to iterate through we can't write the tuple
 				WriteCurrentTuple();
 			}
 		}
 
-		template <typename T> 
+		template <typename T>
 		void AddIfNotNull(T& t) {
 			if (t != nullptr) {
-				t++;
+				t = (T)(((uint8_t*)t) + pools[poolIndex]->objectSize);
 			}
 		}
 
-		// call in for loop to check when the iterator has nothing left to offer and simultaneously increment the iterator.
-		bool Next() {
-			if (pools.size() == 0) { // TODO: is compiler smart enough to optimize this out after the first check?
+		// call in for loop to check when the iterator has nothing left to offer. Returns false when iterator has nothing left and should not be dereferenced.
+		bool Valid() {
+			if (pools.size() == poolIndex) {
 				return false;
 			}
+			else {
+				return true;
+			}
+		}
 
+		// int argument is there to specify that we're overloading postfix, not prefix; doesn't do anything
+		void operator++(int) {
+
+			//DebugLogInfo("Postfix");
 			objectIndex++;
 			if (objectIndex == ComponentPool::COMPONENTS_PER_PAGE) {
+
 				objectIndex = 0;
 				pageIndex++;
 
 				if (pageIndex == pools[poolIndex]->pages.size()) {
 					pageIndex = 0;
 					poolIndex++;
-					if (poolIndex == pools.size()) {
-						return false;
+
+					if (!Valid()) {
+						return;
 					}
 				}
-				
+
 				// we're on a different page so we can't just increment pointers
 				WriteCurrentTuple();
 			}
 			else {
 				// increment pointers (that aren't nullptr)
 				std::apply([this](auto& ... x) {(..., AddIfNotNull(x)); }, currentTuple);
-				currentLiveChecker++;
-			}
-			
-			// check if the object we're now on is in use, or if we should skip it
-			// objects in use have their first sizeof(uint8_t) bytes set to nullptr
-			if (*currentLiveChecker != nullptr) {
-				Next();
+				currentLiveChecker = (uint8_t**)((uint8_t*)currentLiveChecker + pools[poolIndex]->objectSize);
 			}
 
-			return true;
+			// check if the object we're now on is in use, or if we should skip it
+			// objects in use have their first sizeof(uint8_t) bytes set to nullptr
+			if (*currentLiveChecker != nullptr && Valid()) { // need to make sure we aren't going past end of iterator though or we'll just postfix forever until stack oveflow
+				(*this)++;
+			}
 		}
 
 		value_type& operator*() {
+			//DebugLogInfo("Deref, return ", objectIndex);
 			return currentTuple;
 		}
 
@@ -241,11 +273,11 @@ private:
 			static_assert(std::is_pointer<ComponentPtr>::value);
 
 			ComponentPool* pool = pools[poolIndex];
-			
+
 			short offset = -1;
 			for (auto& memoryInfo : pool->componentLayout) {
 
-				constexpr int id(ComponentIdFromType < std::remove_pointer<ComponentPtr>::type>());
+				constexpr int id(ComponentIdFromType < typename std::remove_pointer<ComponentPtr>::type>());
 				if (id == memoryInfo.componentId) {
 					offset = memoryInfo.offset;
 				}
@@ -262,11 +294,6 @@ private:
 				void* page = pool->pages[pageIndex];
 				std::get<TupleIndex<ComponentPtr, value_type>::value>(currentTuple) = (ComponentPtr)((uint8_t*)page + offset);
 			}
-
-			// check if the object we're now on is in use, or if we should skip it
-			if (*currentLiveChecker != nullptr) {
-				Next();
-			}
 		}
 
 		void WriteCurrentTuple() {
@@ -274,14 +301,13 @@ private:
 			uint8_t* page = pool->pages[pageIndex];
 			currentLiveChecker = (uint8_t**)(void*)page;
 
-			unsigned int i = 0;
 			std::apply([this](auto& ... value) {
 				(..., WriteTupleElement(value));
-			}, currentTuple);
+				}, currentTuple);
 		}
 
 		const std::vector<ComponentPool*> pools;
-		
+
 		unsigned int poolIndex;
 
 		unsigned int pageIndex;
@@ -313,7 +339,7 @@ protected:
 	GameObject(const GameobjectCreateParams& params, void* components, ComponentPool* pool, int objectIndex, int page);
 
 private:
-	
+
 
 	ComponentPool* const pool;
 	const int objectIndex;
