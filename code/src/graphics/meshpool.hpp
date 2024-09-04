@@ -100,22 +100,30 @@ private:
         unsigned int meshId;
     };
 
-    struct DrawCommandBuffer {
-        std::shared_ptr<ShaderProgram> shader;
-        std::shared_ptr<Material> material;
+    class DrawCommandBuffer {
+    public:
+        const std::shared_ptr<ShaderProgram> shader;
+        const std::shared_ptr<Material> material;
         BufferedBuffer buffer;
 
         // number of commands in buffer
         unsigned int drawCount = 0;
 
+        unsigned int currentDrawCommandCapacity = 0;
+
         // unlike the other two available<x>slots, this one does hold every slot that isn't taken and if this is empty, then you have to expand.
     // Sorted from greatest to least.
-        std::vector<unsigned int> availableDrawCommandSlots;
+        std::vector<unsigned int> availableDrawCommandSlots = {};
 
-        std::vector<IndirectDrawCommandUpdate> commandUpdates;
+        std::vector<IndirectDrawCommandUpdate> commandUpdates = {};
 
         // all 0s for empty/available command slots
-        std::vector<IndirectDrawCommand> clientCommands; // equivelent contents to drawCommands, but we can't read from that because its a GPU buffer
+        std::vector<IndirectDrawCommand> clientCommands = {}; // equivelent contents to drawCommands, but we can't read from that because its a GPU buffer
+    
+        unsigned int GetNewDrawCommandSlot();
+
+        // Doubles currentDrawCommandCapacity.
+        void ExpandDrawCountCapacity();
     };
 
     // the size of a single instance for a single object in bytes. Equal to the InstancedSize() of the vertex format.
@@ -128,7 +136,7 @@ private:
 
     unsigned int currentVertexCapacity;
     unsigned int currentInstanceCapacity;
-    unsigned int currentDrawCommandCapacity;
+ 
 
     
 
@@ -168,6 +176,7 @@ private:
 
 	// each buffer stores indirect draw commands, which basically tell the GPU which vertices/instances to draw.
     std::vector<DrawCommandBuffer> drawCommands;
+    std::vector<unsigned int> availableDrawCommandBufferIndices;
 
 	// if the shader/mesh combo supports animations, stores the bone transform matrices (and the number of them)
 	std::optional<BufferedBuffer> boneBuffer; 
@@ -180,8 +189,7 @@ private:
         // TODO: is that really the strat?
     void ExpandVertexCapacity();
 
-    // Doubles currentDrawCommandCapacity.
-    void ExpandDrawCountCapacity();
+    
 
     // Expands instances so that they can contain at minimum instanceEnd. 
     // Works by doubling the current capacity until it fits.
@@ -189,5 +197,5 @@ private:
     void ExpandInstanceCapacity();
 
     // Returns a reference to the DrawCommandBuffer for the requested shader/material combo, creating the buffer if it doesn't already exist.
-    DrawCommandBuffer& GetCommandBuffer(const std::shared_ptr<ShaderProgram>&, const std::shared_ptr<Material>&);
+    DrawCommandBuffer& GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material);
 };

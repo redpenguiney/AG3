@@ -3,6 +3,7 @@
 #include "mesh.hpp"
 
 #include <algorithm>
+#include "../debug/assert.hpp"
 
 Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
     format(meshVertexFormat),
@@ -21,7 +22,7 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
 
     currentVertexCapacity(0),
     currentInstanceCapacity(0),
-    currentDrawCommandCapacity(0),
+    //currentDrawCommandCapacity(0),
 
     meshIndexEnd(0),
     instanceEnd(0)
@@ -90,14 +91,10 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             ExpandInstanceCapacity();
         }
 
-        DrawCommandBuffer& commandBuffer = drawCommands.
+        DrawCommandBuffer& commandBuffer = GetCommandBuffer(shader, material);
 
         // find slot for draw command
-        if (availableDrawCommandSlots.size() == 0) {
-            ExpandDrawCountCapacity();
-        }
-        unsigned drawCommandIndex = availableDrawCommandSlots.back();
-        availableDrawCommandSlots.pop_back();
+        unsigned int drawCommandIndex = commandBuffer.GetNewDrawCommandSlot();
 
         IndirectDrawCommand command = {
             .count = static_cast<unsigned int>(mesh->indices.size()),
@@ -107,10 +104,10 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             .baseInstance = firstInstance
         };
 
-        clientCommands[drawCommandIndex] = command;
+        commandBuffer.clientCommands[drawCommandIndex] = command;
 
         // fortunately, the last added one will take precedence when multiple of these update the same command
-        commandUpdates.emplace_back(IndirectDrawCommandUpdate{
+        commandBuffer.commandUpdates.emplace_back(IndirectDrawCommandUpdate{
             .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
             .command = command,
             .commandSlot = drawCommandIndex
@@ -136,6 +133,8 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
 {
     // something else can use this instance
     availableInstanceSlots.push_back(handle.instanceSlot);
+
+    auto& drawBuffer = drawCommands[handle.drawBufferIndex];
 
     unsigned int originalNInstances = clientCommands[instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex].instanceCount;
     IndirectDrawCommand emptyCommand(0, 0, 0, 0, 0);
@@ -229,30 +228,34 @@ void Meshpool::Draw() {
 
 void Meshpool::Commit() {
     // write indirect draw commands to buffer
-    for (unsigned int i = 0; i < commandUpdates.size(); i++) {
-        auto& update = commandUpdates[i];
-        Assert(update.updatesLeft != 0);
-        update.updatesLeft--;
+    for (auto& drawBuffer : drawCommands) {
+        for (unsigned int i = 0; i < drawBuffer.commandUpdates.size(); i++) {
+            auto& update = drawBuffer.commandUpdates[i];
+            Assert(update.updatesLeft != 0);
+            update.updatesLeft--;
 
-        IndirectDrawCommand command = update.command; // deliberate copy
-        
-        command.baseInstance += instances.GetOffset() / instanceSize;
-        command.baseVertex += vertices.GetOffset() / vertexSize;
+            IndirectDrawCommand command = update.command; // deliberate copy
 
-        memcpy(drawCommands.Data() + (update.commandSlot * sizeof(IndirectDrawCommand)), &command, sizeof(IndirectDrawCommand));
+            command.baseInstance += instances.GetOffset() / instanceSize;
+            command.baseVertex += vertices.GetOffset() / vertexSize;
 
-        if (update.updatesLeft == 0) {
-            commandUpdates[i] = commandUpdates.back();
-            commandUpdates.pop_back();
-            i--;
-            //DebugLogInfo("bye bye")
+            memcpy(drawBuffer.buffer.Data() + (update.commandSlot * sizeof(IndirectDrawCommand)), &command, sizeof(IndirectDrawCommand));
+
+            if (update.updatesLeft == 0) {
+                drawBuffer.commandUpdates[i] = drawBuffer.commandUpdates.back();
+                drawBuffer.commandUpdates.pop_back();
+                i--;
+                //DebugLogInfo("bye bye")
+            }
         }
-    }
 
+        drawBuffer.buffer.Commit();
+    }
+    
     vertices.Commit();
     instances.Commit();
     indices.Commit();
-    drawCommands.Commit();
+    
     if (boneBuffer) {
         boneBuffer->Commit();
         boneOffsetBuffer->Commit();
@@ -264,7 +267,9 @@ void Meshpool::FlipBuffers()
     vertices.Flip();
     instances.Flip();
     indices.Flip();
-    drawCommands.Flip();
+    for (auto& c : drawCommands) {
+        c.buffer.Flip();
+    }
     if (boneBuffer) {
         boneBuffer->Flip();
         boneOffsetBuffer->Flip();
@@ -301,7 +306,7 @@ void Meshpool::ExpandVertexCapacity()
     }
 }
 
-void Meshpool::ExpandDrawCountCapacity()
+void Meshpool::DrawCommandBuffer::ExpandDrawCountCapacity()
 {
     // update capacity
     unsigned int oldCapacity = currentDrawCommandCapacity;
@@ -315,7 +320,7 @@ void Meshpool::ExpandDrawCountCapacity()
     clientCommands.resize(currentDrawCommandCapacity, IndirectDrawCommand(0, 0, 0, 0, 0));
 
     // expand draw command buffer
-    drawCommands.Reallocate(currentDrawCommandCapacity * sizeof(IndirectDrawCommand));
+    buffer.Reallocate(currentDrawCommandCapacity * sizeof(IndirectDrawCommand));
 
     // add new instance slots
     for (unsigned int i = currentDrawCommandCapacity; i --> oldCapacity;) {
@@ -342,4 +347,31 @@ void Meshpool::ExpandInstanceCapacity()
     Assert(vaoId != 0);
     instances.Bind();
     format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
+}
+
+Meshpool::DrawCommandBuffer& Meshpool::GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material)
+{
+    for (auto& buffer : drawCommands) {
+        if (buffer.shader == shader && buffer.material == material) {
+            return buffer;
+        }
+    }
+
+    // if none was found, make it
+    return drawCommands.emplace_back(
+        shader, 
+        material, 
+        std::move(BufferedBuffer(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0)), 
+        *this
+    );
+}
+
+unsigned int Meshpool::DrawCommandBuffer::GetNewDrawCommandSlot()
+{
+    if (availableDrawCommandSlots.size() == 0) {
+        ExpandDrawCountCapacity();
+    }
+    unsigned drawCommandIndex = availableDrawCommandSlots.back();
+    availableDrawCommandSlots.pop_back();
+    return drawCommandIndex;
 }
