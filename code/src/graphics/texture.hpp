@@ -143,11 +143,11 @@ class Texture {
 };
 
 struct Image {
-    // array of pixels, owned by stbi, needs to be explictly destroyed.
+    // array of pixels. Image does NOT own.
     uint8_t* imageData;
 
-    // length of imageData
-    unsigned int len;
+    // based on length of imageData
+    int width, height, nChannels;
 
     // format of imageData
     Texture::TextureFormat format;
@@ -158,6 +158,8 @@ struct Image {
 class TextureSource {
 public:
     TextureSource(std::string imagePath);
+
+    // Texture does NOT take ownership of the imageData pointer of the given image. Deleting that pointer is still your problem.
     TextureSource(Image image);
 
     // returns the contained Image if it was provided, or otherwise loads the filepath to generate an Image and returns that.
@@ -170,7 +172,7 @@ private:
 struct TextureCreateParams {
     // Unless creating cubemap, size must = 1.
     // If it is a cubemap, it goes Right,Left,Top,Bottom,Back,Front
-    const std::vector<std::string> texturePaths; 
+    const std::vector<TextureSource> texturePaths; 
 
     // how texture data is stored on the GPU; RGB, RGBA, grayscale for things like heightmaps, etc.
     // NOT how it is stored within the file, we automatically determine that.

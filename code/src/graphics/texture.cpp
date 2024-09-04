@@ -78,9 +78,14 @@ glTextureIndex(textureIndex)
         Assert(params.texturePaths.size() == 1);
     }
 
+    enum ImageOrigin {
+        UserOrAssimpSupplied = 0, // the user (or assimp) controls the image's data and we don't delete it or anything
+        StbiSupplied = 1 // We created this image via stbi and we must delete it through stbi, too.
+    };
+
     // Get all the image data
     // if unsigned char*, it's from stbi and we need to free it when this function is done. if aiTexel*, assimp owns it and it's not our problem.
-    std::vector<std::variant<unsigned char*, aiTexel*>> imageDatas; 
+    std::vector<std::pair<Image, ImageOrigin> imageDatas; 
 
     if (usage != Texture::FontMap) { // For textures that aren't a font, we use stbi_image.h to load the files and then figure all the formatting and what not.
 
@@ -553,6 +558,7 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
     }
 
     // filtering settings again for the mag filter
+    // TODO: literaaly every other setting???
     switch (params.filteringBehaviour) {
     case Texture::LinearTextureFiltering:
     glTexParameteri(bindingLocation, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -672,4 +678,21 @@ TextureCreateParams::TextureCreateParams(const std::vector<std::string>& imagePa
     filteringBehaviour = Texture::LinearTextureFiltering;
     
     fontHeight = 48;
+}
+
+TextureSource::TextureSource(std::string imagePath): imageData(imagePath)
+{
+}
+
+TextureSource::TextureSource(Image image): imageData(image)
+{
+}
+
+Image TextureSource::GetImage()
+{
+    return Image{
+        .format = format,
+        .imageData = data,
+        .len = len
+    }
 }
