@@ -24,10 +24,11 @@ class BufferedBuffer {
 
     // can't copy
     BufferedBuffer(const BufferedBuffer&) = delete;
+    BufferedBuffer& operator=(const BufferedBuffer&) = delete;
 
     // you CAN move (so we can put it in vectors for example)
     BufferedBuffer(BufferedBuffer&&) noexcept;
-
+    
     // Recreates the buffer with the given size, and copies the buffer's old data into the new one.
     // Doesn't touch vaos obviously so you still need to reset that after reallocation.
     // newSize must be >= size.

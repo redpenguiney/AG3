@@ -32,7 +32,7 @@ public:
         // An index (in terms of instanceSize) to where the object's instance data is stored in the instances buffer.
         const unsigned int instanceSlot;
 
-        // Index into drawCommands, which INDBO the object's draw command is stored in.
+        // Index into drawCommands; which INDBO the object's draw command is stored in.
         const unsigned int drawBufferIndex;
     };
 
@@ -88,16 +88,21 @@ private:
         unsigned int meshIndex;
     };
 
+    // needed by RemoveObject()
     struct CommandLocation {
+
+        // RemoveObject() knows which indirect draw buffer this index is referring to from the DrawHandle
         unsigned int drawCommandIndex;
 
         // Here, command.baseInstance and command.baseVertex presume no multiple buffering. Meshpool::Commit() corrects that.
         //IndirectDrawCommand command;
     };
 
-    struct SlotUsageInfo {
+    struct MeshSlotUsageInfo {
         // id of the mesh inside this slot
         unsigned int meshId;
+        unsigned int sizeClass; // index of the vector in availableMeshSlots that this goes in when its freed
+        unsigned int nUsers; // num draw commands using this mesh slot
     };
 
     class DrawCommandBuffer {
@@ -138,18 +143,25 @@ private:
     unsigned int currentInstanceCapacity;
  
 
-    
 
     // if you want to allocate memory for a mesh more than vertexSize * 2^(n-1) bytes but less than vertexSize * 2^n bytes, the nth vector in this array has room for that.
     // When a mesh is removed from the pool, an index to its memory goes here.
     // The unsigned ints in each vector are vertex indices (same unit as DrawHandle.meshIndex)
     std::array<std::vector<unsigned int>, 32> availableMeshSlots;
 
+    // key is mesh slot. Needed for RemoveObject() to know where to put freed mesh 
+    // TODO: is unordered_map necceasry?
+    std::unordered_map<unsigned int, MeshSlotUsageInfo> meshSlotContents;
+
+    // Key is meshId, value is mesh slot. Needed for AddObject() to know when they already have the wanted mesh.
+    // TODO: again, ditch unordered_map?
+    std::unordered_map<unsigned int, unsigned int> meshUsers;
+
     // if availableMeshSlots is empty, this is the mesh index of the first available part of the vertices buffer
     unsigned int meshIndexEnd;
     
     // For each mesh slot, describes meshId.
-    std::vector<SlotUsageInfo> meshSlotContents;
+    //std::vector<SlotUsageInfo> meshSlotContents;
 
     std::vector<unsigned int> availableInstanceSlots;
     unsigned int instanceEnd;
@@ -175,7 +187,7 @@ private:
 	BufferedBuffer indices;
 
 	// each buffer stores indirect draw commands, which basically tell the GPU which vertices/instances to draw.
-    std::vector<DrawCommandBuffer> drawCommands;
+    std::vector <std::optional< DrawCommandBuffer >> drawCommands;
     std::vector<unsigned int> availableDrawCommandBufferIndices;
 
 	// if the shader/mesh combo supports animations, stores the bone transform matrices (and the number of them)
@@ -188,8 +200,6 @@ private:
     // Works by doubling the current capacity until it fits.
         // TODO: is that really the strat?
     void ExpandVertexCapacity();
-
-    
 
     // Expands instances so that they can contain at minimum instanceEnd. 
     // Works by doubling the current capacity until it fits.

@@ -57,7 +57,7 @@ RenderComponent::~RenderComponent() {
     }
     else { // otherwise just remove object from graphics engine
         DebugLogInfo("Please remove thyself.")
-        GraphicsEngine::Get().meshpools[shaderId][textureId][meshpoolId]->RemoveObject(meshpoolSlot, meshpoolInstance);
+        GraphicsEngine::Get().meshpools[shaderId][textureId][meshpoolId]->RemoveObject(drawHandle);
     }
 }
 
