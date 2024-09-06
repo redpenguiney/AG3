@@ -15,7 +15,7 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
     indices(GL_ELEMENT_ARRAY_BUFFER, MESH_BUFFERING_FACTOR, 0),
     instances(GL_ARRAY_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0),
     drawCommands(),
-    boneBuffer(std::nullopt),
+    bones(std::nullopt),
     boneOffsetBuffer(std::nullopt),
 
     vaoId(0),
@@ -230,11 +230,52 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
     }
 }
 
+void Meshpool::SetNormalMatrix(const DrawHandle& handle, const glm::mat3x3& normal)
+{
+    Assert(format.attributes.normalMatrix->instanced == true);
+    glm::mat3x3* normalMatrixLocation = (glm::mat3x3*)(format.attributes.normalMatrix->offset + instances.Data() + (handle.instanceSlot * instanceSize));
+    
+    // make sure we don't segfault 
+    Assert(handle.instanceSlot < currentInstanceCapacity);
+    Assert((char*)normalMatrixLocation <= instances.Data() + (instanceSize * currentInstanceCapacity));
+    Assert((char*)normalMatrixLocation >= instances.Data());
+    *normalMatrixLocation = normal;
+}
+
+void Meshpool::SetModelMatrix(const DrawHandle& handle, const glm::mat4x4& model)
+{
+    Assert(format.attributes.modelMatrix->instanced == true);
+    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(format.attributes.modelMatrix->offset + instances.Data() + (handle.instanceSlot * instanceSize));
+
+    // make sure we don't segfault 
+    Assert(handle.instanceSlot < currentInstanceCapacity);
+    Assert((char*)modelMatrixLocation <= instances.Data() + (instanceSize * currentInstanceCapacity));
+    Assert((char*)modelMatrixLocation >= instances.Data());
+    *modelMatrixLocation = model;
+}
+
+void Meshpool::SetBoneState(const DrawHandle& handle, unsigned int nBones, glm::mat4x4* offsets)
+{
+    Assert(format.supportsAnimation);
+        
+    Assert(format.maxBones <= nBones);
+    glm::mat4x4* bonesLocation = (glm::mat4x4*)(bones->Data() + handle.instanceSlot * sizeof(glm::mat4x4));
+    
+    // make sure we don't segfault 
+    Assert(instanceId < currentInstanceCapacity);
+    Assert(slot < meshCapacity);
+    Assert((char*)bonesLocation <= bones->Data() + (sizeof(glm::mat4x4) * currentInstanceCapacity));
+    Assert((char*)bonesLocation >= bones->Data());
+    
+    // copy in bone transforms
+    memcpy(bonesLocation, offsets, nBones * sizeof(glm::mat4x4));
+}
+
 void Meshpool::Draw() {
     glBindVertexArray(vaoId);
     indices.Bind();
-    if (boneBuffer.has_value()) {
-        boneBuffer->BindBase(BONE_BUFFER_BINDING);
+    if (bones.has_value()) {
+        bones->BindBase(BONE_BUFFER_BINDING);
         boneOffsetBuffer->BindBase(BONE_OFFSET_BUFFER_BINDING);
     }
     
@@ -280,8 +321,8 @@ void Meshpool::Commit() {
     instances.Commit();
     indices.Commit();
     
-    if (boneBuffer) {
-        boneBuffer->Commit();
+    if (bones) {
+        bones->Commit();
         boneOffsetBuffer->Commit();
     }
 }
@@ -295,8 +336,8 @@ void Meshpool::FlipBuffers()
         if (!c.has_value()) { continue; }
         c->buffer.Flip();
     }
-    if (boneBuffer) {
-        boneBuffer->Flip();
+    if (bones) {
+        bones->Flip();
         boneOffsetBuffer->Flip();
     }
 }
@@ -367,7 +408,7 @@ void Meshpool::ExpandInstanceCapacity()
     // Update buffers.
     instances.Reallocate(currentInstanceCapacity * instanceSize);
     if (format.supportsAnimation) {
-        boneBuffer->Reallocate(currentInstanceCapacity * sizeof(glm::mat4x4) * format.maxBones);
+        bones->Reallocate(currentInstanceCapacity * sizeof(glm::mat4x4) * format.maxBones);
         boneOffsetBuffer->Reallocate(currentInstanceCapacity * sizeof(GLuint));
     }
 

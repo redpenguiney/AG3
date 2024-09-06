@@ -191,7 +191,7 @@ private:
     std::vector<unsigned int> availableDrawCommandBufferIndices;
 
 	// if the shader/mesh combo supports animations, stores the bone transform matrices (and the number of them)
-	std::optional<BufferedBuffer> boneBuffer; 
+	std::optional<BufferedBuffer> bones; 
 
 	// if the shader/mesh combo supports animations, stores offsets into the bone buffer for each object
 	std::optional<BufferedBuffer> boneOffsetBuffer; 
