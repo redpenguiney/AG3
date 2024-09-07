@@ -163,16 +163,16 @@ public:
     TextureSource(Image image);
 
     // returns the contained Image if it was provided, or otherwise loads the filepath to generate an Image and returns that.
-    Image GetImage();
+    //Image GetImage();
 
-private:
+//private:
     const std::variant<std::string, Image> imageData;
 };
 
 struct TextureCreateParams {
     // Unless creating cubemap, size must = 1.
     // If it is a cubemap, it goes Right,Left,Top,Bottom,Back,Front
-    const std::vector<TextureSource> texturePaths; 
+    const std::vector<TextureSource> textureSources; 
 
     // how texture data is stored on the GPU; RGB, RGBA, grayscale for things like heightmaps, etc.
     // NOT how it is stored within the file, we automatically determine that.

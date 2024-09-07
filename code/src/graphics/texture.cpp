@@ -4,15 +4,10 @@
 #include <cstring>
 #include <ft2build.h>
 #include <new>
-#include <variant>
 #include FT_FREETYPE_H
 // #include "../../external_headers/freetype/freetype/freetype.h"
-#include <algorithm>
 #include "debug/assert.hpp"
-#include <cstdio>
-#include <cstdlib>
 #include <memory>
-#include <process.h>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -20,9 +15,9 @@
 #include "debug/debug.hpp"
 #include "texture.hpp"
 #include "framebuffer.hpp"
-
+#include <tuple>
 #include "assimp/scene.h"
-
+#include <algorithm>
 
 GLenum TextureBindingLocationFromType(Texture::TextureType type) {
     switch (type) {
@@ -61,6 +56,11 @@ unsigned int NChannelsFromFormat(Texture::TextureFormat format ) {
     return 0; // gotta return something to hide the warning
 }
 
+enum ImageOrigin {
+        UserOrAssimpSupplied = 0, // the user (or assimp) controls the image's data and we don't delete it or anything
+        StbiSupplied = 1 // We created this image via stbi and we must delete it through stbi, too.
+    };
+
 // Create texture (for use on objects).
 Texture::Texture(const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType):
 format(params.format),
@@ -72,26 +72,23 @@ glTextureIndex(textureIndex)
 {
     // skyboxes need 6 textures, everything else obviously only needs 1
     if (textureType == Texture::TextureCubemap) {
-        Assert(params.texturePaths.size() == 6);
+        Assert(params.textureSources.size() == 6);
     }
     else {
-        Assert(params.texturePaths.size() == 1);
+        Assert(params.textureSources.size() == 1);
     }
 
-    enum ImageOrigin {
-        UserOrAssimpSupplied = 0, // the user (or assimp) controls the image's data and we don't delete it or anything
-        StbiSupplied = 1 // We created this image via stbi and we must delete it through stbi, too.
-    };
+    
 
     // Get all the image data
     // if unsigned char*, it's from stbi and we need to free it when this function is done. if aiTexel*, assimp owns it and it's not our problem.
-    std::vector<std::pair<Image, ImageOrigin> imageDatas; 
+    std::vector<std::pair<Image, ImageOrigin>> imageDatas; 
 
     if (usage != Texture::FontMap) { // For textures that aren't a font, we use stbi_image.h to load the files and then figure all the formatting and what not.
 
         int isArgb = -1; // -1 if unknown atm, 0 if false, 1 if true. If one image is argb, all of them must be.
         int lastWidth = 0, lastHeight = 0, lastNChannels = 0;
-        for (auto & path: params.texturePaths) {
+        for (auto & path: params.textureSources) {
 
             const aiTexture* embeddedTexture = nullptr;
             if (params.scene != nullptr ) { // then the image might have been embedded in a model file and then loaded by assimp
@@ -316,7 +313,8 @@ glTextureIndex(textureIndex)
     }
     else { // to create font textures, we use freetype to rasterize them for us from vector ttf fonts
         Assert(params.format == TextureFormat::Grayscale_8Bit);
-
+        Assert(std::holds_alternative<std::string>(params.textureSources.front().imageData));
+        std::string fontPath = std::get<std::string>(params.textureSources.front().imageData);
         // TODO: optimization needed probably
         // TODO: apparently theres an stb_freetype library that might be better suited for this
 
@@ -326,7 +324,7 @@ glTextureIndex(textureIndex)
         
         // create a face (what freetype calls a loaded font)
         FT_Face face;
-        Assert(!FT_New_Face(ft, params.texturePaths.back().c_str(), 0, &face));
+        Assert(!FT_New_Face(ft, fontPath.c_str(), 0, &face));
 
         // set font size
         Assert(params.fontHeight != 0);
@@ -341,7 +339,7 @@ glTextureIndex(textureIndex)
         for (unsigned char c = 0; c < 128; c++) { // C++ NO WAYYYYYYYY!!!!
             if (FT_Load_Char(face, c, FT_LOAD_RENDER))
             {
-                std::cout << "ERROR::FREETYTPE: Failed to load character " << c << " from font " << params.texturePaths.back() << "/n";
+                std::cout << "ERROR::FREETYTPE: Failed to load character " << c << " from font " << params.textureSources.back() << "/n";
                 abort();
             }
 
@@ -433,7 +431,7 @@ lineSpacing(params.fontHeight),
 bindingLocation(TextureBindingLocationFromType(textureType)),
 glTextureIndex(textureIndex) 
 {
-    Assert(params.texturePaths.size() == 0); 
+    Assert(params.textureSources.size() == 0); 
 
     glGenTextures(1, &glTextureId);
     Use();
@@ -668,7 +666,7 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
 // }
 
 TextureCreateParams::TextureCreateParams(const std::vector<std::string>& imagePaths, const Texture::TextureUsage texUsage):
-    texturePaths(imagePaths),
+    textureSources(imagePaths),
     usage(texUsage)
 {
     format = Texture::Auto_8Bit;
@@ -688,11 +686,19 @@ TextureSource::TextureSource(Image image): imageData(image)
 {
 }
 
-Image TextureSource::GetImage()
-{
-    return Image{
-        .format = format,
-        .imageData = data,
-        .len = len
-    }
-}
+//Image TextureSource::GetImage()
+//{
+    //if (std::holds_alternative<Image>(imageData)) {
+        //return std::get<Image>(imageData);
+    //}
+    //else {
+        //std::string path = std::get<std::string>(imageData);
+
+        //return Image{
+        //.format = format,
+        //.imageData = data,
+        //.len = len
+        //}
+    //}
+    
+//}
