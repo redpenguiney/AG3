@@ -56,10 +56,7 @@ unsigned int NChannelsFromFormat(Texture::TextureFormat format ) {
     return 0; // gotta return something to hide the warning
 }
 
-enum ImageOrigin {
-        UserOrAssimpSupplied = 0, // the user (or assimp) controls the image's data and we don't delete it or anything
-        StbiSupplied = 1 // We created this image via stbi and we must delete it through stbi, too.
-    };
+
 
 // Create texture (for use on objects).
 Texture::Texture(const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType):
@@ -81,135 +78,93 @@ glTextureIndex(textureIndex)
     
 
     // Get all the image data
-    // if unsigned char*, it's from stbi and we need to free it when this function is done. if aiTexel*, assimp owns it and it's not our problem.
-    std::vector<std::pair<Image, ImageOrigin>> imageDatas; 
+    std::vector<std::shared_ptr<Image>> imageDatas; 
 
     if (usage != Texture::FontMap) { // For textures that aren't a font, we use stbi_image.h to load the files and then figure all the formatting and what not.
 
         int isArgb = -1; // -1 if unknown atm, 0 if false, 1 if true. If one image is argb, all of them must be.
         int lastWidth = 0, lastHeight = 0, lastNChannels = 0;
-        for (auto & path: params.textureSources) {
+        for (auto & src: params.textureSources) {
 
-            const aiTexture* embeddedTexture = nullptr;
-            if (params.scene != nullptr ) { // then the image might have been embedded in a model file and then loaded by assimp
-                embeddedTexture = params.scene->GetEmbeddedTexture(path.c_str());
+            if (std::holds_alternative<std::shared_ptr<Image>>(src.imageData)) {
+                imageDatas.push_back(std::get<std::shared_ptr<Image>>(src.imageData));
+                Assert(imageDatas.back()->imageOrigin == Image::UserOrAssimpSupplied);
             }
-            if (embeddedTexture == nullptr) { // then there is no embedded texture from assimp, we just use stbi_image.h to load the image file normally.
-                
-                if (isArgb == 1) {
-                    // because stbi doesn't use RAII like a cool person we have to manually free the texture data even when it errors.
-                    for (auto & data: imageDatas) {
-                        if (std::holds_alternative<unsigned char*>(data)) {
-                            stbi_image_free(std::get<unsigned char*>(data));
-                        }  
-                    }
-                    throw std::runtime_error("Mixed usage of embedded uncompressed argb textures and non-argb textures is illegal.");  
-                }
+            else if (std::holds_alternative<std::string>(src.imageData)) {
+                std::string path = std::get<std::string>(src.imageData);
 
-                // use stbi_image.h to load file
-                imageDatas.push_back(stbi_load(path.c_str(), &width, &height, &nChannels, NChannelsFromFormat(params.format)));
-                // TODO: we don't throw an error if we put in a one channel image (for example) and wanted 3 channels, we just create 2 more channels, is that ok?
-                nChannels = std::max(nChannels, (int)NChannelsFromFormat(params.format)); // apparently nChannels is set to the amount that the original image had, even if we asked for (and recieved) extra channels, so this makes sure it has the right value
-           
-                // error checking
-                // TODO: good design would be different exception classes for each of these cases
-                if (std::get<unsigned char*>(imageDatas.back()) == nullptr) { 
-                    imageDatas.pop_back(); // don't delete nullptr
-
-                    // because stbi doesn't use RAII like a cool person we have to manually free the texture data even when it errors.
-                    for (auto & data: imageDatas) {
-                        if (std::holds_alternative<unsigned char*>(data)) {
-                            stbi_image_free(std::get<unsigned char*>(data));
-                        }  
-                    }
-                    throw std::runtime_error(std::string("STBI failed to load") + path + "because " + stbi_failure_reason() + ".");  
+                const aiTexture* embeddedTexture = nullptr;
+                if (params.scene != nullptr) { // then the image might have been embedded in a model file and then loaded by assimp
+                    embeddedTexture = params.scene->GetEmbeddedTexture(path.c_str());
                 }
-            }
-            else { // assimp embedded a texture.
-                if (embeddedTexture->mHeight == 0) { // then the image is compressed (png, jpeg, etc.)
+                if (embeddedTexture == nullptr) { // then there is no embedded texture from assimp, we just use stbi_image.h to load the image file normally.
 
                     if (isArgb == 1) {
-                        // because stbi doesn't use RAII like a cool person we have to manually free the texture data even when it errors.
-                        for (auto & data: imageDatas) {
-                            if (std::holds_alternative<unsigned char*>(data)) {
-                                stbi_image_free(std::get<unsigned char*>(data));
-                            }  
-                        }
-                        throw std::runtime_error("Mixed usage of embedded uncompressed argb textures and non-argb textures is illegal.");  
+                        throw std::runtime_error("Mixed usage of embedded uncompressed argb textures and non-argb textures is illegal.");
                     }
 
-                    isArgb = 0;
+                    // use stbi_image.h to load file
+                    auto ptr = stbi_load(path.c_str(), &width, &height, &nChannels, NChannelsFromFormat(params.format));
+
+                    // Check for stbi errors
+                    // TODO: good design would be different exception classes for each loading error case
+                    if (ptr == nullptr) {
+                        throw std::runtime_error(std::string("STBI failed to load") + path + "because " + stbi_failure_reason() + ".");
+                    }
+
+                    imageDatas.emplace_back(ptr, width, height, nChannels, Image::StbiSupplied);
+                    // TODO: we don't throw an error if we put in a one channel image (for example) and wanted 3 channels, we just create 2 more channels, is that ok?
                     
-                    // in this case, we actually DO use stbi, which can load directly from the pointer provided by assimp, and we push the result of that into imageDats
-                    // stbi even determines file format which is nice
-                    imageDatas.push_back(stbi_load_from_memory((const stbi_uc*)(const void*)embeddedTexture->pcData, embeddedTexture->mWidth, &width, &height, &nChannels, NChannelsFromFormat(params.format)));
-
-                    // error checking
-                    // TODO: good design would be different exception classes for each of these cases
-                    if (std::get<unsigned char*>(imageDatas.back()) == nullptr) { 
-                        imageDatas.pop_back(); // don't delete nullptr
-
-                        // because stbi doesn't use RAII like a cool person we have to manually free the texture data even when it errors.
-                        for (auto & data: imageDatas) {
-                            if (std::holds_alternative<unsigned char*>(data)) {
-                                stbi_image_free(std::get<unsigned char*>(data));
-                            }  
-                        }
-                        throw std::runtime_error(std::string("STBI failed to load") + path + "because " + stbi_failure_reason() + ".");  
-                    }
+                    nChannels = std::max(nChannels, (int)NChannelsFromFormat(params.format)); // apparently nChannels is set to the amount that the original image had, even if we asked for (and recieved) extra channels, so this makes sure it has the right value            
                 }
-                else { // the image is not compressed, we simply need to determine numchannels/etc. and push back image buffer pointer into imageDatas.
-                    // TODO: assimp docs have conflicting info on whether it argb or rgba, so for now its rgba and we'll fix it if it crashes later.
-                    DebugLogInfo("LOADING UNCOMPRESSED FROM ASSIMP OMG ILL BE SHOCKED IF THIS WORKS");
+                else { // assimp embedded a texture.
+                    if (embeddedTexture->mHeight == 0) { // then the image is compressed (png, jpeg, etc.)
 
-                    width = embeddedTexture->mWidth;
-                    height = embeddedTexture->mHeight;
-                    nChannels = 4;
-
-                    if (isArgb == 0) {
-                        // because stbi doesn't use RAII like a cool person we have to manually free the texture data even when it errors.
-                        for (auto & data: imageDatas) {
-                            if (std::holds_alternative<unsigned char*>(data)) {
-                                stbi_image_free(std::get<unsigned char*>(data));
-                            }  
+                        if (isArgb == 1) {
+                            throw std::runtime_error("Mixed usage of embedded uncompressed argb textures and non-argb textures is illegal.");
                         }
-                        throw std::runtime_error("Mixed usage of embedded uncompressed argb textures and non-argb textures is illegal.");  
-                    }
-                    isArgb = 1; // assimp always gives uncompressed in argb according to docs
-                    imageDatas.push_back(embeddedTexture->pcData);
+                        isArgb = 0;
 
-                    DebugLogInfo("OMG IT WORKED U CAN DELETE THIS PRINT NOW");
-                }
-                
+                        // in this case, we actually DO use stbi, which can load directly from the pointer provided by assimp, and we push the result of that into imageDats
+                        // stbi even determines file format which is nice
+                        auto ptr = stbi_load_from_memory((const stbi_uc*)(const void*)embeddedTexture->pcData, embeddedTexture->mWidth, &width, &height, &nChannels, NChannelsFromFormat(params.format));
+                        imageDatas.emplace_back(ptr, width, height, nChannels, Image::StbiSupplied);
+
+                        // stbi error checking
+                        // TODO: good design would be different exception classes for each of these cases
+                        if (ptr == nullptr) {
+                            throw std::runtime_error(std::string("STBI failed to load") + path + "because " + stbi_failure_reason() + ".");
+                        }
+                    }
+                    else { // the image is not compressed, we simply need to determine numchannels/etc. and push back image buffer pointer into imageDatas.
+                        // TODO: assimp docs have conflicting info on whether it argb or rgba, so for now its rgba and we'll fix it if it crashes later.
+                        DebugLogInfo("LOADING UNCOMPRESSED FROM ASSIMP OMG ILL BE SHOCKED IF THIS WORKS");
+
+                        width = embeddedTexture->mWidth;
+                        height = embeddedTexture->mHeight;
+                        nChannels = 4;
+
+                        if (isArgb == 0) {}
+                            throw std::runtime_error("Mixed usage of embedded uncompressed argb textures and non-argb textures is illegal.");
+                        }
+                        isArgb = 1; // assimp always gives uncompressed in argb according to docs
+                        imageDatas.emplace_back(embeddedTexture->pcData, width, height, nChannels, Image::UserOrAssimpSupplied);
+
+                        DebugLogInfo("OMG IT WORKED U CAN DELETE THIS PRINT NOW");
+                    }
+
             }
-            
+  
             // error checking
             // TODO: good design would be different exception classes for each of these cases
             if ((lastWidth != 0 && lastWidth != width) || (lastHeight != 0 && lastHeight != height)) {
-                // because stbi doesn't use RAII like a cool person we have to manually free the texture data even when it errors.
-                for (auto & data: imageDatas) {
-                    if (std::holds_alternative<unsigned char*>(data)) {
-                        stbi_image_free(std::get<unsigned char*>(data));
-                    } 
-                }
                 throw std::runtime_error("The given texture files had different image sizes. Cubemaps/multilayer textures must have the same size for every image/layer.");
             }
             if (width != height && type == Texture::TextureCubemap) {
-                // because stbi doesn't use RAII like a cool person we have to manually free the texture data even when it errors.
-                for (auto & data: imageDatas) {
-                    if (std::holds_alternative<unsigned char*>(data)) {
-                        stbi_image_free(std::get<unsigned char*>(data));
-                    }  
-                }
+                std::string path = std::holds_alternative<std::string>(src.imageData) ? std::get<std::string>(src.imageData) : "(from memory, not a file)";
                 throw std::runtime_error(std::string("A cubemap texture was requested, but one of the given images \"") + path + "\" did not contain a square image (" + std::to_string(width) + " x " + std::to_string(height) + ").");
             }
             if (lastNChannels != 0 && lastNChannels != nChannels) {
-                // because stbi doesn't use RAII like a cool person we have to manually free the texture data even when it errors.
-                for (auto & data: imageDatas) {
-                    if (std::holds_alternative<unsigned char*>(data)) {
-                        stbi_image_free(std::get<unsigned char*>(data));
-                    }  
-                }
                 throw std::runtime_error("The given texture files had different numbers of channels. Cubemaps/multilayer textures must have the same number of channels for every image/layer.");
             }
 
@@ -236,6 +191,7 @@ glTextureIndex(textureIndex)
         break;
         }
 
+        // if they asked for automatic format selection, pick one based on the number of channels we got.
         TextureFormat internalFormat = params.format;
         if (params.format == Texture::Auto_8Bit) {
             switch (nChannels) {
@@ -270,51 +226,26 @@ glTextureIndex(textureIndex)
             // glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
             // glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
             // glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-            void* data;
-            if (std::holds_alternative<unsigned char*>(imageDatas.back())) {
-                data = std::get<unsigned char*>(imageDatas.back());
-            }
-            else {
-                data = std::get<aiTexel*>(imageDatas.back());
-            }
+            void* data = imageDatas.back()->imageData;
             glTexImage3D(bindingLocation, 0, internalFormat, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, data); // put data in opengl
         }
         else if (type == Texture::TextureCubemap) {
             depth = 1; 
             for (unsigned int i = 0; i < 6; i++) {
-                void* data;
-                if (std::holds_alternative<unsigned char*>(imageDatas.at(i))) {
-                    data = std::get<unsigned char*>(imageDatas.at(i));
-                }
-                else {
-                    data = std::get<aiTexel*>(imageDatas.at(i));
-                }
+                void* data = imageDatas.at(i)->imageData;
                 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, data);
             }
             
         }
-        // else if (type == TEXTURE_2D_ARRAY) {
-        //     if (layerHeight == -1) {layerHeight = height;}
-        //     depth = height/layerHeight;
-        //     height = layerHeight;
-        //     glTexImage3D(bindingLocation, 0, GL_RGBA8, width, height, depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
-        // }
         else {
             Assert(false); // unreachable
-        }
-
-        // free the data loaded by stbi (but not the data loaded by assimp)
-        for (auto & data: imageDatas) {
-            if (std::holds_alternative<unsigned char*>(data)) {
-                stbi_image_free(std::get<unsigned char*>(data));
-            }  
         }
     
     }
     else { // to create font textures, we use freetype to rasterize them for us from vector ttf fonts
         Assert(params.format == TextureFormat::Grayscale_8Bit);
-        Assert(std::holds_alternative<std::string>(params.textureSources.front().imageData));
-        std::string fontPath = std::get<std::string>(params.textureSources.front().imageData);
+        Assert(std::holds_alternative<std::string>(params.textureSources.back().imageData));
+        std::string fontPath = std::get<std::string>(params.textureSources.back().imageData);
         // TODO: optimization needed probably
         // TODO: apparently theres an stb_freetype library that might be better suited for this
 
@@ -339,7 +270,7 @@ glTextureIndex(textureIndex)
         for (unsigned char c = 0; c < 128; c++) { // C++ NO WAYYYYYYYY!!!!
             if (FT_Load_Char(face, c, FT_LOAD_RENDER))
             {
-                std::cout << "ERROR::FREETYTPE: Failed to load character " << c << " from font " << params.textureSources.back() << "/n";
+                DebugLogError("Freetype failed to load character ", c, " from font ", fontPath, "!");
                 abort();
             }
 
@@ -665,7 +596,7 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
 //     ConfigTexture();
 // }
 
-TextureCreateParams::TextureCreateParams(const std::vector<std::string>& imagePaths, const Texture::TextureUsage texUsage):
+TextureCreateParams::TextureCreateParams(const std::vector<TextureSource>& imagePaths, const Texture::TextureUsage texUsage):
     textureSources(imagePaths),
     usage(texUsage)
 {
@@ -682,7 +613,7 @@ TextureSource::TextureSource(std::string imagePath): imageData(imagePath)
 {
 }
 
-TextureSource::TextureSource(Image image): imageData(image)
+TextureSource::TextureSource(std::shared_ptr<Image> image) : imageData(image)
 {
 }
 
@@ -702,3 +633,32 @@ TextureSource::TextureSource(Image image): imageData(image)
     //}
     
 //}
+
+Image::Image(uint8_t* data, int width, int height, int nChannels, ImageOrigin origin):
+    imageData(data),
+    width(width),
+    height(height),
+    nChannels(nChannels),
+    //format(format),
+    imageOrigin(origin)
+{
+}
+
+//Image::Image(Image&& old)
+//{
+//    imageData = old.imageData;
+//    imageOrigin = old.imageOrigin;
+//    width = old.width;
+//    height = old.height;
+//    nChannels = old.nChannels;
+//    //format = old.format;
+//
+//    old.imageData = nullptr;
+//}
+
+Image::~Image()
+{
+    if (imageData != nullptr && imageOrigin == Image::StbiSupplied) {
+        stbi_image_free(imageData);
+    }
+}

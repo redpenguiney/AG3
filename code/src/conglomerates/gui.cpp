@@ -273,7 +273,7 @@ void Gui::UpdateGuiGraphics() {
     object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel);
      
     if (guiTextInfo.has_value()) {
-        guiTextInfo->object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel - 0.01);
+        guiTextInfo->object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, float(zLevel - 0.01));
         guiTextInfo->object->Get<RenderComponent>()->SetColor(guiTextInfo->rgba);
         guiTextInfo->object->Get<RenderComponent>()->SetTextureZ(guiTextInfo->fontMaterialLayer);
     }

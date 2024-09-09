@@ -17,6 +17,13 @@ struct MaterialCreateParams {
     // set to true for fonts.
     //TODO remember what this does
     bool depthMask = false;
+
+    // if true, the material will not be appended to any other materials (as a drawcall optimization).
+    // Other materials may still be appended to it unless allowAppendation is also false.
+    bool requireSingular = false;
+
+    // If false, other materials will not be able to be appended to this one (as a drawcall optimization) unless you explicitly do it.
+    bool allowAppendaton = true;
 };
 
 // A material is just a collection of textures.

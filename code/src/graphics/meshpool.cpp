@@ -2,8 +2,12 @@
 #include "GL/glew.h"
 #include "mesh.hpp"
 
+#include "shader_program.hpp"
+#include "material.hpp"
+
 #include <algorithm>
 #include "../debug/assert.hpp"
+#include "gengine.hpp"
 
 Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
     format(meshVertexFormat),
@@ -128,8 +132,8 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
 
         for (unsigned int i = 0; i < nInstances; i++) {
             ret.emplace_back(DrawHandle{
-                .meshIndex = slot,
-                .instanceSlot = firstInstance + i,  
+                .meshIndex = (int)slot,
+                .instanceSlot = (int)(firstInstance + i),
             });
 
             instanceSlotsToCommands[firstInstance + i] = CommandLocation{ .drawCommandIndex = drawCommandIndex};
@@ -232,26 +236,12 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
 
 void Meshpool::SetNormalMatrix(const DrawHandle& handle, const glm::mat3x3& normal)
 {
-    Assert(format.attributes.normalMatrix->instanced == true);
-    glm::mat3x3* normalMatrixLocation = (glm::mat3x3*)(format.attributes.normalMatrix->offset + instances.Data() + (handle.instanceSlot * instanceSize));
-    
-    // make sure we don't segfault 
-    Assert(handle.instanceSlot < currentInstanceCapacity);
-    Assert((char*)normalMatrixLocation <= instances.Data() + (instanceSize * currentInstanceCapacity));
-    Assert((char*)normalMatrixLocation >= instances.Data());
-    *normalMatrixLocation = normal;
+    SetInstancedVertexAttribute<glm::mat3x3>(handle, format.NORMAL_MATRIX_ATTRIBUTE_NAME, normal);
 }
 
 void Meshpool::SetModelMatrix(const DrawHandle& handle, const glm::mat4x4& model)
 {
-    Assert(format.attributes.modelMatrix->instanced == true);
-    glm::mat4x4* modelMatrixLocation = (glm::mat4x4*)(format.attributes.modelMatrix->offset + instances.Data() + (handle.instanceSlot * instanceSize));
-
-    // make sure we don't segfault 
-    Assert(handle.instanceSlot < currentInstanceCapacity);
-    Assert((char*)modelMatrixLocation <= instances.Data() + (instanceSize * currentInstanceCapacity));
-    Assert((char*)modelMatrixLocation >= instances.Data());
-    *modelMatrixLocation = model;
+    SetInstancedVertexAttribute<glm::mat4x4>(handle, format.MODEL_MATRIX_ATTRIBUTE_NAME, model);
 }
 
 void Meshpool::SetBoneState(const DrawHandle& handle, unsigned int nBones, glm::mat4x4* offsets)
@@ -262,8 +252,8 @@ void Meshpool::SetBoneState(const DrawHandle& handle, unsigned int nBones, glm::
     glm::mat4x4* bonesLocation = (glm::mat4x4*)(bones->Data() + handle.instanceSlot * sizeof(glm::mat4x4));
     
     // make sure we don't segfault 
-    Assert(instanceId < currentInstanceCapacity);
-    Assert(slot < meshCapacity);
+    Assert(handle.instanceSlot < currentInstanceCapacity);
+    Assert(handle.meshIndex < currentVertexCapacity);
     Assert((char*)bonesLocation <= bones->Data() + (sizeof(glm::mat4x4) * currentInstanceCapacity));
     Assert((char*)bonesLocation >= bones->Data());
     
@@ -271,7 +261,7 @@ void Meshpool::SetBoneState(const DrawHandle& handle, unsigned int nBones, glm::
     memcpy(bonesLocation, offsets, nBones * sizeof(glm::mat4x4));
 }
 
-void Meshpool::Draw() {
+void Meshpool::Draw(bool prePostProc) {
     glBindVertexArray(vaoId);
     indices.Bind();
     if (bones.has_value()) {
@@ -281,9 +271,63 @@ void Meshpool::Draw() {
     
     //double start1 = Time();
     //glPointSize(4.0);
-    for (auto& command : drawCommands) {
-        if (!command.has_value()) { continue; }
+
+    // We want to sort the draw commands by shader and then by material to reduce bindings which hurt perf.
+    std::vector<DrawCommandBuffer*> sortedDrawCommands;
+    for (auto& maybeBuffer : drawCommands) {
+        if (maybeBuffer.has_value() && maybeBuffer->shader->ignorePostProc != prePostProc) {
+            sortedDrawCommands.push_back(&*maybeBuffer);
+        }
+    }
+    std::sort(sortedDrawCommands.begin(), sortedDrawCommands.end(), [](const DrawCommandBuffer* a, const DrawCommandBuffer* b) {
+        if (a->shader->shaderProgramId == b->shader->shaderProgramId) {
+            return a->material->id > b->material->id;
+        }
+        else {
+            return a->shader->shaderProgramId > b->shader->shaderProgramId;
+        }
+    });
+
+    for (auto& command : sortedDrawCommands) {
         command->buffer.Bind();
+        auto& shader = command->shader;
+
+        if (shader->useClusteredLighting) {
+            shader->Uniform("pointLightCount", GraphicsEngine::Get().pointLightCount);
+            shader->Uniform("spotLightCount", GraphicsEngine::Get().spotLightCount);
+            shader->Uniform("pointLightOffset", unsigned int(GraphicsEngine::Get().pointLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::PointLightInfo)));
+            shader->Uniform("spotLightOffset", unsigned int(GraphicsEngine::Get().spotLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::SpotLightInfo)));
+        }
+
+        shader->Use();
+        GraphicsEngine::Get().pointLightDataBuffer.BindBase(0);
+        GraphicsEngine::Get().spotLightDataBuffer.BindBase(1);
+
+        if (command->material == nullptr) { // if we aren't using a material
+            Material::Unbind();
+
+            shader->Uniform("specularMappingEnabled", false);
+            shader->Uniform("fontMappingEnabled", false);
+            shader->Uniform("normalMappingEnabled", false);
+            shader->Uniform("parallaxMappingEnabled", false);
+            shader->Uniform("colorMappingEnabled", false);
+        }
+        else {
+
+            auto& material = command->material;
+            material->Use();
+
+            // if (materialId == 4) {
+            //     std::cout << "BINDING THING WITH FONTMAP.\n";
+            // }
+
+            shader->Uniform("specularMappingEnabled", material->HasSpecularMap());
+            shader->Uniform("fontMappingEnabled", material->HasFontMap());
+            shader->Uniform("normalMappingEnabled", material->HasNormalMap());
+            shader->Uniform("parallaxMappingEnabled", material->HasDisplacementMap());
+            shader->Uniform("colorMappingEnabled", material->HasColorMap());
+        }
+
         glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->drawCount, 0);
     }
      
@@ -291,6 +335,21 @@ void Meshpool::Draw() {
 }
 
 void Meshpool::Commit() {
+    // write vertex/index changes to buffer
+    for (unsigned int i = 0; i < meshUpdates.size(); i++) {
+        auto meshUpdate = meshUpdates[i];
+
+        // copy vertices and indices
+        memcpy(vertices.Data() + meshUpdate.meshIndex * vertexSize, meshUpdate.mesh->vertices.data(), meshUpdate.mesh->vertices.size() * sizeof(GLfloat));
+        memcpy(indices.Data() + meshUpdate.meshIndex * indexSize, meshUpdate.mesh->indices.data(), meshUpdate.mesh->indices.size() * sizeof(GLuint));
+
+        meshUpdate.updatesLeft--;
+        if (meshUpdate.updatesLeft == 0) {
+            meshUpdates[i] = meshUpdates.back();
+            meshUpdates.pop_back();
+            i--;
+        }
+    }
     // write indirect draw commands to buffer
     for (auto& drawBuffer : drawCommands) {
         if (!drawBuffer.has_value()) { continue; }
@@ -426,19 +485,20 @@ Meshpool::DrawCommandBuffer& Meshpool::GetCommandBuffer(const std::shared_ptr<Sh
         }
     }
 
-    // if none was found, make a buffer for this material/shader combo
-    DrawCommandBuffer b{
-        .shader = shader,
-        .material = material,
-        .buffer = std::move(BufferedBuffer(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0)),
-    };
-
     if (availableDrawCommandBufferIndices.size()) {
-        drawCommands.emplace(drawCommands.begin() + availableDrawCommandBufferIndices.back(), std::move(b));
+        drawCommands.emplace(drawCommands.begin() + availableDrawCommandBufferIndices.back(), shader, material, std::move(BufferedBuffer(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0)));
     }
     else {
-        drawCommands.emplace_back(std::move(b));
+        drawCommands.emplace_back(shader, material, std::move(BufferedBuffer(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0)));
     }
+}
+
+Meshpool::DrawCommandBuffer::DrawCommandBuffer(const std::shared_ptr<ShaderProgram>& s, const std::shared_ptr<Material>& m, BufferedBuffer&& b):
+    shader(s),
+    material(m),
+    buffer(std::move(b))
+{
+
 }
 
 unsigned int Meshpool::DrawCommandBuffer::GetNewDrawCommandSlot()
@@ -450,3 +510,25 @@ unsigned int Meshpool::DrawCommandBuffer::GetNewDrawCommandSlot()
     availableDrawCommandSlots.pop_back();
     return drawCommandIndex;
 }
+
+template<typename AttributeType>
+void Meshpool::SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeName, const AttributeType& value) {
+    Assert(attributeName < sizeof(format.vertexAttributes) / sizeof(format.vertexAttributes[0]));
+    Assert(format.vertexAttributes[attributeName]->instanced == true);
+
+    AttributeType* attributeLocation = (AttributeType*)(format.vertexAttributes[attributeName]->offset + instances.Data() + (handle.instanceSlot * instanceSize));
+
+    // make sure we don't segfault 
+    Assert(handle.instanceSlot < currentInstanceCapacity);
+    Assert((char*)attributeLocation <= instances.Data() + (instanceSize * currentInstanceCapacity));
+    Assert((char*)attributeLocation >= instances.Data());
+    *attributeLocation = value;
+}
+
+// explicit template instantiations
+template void Meshpool::SetInstancedVertexAttribute<glm::mat4x4>(const DrawHandle& handle, const unsigned int attributeName, const glm::mat4x4&);
+template void Meshpool::SetInstancedVertexAttribute<glm::mat3x3>(const DrawHandle& handle, const unsigned int attributeName, const glm::mat3x3&);
+template void Meshpool::SetInstancedVertexAttribute<glm::vec4>(const DrawHandle& handle, const unsigned int attributeName, const glm::vec4&);
+template void Meshpool::SetInstancedVertexAttribute<glm::vec3>(const DrawHandle& handle, const unsigned int attributeName, const glm::vec3&);
+template void Meshpool::SetInstancedVertexAttribute<glm::vec2>(const DrawHandle& handle, const unsigned int attributeName, const glm::vec2&);
+template void Meshpool::SetInstancedVertexAttribute<float>(const DrawHandle& handle, const unsigned int attributeName, const float&);

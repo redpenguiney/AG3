@@ -143,14 +143,25 @@ class Texture {
 };
 
 struct Image {
-    // array of pixels. Image does NOT own.
+    // array of pixels. Image does NOT own UNLESS imageOrigin == StbiSupplied.
     uint8_t* imageData;
 
     // based on length of imageData
     int width, height, nChannels;
 
     // format of imageData
-    Texture::TextureFormat format;
+    //Texture::TextureFormat format;
+
+    enum ImageOrigin {
+        UserOrAssimpSupplied = 0, // the user (or assimp) controls the image's data and we don't delete it or anything
+        StbiSupplied = 1 // We created this image via stbi and we must delete it through stbi, too.
+    };
+
+    ImageOrigin imageOrigin;
+
+    Image(uint8_t* data, int width, int height, int nChannels, ImageOrigin origin);
+    Image(const Image&) = delete;
+    ~Image();
 };
 
 // Generates (or already contains) an image.
@@ -159,14 +170,13 @@ class TextureSource {
 public:
     TextureSource(std::string imagePath);
 
-    // Texture does NOT take ownership of the imageData pointer of the given image. Deleting that pointer is still your problem.
-    TextureSource(Image image);
+    TextureSource(std::shared_ptr<Image> image);
 
     // returns the contained Image if it was provided, or otherwise loads the filepath to generate an Image and returns that.
     //Image GetImage();
 
 //private:
-    const std::variant<std::string, Image> imageData;
+    const std::variant<std::string, std::shared_ptr<Image>> imageData;
 };
 
 struct TextureCreateParams {
@@ -190,7 +200,7 @@ struct TextureCreateParams {
     // whether a texture uses mipmaps and if so, how it interpolates between them (if at all)
     Texture::TextureMipmapBehaviour mipmapBehaviour;
 
-    TextureCreateParams(const std::vector<std::string>& imagePaths, const Texture::TextureUsage usage);
+    TextureCreateParams(const std::vector<TextureSource>& imagePaths, const Texture::TextureUsage usage);
 
     // TextureCreateParams does NOT own the aiScene*. Pass it if the texture path came from assimp (for support for textures embedded in a fbx/dae/etc.)
     // Used for textures embedded in a model file like .fbx 

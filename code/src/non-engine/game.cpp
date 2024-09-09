@@ -32,7 +32,7 @@ void MakeMainMenu() {
     auto& AE = AudioEngine::Get();
     //auto& CR = ComponentRegistry::Get();
     
-    auto ttfParams = TextureCreateParams({ "../fonts/arial.ttf", }, Texture::FontMap);
+    auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
     ttfParams.fontHeight = 24;
     ttfParams.format = Texture::Grayscale_8Bit;
     auto [arialLayer, arialFont] = Material::New(MaterialCreateParams{ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = true });
@@ -91,7 +91,7 @@ void GameInit()
 
     GE.SetDebugFreecamEnabled(true);
 
-    auto ttfParams = TextureCreateParams({ "../fonts/arial.ttf", }, Texture::FontMap);
+    auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
     ttfParams.fontHeight = 16;
     ttfParams.format = Texture::Grayscale_8Bit;
     auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = true });
@@ -266,14 +266,14 @@ void GameInit()
 
     //}
 
-    auto skyboxFaces = std::vector<std::string>(
+    auto skyboxFaces = std::vector<TextureSource>(
         {
-            "../textures/sky/right.png",
-            "../textures/sky/left.png",
-            "../textures/sky/top.png",
-            "../textures/sky/bottom.png",
-            "../textures/sky/back.png",
-            "../textures/sky/front.png"
+            TextureSource("../textures/sky/right.png"),
+            TextureSource("../textures/sky/left.png"),
+            TextureSource("../textures/sky/top.png"),
+            TextureSource("../textures/sky/bottom.png"),
+            TextureSource("../textures/sky/back.png"),
+            TextureSource("../textures/sky/front.png")
         });
 
     {

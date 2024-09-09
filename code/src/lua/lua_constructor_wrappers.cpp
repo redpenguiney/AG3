@@ -57,12 +57,12 @@ TextureCreateParams LuaTextureCreateParamsConstructor(sol::object filepath, sol:
         return TextureCreateParams({filepath.as<std::string>(),}, textureUsage.as<Texture::TextureUsage>());
     }
     else if (filepath.is<sol::table>()) {
-        std::vector<std::string> filepathArray;
+        std::vector<TextureSource> filepathArray;
         for (auto & [key, value] : filepath.as<sol::table>()) {
             if (!value.is<std::string>()) {
                 throw sol::error("The 1st argument to TextureCreateParams.new() should be a filepath string or a table of filepath strings. You passed a table, but there's something in it that is not a string. Fix it.");
             }
-            filepathArray.push_back(filepath.as<std::string>());
+            filepathArray.emplace_back(filepath.as<std::string>());
         }
         return TextureCreateParams(filepathArray, textureUsage.as<Texture::TextureUsage>());
     }

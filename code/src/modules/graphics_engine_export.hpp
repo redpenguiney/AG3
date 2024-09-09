@@ -1,8 +1,6 @@
 #pragma once
 #include <memory>
 
-
-
 class ShaderProgram;
 class Material;
 class Camera;

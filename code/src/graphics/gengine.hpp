@@ -37,7 +37,10 @@ class RenderComponentNoFO;
 
 // Handles graphics, obviously.
 class GraphicsEngine: public ModuleGraphicsEngineInterface {
-    public:
+public:
+    // incremented by one every time RenderScene() is called.
+    long long frameId = 0;
+
     // the shader used to render the skybox. Can freely change this with no issues.
     std::shared_ptr<ShaderProgram> skyboxShaderProgram;
 
@@ -68,28 +71,28 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
     
 
     // Returns main camera if debug freecam is disabled, otherwise returns debug freecam camera.
-    Camera& GetCurrentCamera();
-    Camera& GetMainCamera();
-    Camera& GetDebugFreecamCamera();
+    Camera& GetCurrentCamera() override;
+    Camera& GetMainCamera() override;
+    Camera& GetDebugFreecamCamera() override;
 
-    void SetDebugFreecamEnabled(bool);
-    void SetDebugFreecamPitch(double);
-    void SetDebugFreecamYaw(double);
-    void SetDebugFreecamAcceleration(double);
+    void SetDebugFreecamEnabled(bool) override;
+    void SetDebugFreecamPitch(double) override;
+    void SetDebugFreecamYaw(double) override;
+    void SetDebugFreecamAcceleration(double) override;
 
     double debugFreecamPitch = 0; // in degrees, don't get tripped up when you do lookvector which wants radians
     double debugFreecamYaw = 0;
 
-    void SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram>);
-    void SetSkyboxMaterial(std::shared_ptr<Material>);
+    void SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram>) override;
+    void SetSkyboxMaterial(std::shared_ptr<Material>) override;
 
-    void SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram>);
+    void SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram>) override;
     
-    void SetDefaultShaderProgram(std::shared_ptr<ShaderProgram>);
-    void SetDefaultGuiShaderProgram(std::shared_ptr<ShaderProgram>);
-    void SetDefaultBillboardGuiShaderProgram(std::shared_ptr<ShaderProgram>);
+    void SetDefaultShaderProgram(std::shared_ptr<ShaderProgram>) override;
+    void SetDefaultGuiShaderProgram(std::shared_ptr<ShaderProgram>) override;
+    void SetDefaultBillboardGuiShaderProgram(std::shared_ptr<ShaderProgram>) override;
 
-    Window& GetWindow();
+    Window& GetWindow() override;
 
     // Be advised: If you're tryna get camera position/orientation regardless of whether debugfreecam is enabled, use the GetCurrentCamera() method instead.
     Camera camera;
@@ -99,10 +102,10 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
     static GraphicsEngine& Get();
 
     // Used by Texture to throw an error if someone tries to unload a texture being used
-    bool IsTextureInUse(unsigned int textureId);
+    //bool IsMaterialInUse(unsigned int textureId);
 
     // Used by ShaderProgram to throw an error if someone tries to unload a shader being used.
-    bool IsShaderProgramInUse(unsigned int shaderId);
+    //bool IsShaderProgramInUse(unsigned int shaderId);
 
     // returns true if the user is trying to close the application, or if glfwSetWindowShouldClose was explicitly called (like by a quit game button)
     bool ShouldClose();
@@ -118,8 +121,11 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
 
     // Render components that use a dynamic mesh add themselves to this unordered map (and remove themselves on destruction).
     // Key is mesh id, value is ptr to rendercomponent which uses that mesh.
-    // Needed so that mesh.cpp can access the meshpools being used by objects with dynamic meshes, in order to apply changes made to those dynamic meshes to the GPU.
+    // Needed so that mesh.cpp can update the draw handles of render components if, in order to modify a dynamic mesh, the mesh has to be moved to a different location in its meshpool.
     std::unordered_map<unsigned int, std::vector<RenderComponent*>> dynamicMeshUsers;
+
+    // key is meshId, value is <meshpool index, mesh slot> for the meshpool which contains this dynamic mesh.
+    std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> dynamicMeshLocations;
 
     // used by various debug features, can probably change freely with no isses (TODO check) 
     std::shared_ptr<ShaderProgram> crummyDebugShader;
@@ -129,10 +135,25 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
     // float is dt; note, fires before buffers are flipped which might be bad idk lol
     Event<float> postRenderEvent;
 
-    private:
+private:
+
+    // thing we send to gpu to tell it about a light
+    struct PointLightInfo {
+        glm::vec4 colorAndRange; // w-coord is range, xyz is rgb
+        glm::vec4 relPos; // w-coord is padding; openGL wants everything on a vec4 alignment
+    };
+
+    struct SpotLightInfo {
+        glm::vec4 colorAndRange; // w-coord is range, xyz is rgb
+        glm::vec4 relPosAndInnerAngle; // w-coord is cos(inner angle); openGL wants everything on a vec4 alignment
+        glm::vec4 directionAndOuterAngle; // w-coord is cos(outer angle)
+    };
 
     unsigned int pointLightCount; // updated every frame by UpdateLights()
     unsigned int spotLightCount; // updated every frame by UpdateLights()
+
+    BufferedBuffer pointLightDataBuffer;
+    BufferedBuffer spotLightDataBuffer;
 
     bool wireframeDrawing = false;
 
@@ -142,6 +163,7 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
 
     friend class Mesh; // literally just friend so dynamic mesh support is less work for me idc about keeping it modular
     friend class RenderComponent;
+    friend class Meshpool;
     // friend class RenderComponentNoFO;
     
     // SSBO that stores all points lights so that the GPU can use them.
@@ -156,8 +178,7 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
 
     
     
-    BufferedBuffer pointLightDataBuffer;
-    BufferedBuffer spotLightDataBuffer;
+    
 
     RenderableMesh* skybox; 
 
@@ -172,24 +193,98 @@ class GraphicsEngine: public ModuleGraphicsEngineInterface {
     void DebugAxis();
 
     // meshpools are highly optimized objects used for very fast drawing of meshes
-    // to avoid memory fragmentation all meshes within it are padded to be of the same size, so to save memory there is a pool for small meshes, medium ones, etc.
-    // pools also have to be divided by which shader program and texture/texture array they use
-    // this is a map<shaderId, map<materialId, map<poolId, Meshpool*>>>
+    // for technical reasons, we need a different meshpool for each vertex format (TODO: technically not true, but there's zero benefit to splitting it so whateves)
+    // Key is meshpool id.
     // materialId can also == 0 for no material.
-    std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, Meshpool*>>> meshpools;
-    unsigned long long lastPoolId = 0; 
+    // some may be nullptr.
+    std::vector<Meshpool*> meshpools;
+    IdProvider meshpoolIdProvider;
 
     // Cache of meshes to add when addCachedMeshes is called. 
     // Used so that instead of adding 1 mesh to a meshpool 1000 times, we just add 1000 instances of a mesh to meshpool once to make creating renderable objects faster.
-    // Keys go like meshesToAdd[shaderId][textureId][meshId] = vector of pointers to MeshLocations stored in RenderComponents.
+    // Keys are meshId, then shader id, then material id.
+    // IMPORTANT TODO: nothing prevents material/shader deletion of the things with these ids.
     std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::vector<RenderComponent*>>>> renderComponentsToAdd;
 
-    // Keeps track of rendercomponents whose instanced vertex attributes (color, textureZ, etc.) need to be updated.
-    // Each tuple is <componentToUpdate, attributeName, value, timesRemainingToUpdate>.
-    std::vector<std::tuple<RenderComponent*, unsigned int, glm::vec4, unsigned int>> Instanced4ComponentVertexAttributeUpdates;
-    std::vector<std::tuple<RenderComponent*, unsigned int, glm::vec3, unsigned int>> Instanced3ComponentVertexAttributeUpdates;
-    std::vector<std::tuple<RenderComponent*, unsigned int, glm::vec2, unsigned int>> Instanced2ComponentVertexAttributeUpdates;
-    std::vector<std::tuple<RenderComponent*, unsigned int, glm::vec1, unsigned int>> Instanced1ComponentVertexAttributeUpdates;
+    // Keeps track of rendercomponents whose instanced vertex attributes (color, textureZ, etc.) need to be updated (since due to multiple buffering it has be updated over multiple frames).
+    template <typename AttributeType> 
+    class InstancedVertexAttributeUpdater {
+    public:
+        /*static_assert(
+            std::is_same_v<AttributeType, float>() ||
+            std::is_same_v<AttributeType, glm::vec2>() ||
+            std::is_same_v<AttributeType, glm::vec3>() || 
+            std::is_same_v<AttributeType, glm::vec4>() || 
+            std::is_same_v<AttributeType, glm::mat3x3>() ||
+            std::is_same_v<AttributeType, glm::mat4x4>()
+        );*/
+
+        void AddUpdate(RenderComponent* comp, unsigned int attributeName, const AttributeType& newValue) {
+            updates.push_back(AttributeUpdate{
+                .renderComp = comp,
+                .newValue = newValue,
+                .attributeName = attributeName,
+                .updatesRemaining = INSTANCED_VERTEX_BUFFERING_FACTOR
+            });
+        }
+
+        // exists because if someone creates an object, lets it exist for one frame, then deletes it, we'll have hanging references (RenderComponent destructor calls this)
+        // that shouldn't happen very much so perf. not too important
+        void CancelUpdate(RenderComponent* comp) {
+            canceledUpdates.push_back(comp);
+        }
+
+        void ApplyUpdates() {
+            unsigned int i = 0;
+
+            
+            std::vector<unsigned int> indicesToRemove;
+            for (auto& update : updates) {
+
+                // TODO: optimizations to be made here
+                for (auto it = canceledUpdates.begin(); it != canceledUpdates.end(); it++) {
+                    if (*it == update.renderComp) {
+                        it = canceledUpdates.erase(it);
+                    }
+                }
+
+                if (update.renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
+                    GraphicsEngine::Get().meshpools[update.renderComp->meshpoolId]->SetInstancedVertexAttribute<AttributeType>(update.renderComp->drawHandle, update.attributeName, update.newValue);
+                    update.updatesRemaining -= 1;
+                    if (update.updatesRemaining == 0) {
+                        indicesToRemove.push_back(i);
+                    }
+                    i++;
+                }
+
+
+            }
+
+            for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
+                updates[*it] = updates.back();
+                updates.pop_back();
+            }
+            indicesToRemove.clear();
+        }
+    private:
+        struct AttributeUpdate{
+            RenderComponent* renderComp; // fortunately, it doesn't actually matter if this pointer is to a destroyed component
+            AttributeType newValue;
+            unsigned int attributeName;
+
+            unsigned int updatesRemaining = INSTANCED_VERTEX_BUFFERING_FACTOR;
+        };
+
+        std::vector<AttributeUpdate> updates;
+        std::vector<RenderComponent*> canceledUpdates;
+    };
+
+    InstancedVertexAttributeUpdater<float> updater1;
+    InstancedVertexAttributeUpdater<glm::vec2> updater2;
+    InstancedVertexAttributeUpdater<glm::vec3> updater3;
+    InstancedVertexAttributeUpdater<glm::vec4> updater4;
+    InstancedVertexAttributeUpdater<glm::mat3x3> updater3x3;
+    InstancedVertexAttributeUpdater<glm::mat4x4> updater4x4;
 
     GraphicsEngine();
     ~GraphicsEngine();

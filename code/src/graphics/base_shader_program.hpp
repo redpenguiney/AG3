@@ -50,7 +50,7 @@ protected:
     static inline std::unordered_map<unsigned int, std::shared_ptr<BaseShaderProgram>> LOADED_PROGRAMS;
 
     // unloads the program with the given shaderProgramId, freeing its memory.
-    // Calling this function while objects still use the shader will surely crash.
+    // Calling this function while objects still use the shader is fine, meshpool stores another shared_ptr to the shaders it uses.
     // All this does is remove a shared_ptr in the LOADED_PROGRAMS map, so if you have other stored references then the ShaderProgram will stubbornly persist.
     // You only need to call this if for whatever reason you are repeatedly swapping out shader programs (like bc ur joining different servers with different resources)
     // TODO very untested

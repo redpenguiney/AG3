@@ -27,13 +27,13 @@ public:
     struct DrawHandle {
         // An index, in terms of vertexSize, to where the mesh vertices are stored in the vertices buffer, and in terms of indexSize to where the mesh indices are stored in the index buffer. 
         // So if meshIndex was 3000, the first byte of the mesh would be at vertices.Data() + (3000 * vertexSize)
-        const unsigned int meshIndex;
+        int meshIndex;
 
         // An index (in terms of instanceSize) to where the object's instance data is stored in the instances buffer.
-        const unsigned int instanceSlot;
+        int instanceSlot;
 
         // Index into drawCommands; which INDBO the object's draw command is stored in.
-        const unsigned int drawBufferIndex;
+        int drawBufferIndex;
     };
 
     // Only meshes with this format can be stored in this meshpool.
@@ -46,6 +46,7 @@ public:
     ~Meshpool();
 
     // Adds count identical objects to the pool with the given mesh, and returns a DrawHandle for each object.
+    // Material should be NULLPTR if the object has no material.
     std::vector<DrawHandle> AddObject(const std::shared_ptr<Mesh>&, const std::shared_ptr<Material>&, const std::shared_ptr<ShaderProgram>&, unsigned int count);
 
     // Frees the given object from the meshpool, so something else can use that space.
@@ -63,12 +64,13 @@ public:
     void SetBoneState(const DrawHandle& handle, unsigned int nBones, glm::mat4x4* offsets);
 
     // Set the given instanced vertex attribute of the given instance to the given value.
-    // Will abort if nFloats does not match the mesh's vertex format or if the vertex attribute is not instanced.
-    template<unsigned int nFloats>
-    void SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeName, const glm::vec<nFloats, float>& value);
+    // Will abort if AttributeType does not match the mesh's vertex format or if the vertex attribute is not instanced.
+    template<typename AttributeType>
+    void SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeName, const AttributeType& value);
 
     // idk what to put here, you probably know what this does
-    void Draw();
+    // prePostProc is true if this is being drawn BEFORE post processing runs
+    void Draw(bool prePostProc);
 
     // needed for BufferedBuffer's double/triple buffering, call every frame AFTER writing vertex/instance data and BEFORE calling Draw().
     void Commit();
@@ -85,6 +87,8 @@ private:
     struct MeshUpdate {
         unsigned int updatesLeft;
         std::shared_ptr<Mesh> mesh;
+
+        // vertex index/slot
         unsigned int meshIndex;
     };
 
@@ -107,7 +111,11 @@ private:
 
     class DrawCommandBuffer {
     public:
+        DrawCommandBuffer(const std::shared_ptr<ShaderProgram>&, const std::shared_ptr<Material>&, BufferedBuffer&&);
+
         const std::shared_ptr<ShaderProgram> shader;
+
+        // may be nullptr
         const std::shared_ptr<Material> material;
         BufferedBuffer buffer;
 
@@ -124,15 +132,19 @@ private:
 
         // all 0s for empty/available command slots
         std::vector<IndirectDrawCommand> clientCommands = {}; // equivelent contents to drawCommands, but we can't read from that because its a GPU buffer
-    
+
         unsigned int GetNewDrawCommandSlot();
 
         // Doubles currentDrawCommandCapacity.
         void ExpandDrawCountCapacity();
+
+        // bc bufferedbuffer can only be moved
+        DrawCommandBuffer(DrawCommandBuffer&&) = default;
+        DrawCommandBuffer(const DrawCommandBuffer&) = delete;
     };
 
     // the size of a single instance for a single object in bytes. Equal to the InstancedSize() of the vertex format.
-    const unsigned int instanceSize; 
+    const unsigned int instanceSize;
 
     // the size of a single vertex for a single mesh in bytes. Equal to the NonInstancedSize() of the vertex format.
     const unsigned int vertexSize;
@@ -141,7 +153,7 @@ private:
 
     unsigned int currentVertexCapacity;
     unsigned int currentInstanceCapacity;
- 
+
 
 
     // if you want to allocate memory for a mesh more than vertexSize * 2^(n-1) bytes but less than vertexSize * 2^n bytes, the nth vector in this array has room for that.
@@ -159,42 +171,42 @@ private:
 
     // if availableMeshSlots is empty, this is the mesh index of the first available part of the vertices buffer
     unsigned int meshIndexEnd;
-    
+
     // For each mesh slot, describes meshId.
     //std::vector<SlotUsageInfo> meshSlotContents;
 
     std::vector<unsigned int> availableInstanceSlots;
     unsigned int instanceEnd;
 
-    
+
     std::vector<MeshUpdate> meshUpdates;
 
     // key is instance slot
     std::vector<CommandLocation> instanceSlotsToCommands;
 
-    
+
 
     // the VAO basically tells openGL how our vertices are structured
     unsigned int vaoId;
 
-	// stores vertices for all the pool's meshes.
-	BufferedBuffer vertices;
+    // stores vertices for all the pool's meshes.
+    BufferedBuffer vertices;
 
-	// stores instances for each object being drawn.
-	BufferedBuffer instances;
+    // stores instances for each object being drawn.
+    BufferedBuffer instances;
 
-	// stores indices for all the pool's indices
-	BufferedBuffer indices;
+    // stores indices for all the pool's indices
+    BufferedBuffer indices;
 
-	// each buffer stores indirect draw commands, which basically tell the GPU which vertices/instances to draw.
+    // each buffer stores indirect draw commands, which basically tell the GPU which vertices/instances to draw.
     std::vector <std::optional< DrawCommandBuffer >> drawCommands;
     std::vector<unsigned int> availableDrawCommandBufferIndices;
 
-	// if the shader/mesh combo supports animations, stores the bone transform matrices (and the number of them)
-	std::optional<BufferedBuffer> bones; 
+    // if the shader/mesh combo supports animations, stores the bone transform matrices (and the number of them)
+    std::optional<BufferedBuffer> bones;
 
-	// if the shader/mesh combo supports animations, stores offsets into the bone buffer for each object
-	std::optional<BufferedBuffer> boneOffsetBuffer; 
+    // if the shader/mesh combo supports animations, stores offsets into the bone buffer for each object
+    std::optional<BufferedBuffer> boneOffsetBuffer;
 
     // Expands vertices and indices so that they can contain at minimum meshIndexEnd. 
     // Works by doubling the current capacity until it fits.
@@ -208,4 +220,6 @@ private:
 
     // Returns a reference to the DrawCommandBuffer for the requested shader/material combo, creating the buffer if it doesn't already exist.
     DrawCommandBuffer& GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material);
+
+    friend class Mesh;
 };

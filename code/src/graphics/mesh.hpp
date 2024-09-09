@@ -70,7 +70,7 @@ class MeshGlobals {
 void TextMeshFromText(std::string text, const Texture &font, const TextMeshCreateParams& params, const MeshVertexFormat& vertexFormat, std::vector<GLfloat>& vertices, std::vector<GLuint>& indices);
 
 // TODO: MAKE DYNAMIC MESHES UNUSABLE WHILE THEY ARE BEING MODIFIED
-class Mesh {
+class Mesh: public std::enable_shared_from_this<Mesh> {
     public:
     const bool dynamic; // if a mesh is not dynamic, it saves memory and performance. If it is dynamic, you can modify the mesh using Start/StopModifying().
 

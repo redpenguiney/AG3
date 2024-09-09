@@ -29,17 +29,7 @@ GraphicsEngine& GraphicsEngine::Get() {
     #endif
 }
 
-// thing we send to gpu to tell it about a light
-struct PointLightInfo {
-    glm::vec4 colorAndRange; // w-coord is range, xyz is rgb
-    glm::vec4 relPos; // w-coord is padding; openGL wants everything on a vec4 alignment
-};
 
-struct SpotLightInfo {
-    glm::vec4 colorAndRange; // w-coord is range, xyz is rgb
-    glm::vec4 relPosAndInnerAngle; // w-coord is cos(inner angle); openGL wants everything on a vec4 alignment
-    glm::vec4 directionAndOuterAngle; // w-coord is cos(outer angle)
-};
 
 // XYZ, UV
 const std::vector<GLfloat> screenQuadVertices = {
@@ -109,7 +99,7 @@ screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, Mesh
     defaultShaderProgram->Uniform("envLightAmbient", 0.05f);
     defaultShaderProgram->Uniform("envLightSpecular", 0.0f);
 
-    auto pair = Material::New({ .textureParams = {TextureCreateParams({"../textures/error_texture.bmp"}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D });
+    auto pair = Material::New({ .textureParams = {TextureCreateParams({TextureSource("../textures/error_texture.bmp")}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D });
     errorMaterial = pair.second;
     errorMaterialTextureZ = pair.first;
 
@@ -118,12 +108,8 @@ screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, Mesh
 }
 
 GraphicsEngine::~GraphicsEngine() {
-    for (auto & [shaderId, map1] : meshpools) {
-        for (auto & [materialId, map2] : map1) {
-            for (auto & [poolId, pool] : map2) {
-                delete pool;
-            } 
-        } 
+    for (auto & pool : meshpools) {
+        delete pool;
     }
 
     delete skybox;
@@ -175,18 +161,19 @@ Window& GraphicsEngine::GetWindow() {
 }
 
 
-bool GraphicsEngine::IsTextureInUse(unsigned int textureId) { 
-    for (auto & [shaderId, map] : meshpools) {
-        if (map.count(textureId)) {
-            return true;
-        }
-    }
-    return false;
-}
+//bool GraphicsEngine::IsMaterialInUse(unsigned int textureId) { 
+//    // TODO: might be slow
+//    for (auto & pool : meshpools) {
+//        if (pool. {
+//            return true;
+//        }
+//    }
+//    return false;
+//}
 
-bool GraphicsEngine::IsShaderProgramInUse(unsigned int shaderId) {
-    return meshpools.count(shaderId);
-}
+//bool GraphicsEngine::IsShaderProgramInUse(unsigned int shaderId) {
+//    return meshpools.count(shaderId);
+//}
 
 bool GraphicsEngine::ShouldClose() {
     return window.ShouldClose();
@@ -293,6 +280,7 @@ void GraphicsEngine::DebugAxis() {
 }
 
 void GraphicsEngine::RenderScene(float dt) {
+    frameId++;
 
     FlipMeshpoolBuffers();
     pointLightDataBuffer.Flip();
@@ -456,18 +444,18 @@ void GraphicsEngine::UpdateLights() {
 // }
 
 void GraphicsEngine::SetModelMatrix(const RenderComponent& comp, const glm::mat4x4& model) {
-    Assert(comp.meshpoolId != -1 && comp.meshpoolInstance != -1);
-    meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetModelMatrix(comp.meshpoolSlot, comp.meshpoolInstance, model);
+    Assert(comp.meshpoolId != -1 && comp.drawHandle.instanceSlot != -1);
+    meshpools[comp.meshpoolId]->SetModelMatrix(comp.drawHandle, model);
 }
 
 void GraphicsEngine::SetNormalMatrix(const RenderComponent& comp, const glm::mat3x3& normal) {
-    Assert(comp.meshpoolId != -1);
-    meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetNormalMatrix(comp.meshpoolSlot, comp.meshpoolInstance, normal);
+    Assert(comp.meshpoolId != -1 && comp.drawHandle.instanceSlot != -1);
+    meshpools[comp.meshpoolId]->SetNormalMatrix(comp.drawHandle, normal);
 }
 
 void GraphicsEngine::SetBoneState(const RenderComponent& comp, unsigned int nBones, glm::mat4x4* offsets) {
-    Assert(comp.meshpoolId != -1);
-    meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetBoneState(comp.meshpoolSlot, comp.meshpoolInstance, nBones, offsets);
+    Assert(comp.meshpoolId != -1 && comp.drawHandle.instanceSlot != -1);
+    meshpools[comp.meshpoolId]->SetBoneState(comp.drawHandle, nBones, offsets);
 }
 
 // void GraphicsEngine::SetTextureZ(const RenderComponent& comp, const float textureZ) {
@@ -481,23 +469,15 @@ void GraphicsEngine::SetBoneState(const RenderComponent& comp, unsigned int nBon
 // }
 
 void GraphicsEngine::CommitMeshpools() {
-    for (auto & [shaderId, map1] : meshpools) {
-        for (auto & [textureId, map2] : map1) {
-            for (auto & [poolId, pool] : map2) {
-                pool->Commit();
-            } 
-        } 
+    for (auto & pool : meshpools) {
+        pool->Commit();
     }
 }
 
 void GraphicsEngine::FlipMeshpoolBuffers()
 {
-    for (auto& [shaderId, map1] : meshpools) {
-        for (auto& [textureId, map2] : map1) {
-            for (auto& [poolId, pool] : map2) {
-                pool->FlipBuffers();
-            }
-        }
+    for (auto& pool : meshpools) {
+        pool->FlipBuffers();
     }
 }
 
@@ -516,51 +496,9 @@ void GraphicsEngine::DrawWorld(bool postProc)
     }
 
     // Draw world stuff.
-    for (auto& [shaderId, map1] : meshpools) {
-        auto shader = ShaderProgram::Get(shaderId);
-        if (shader->ignorePostProc == postProc) {
-            continue;
-        }
-
-        if (shader->useClusteredLighting) {
-            shader->Uniform("pointLightCount", pointLightCount);
-            shader->Uniform("spotLightCount", spotLightCount);
-            shader->Uniform("pointLightOffset", unsigned int(pointLightDataBuffer.GetOffset() / sizeof(PointLightInfo)));
-            shader->Uniform("spotLightOffset", unsigned int(spotLightDataBuffer.GetOffset() / sizeof(SpotLightInfo)));
-        }
-
-        shader->Use();
-        pointLightDataBuffer.BindBase(0);
-        spotLightDataBuffer.BindBase(1);
-        for (auto& [materialId, map2] : map1) {
-            if (materialId == 0) { // 0 means no material
-                Material::Unbind();
-
-                shader->Uniform("specularMappingEnabled", false);
-                shader->Uniform("fontMappingEnabled", false);
-                shader->Uniform("normalMappingEnabled", false);
-                shader->Uniform("parallaxMappingEnabled", false);
-                shader->Uniform("colorMappingEnabled", false);
-            }
-            else {
-
-                auto& material = Material::Get(materialId);
-                material->Use();
-
-                // if (materialId == 4) {
-                //     std::cout << "BINDING THING WITH FONTMAP.\n";
-                // }
-
-                shader->Uniform("specularMappingEnabled", material->HasSpecularMap());
-                shader->Uniform("fontMappingEnabled", material->HasFontMap());
-                shader->Uniform("normalMappingEnabled", material->HasNormalMap());
-                shader->Uniform("parallaxMappingEnabled", material->HasDisplacementMap());
-                shader->Uniform("colorMappingEnabled", material->HasColorMap());
-            }
-
-            for (auto& [poolId, pool] : map2) {
-                pool->Draw();
-            }
+    for (auto& pool : meshpools) {
+        if (pool != nullptr) {
+            pool->Draw(postProc);
         }
     }
 }
@@ -585,90 +523,12 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     // SETTING INSTANCED VERTEX ATTRIBUTES (color, textureZ, etc.)
         // but not model/normal matrix; those are done in the next part bc every render component gets a different one, every frame.
         // TODO: unless floating origin in which case this system would be good for them
-    // vec4
-    unsigned int i = 0;
-    for (auto & [renderComp, attributeName, value, timesRemainingToUpdate]: Instanced4ComponentVertexAttributeUpdates) {
-        
-        if (renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
-            meshpools[renderComp->shaderProgramId][renderComp->materialId][renderComp->meshpoolId]->SetInstancedVertexAttribute<4>(renderComp->meshpoolSlot, renderComp->meshpoolInstance, attributeName, value);
-            timesRemainingToUpdate -= 1;
-            if (timesRemainingToUpdate == 0) {
-                indicesToRemove.push_back(i);
-            }
-            i++;
-        }
-        
-        
-    }
-
-    for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
-        Instanced4ComponentVertexAttributeUpdates[*it] = Instanced4ComponentVertexAttributeUpdates.back();
-        Instanced4ComponentVertexAttributeUpdates.pop_back();
-    }  
-    indicesToRemove.clear();
-
-    // vec3
-    i = 0;
-    for (auto & [renderComp, attributeName, value, timesRemainingToUpdate]: Instanced3ComponentVertexAttributeUpdates) {
-        if (renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
-            meshpools[renderComp->shaderProgramId][renderComp->materialId][renderComp->meshpoolId]->SetInstancedVertexAttribute<3>(renderComp->meshpoolSlot, renderComp->meshpoolInstance, attributeName, value);
-            timesRemainingToUpdate -= 1;
-            if (timesRemainingToUpdate == 0) {
-                indicesToRemove.push_back(i);
-            }
-        }
-        
-        
-
-        i++;
-    }
-
-    for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
-        Instanced3ComponentVertexAttributeUpdates[*it] = Instanced3ComponentVertexAttributeUpdates.back();
-        Instanced3ComponentVertexAttributeUpdates.pop_back();
-    }  
-    indicesToRemove.clear();
-
-    // vec2
-    i = 0;
-    for (auto & [renderComp, attributeName, value, timesRemainingToUpdate]: Instanced2ComponentVertexAttributeUpdates) {
-        if (renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
-            meshpools[renderComp->shaderProgramId][renderComp->materialId][renderComp->meshpoolId]->SetInstancedVertexAttribute<2>(renderComp->meshpoolSlot, renderComp->meshpoolInstance, attributeName, value);
-            timesRemainingToUpdate -= 1;
-            if (timesRemainingToUpdate == 0) {
-                indicesToRemove.push_back(i);
-            }
-        }
-        
-
-        i++;
-    }
-
-    for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
-        Instanced2ComponentVertexAttributeUpdates[*it] = Instanced2ComponentVertexAttributeUpdates.back();
-        Instanced2ComponentVertexAttributeUpdates.pop_back();
-    }  
-    indicesToRemove.clear();
-
-    // vec1
-    i = 0;
-    for (auto & [renderComp, attributeName, value, timesRemainingToUpdate]: Instanced1ComponentVertexAttributeUpdates) {
-        if (renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
-            meshpools[renderComp->shaderProgramId][renderComp->materialId][renderComp->meshpoolId]->SetInstancedVertexAttribute<1>(renderComp->meshpoolSlot, renderComp->meshpoolInstance, attributeName, value);
-            timesRemainingToUpdate -= 1;
-            if (timesRemainingToUpdate == 0) {
-                indicesToRemove.push_back(i);
-            }
-        }
-        
-
-        i++;
-    }
-
-    for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
-        Instanced1ComponentVertexAttributeUpdates[*it] = Instanced1ComponentVertexAttributeUpdates.back();
-        Instanced1ComponentVertexAttributeUpdates.pop_back();
-    }  
+    updater1.ApplyUpdates();
+    updater2.ApplyUpdates();
+    updater3.ApplyUpdates();
+    updater4.ApplyUpdates();
+    updater3x3.ApplyUpdates();
+    updater4x4.ApplyUpdates();
     
     unsigned int nR = 0;
 
@@ -856,70 +716,65 @@ void GraphicsEngine::UpdateDebugFreecam() {
 void GraphicsEngine::AddCachedMeshes() {
     
     unsigned int count = 0;
-    for (auto & [shaderId, map1] : renderComponentsToAdd) {
-        for (auto & [materialId, map2] : map1) {
-            for (auto & [meshId, components] : map2) {
+    for (auto & [meshId, map] : renderComponentsToAdd) {
+            
+        std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
 
-                
-                // std::cout << "\tInfo: " << meshId << " " << textureId << " " << shaderId << " size " << renderComponentsToAdd.size() << "\n";
+        
+        // find pool for mesh
+        int poolIndex = -1;
+        unsigned int i = 0;
+        for (auto& pool : meshpools) {
+            
+            if (pool->format == m->vertexFormat) {
+                poolIndex = i; 
+                break;
+            }
+            i++;
+        }
 
-                std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
-                const unsigned int verticesNBytes = m->vertices.size() * sizeof(GLfloat);
-                const unsigned int indicesNBytes = m->indices.size() * sizeof(GLuint);
+        if (poolIndex == -1) { // if we didn't find a suitable meshpool just make one
+            poolIndex = meshpoolIdProvider.GetId();
+            if (poolIndex >= meshpools.size()) {
+                meshpools.resize(poolIndex + 1, nullptr);
+            }
+            meshpools[poolIndex] = new Meshpool(m->vertexFormat);
+        }
 
-                // pick best pool for mesh
-                // TODO: O(n) complexity might be an issue
-                int bestPoolScore = INT_MAX;
-                int bestPoolId = -1;
-                for (auto & [poolId, pool] : meshpools[shaderId][materialId]) {
-                    int score = pool->ScoreMeshFit(verticesNBytes, indicesNBytes, m->vertexFormat);
-                    if (score == -1) {continue;} // this continues the inner loop which is what we want
-                    if (score < bestPoolScore) {
-                        bestPoolScore = score;
-                        bestPoolId = poolId;
-                    }
-                }
+        for (auto& [shaderId, map2] : map) {
+            auto shader = ShaderProgram::Get(shaderId);
+            for (auto& [materialId, components] : map2) {
+                auto& material = Material::Get(materialId);
+                auto drawHandles = meshpools[poolIndex]->AddObject(m, material, shader, components.size());
 
-                if (bestPoolId == -1) { // if we didn't find a suitable pool just make one
-                    // DebugLogInfo("must create pool for new mesh. ", " size ", m->vertices.size() * m->vertexFormat.GetNonInstancedVertexSize()/sizeof(GLfloat));
-                    bestPoolId = lastPoolId++;
-
-                    int nVertices = m->vertices.size() * sizeof(GLfloat) / m->vertexFormat.GetNonInstancedVertexSize();
-                    meshpools[shaderId][materialId][bestPoolId] = new Meshpool(m->vertexFormat, nVertices == 0 ? 1 : nVertices); // make the meshpool have a minimum of 1 vertex to avoid problems with empty meshes. 
-                }
-                // std::cout << "\tmesh pool id is " << bestPoolId << "\n"; 
-
-                auto objectPositions = meshpools.at(shaderId).at(materialId).at(bestPoolId)->AddObject(meshId, components.size());
                 for (unsigned int i = 0; i < components.size(); i++) { // todo: use iterator here???
-                    components.at(i)->meshpoolId = bestPoolId;
-                    components[i]->meshpoolSlot = objectPositions[i].first;
-                    components[i]->meshpoolInstance = objectPositions[i].second;
+                    components[i]->meshpoolId = poolIndex;
+                    components[i]->drawHandle = drawHandles.at(i);
                     //DebugLogInfo("Wrote component to ", bestPoolId, " ", objectPositions[i].first, " ", objectPositions[i].second);
-                    //std::cout  << "Initalized mesh location " << (meshLocations[i]) << ".\n";
 
                     if (m->dynamic) {
                         dynamicMeshUsers[meshId].push_back(components[i]);
+                        dynamicMeshLocations[meshId] = std::make_pair(poolIndex, drawHandles.back().meshIndex);
                     }
 
                     count++;
                 }
 
-                
             } 
         }
+        
+
     }
 
     if (count > 0) {
         DebugLogInfo("There are ", count, " to add.");
     }
 
-    // TODO: instead of clearing the entire thing do something else
-    // TODO: why did i write the above comment? clearing is fine???
     renderComponentsToAdd.clear();
 }
 
 void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, RenderComponent* component) {
     //DebugLogInfo("Added");
-    renderComponentsToAdd[shaderId][materialId][meshId].push_back(component);
+    renderComponentsToAdd[meshId][shaderId][materialId].push_back(component);
 }
 

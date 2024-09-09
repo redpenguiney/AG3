@@ -46,7 +46,7 @@ std::shared_ptr<ShaderProgram> ShaderProgram::Get(unsigned int shaderProgramId) 
 
 void ShaderProgram::Unload(unsigned int id)
 {
-    Assert(!GraphicsEngine::Get().IsShaderProgramInUse(id)); // don't let them unload a shader program if it's being used
+    //Assert(!GraphicsEngine::Get().IsShaderProgramInUse(id)); // don't let them unload a shader program if it's being used
     Assert(LOADED_PROGRAMS.count(id) != 0 && "ShaderProgram::Unload() was given an invalid shaderProgramId.");
     LOADED_PROGRAMS.erase(id);
     BaseShaderProgram::Unload(id);
