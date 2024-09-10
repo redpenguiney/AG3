@@ -112,7 +112,7 @@ glTextureIndex(textureIndex)
                         throw std::runtime_error(std::string("STBI failed to load") + path + "because " + stbi_failure_reason() + ".");
                     }
 
-                    imageDatas.emplace_back(ptr, width, height, nChannels, Image::StbiSupplied);
+                    imageDatas.emplace_back(std::make_shared<Image>(ptr, width, height, nChannels, Image::StbiSupplied));
                     // TODO: we don't throw an error if we put in a one channel image (for example) and wanted 3 channels, we just create 2 more channels, is that ok?
                     
                     nChannels = std::max(nChannels, (int)NChannelsFromFormat(params.format)); // apparently nChannels is set to the amount that the original image had, even if we asked for (and recieved) extra channels, so this makes sure it has the right value            
@@ -128,7 +128,7 @@ glTextureIndex(textureIndex)
                         // in this case, we actually DO use stbi, which can load directly from the pointer provided by assimp, and we push the result of that into imageDats
                         // stbi even determines file format which is nice
                         auto ptr = stbi_load_from_memory((const stbi_uc*)(const void*)embeddedTexture->pcData, embeddedTexture->mWidth, &width, &height, &nChannels, NChannelsFromFormat(params.format));
-                        imageDatas.emplace_back(ptr, width, height, nChannels, Image::StbiSupplied);
+                        imageDatas.emplace_back(std::make_shared<Image>(ptr, width, height, nChannels, Image::StbiSupplied));
 
                         // stbi error checking
                         // TODO: good design would be different exception classes for each of these cases
@@ -148,7 +148,7 @@ glTextureIndex(textureIndex)
                             throw std::runtime_error("Mixed usage of embedded uncompressed argb textures and non-argb textures is illegal.");
                         }
                         isArgb = 1; // assimp always gives uncompressed in argb according to docs
-                        imageDatas.emplace_back(embeddedTexture->pcData, width, height, nChannels, Image::UserOrAssimpSupplied);
+                        imageDatas.emplace_back(std::make_shared<Image>((uint8_t*)(embeddedTexture->pcData), width, height, nChannels, Image::UserOrAssimpSupplied));
 
                         DebugLogInfo("OMG IT WORKED U CAN DELETE THIS PRINT NOW");
                     }

@@ -744,7 +744,7 @@ void GraphicsEngine::AddCachedMeshes() {
         for (auto& [shaderId, map2] : map) {
             auto shader = ShaderProgram::Get(shaderId);
             for (auto& [materialId, components] : map2) {
-                auto& material = Material::Get(materialId);
+                const std::shared_ptr<Material>& material = materialId == 0 ? nullptr : Material::Get(materialId);
                 auto drawHandles = meshpools[poolIndex]->AddObject(m, material, shader, components.size());
 
                 for (unsigned int i = 0; i < components.size(); i++) { // todo: use iterator here???

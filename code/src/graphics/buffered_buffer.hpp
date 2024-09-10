@@ -28,6 +28,7 @@ class BufferedBuffer {
 
     // you CAN move (so we can put it in vectors for example)
     BufferedBuffer(BufferedBuffer&&) noexcept;
+    BufferedBuffer& operator=(BufferedBuffer&& other) noexcept;    // move assignment operator
     
     // Recreates the buffer with the given size, and copies the buffer's old data into the new one.
     // Doesn't touch vaos obviously so you still need to reset that after reallocation.

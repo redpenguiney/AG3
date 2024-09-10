@@ -73,6 +73,11 @@ BufferedBuffer::BufferedBuffer(BufferedBuffer&& old) noexcept:
     old.sync = nullptr;
 }
 
+BufferedBuffer& BufferedBuffer::operator=(BufferedBuffer&& other) noexcept
+{
+    return *this;
+}
+
 void BufferedBuffer::Reallocate(unsigned int newSize) {
     Assert(newSize != 0);
     unsigned int oldSize = size;

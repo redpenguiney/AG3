@@ -55,14 +55,16 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             unsigned int meshNBytes = std::max(mesh->vertices.size() * vertexSize, mesh->indices.size() * indexSize);
 
             unsigned int powerOfTwo = vertexSize;
+            unsigned int exponent = 0;
             while (powerOfTwo < meshNBytes) {
-                meshNBytes *= 2;
+                powerOfTwo *= 2;
+                exponent++;
             }
 
             // first, check availableMeshSlots
-            if (availableMeshSlots.at(powerOfTwo).size() > 0) {
-                slot = availableMeshSlots[powerOfTwo].back();
-                availableMeshSlots[powerOfTwo].pop_back();
+            if (availableMeshSlots.at(exponent).size() > 0) {
+                slot = availableMeshSlots[exponent].back();
+                availableMeshSlots[exponent].pop_back();
             }
             // if they've got nothing, take a slot from the end of the vertices buffer
             else {
@@ -404,6 +406,9 @@ void Meshpool::FlipBuffers()
 void Meshpool::ExpandVertexCapacity()
 {
     // determine new vertex capacity
+    if (currentVertexCapacity == 0) {
+        currentVertexCapacity = 1;
+    }
     while (currentVertexCapacity <= meshIndexEnd) {
         currentVertexCapacity *= 2;
     }
@@ -455,9 +460,31 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCountCapacity()
     std::sort(availableDrawCommandSlots.begin(), availableDrawCommandSlots.end(), std::greater<unsigned int>());
 }
 
+Meshpool::DrawCommandBuffer::DrawCommandBuffer(DrawCommandBuffer&& old) noexcept :
+    shader(old.shader),
+    material(old.material),
+    buffer(std::move(old.buffer)),
+    drawCount(old.drawCount),
+    currentDrawCommandCapacity(old.currentDrawCommandCapacity),
+    availableDrawCommandSlots(old.availableDrawCommandSlots),
+    commandUpdates(old.commandUpdates),
+    clientCommands(old.clientCommands)
+{
+    old.shader = nullptr;
+    old.material = nullptr;
+}
+
+Meshpool::DrawCommandBuffer& Meshpool::DrawCommandBuffer::operator=(DrawCommandBuffer&& old) noexcept
+{
+    return *this;
+}
+
 void Meshpool::ExpandInstanceCapacity()
 {
     // determine new instance capacity
+    if (currentInstanceCapacity == 0) {
+        currentInstanceCapacity = 1;
+    }
     while (currentInstanceCapacity <= instanceEnd) {
         currentInstanceCapacity *= 2;
     }
@@ -485,11 +512,15 @@ Meshpool::DrawCommandBuffer& Meshpool::GetCommandBuffer(const std::shared_ptr<Sh
         }
     }
 
+    BufferedBuffer b(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0);
+    std::optional<DrawCommandBuffer> oB(std::nullopt);
+    oB.emplace(shader, material, std::move(b));
+
     if (availableDrawCommandBufferIndices.size()) {
-        drawCommands.emplace(drawCommands.begin() + availableDrawCommandBufferIndices.back(), shader, material, std::move(BufferedBuffer(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0)));
+        return **drawCommands.emplace(drawCommands.begin() + availableDrawCommandBufferIndices.back(), std::move(oB));
     }
     else {
-        drawCommands.emplace_back(shader, material, std::move(BufferedBuffer(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0)));
+        return *drawCommands.emplace_back(std::move(oB));
     }
 }
 

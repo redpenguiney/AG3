@@ -12,7 +12,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/mat3x3.hpp>
 
-const unsigned int INSTANCED_VERTEX_BUFFERING_FACTOR = 3;
+const unsigned int INSTANCED_VERTEX_BUFFERING_FACTOR = 3; /// TODO: based on mesh params?
 const unsigned int MESH_BUFFERING_FACTOR = 1; /// TODO; meshpool supports >1 but GE doesn't
 
 class Mesh;
@@ -113,10 +113,12 @@ private:
     public:
         DrawCommandBuffer(const std::shared_ptr<ShaderProgram>&, const std::shared_ptr<Material>&, BufferedBuffer&&);
 
-        const std::shared_ptr<ShaderProgram> shader;
+        // may not be nullptr
+        std::shared_ptr<ShaderProgram> shader;
 
         // may be nullptr
-        const std::shared_ptr<Material> material;
+        std::shared_ptr<Material> material;
+
         BufferedBuffer buffer;
 
         // number of commands in buffer
@@ -139,8 +141,11 @@ private:
         void ExpandDrawCountCapacity();
 
         // bc bufferedbuffer can only be moved
-        DrawCommandBuffer(DrawCommandBuffer&&) = default;
+        DrawCommandBuffer(DrawCommandBuffer&&) noexcept;
+        DrawCommandBuffer& operator=(DrawCommandBuffer&& old) noexcept;    // move assignment operator
+
         DrawCommandBuffer(const DrawCommandBuffer&) = delete;
+        DrawCommandBuffer& operator=(const DrawCommandBuffer&) = delete;
     };
 
     // the size of a single instance for a single object in bytes. Equal to the InstancedSize() of the vertex format.
