@@ -223,7 +223,7 @@ private:
             updates.push_back(AttributeUpdate{
                 .renderComp = comp,
                 .newValue = newValue,
-                .attributeName = attributeName,
+                .attributeIndex = MeshVertexFormat::AttributeIndexFromAttributeName(attributeName),
                 .updatesRemaining = INSTANCED_VERTEX_BUFFERING_FACTOR
             });
         }
@@ -249,7 +249,7 @@ private:
                 }
 
                 if (update.renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
-                    GraphicsEngine::Get().meshpools[update.renderComp->meshpoolId]->SetInstancedVertexAttribute<AttributeType>(update.renderComp->drawHandle, update.attributeName, update.newValue);
+                    GraphicsEngine::Get().meshpools[update.renderComp->meshpoolId]->SetInstancedVertexAttribute<AttributeType>(update.renderComp->drawHandle, update.attributeIndex, update.newValue);
                     update.updatesRemaining -= 1;
                     if (update.updatesRemaining == 0) {
                         indicesToRemove.push_back(i);
@@ -270,7 +270,7 @@ private:
         struct AttributeUpdate{
             RenderComponent* renderComp; // fortunately, it doesn't actually matter if this pointer is to a destroyed component
             AttributeType newValue;
-            unsigned int attributeName;
+            unsigned int attributeIndex;
 
             unsigned int updatesRemaining = INSTANCED_VERTEX_BUFFERING_FACTOR;
         };

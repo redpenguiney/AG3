@@ -66,7 +66,7 @@ public:
     // Set the given instanced vertex attribute of the given instance to the given value.
     // Will abort if AttributeType does not match the mesh's vertex format or if the vertex attribute is not instanced.
     template<typename AttributeType>
-    void SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeName, const AttributeType& value);
+    void SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeIndex, const AttributeType& value);
 
     // idk what to put here, you probably know what this does
     // prePostProc is true if this is being drawn BEFORE post processing runs
@@ -122,7 +122,7 @@ private:
         BufferedBuffer buffer;
 
         // number of commands in buffer
-        unsigned int drawCount = 0;
+        //unsigned int drawCount = 0;
 
         unsigned int currentDrawCommandCapacity = 0;
 
@@ -137,8 +137,10 @@ private:
 
         unsigned int GetNewDrawCommandSlot();
 
+        int GetDrawCount();
+
         // Doubles currentDrawCommandCapacity.
-        void ExpandDrawCountCapacity();
+        void ExpandDrawCommandCapacity();
 
         // bc bufferedbuffer can only be moved
         DrawCommandBuffer(DrawCommandBuffer&&) noexcept;
@@ -223,8 +225,8 @@ private:
         // TODO: is that really the strat?
     void ExpandInstanceCapacity();
 
-    // Returns a reference to the DrawCommandBuffer for the requested shader/material combo, creating the buffer if it doesn't already exist.
-    DrawCommandBuffer& GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material);
+    // Returns an index to the DrawCommandBuffer for the requested shader/material combo, creating the buffer if it doesn't already exist.
+    unsigned int GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material);
 
     friend class Mesh;
 };

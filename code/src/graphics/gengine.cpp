@@ -714,7 +714,6 @@ void GraphicsEngine::UpdateDebugFreecam() {
 }
 
 void GraphicsEngine::AddCachedMeshes() {
-    
     unsigned int count = 0;
     for (auto & [meshId, map] : renderComponentsToAdd) {
             
@@ -740,14 +739,20 @@ void GraphicsEngine::AddCachedMeshes() {
             }
             meshpools[poolIndex] = new Meshpool(m->vertexFormat);
         }
+      
 
         for (auto& [shaderId, map2] : map) {
             auto shader = ShaderProgram::Get(shaderId);
+
+            
+
             for (auto& [materialId, components] : map2) {
+                //DebugLogInfo("UH OH ", components.size());
+
                 const std::shared_ptr<Material>& material = materialId == 0 ? nullptr : Material::Get(materialId);
                 auto drawHandles = meshpools[poolIndex]->AddObject(m, material, shader, components.size());
 
-                for (unsigned int i = 0; i < components.size(); i++) { // todo: use iterator here???
+                for (unsigned int i = 0; i < components.size(); i++) {
                     components[i]->meshpoolId = poolIndex;
                     components[i]->drawHandle = drawHandles.at(i);
                     //DebugLogInfo("Wrote component to ", bestPoolId, " ", objectPositions[i].first, " ", objectPositions[i].second);
@@ -774,7 +779,8 @@ void GraphicsEngine::AddCachedMeshes() {
 }
 
 void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, RenderComponent* component) {
-    //DebugLogInfo("Added");
+    static int nAdded = 0;
+    DebugLogInfo("Adding #", ++nAdded);
     renderComponentsToAdd[meshId][shaderId][materialId].push_back(component);
 }
 

@@ -108,7 +108,8 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             ExpandInstanceCapacity();
         }
 
-        DrawCommandBuffer& commandBuffer = GetCommandBuffer(shader, material);
+        auto drawCommandBufferIndex = GetCommandBuffer(shader, material);
+        DrawCommandBuffer& commandBuffer = drawCommands[drawCommandBufferIndex].value();
 
         // find slot for draw command
         unsigned int drawCommandIndex = commandBuffer.GetNewDrawCommandSlot();
@@ -122,6 +123,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         };
 
         commandBuffer.clientCommands[drawCommandIndex] = command;
+        //commandBuffer.drawCount++;
 
         // fortunately, the last added one will take precedence when multiple of these update the same command
         commandBuffer.commandUpdates.emplace_back(IndirectDrawCommandUpdate{
@@ -136,6 +138,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             ret.emplace_back(DrawHandle{
                 .meshIndex = (int)slot,
                 .instanceSlot = (int)(firstInstance + i),
+                .drawBufferIndex = (int)drawCommandBufferIndex
             });
 
             instanceSlotsToCommands[firstInstance + i] = CommandLocation{ .drawCommandIndex = drawCommandIndex};
@@ -153,7 +156,8 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
 
     auto& drawBuffer = drawCommands[handle.drawBufferIndex].value();
 
-    unsigned int originalNInstances = drawBuffer.clientCommands[instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex].instanceCount;
+    auto commandIndex = instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex;
+    unsigned int originalNInstances = drawBuffer.clientCommands[commandIndex].instanceCount;
     IndirectDrawCommand emptyCommand(0, 0, 0, 0, 0);
 
     // to remove the object, we need to remove its draw command, or, if it's one of multiple instances being drawn in a single command, we have to split that command up.
@@ -161,18 +165,20 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
 
         // mark the draw command slot as free
         drawBuffer.availableDrawCommandSlots.push_back(instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex);
+        //DebugLogInfo("Freed ", instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex);
 
-        drawBuffer.clientCommands[instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex] = emptyCommand;
+        drawBuffer.clientCommands[commandIndex] = emptyCommand;
         drawBuffer.commandUpdates.emplace_back(IndirectDrawCommandUpdate{
             .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
             .command = emptyCommand,
             .commandSlot = instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex
         });
-        drawBuffer.drawCount--;
+        //drawBuffer.drawCount--;
 
-        if (drawBuffer.drawCount == 0) { // then we just took out the last thing being drawn in this indirect draw buffer, delete it
-            drawCommands[handle.drawBufferIndex] = std::nullopt;
-        }
+        //if (drawBuffer.drawCount == 0) { // then we just took out the last thing being drawn in this indirect draw buffer, delete it
+            //DebugLogInfo("Hmm? ", handle.drawBufferIndex);
+            //drawCommands[handle.drawBufferIndex] = std::nullopt;
+        //}
 
         if (--meshSlotContents.at(handle.meshIndex).nUsers == 0) { // decrement count and if we just took out the last command using this mesh, then we should free it up
             meshSlotContents.erase(handle.meshIndex);
@@ -220,6 +226,7 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
             unsigned int secondIndex = drawBuffer.GetNewDrawCommandSlot();
              
             drawBuffer.clientCommands[secondIndex] = secondHalf;
+            //drawCount++;
 
             // fortunately, the last added one will take precedence when multiple of these update the same command
             drawBuffer.commandUpdates.emplace_back(IndirectDrawCommandUpdate{
@@ -227,6 +234,7 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
                 .command = secondHalf,
                 .commandSlot = secondIndex
             });
+            
 
             // TODO this makes me sad because O(n)
             for (unsigned int i = secondHalf.baseInstance; i < secondHalf.instanceCount; i++) {
@@ -238,12 +246,12 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
 
 void Meshpool::SetNormalMatrix(const DrawHandle& handle, const glm::mat3x3& normal)
 {
-    SetInstancedVertexAttribute<glm::mat3x3>(handle, format.NORMAL_MATRIX_ATTRIBUTE_NAME, normal);
+    SetInstancedVertexAttribute<glm::mat3x3>(handle, MeshVertexFormat::AttributeIndexFromAttributeName(format.NORMAL_MATRIX_ATTRIBUTE_NAME), normal);
 }
 
 void Meshpool::SetModelMatrix(const DrawHandle& handle, const glm::mat4x4& model)
 {
-    SetInstancedVertexAttribute<glm::mat4x4>(handle, format.MODEL_MATRIX_ATTRIBUTE_NAME, model);
+    SetInstancedVertexAttribute<glm::mat4x4>(handle, MeshVertexFormat::AttributeIndexFromAttributeName(format.MODEL_MATRIX_ATTRIBUTE_NAME), model);
 }
 
 void Meshpool::SetBoneState(const DrawHandle& handle, unsigned int nBones, glm::mat4x4* offsets)
@@ -283,6 +291,12 @@ void Meshpool::Draw(bool prePostProc) {
     }
     std::sort(sortedDrawCommands.begin(), sortedDrawCommands.end(), [](const DrawCommandBuffer* a, const DrawCommandBuffer* b) {
         if (a->shader->shaderProgramId == b->shader->shaderProgramId) {
+            if (a->material == nullptr) {
+                return true;
+            }
+            else if (b->material == nullptr) {
+                return false;
+            }
             return a->material->id > b->material->id;
         }
         else {
@@ -330,7 +344,7 @@ void Meshpool::Draw(bool prePostProc) {
             shader->Uniform("colorMappingEnabled", material->HasColorMap());
         }
 
-        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->drawCount, 0);
+        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
     }
      
     
@@ -436,7 +450,7 @@ void Meshpool::ExpandVertexCapacity()
     }
 }
 
-void Meshpool::DrawCommandBuffer::ExpandDrawCountCapacity()
+void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
 {
     // update capacity
     unsigned int oldCapacity = currentDrawCommandCapacity;
@@ -454,7 +468,7 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCountCapacity()
     buffer.Reallocate(currentDrawCommandCapacity * sizeof(IndirectDrawCommand));
 
     // add new instance slots
-    for (unsigned int i = currentDrawCommandCapacity; i --> oldCapacity;) {
+    for (unsigned int i = oldCapacity; i < currentDrawCommandCapacity; i++) {
         availableDrawCommandSlots.push_back(i);
     }
     std::sort(availableDrawCommandSlots.begin(), availableDrawCommandSlots.end(), std::greater<unsigned int>());
@@ -464,7 +478,6 @@ Meshpool::DrawCommandBuffer::DrawCommandBuffer(DrawCommandBuffer&& old) noexcept
     shader(old.shader),
     material(old.material),
     buffer(std::move(old.buffer)),
-    drawCount(old.drawCount),
     currentDrawCommandCapacity(old.currentDrawCommandCapacity),
     availableDrawCommandSlots(old.availableDrawCommandSlots),
     commandUpdates(old.commandUpdates),
@@ -504,12 +517,14 @@ void Meshpool::ExpandInstanceCapacity()
     format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
 }
 
-Meshpool::DrawCommandBuffer& Meshpool::GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material)
+unsigned int Meshpool::GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material)
 {
+    unsigned int i = 0;
     for (auto& buffer : drawCommands) {
         if (buffer.has_value() && buffer->shader == shader && buffer->material == material) {
-            return *buffer;
+            return i;
         }
+        i++;
     }
 
     BufferedBuffer b(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0);
@@ -517,10 +532,14 @@ Meshpool::DrawCommandBuffer& Meshpool::GetCommandBuffer(const std::shared_ptr<Sh
     oB.emplace(shader, material, std::move(b));
 
     if (availableDrawCommandBufferIndices.size()) {
-        return **drawCommands.emplace(drawCommands.begin() + availableDrawCommandBufferIndices.back(), std::move(oB));
+        unsigned int index = availableDrawCommandBufferIndices.back();
+        availableDrawCommandBufferIndices.pop_back();
+        drawCommands.emplace(drawCommands.begin() + index, std::move(oB));
+        return index;
     }
     else {
-        return *drawCommands.emplace_back(std::move(oB));
+        drawCommands.emplace_back(std::move(oB));
+        return drawCommands.size() - 1;
     }
 }
 
@@ -535,19 +554,24 @@ Meshpool::DrawCommandBuffer::DrawCommandBuffer(const std::shared_ptr<ShaderProgr
 unsigned int Meshpool::DrawCommandBuffer::GetNewDrawCommandSlot()
 {
     if (availableDrawCommandSlots.size() == 0) {
-        ExpandDrawCountCapacity();
+        ExpandDrawCommandCapacity();
     }
     unsigned drawCommandIndex = availableDrawCommandSlots.back();
     availableDrawCommandSlots.pop_back();
     return drawCommandIndex;
 }
 
-template<typename AttributeType>
-void Meshpool::SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeName, const AttributeType& value) {
-    Assert(attributeName < sizeof(format.vertexAttributes) / sizeof(format.vertexAttributes[0]));
-    Assert(format.vertexAttributes[attributeName]->instanced == true);
+int Meshpool::DrawCommandBuffer::GetDrawCount()
+{
+    return currentDrawCommandCapacity;
+}
 
-    AttributeType* attributeLocation = (AttributeType*)(format.vertexAttributes[attributeName]->offset + instances.Data() + (handle.instanceSlot * instanceSize));
+template<typename AttributeType>
+void Meshpool::SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeIndex, const AttributeType& value) {
+    Assert(attributeIndex < MeshVertexFormat::N_ATTRIBUTES);
+    Assert(format.vertexAttributes[attributeIndex]->instanced == true);
+
+    AttributeType* attributeLocation = (AttributeType*)(format.vertexAttributes[attributeIndex]->offset + instances.Data() + (handle.instanceSlot * instanceSize));
 
     // make sure we don't segfault 
     Assert(handle.instanceSlot < currentInstanceCapacity);
