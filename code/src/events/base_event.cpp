@@ -1,22 +1,35 @@
 #include "base_event.hpp"
+#include <debug/log.hpp>
 
-inline std::vector<BaseEvent*> _eventQueue;
+
 
 void BaseEvent::FlushEventQueue() {
-	for (auto& event : _eventQueue) {
+	auto& q = EventQueue();
+	for (auto event : q) {
+		//DebugLogInfo("Flushing ", event);
 		event->Flush();
 	}
-};
+}
+
+std::vector<BaseEvent*>& BaseEvent::EventQueue()
+{
+	static std::vector<BaseEvent*> eventQueue;
+	return eventQueue;
+}
+;
 
 BaseEvent::BaseEvent() {
-	_eventQueue.push_back(this);
+	EventQueue().push_back(this);
 }
 
 BaseEvent::~BaseEvent() { // todo: unoptimized for frequent removal 
+	//if (!inQueue) { return; }
 	BaseEvent* ptr = this;
-	for (auto it = _eventQueue.begin(); it != _eventQueue.end(); it++) {
-		if (*it == ptr) {
-			it = _eventQueue.erase(it);
+	for (unsigned int i = 0; i < EventQueue().size(); i++) {
+		if (EventQueue()[i] = ptr) {
+			EventQueue()[i] = EventQueue().back();
+			EventQueue().pop_back();
+			return;
 		}
 	}
 }

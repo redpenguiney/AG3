@@ -108,6 +108,7 @@ int main(int numArgs, const char *argPtrs[]) {
     bool wf = false;
 
     GE.window.InputDown.Connect([&physicsPaused, &wf, &GE](InputObject input) {
+
         if (input.input == InputObject::Space) {
             physicsPaused = !physicsPaused;
         }

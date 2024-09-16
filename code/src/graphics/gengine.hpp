@@ -235,36 +235,35 @@ private:
         }
 
         void ApplyUpdates() {
-            unsigned int i = 0;
+            //unsigned int i = 0;
 
             
-            std::vector<unsigned int> indicesToRemove;
-            for (auto& update : updates) {
+            for (unsigned int updateIndex = 0; updateIndex < updates.size(); updateIndex++) {
+                auto& update = updates[updateIndex];
 
-                // TODO: optimizations to be made here
-                for (auto it = canceledUpdates.begin(); it != canceledUpdates.end(); it++) {
-                    if (*it == update.renderComp) {
-                        it = canceledUpdates.erase(it);
+                bool canceled = false;
+                for (unsigned int i = 0; i < canceledUpdates.size(); i++) {
+                    if (canceledUpdates[i] == update.renderComp) {
+                        canceledUpdates[i] = canceledUpdates.back();
+                        canceledUpdates.pop_back();
+                        canceled = true;
+                        break;
                     }
                 }
 
-                if (update.renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
+                if (!canceled && update.renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
                     GraphicsEngine::Get().meshpools[update.renderComp->meshpoolId]->SetInstancedVertexAttribute<AttributeType>(update.renderComp->drawHandle, update.attributeIndex, update.newValue);
                     update.updatesRemaining -= 1;
                     if (update.updatesRemaining == 0) {
-                        indicesToRemove.push_back(i);
+                        updates[updateIndex] = updates.back();
+                        updates.pop_back();
+                        updateIndex--;
                     }
-                    i++;
+                    //i++;
                 }
 
 
             }
-
-            for (auto it = indicesToRemove.rbegin(); it != indicesToRemove.rend(); it++) {
-                updates[*it] = updates.back();
-                updates.pop_back();
-            }
-            indicesToRemove.clear();
         }
     private:
         struct AttributeUpdate{
@@ -322,5 +321,7 @@ private:
     // Contents of MeshLocation are undefined until addCachedMeshes() is called, except for textureId, shaderProgramId, and initialized.
     // Before addChachedMeshes is called, meshLocation->initialized == false and after == true
     void AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, RenderComponent* component);
+
+    void RemoveObject(RenderComponent* comp);
 };
 

@@ -110,7 +110,7 @@ std::tuple<void*, int, int> ComponentPool::GetObject() {
 	// if none of the pages have any space, make a new one
 	if (!foundComponents) {
 		AddPage();
-		pageI = pages.size() - 1;
+		pageI = static_cast<unsigned int>(pages.size() - 1);
 		foundComponents = firstFree.back();
 		firstFree.back() = *(uint8_t**)foundComponents;
 	}
@@ -118,7 +118,7 @@ std::tuple<void*, int, int> ComponentPool::GetObject() {
 	// mark the ptr we got as in use
 	*(void**)foundComponents = nullptr;
 
-	unsigned int index = ((char*)foundComponents - (char*)pages[pageI]) / objectSize;
+	unsigned int index = static_cast<int>(((char*)foundComponents - (char*)pages[pageI]) / objectSize);
 	Assert(foundComponents != nullptr);
 
 	return std::make_tuple(foundComponents, index, pageI);
@@ -135,7 +135,7 @@ void ComponentPool::ReturnObject(int pageIndex, int objectIndex) {
 
 void ComponentPool::AddPage() {
 
-	unsigned int index = pages.size();
+	unsigned int index = static_cast<int>(pages.size());
 	uint8_t* newPage = new uint8_t[COMPONENTS_PER_PAGE * objectSize];
 
 	firstFree.push_back(newPage);

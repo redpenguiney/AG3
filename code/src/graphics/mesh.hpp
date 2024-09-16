@@ -28,11 +28,14 @@ class PhysicsMesh;
 // TODO: UNDO THIS CLASS'S EXISTENCE
 class MeshGlobals {
     
-    public:
+public:
+    // calls LOADED_MESHES.clear(), used to get around dependency of Mesh destructor on GE destructor 
+    //void PurgeLoaded();
+
     
     static MeshGlobals& Get();
 
-    private:
+private:
     std::atomic<unsigned int> LAST_MESH_ID = {1}; // used to give each mesh a unique uuid
     std::unordered_map<unsigned int, std::shared_ptr<Mesh>> LOADED_MESHES; 
     //tinyobj::ObjReader OBJ_LOADER;

@@ -27,6 +27,11 @@ std::shared_ptr<Mesh> Mesh::New(const MeshProvider& provider, bool dynamic) {
 	return mesh;
 }
 
+//void MeshGlobals::PurgeLoaded()
+//{
+//    LOADED_MESHES.clear();
+//}
+
 MeshGlobals& MeshGlobals::Get() {
     #ifdef IS_MODULE
     Assert(_MESH_GLOBALS != nullptr);
@@ -329,9 +334,9 @@ void Mesh::Unload(int meshId) {
 // }
 
 Mesh::~Mesh() {
-    if (GraphicsEngine::Get().dynamicMeshLocations.count(meshId)) {
+    /*if (GraphicsEngine::Get().dynamicMeshLocations.count(meshId)) {
         GraphicsEngine::Get().dynamicMeshLocations.erase(meshId);
-    }
+    }*/
     //DebugLogInfo("Deleting mesh with id ", meshId);
 }
 
@@ -451,7 +456,7 @@ void Mesh::StopModifying(bool normalizeSize) {
             // TODO: could making component no longer in a meshpool could break stuff that calls methods of rendercomponent before it's readded?
 
             for (auto& renderComponent : GraphicsEngine::Get().dynamicMeshUsers.at(meshId)) {
-                pool.RemoveObject(renderComponent->drawHandle);
+                GraphicsEngine::Get().RemoveObject(renderComponent);
                 GraphicsEngine::Get().AddObject(renderComponent->shaderProgramId, renderComponent->materialId, meshId, renderComponent);
             }
         }

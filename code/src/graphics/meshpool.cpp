@@ -184,6 +184,10 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
             meshSlotContents.erase(handle.meshIndex);
             availableMeshSlots[meshSlotContents.at(handle.meshIndex).sizeClass].push_back(handle.meshIndex);
             meshSlotContents.erase(meshSlotContents.at(handle.meshIndex).meshId);
+
+            if (GraphicsEngine::Get().dynamicMeshLocations.count(meshSlotContents.at(handle.meshIndex).meshId)) {
+                GraphicsEngine::Get().dynamicMeshLocations.erase(meshSlotContents.at(handle.meshIndex).meshId);
+            }
         }
     }
     else {

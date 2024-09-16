@@ -108,11 +108,15 @@ screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, Mesh
 }
 
 GraphicsEngine::~GraphicsEngine() {
+
+
     for (auto & pool : meshpools) {
         delete pool;
     }
 
     delete skybox;
+
+    
 }
 
 void GraphicsEngine::SetWireframeEnabled(bool)
@@ -327,7 +331,7 @@ void GraphicsEngine::RenderScene(float dt) {
     UpdateMainFramebuffer();
     mainFramebuffer->Bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+     
     // tell opengl how to do transparency
     glEnable(GL_BLEND); 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
@@ -771,16 +775,64 @@ void GraphicsEngine::AddCachedMeshes() {
 
     }
 
-    if (count > 0) {
+    /*if (count > 0) {
         DebugLogInfo("There are ", count, " to add.");
-    }
+    }*/
 
     renderComponentsToAdd.clear();
 }
 
 void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, RenderComponent* component) {
-    static int nAdded = 0;
-    DebugLogInfo("Adding #", ++nAdded);
+    //static int nAdded = 0;
+    //DebugLogInfo("Adding #", ++nAdded);
     renderComponentsToAdd[meshId][shaderId][materialId].push_back(component);
+}
+
+void GraphicsEngine::RemoveObject(RenderComponent* comp)
+{
+
+    // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from renderComponentsToAdd
+    unsigned int shaderId = comp->shaderProgramId, textureId = comp->materialId;
+    if (comp->meshpoolId == -1) {
+        auto& vec = renderComponentsToAdd.at(shaderId).at(textureId).at(comp->meshId);
+        for (unsigned int i = 0; i < vec.size(); i++) {
+            if (vec[i] == comp) {
+                vec[i] = vec.back();
+                vec.pop_back();
+                break;
+            }
+        }
+    }
+    else {
+
+        // remove comp from dynamicMeshUsers
+        if (dynamicMeshUsers.contains(comp->meshId)) {
+            unsigned int i = 0;
+            for (auto& component : dynamicMeshUsers.at(comp->meshId)) {
+                if (comp == component) {
+                    dynamicMeshUsers.at(comp->meshId).at(i) = dynamicMeshUsers.at(comp->meshId).back();
+                    dynamicMeshUsers.at(comp->meshId).pop_back();
+                    break;
+                }
+                i++;
+            }
+
+        }
+
+        // remove comp from its meshpool
+        meshpools[comp->meshpoolId]->RemoveObject(comp->drawHandle);
+    }
+
+    
+
+    // Prevent updating instanced vertex attributes for a deleted rendercomponent
+    GraphicsEngine::Get().updater1.CancelUpdate(comp);
+    GraphicsEngine::Get().updater2.CancelUpdate(comp);
+    GraphicsEngine::Get().updater3.CancelUpdate(comp);
+    GraphicsEngine::Get().updater4.CancelUpdate(comp);
+    GraphicsEngine::Get().updater3x3.CancelUpdate(comp);
+    GraphicsEngine::Get().updater4x4.CancelUpdate(comp);
+
+
 }
 
