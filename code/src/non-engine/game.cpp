@@ -149,10 +149,17 @@ void GameInit()
 
     GE.defaultShaderProgram->Uniform("envLightDiffuse", 0.0f);
 
-    //auto [grassTextureZ, grassMaterial] = Material::New(MaterialCreateParams{ .textureParams = { TextureCreateParams {{"../textures/grass.png",}, Texture::ColorMap}, TextureCreateParams {{"../textures/crate_specular.png",}, Texture::SpecularMap} }, .type = Texture::Texture2D });
+    auto [grassTextureZ, grassMaterial] = Material::New(MaterialCreateParams{ 
+        .textureParams = {
+             TextureCreateParams({ TextureSource{"../textures/grass.png"},}, Texture::ColorMap),
+             TextureCreateParams({TextureSource {"../textures/crate_specular.png"}}, Texture::SpecularMap)
+        },
+        .type = Texture::Texture2D }
+    );
 
     GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Spotlight});
     params.meshId = m->meshId;
+    params.materialId = grassMaterial->id;
     //auto coolerLight = CR.NewGameObject(params);
     //coolerLight->Get<TransformComponent>().SetPos({ 8, 5, 0 });
     //coolerLight->spotLightComponent->SetRange(20);
