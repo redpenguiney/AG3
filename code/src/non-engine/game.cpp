@@ -87,7 +87,7 @@ void GameInit()
     //auto& LUA = LuaHandler::Get();
     //auto& CR = ComponentRegistry::Get();
 
-    MakeMainMenu();
+    //MakeMainMenu();
 
     GE.SetDebugFreecamEnabled(true);
 
@@ -96,34 +96,34 @@ void GameInit()
     ttfParams.format = Texture::Grayscale_8Bit;
     auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = true });
 
-    auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
+    //auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
 
-    debugText->rgba = { 1, 1, 1, 0 };
-    debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
+    //debugText->rgba = { 1, 1, 1, 0 };
+    //debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
 
-    debugText->scalePos = { 0, 1 };
-    debugText->scaleSize = { 0, 0 };
-    debugText->offsetSize = { 300, 60 };
-    debugText->offsetPos = { 200, -200 };
-    debugText->anchorPoint = { 0, 0 };
+    //debugText->scalePos = { 0, 1 };
+    //debugText->scaleSize = { 0, 0 };
+    //debugText->offsetSize = { 300, 60 };
+    //debugText->offsetPos = { 200, -200 };
+    //debugText->anchorPoint = { 0, 0 };
 
-    debugText->GetTextInfo().text = "---";
-    debugText->GetTextInfo().rgba = { 1, 1, 1, 0.6 };
-    debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
-    debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+    //debugText->GetTextInfo().text = "---";
+    //debugText->GetTextInfo().rgba = { 1, 1, 1, 0.6 };
+    //debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+    //debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
 
-    debugText->UpdateGuiGraphics();
-    debugText->UpdateGuiTransform();
+    //debugText->UpdateGuiGraphics();
+    //debugText->UpdateGuiTransform();
 
-    GE.preRenderEvent.Connect([&GE, debugText](float dt) {
+    //GE.preRenderEvent.Connect([&GE, debugText](float dt) {
 
-        debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
-        debugText->UpdateGuiText();
+    //    debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
+    //    debugText->UpdateGuiText();
 
-        if (!inMainMenu) {
-            //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
-        }
-    });
+    //    if (!inMainMenu) {
+    //        //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
+    //    }
+    //});
 
     // TODO BROKEN, prob just dll outdated
     //Module::LoadModule("..\\modules\\libtest_module.dll");
@@ -166,12 +166,12 @@ void GameInit()
     //coolerLight->spotLightComponent->SetColor({ 1, 0.3, 0.7 });
     //coolerLight->Get<TransformComponent>().SetRot(glm::quatLookAt(glm::vec3(0, -0.7, -0.7), glm::vec3(0, 0, 1)));
 
-    //auto [brickTextureZ, brickMaterial] = Material::New({
-    //    TextureCreateParams {{"../textures/ambientcg_bricks085/color.jpg",}, Texture::ColorMap},
-    //    TextureCreateParams {{"../textures/ambientcg_bricks085/roughness.jpg",}, Texture::SpecularMap},
-    //    TextureCreateParams {{"../textures/ambientcg_bricks085/normal_gl.jpg",}, Texture::NormalMap},
-    //    // TextureCreateParams {.texturePaths = {"../textures/ambientcg_bricks085/displacement.jpg"}, .format = Grayscale, .usage = DisplacementMap}
-    //    }, Texture::Texture2D);
+    auto [brickTextureZ, brickMaterial] = Material::New(MaterialCreateParams{ .textureParams = {
+        TextureCreateParams({ TextureSource{"../textures/ambientcg_bricks085/color.jpg"},}, Texture::ColorMap),
+        TextureCreateParams({TextureSource{"../textures/ambientcg_bricks085/roughness.jpg"},}, Texture::SpecularMap),
+        TextureCreateParams({TextureSource{"../textures/ambientcg_bricks085/normal_gl.jpg"},}, Texture::NormalMap),
+         TextureCreateParams({TextureSource {"../textures/ambientcg_bricks085/displacement.jpg"},}, Texture::DisplacementMap) // TODO assert format grayscale somehow
+        }, .type =Texture::Texture2D });
 
     //{
         /*GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentRegistry::ColliderComponentBitIndex });
@@ -188,17 +188,17 @@ void GameInit()
         floor->name = "ah yes the floor here is made of floor";*/
     //}
 
-    //GameobjectCreateParams wallParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentRegistry::ColliderComponentBitIndex });
-    //wallParams.meshId = m->meshId;
-    //wallParams.materialId = brickMaterial->id;
-    //auto wall1 = CR.NewGameObject(wallParams);
-    //wall1->Get<TransformComponent>().SetPos({ 4, 4, 0 });
-    //wall1->Get<TransformComponent>().SetRot(glm::vec3{ 0, 0, 0.0 });
-    //wall1->colliderComponent->elasticity = 1.0;
-    //wall1->Get<TransformComponent>().SetScl({ 1, 8, 8 });
-    //wall1->renderComponent->SetColor({ 0, 1, 1, 1 });
-    //wall1->renderComponent->SetTextureZ(brickTextureZ);
-    //wall1->name = "wall";
+    GameobjectCreateParams wallParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
+    wallParams.meshId = m->meshId;
+    wallParams.materialId = brickMaterial->id;
+    auto wall1 = GameObject::New(wallParams);
+    wall1->Get<TransformComponent>()->SetPos({ 4, 4, 0 });
+    wall1->Get<TransformComponent>()->SetRot(glm::vec3{ 0, 0, 0.0 });
+    wall1->Get<ColliderComponent>()->elasticity = 1.0;
+    wall1->Get<TransformComponent>()->SetScl({ 1, 8, 8 });
+    wall1->Get<RenderComponent>()->SetColor({ 0, 1, 1, 1 });
+    wall1->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
+    wall1->name = "wall";
     //{
 
     //    // auto wall2 = ComponentRegistry::NewGameObject(wallParams);

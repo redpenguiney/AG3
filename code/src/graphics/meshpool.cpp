@@ -43,6 +43,8 @@ Meshpool::~Meshpool()
 
 std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, const std::shared_ptr<ShaderProgram>& shader, unsigned int count)
 {
+    DebugLogInfo("Adding count ", count, " for meshid ", mesh->meshId);
+
     // find valid slot for mesh
     unsigned int slot;
     {
@@ -151,6 +153,8 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
 
 void Meshpool::RemoveObject(const DrawHandle& handle)
 {
+    DebugLogInfo("Removing object ", handle.instanceSlot);
+
     // something else can use this instance
     availableInstanceSlots.push_back(handle.instanceSlot);
 
@@ -311,6 +315,7 @@ void Meshpool::Draw(bool prePostProc) {
     for (auto& command : sortedDrawCommands) {
         command->buffer.Bind();
         auto& shader = command->shader;
+        shader->Use();
 
         if (shader->useClusteredLighting) {
             shader->Uniform("pointLightCount", GraphicsEngine::Get().pointLightCount);
@@ -319,7 +324,7 @@ void Meshpool::Draw(bool prePostProc) {
             shader->Uniform("spotLightOffset", unsigned int(GraphicsEngine::Get().spotLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::SpotLightInfo)));
         }
 
-        shader->Use();
+        
         GraphicsEngine::Get().pointLightDataBuffer.BindBase(0);
         GraphicsEngine::Get().spotLightDataBuffer.BindBase(1);
 
