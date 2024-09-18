@@ -355,8 +355,9 @@ void GraphicsEngine::RenderScene(float dt) {
 
     // Debugging stuff
     // TODO: actual settings to toggle debug stuff
-    //SpatialAccelerationStructure::Get().DebugVisualize();
     glDisable(GL_DEPTH_TEST);
+    //SpatialAccelerationStructure::Get().DebugVisualize();
+    
     DebugAxis();
 
     //DrawSkybox(); // Draw skybox afterwards to encourage early z-test
@@ -447,15 +448,16 @@ void GraphicsEngine::UpdateLights() {
 //     meshpools[comp.shaderProgramId][comp.materialId][comp.meshpoolId]->SetColor(comp.meshpoolSlot, comp.meshpoolInstance, rgba);
 // }
 
-void GraphicsEngine::SetModelMatrix(const RenderComponent& comp, const glm::mat4x4& model) {
-    Assert(comp.meshpoolId != -1 && comp.drawHandle.instanceSlot != -1);
-    meshpools[comp.meshpoolId]->SetModelMatrix(comp.drawHandle, model);
-}
-
-void GraphicsEngine::SetNormalMatrix(const RenderComponent& comp, const glm::mat3x3& normal) {
-    Assert(comp.meshpoolId != -1 && comp.drawHandle.instanceSlot != -1);
-    meshpools[comp.meshpoolId]->SetNormalMatrix(comp.drawHandle, normal);
-}
+//void GraphicsEngine::SetModelMatrix(const RenderComponent& comp, const glm::mat4x4& model) {
+//    Assert(comp.meshpoolId != -1 && comp.drawHandle.instanceSlot != -1);
+//    meshpools[comp.meshpoolId]->SetModelMatrix(comp.drawHandle, model);
+//}
+//
+//void GraphicsEngine::SetNormalMatrix(const RenderComponent& comp, const glm::mat3x3& normal) {
+//    Assert(comp.meshpoolId != -1 && comp.drawHandle.instanceSlot != -1);
+//    meshpools[comp.meshpoolId]->SetNormalMatrix(comp.drawHandle, normal);
+//}
+//
 
 void GraphicsEngine::SetBoneState(const RenderComponent& comp, unsigned int nBones, glm::mat4x4* offsets) {
     Assert(comp.meshpoolId != -1 && comp.drawHandle.instanceSlot != -1);
@@ -548,13 +550,14 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
         //DebugLogInfo("Component at ", &renderComp, " is live");
             // if (renderComp.componentPoolId != i) {
             //     //std::cout << "Warning: comp at " << renderComp << " has id " << renderComp->componentPoolId << ", i=" << i << ". ABORT\n";
-            //     abort();
-            // }
-            // TODO: we only need to call SetNormalMatrix() when the object is rotated
+            //     abort();to call SetNormalMatrix() when the object is rotated
             
+            // }
         // tell shaders where the object is, rot/scl
-        SetNormalMatrix(renderComp, transformComp.GetNormalMatrix()); 
-        SetModelMatrix(renderComp, transformComp.GetGraphicsModelMatrix(cameraPos));
+        GraphicsEngine::Get().meshpools[renderComp.meshpoolId]->SetInstancedVertexAttribute<glm::mat4x4>(renderComp.drawHandle, MeshVertexFormat::MODEL_MATRIX_ATTRIBUTE_NAME, transformComp.GetGraphicsModelMatrix(cameraPos));
+        GraphicsEngine::Get().meshpools[renderComp.meshpoolId]->SetInstancedVertexAttribute<glm::mat3x3>(renderComp.drawHandle, MeshVertexFormat::NORMAL_MATRIX_ATTRIBUTE_NAME, transformComp.GetNormalMatrix());
+        //SetNormalMatrix(renderComp, transformComp.GetNormalMatrix()); 
+        //SetModelMatrix(renderComp, transformComp.GetGraphicsModelMatrix(cameraPos));
 
         //DebugLogInfo("++");
         nR++;
@@ -577,8 +580,11 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
             //     abort();
             // }
             // TODO: we only need to call SetNormalMatrix() when the object is rotated
-        SetNormalMatrix(renderCompNoFO, transformComp.GetNormalMatrix()); 
-        SetModelMatrix(renderCompNoFO, transformComp.GetGraphicsModelMatrix({0, 0, 0}));
+        // // tell shaders where the object is, rot/scl
+        GraphicsEngine::Get().meshpools[renderCompNoFO.meshpoolId]->SetInstancedVertexAttribute<glm::mat4x4>(renderCompNoFO.drawHandle, MeshVertexFormat::AttributeIndexFromAttributeName(MeshVertexFormat::MODEL_MATRIX_ATTRIBUTE_NAME), transformComp.GetGraphicsModelMatrix({0, 0, 0}));
+        GraphicsEngine::Get().meshpools[renderCompNoFO.meshpoolId]->SetInstancedVertexAttribute<glm::mat3x3>(renderCompNoFO.drawHandle, MeshVertexFormat::AttributeIndexFromAttributeName(MeshVertexFormat::NORMAL_MATRIX_ATTRIBUTE_NAME), transformComp.GetNormalMatrix());
+        //SetNormalMatrix(renderCompNoFO, transformComp.GetNormalMatrix()); 
+        //SetModelMatrix(renderCompNoFO, transformComp.GetGraphicsModelMatrix({0, 0, 0}));
             
             // if (renderCompNoFO.textureZChanged > 0) {renderCompNoFO.textureZChanged -= 1; SetTextureZ(renderCompNoFO, renderCompNoFO.textureZ);}
             // if (renderCompNoFO.colorChanged > 0) {renderCompNoFO.colorChanged -= 1; SetColor(renderCompNoFO, renderCompNoFO.color);}

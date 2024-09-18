@@ -123,7 +123,7 @@ struct MeshVertexFormat {
     static MeshVertexFormat DefaultGui();
 
     // Takes a VAO and sets its noninstanced vertex attributes using VertexAttribPointer().
-    // The VAO must ALREADY BE BOUND.
+    // The VAO must ALREADY BE BOUND.s
     void SetNonInstancedVaoVertexAttributes(unsigned int& vaoId, unsigned int instancedSize, unsigned int nonInstancedSize) const;
 
     // Takes a VAO and sets its instanced vertex attributes using VertexAttribPointer().

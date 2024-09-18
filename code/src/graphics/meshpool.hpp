@@ -66,7 +66,7 @@ public:
     // Set the given instanced vertex attribute of the given instance to the given value.
     // Will abort if AttributeType does not match the mesh's vertex format or if the vertex attribute is not instanced.
     template<typename AttributeType>
-    void SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeIndex, const AttributeType& value);
+    void SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeName, const AttributeType& value);
 
     // idk what to put here, you probably know what this does
     // prePostProc is true if this is being drawn BEFORE post processing runs

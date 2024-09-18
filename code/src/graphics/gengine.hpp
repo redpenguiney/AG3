@@ -223,7 +223,7 @@ private:
             updates.push_back(AttributeUpdate{
                 .renderComp = comp,
                 .newValue = newValue,
-                .attributeIndex = MeshVertexFormat::AttributeIndexFromAttributeName(attributeName),
+                .attributeName = attributeName,
                 .updatesRemaining = INSTANCED_VERTEX_BUFFERING_FACTOR
             });
         }
@@ -252,7 +252,7 @@ private:
                 }
 
                 if (!canceled && update.renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
-                    GraphicsEngine::Get().meshpools[update.renderComp->meshpoolId]->SetInstancedVertexAttribute<AttributeType>(update.renderComp->drawHandle, update.attributeIndex, update.newValue);
+                    GraphicsEngine::Get().meshpools[update.renderComp->meshpoolId]->SetInstancedVertexAttribute<AttributeType>(update.renderComp->drawHandle, update.attributeName, update.newValue);
                     update.updatesRemaining -= 1;
                     if (update.updatesRemaining == 0) {
                         updates[updateIndex] = updates.back();
@@ -269,7 +269,7 @@ private:
         struct AttributeUpdate{
             RenderComponent* renderComp; // fortunately, it doesn't actually matter if this pointer is to a destroyed component
             AttributeType newValue;
-            unsigned int attributeIndex;
+            unsigned int attributeName;
 
             unsigned int updatesRemaining = INSTANCED_VERTEX_BUFFERING_FACTOR;
         };
@@ -307,8 +307,8 @@ private:
     void DrawWorld(bool postProc);
 
     // void SetColor(const RenderComponent& component, const glm::vec4& rgba);
-    void SetModelMatrix(const RenderComponent& component, const glm::mat4x4& model);
-    void SetNormalMatrix(const RenderComponent& component, const glm::mat3x3& normal);
+    /*void SetModelMatrix(const RenderComponent& component, const glm::mat4x4& model);
+    void SetNormalMatrix(const RenderComponent& component, const glm::mat3x3& normal);*/
     void SetBoneState(const RenderComponent& component, unsigned int nBones, glm::mat4x4* boneTransforms);
 
     // void SetArbitrary1(const RenderComponent& component, const float arb);

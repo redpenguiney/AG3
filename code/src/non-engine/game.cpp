@@ -170,7 +170,7 @@ void GameInit()
         TextureCreateParams({ TextureSource{"../textures/ambientcg_bricks085/color.jpg"},}, Texture::ColorMap),
         TextureCreateParams({TextureSource{"../textures/ambientcg_bricks085/roughness.jpg"},}, Texture::SpecularMap),
         TextureCreateParams({TextureSource{"../textures/ambientcg_bricks085/normal_gl.jpg"},}, Texture::NormalMap),
-         TextureCreateParams({TextureSource {"../textures/ambientcg_bricks085/displacement.jpg"},}, Texture::DisplacementMap) // TODO assert format grayscale somehow
+         //TextureCreateParams({TextureSource {"../textures/ambientcg_bricks085/displacement.jpg"},}, Texture::DisplacementMap) // TODO assert format grayscale somehow
         }, .type =Texture::Texture2D });
 
     //{

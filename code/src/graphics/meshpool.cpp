@@ -353,6 +353,7 @@ void Meshpool::Draw(bool prePostProc) {
             shader->Uniform("colorMappingEnabled", material->HasColorMap());
         }
 
+        //DebugLogInfo("Drawing ", command->GetDrawCount(), " Offset ", command->buffer.GetOffset());
         glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
     }
      
@@ -576,7 +577,9 @@ int Meshpool::DrawCommandBuffer::GetDrawCount()
 }
 
 template<typename AttributeType>
-void Meshpool::SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeIndex, const AttributeType& value) {
+void Meshpool::SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeName, const AttributeType& value) {
+    unsigned int attributeIndex = MeshVertexFormat::AttributeIndexFromAttributeName(attributeName); // TODO: could sparsely populate vertexAttributes but with name instead of index?
+    
     Assert(attributeIndex < MeshVertexFormat::N_ATTRIBUTES);
     Assert(format.vertexAttributes[attributeIndex]->instanced == true);
 
