@@ -210,5 +210,9 @@ void main()
     //Output = vec4(normalize(fragmentNormal), 1.0);
     //Output = vec4(-envLightDirection, 1.0);
     //Output = fragmentColor;
+    Output = vec4(1.0, 1.0, 1.0, 1.0);
+    Output = vec4(gl_FragCoord.zzz, 1.0);
     //Output = vec4(dot(normal, envLightDirection));
+
+    gl_FragDepth = 0.5;
 };

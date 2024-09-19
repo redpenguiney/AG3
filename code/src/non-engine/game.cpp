@@ -157,14 +157,14 @@ void GameInit()
         .type = Texture::Texture2D }
     );
 
-    GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Spotlight});
+    GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Pointlight});
     params.meshId = m->meshId;
     params.materialId = grassMaterial->id;
-    //auto coolerLight = CR.NewGameObject(params);
-    //coolerLight->Get<TransformComponent>().SetPos({ 8, 5, 0 });
-    //coolerLight->spotLightComponent->SetRange(20);
-    //coolerLight->spotLightComponent->SetColor({ 1, 0.3, 0.7 });
-    //coolerLight->Get<TransformComponent>().SetRot(glm::quatLookAt(glm::vec3(0, -0.7, -0.7), glm::vec3(0, 0, 1)));
+    auto coolerLight = GameObject::New(params);
+    coolerLight->RawGet<TransformComponent>()->SetPos({ 8, 5, 0 });
+    coolerLight->RawGet<PointLightComponent>()->SetRange(20);
+    coolerLight->RawGet<PointLightComponent>()->SetColor({ 1, 0.3, 0.7 });
+    coolerLight->RawGet<TransformComponent>()->SetRot(glm::quatLookAt(glm::vec3(0, -0.7, -0.7), glm::vec3(0, 0, 1)));
 
     auto [brickTextureZ, brickMaterial] = Material::New(MaterialCreateParams{ .textureParams = {
         TextureCreateParams({ TextureSource{"../textures/ambientcg_bricks085/color.jpg"},}, Texture::ColorMap),

@@ -54,11 +54,11 @@ public:
 
     // Makes the given instance use the given normal matrix.
     // Will abort if mesh uses per-vertex normal matrix instead of per-instance normal matrix. (though who would do that???)
-    void SetNormalMatrix(const DrawHandle& handle, const glm::mat3x3& normal);
+    //void SetNormalMatrix(const DrawHandle& handle, const glm::mat3x3& normal);
 
     // Makes the given instance use the given model matrix.
     // Will abort if mesh uses per-vertex model matrix instead of per-instance model matrix. (though who would do that???)
-    void SetModelMatrix(const DrawHandle& handle, const glm::mat4x4& model);
+    //void SetModelMatrix(const DrawHandle& handle, const glm::mat4x4& model);
 
     // Sets the bone transforms. Do not call if the meshpool vertex format does not support animation.
     void SetBoneState(const DrawHandle& handle, unsigned int nBones, glm::mat4x4* offsets);

@@ -119,7 +119,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         IndirectDrawCommand command = {
             .count = static_cast<unsigned int>(mesh->indices.size()),
             .instanceCount = nInstances,
-            .firstIndex = slot * (vertexSize / indexSize), /// TODO MIGHT BE WRONG 
+            .firstIndex = slot * (indexSize), /// TODO MIGHT BE WRONG 
             .baseVertex = static_cast<int>(slot),
             .baseInstance = firstInstance
         };
@@ -252,15 +252,15 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
     }
 }
 
-void Meshpool::SetNormalMatrix(const DrawHandle& handle, const glm::mat3x3& normal)
-{
-    SetInstancedVertexAttribute<glm::mat3x3>(handle, MeshVertexFormat::AttributeIndexFromAttributeName(format.NORMAL_MATRIX_ATTRIBUTE_NAME), normal);
-}
-
-void Meshpool::SetModelMatrix(const DrawHandle& handle, const glm::mat4x4& model)
-{
-    SetInstancedVertexAttribute<glm::mat4x4>(handle, MeshVertexFormat::AttributeIndexFromAttributeName(format.MODEL_MATRIX_ATTRIBUTE_NAME), model);
-}
+//void Meshpool::SetNormalMatrix(const DrawHandle& handle, const glm::mat3x3& normal)
+//{
+//    SetInstancedVertexAttribute<glm::mat3x3>(handle, MeshVertexFormat::AttributeIndexFromAttributeName(format.NORMAL_MATRIX_ATTRIBUTE_NAME), normal);
+//}
+//
+//void Meshpool::SetModelMatrix(const DrawHandle& handle, const glm::mat4x4& model)
+//{
+//    SetInstancedVertexAttribute<glm::mat4x4>(handle, MeshVertexFormat::AttributeIndexFromAttributeName(format.MODEL_MATRIX_ATTRIBUTE_NAME), model);
+//}
 
 void Meshpool::SetBoneState(const DrawHandle& handle, unsigned int nBones, glm::mat4x4* offsets)
 {
@@ -353,6 +353,8 @@ void Meshpool::Draw(bool prePostProc) {
             shader->Uniform("colorMappingEnabled", material->HasColorMap());
         }
 
+        glPointSize(15.0);
+        //glDrawElements(GL_TRIANGLES, indices.GetSize() / indexSize, GL_UNSIGNED_INT, 0);
         //DebugLogInfo("Drawing ", command->GetDrawCount(), " Offset ", command->buffer.GetOffset());
         glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
     }
@@ -385,6 +387,7 @@ void Meshpool::Commit() {
             update.updatesLeft--;
 
             IndirectDrawCommand command = update.command; // deliberate copy
+            DebugLogInfo("Command ", command.firstIndex, " ", command.count);
 
             command.baseInstance += instances.GetOffset() / instanceSize;
             command.baseVertex += vertices.GetOffset() / vertexSize;

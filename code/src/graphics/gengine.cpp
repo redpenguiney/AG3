@@ -337,6 +337,7 @@ void GraphicsEngine::RenderScene(float dt) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
 
     DrawWorld(true);
+
     DrawSkybox(); // Draw skybox afterwards to encourage early z-test
 
     // Go back to drawing on the window.
@@ -360,7 +361,6 @@ void GraphicsEngine::RenderScene(float dt) {
     
     DebugAxis();
 
-    //DrawSkybox(); // Draw skybox afterwards to encourage early z-test
 
     glFlush(); // Tell OpenGL we're done drawing.
 
