@@ -440,7 +440,7 @@ void Mesh::StopModifying(bool normalizeSize) {
         auto [meshpoolId, currentMeshSlot] = GraphicsEngine::Get().dynamicMeshLocations.at(meshId);
         Meshpool& pool = *GraphicsEngine::Get().meshpools.at(meshpoolId);
         if // if the meshpool slot the mesh was in can still hold the mesh with its new size...
-            (pow(2, pool.meshSlotContents.at(pool.meshUsers.at(meshId)).sizeClass) * vertexFormat.GetNonInstancedVertexSize()
+            (pow(2u, pool.meshSlotContents.at(pool.meshUsers.at(meshId)).sizeClass) * vertexFormat.GetNonInstancedVertexSize()
                 <
                 std::max(indices.size() * sizeof(GLuint), vertexFormat.GetNonInstancedVertexSize() * vertices.size()))
         { // then just update the vertices and draw command and we're done

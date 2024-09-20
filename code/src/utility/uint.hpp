@@ -9,9 +9,18 @@ public:
 
 	// intializes value
 	CheckedUint(unsigned int initialValue);
+	CheckedUint(unsigned long initialValue);
+	CheckedUint(unsigned long long initialValue);
+	//CheckedUint(size_t initialValue);
+
+	// intializes value statically
+	//consteval CheckedUint(unsigned int initialValue);
+	//consteval CheckedUint(unsigned long initialValue);
+	//consteval CheckedUint(size_t initialValue);
 
 	// checks for negative
 	CheckedUint(int initialValue);
+	CheckedUint(long initialValue);
 
 	// does not initialize value
 	CheckedUint();

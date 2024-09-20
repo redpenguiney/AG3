@@ -41,12 +41,12 @@ Meshpool::~Meshpool()
 	}
 }
 
-std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, const std::shared_ptr<ShaderProgram>& shader, unsigned int count)
+std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, const std::shared_ptr<ShaderProgram>& shader, CheckedUint count)
 {
     DebugLogInfo("Adding count ", count, " for meshid ", mesh->meshId);
 
     // find valid slot for mesh
-    unsigned int slot;
+    CheckedUint slot;
     {
         // see if this mesh is already in the pool
         if (meshUsers.contains(mesh->meshId)) {
@@ -54,10 +54,10 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         }
         else {
             // for simplicity we like to assume indices and vertices are the same size in bytes and pad up the difference
-            unsigned int meshNBytes = std::max(mesh->vertices.size() * vertexSize, mesh->indices.size() * indexSize);
+            CheckedUint meshNBytes = std::max(mesh->vertices.size() * vertexSize, mesh->indices.size() * indexSize);
 
-            unsigned int powerOfTwo = vertexSize;
-            unsigned int exponent = 0;
+            CheckedUint powerOfTwo = vertexSize;
+            CheckedUint exponent = 0;
             while (powerOfTwo < meshNBytes) {
                 powerOfTwo *= 2;
                 exponent++;
@@ -92,9 +92,9 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
     meshUpdates.emplace_back(MeshUpdate { MESH_BUFFERING_FACTOR, mesh, slot });
 
     std::vector<DrawHandle> ret;
-    unsigned int nCreated = 0;
+    CheckedUint nCreated = 0;
     while (nCreated < count) {
-        unsigned int nInstances, firstInstance;
+        CheckedUint nInstances, firstInstance;
         if (availableInstanceSlots.size() != 0) {
             nInstances = 1;
             firstInstance = availableInstanceSlots.back();
@@ -114,10 +114,10 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         DrawCommandBuffer& commandBuffer = drawCommands[drawCommandBufferIndex].value();
 
         // find slot for draw command
-        unsigned int drawCommandIndex = commandBuffer.GetNewDrawCommandSlot();
+        CheckedUint drawCommandIndex = commandBuffer.GetNewDrawCommandSlot();
 
         IndirectDrawCommand command = {
-            .count = static_cast<unsigned int>(mesh->indices.size()),
+            .count = static_cast<CheckedUint>(mesh->indices.size()),
             .instanceCount = nInstances,
             .firstIndex = slot * (indexSize), /// TODO MIGHT BE WRONG 
             .baseVertex = static_cast<int>(slot),
@@ -136,7 +136,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
 
         nCreated += nInstances;
 
-        for (unsigned int i = 0; i < nInstances; i++) {
+        for (CheckedUint i = 0; i < nInstances; i++) {
             ret.emplace_back(DrawHandle{
                 .meshIndex = (int)slot,
                 .instanceSlot = (int)(firstInstance + i),
@@ -161,7 +161,7 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
     auto& drawBuffer = drawCommands[handle.drawBufferIndex].value();
 
     auto commandIndex = instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex;
-    unsigned int originalNInstances = drawBuffer.clientCommands[commandIndex].instanceCount;
+    CheckedUint originalNInstances = drawBuffer.clientCommands[commandIndex].instanceCount;
     IndirectDrawCommand emptyCommand(0, 0, 0, 0, 0);
 
     // to remove the object, we need to remove its draw command, or, if it's one of multiple instances being drawn in a single command, we have to split that command up.
@@ -197,7 +197,7 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
     else {
         // then this the first instance out of multiple being removed
 
-        unsigned int firstIndex = instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex;
+        CheckedUint firstIndex = instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex;
 
         IndirectDrawCommand firstHalf = drawBuffer.clientCommands[firstIndex];
         IndirectDrawCommand secondHalf = firstHalf;
@@ -231,7 +231,7 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
 
         if (secondHalf.instanceCount != 0) {
             // find slot for draw command
-            unsigned int secondIndex = drawBuffer.GetNewDrawCommandSlot();
+            CheckedUint secondIndex = drawBuffer.GetNewDrawCommandSlot();
              
             drawBuffer.clientCommands[secondIndex] = secondHalf;
             //drawCount++;
@@ -245,7 +245,7 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
             
 
             // TODO this makes me sad because O(n)
-            for (unsigned int i = secondHalf.baseInstance; i < secondHalf.instanceCount; i++) {
+            for (CheckedUint i = secondHalf.baseInstance; i < secondHalf.instanceCount; i++) {
                 instanceSlotsToCommands[i].drawCommandIndex = secondIndex;
             }
         }
@@ -262,7 +262,7 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
 //    SetInstancedVertexAttribute<glm::mat4x4>(handle, MeshVertexFormat::AttributeIndexFromAttributeName(format.MODEL_MATRIX_ATTRIBUTE_NAME), model);
 //}
 
-void Meshpool::SetBoneState(const DrawHandle& handle, unsigned int nBones, glm::mat4x4* offsets)
+void Meshpool::SetBoneState(const DrawHandle& handle, CheckedUint nBones, glm::mat4x4* offsets)
 {
     Assert(format.supportsAnimation);
         
@@ -320,8 +320,8 @@ void Meshpool::Draw(bool prePostProc) {
         if (shader->useClusteredLighting) {
             shader->Uniform("pointLightCount", GraphicsEngine::Get().pointLightCount);
             shader->Uniform("spotLightCount", GraphicsEngine::Get().spotLightCount);
-            shader->Uniform("pointLightOffset", unsigned int(GraphicsEngine::Get().pointLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::PointLightInfo)));
-            shader->Uniform("spotLightOffset", unsigned int(GraphicsEngine::Get().spotLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::SpotLightInfo)));
+            shader->Uniform("pointLightOffset", CheckedUint(GraphicsEngine::Get().pointLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::PointLightInfo)));
+            shader->Uniform("spotLightOffset", CheckedUint(GraphicsEngine::Get().spotLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::SpotLightInfo)));
         }
 
         
@@ -364,7 +364,7 @@ void Meshpool::Draw(bool prePostProc) {
 
 void Meshpool::Commit() {
     // write vertex/index changes to buffer
-    for (unsigned int i = 0; i < meshUpdates.size(); i++) {
+    for (CheckedUint i = 0; i < meshUpdates.size(); i++) {
         auto meshUpdate = meshUpdates[i];
 
         // copy vertices and indices
@@ -381,7 +381,7 @@ void Meshpool::Commit() {
     // write indirect draw commands to buffer
     for (auto& drawBuffer : drawCommands) {
         if (!drawBuffer.has_value()) { continue; }
-        for (unsigned int i = 0; i < drawBuffer->commandUpdates.size(); i++) {
+        for (CheckedUint i = 0; i < drawBuffer->commandUpdates.size(); i++) {
             auto& update = drawBuffer->commandUpdates[i];
             Assert(update.updatesLeft != 0);
             update.updatesLeft--;
@@ -466,7 +466,7 @@ void Meshpool::ExpandVertexCapacity()
 void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
 {
     // update capacity
-    unsigned int oldCapacity = currentDrawCommandCapacity;
+    CheckedUint oldCapacity = currentDrawCommandCapacity;
     if (currentDrawCommandCapacity == 0) {
         currentDrawCommandCapacity = 16;
     }
@@ -481,10 +481,10 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
     buffer.Reallocate(currentDrawCommandCapacity * sizeof(IndirectDrawCommand));
 
     // add new instance slots
-    for (unsigned int i = oldCapacity; i < currentDrawCommandCapacity; i++) {
+    for (CheckedUint i = oldCapacity; i < currentDrawCommandCapacity; i++) {
         availableDrawCommandSlots.push_back(i);
     }
-    std::sort(availableDrawCommandSlots.begin(), availableDrawCommandSlots.end(), std::greater<unsigned int>());
+    std::sort(availableDrawCommandSlots.begin(), availableDrawCommandSlots.end(), std::greater<CheckedUint>());
 }
 
 Meshpool::DrawCommandBuffer::DrawCommandBuffer(DrawCommandBuffer&& old) noexcept :
@@ -530,9 +530,9 @@ void Meshpool::ExpandInstanceCapacity()
     format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
 }
 
-unsigned int Meshpool::GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material)
+CheckedUint Meshpool::GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material)
 {
-    unsigned int i = 0;
+    CheckedUint i = 0;
     for (auto& buffer : drawCommands) {
         if (buffer.has_value() && buffer->shader == shader && buffer->material == material) {
             return i;
@@ -545,7 +545,7 @@ unsigned int Meshpool::GetCommandBuffer(const std::shared_ptr<ShaderProgram>& sh
     oB.emplace(shader, material, std::move(b));
 
     if (availableDrawCommandBufferIndices.size()) {
-        unsigned int index = availableDrawCommandBufferIndices.back();
+        CheckedUint index = availableDrawCommandBufferIndices.back();
         availableDrawCommandBufferIndices.pop_back();
         drawCommands.emplace(drawCommands.begin() + index, std::move(oB));
         return index;
@@ -564,7 +564,7 @@ Meshpool::DrawCommandBuffer::DrawCommandBuffer(const std::shared_ptr<ShaderProgr
 
 }
 
-unsigned int Meshpool::DrawCommandBuffer::GetNewDrawCommandSlot()
+CheckedUint Meshpool::DrawCommandBuffer::GetNewDrawCommandSlot()
 {
     if (availableDrawCommandSlots.size() == 0) {
         ExpandDrawCommandCapacity();
@@ -580,8 +580,8 @@ int Meshpool::DrawCommandBuffer::GetDrawCount()
 }
 
 template<typename AttributeType>
-void Meshpool::SetInstancedVertexAttribute(const DrawHandle& handle, const unsigned int attributeName, const AttributeType& value) {
-    unsigned int attributeIndex = MeshVertexFormat::AttributeIndexFromAttributeName(attributeName); // TODO: could sparsely populate vertexAttributes but with name instead of index?
+void Meshpool::SetInstancedVertexAttribute(const DrawHandle& handle, const CheckedUint attributeName, const AttributeType& value) {
+    CheckedUint attributeIndex = MeshVertexFormat::AttributeIndexFromAttributeName(attributeName); // TODO: could sparsely populate vertexAttributes but with name instead of index?
     
     Assert(attributeIndex < MeshVertexFormat::N_ATTRIBUTES);
     Assert(format.vertexAttributes[attributeIndex]->instanced == true);
@@ -596,9 +596,9 @@ void Meshpool::SetInstancedVertexAttribute(const DrawHandle& handle, const unsig
 }
 
 // explicit template instantiations
-template void Meshpool::SetInstancedVertexAttribute<glm::mat4x4>(const DrawHandle& handle, const unsigned int attributeName, const glm::mat4x4&);
-template void Meshpool::SetInstancedVertexAttribute<glm::mat3x3>(const DrawHandle& handle, const unsigned int attributeName, const glm::mat3x3&);
-template void Meshpool::SetInstancedVertexAttribute<glm::vec4>(const DrawHandle& handle, const unsigned int attributeName, const glm::vec4&);
-template void Meshpool::SetInstancedVertexAttribute<glm::vec3>(const DrawHandle& handle, const unsigned int attributeName, const glm::vec3&);
-template void Meshpool::SetInstancedVertexAttribute<glm::vec2>(const DrawHandle& handle, const unsigned int attributeName, const glm::vec2&);
-template void Meshpool::SetInstancedVertexAttribute<float>(const DrawHandle& handle, const unsigned int attributeName, const float&);
+template void Meshpool::SetInstancedVertexAttribute<glm::mat4x4>(const DrawHandle& handle, const CheckedUint attributeName, const glm::mat4x4&);
+template void Meshpool::SetInstancedVertexAttribute<glm::mat3x3>(const DrawHandle& handle, const CheckedUint attributeName, const glm::mat3x3&);
+template void Meshpool::SetInstancedVertexAttribute<glm::vec4>(const DrawHandle& handle, const CheckedUint attributeName, const glm::vec4&);
+template void Meshpool::SetInstancedVertexAttribute<glm::vec3>(const DrawHandle& handle, const CheckedUint attributeName, const glm::vec3&);
+template void Meshpool::SetInstancedVertexAttribute<glm::vec2>(const DrawHandle& handle, const CheckedUint attributeName, const glm::vec2&);
+template void Meshpool::SetInstancedVertexAttribute<float>(const DrawHandle& handle, const CheckedUint attributeName, const float&);
