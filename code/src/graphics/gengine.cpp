@@ -103,8 +103,12 @@ screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, Mesh
     errorMaterial = pair.second;
     errorMaterialTextureZ = pair.first;
 
-    glDepthFunc(GL_LEQUAL); // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
+    // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
+    glDepthFunc(GL_LEQUAL); 
 
+    // tell opengl how to do transparency
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 GraphicsEngine::~GraphicsEngine() {
@@ -330,19 +334,20 @@ void GraphicsEngine::RenderScene(float dt) {
     // Draw the world onto a framebuffer so we can draw the contents of that framebuffer onto the screen with a postprocessing shader.
     UpdateMainFramebuffer();
     mainFramebuffer->Bind();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
      
-    // tell opengl how to do transparency
-    glEnable(GL_BLEND); 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
-
+    
+    glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     DrawWorld(true);
 
     DrawSkybox(); // Draw skybox afterwards to encourage early z-test
 
     // Go back to drawing on the window.
     Framebuffer::Unbind();
+    glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
     glDisable(GL_DEPTH_TEST);
 
     // Draw contents of main framebuffer on screen quad, using the postprocessing shader.
@@ -352,15 +357,17 @@ void GraphicsEngine::RenderScene(float dt) {
     mainFramebuffer->textureAttachments.at(0).Use();
     screenQuad.Draw();
 
+    // Draw stuff that doesn't do post processing.
+    glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
+    glClear( GL_DEPTH_BUFFER_BIT);
     DrawWorld(false);
 
     // Debugging stuff
     // TODO: actual settings to toggle debug stuff
-    glDisable(GL_DEPTH_TEST);
+    //glDisable(GL_DEPTH_TEST);
     //SpatialAccelerationStructure::Get().DebugVisualize();
     
     DebugAxis();
-
 
     glFlush(); // Tell OpenGL we're done drawing.
 
@@ -489,8 +496,6 @@ void GraphicsEngine::FlipMeshpoolBuffers()
 
 void GraphicsEngine::DrawWorld(bool postProc)
 {
-    glClear(postProc ? GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT : GL_DEPTH_BUFFER_BIT); // clear screen, but if we've already drawn stuff then only clear depth buffer
-
     glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
 

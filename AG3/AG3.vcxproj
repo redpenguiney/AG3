@@ -230,6 +230,7 @@
     <ClCompile Include="..\code\src\physics\raycast.cpp" />
     <ClCompile Include="..\code\src\physics\spatial_acceleration_structure.cpp" />
     <ClCompile Include="..\code\src\utility\let_me_hash_a_tuple.cpp" />
+    <ClCompile Include="..\code\src\utility\uint.cpp" />
     <ClCompile Include="..\code\src\utility\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -308,6 +309,7 @@
     <ClInclude Include="..\code\src\utility\hash_glm.hpp" />
     <ClInclude Include="..\code\src\utility\let_me_hash_a_tuple.hpp" />
     <ClInclude Include="..\code\src\utility\triangle_intersection.hpp" />
+    <ClInclude Include="..\code\src\utility\uint.hpp" />
     <ClInclude Include="..\code\src\utility\utility.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

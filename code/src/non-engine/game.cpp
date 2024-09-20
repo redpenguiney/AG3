@@ -162,6 +162,7 @@ void GameInit()
     params.materialId = grassMaterial->id;
     auto coolerLight = GameObject::New(params);
     coolerLight->RawGet<TransformComponent>()->SetPos({ 8, 5, 0 });
+    coolerLight->RawGet<RenderComponent>()->SetColor({ 1, 0.5, 0, 1.0 });
     coolerLight->RawGet<PointLightComponent>()->SetRange(20);
     coolerLight->RawGet<PointLightComponent>()->SetColor({ 1, 0.3, 0.7 });
     coolerLight->RawGet<TransformComponent>()->SetRot(glm::quatLookAt(glm::vec3(0, -0.7, -0.7), glm::vec3(0, 0, 1)));
@@ -374,6 +375,7 @@ void GameInit()
         coolLight->Get<TransformComponent>()->SetPos({ 30, 5, 0 });
         coolLight->Get<SpotLightComponent>()->SetRange(100);
         coolLight->Get<SpotLightComponent>()->SetColor({ 1, 1, 1 });
+        coolLight->Get<RenderComponent>()->SetColor({ 0, 1, 0.5, 1 });
 
         PE.prePhysicsEvent.Connect([coolLight](float dt) {
             coolLight->Get<TransformComponent>()->SetPos({ cos(Time()) * 10, 5.0, sin(Time()) * 10 });
