@@ -98,8 +98,10 @@ void Material::Use() {
     glDepthMask(depthMaskEnabled);
 }
 
-// TODO: this feels bad.
+// TODO: this is bad.
 void Material::Unbind() {
+    glDepthMask(GL_TRUE);
+
     glActiveTexture(GL_TEXTURE0 + COLORMAP_TEXTURE_INDEX);
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);

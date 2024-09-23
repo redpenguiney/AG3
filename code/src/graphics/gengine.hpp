@@ -289,10 +289,10 @@ private:
     ~GraphicsEngine();
 
     void UpdateMainFramebuffer();
-    void CalculateLightingClusters();
+    //void CalculateLightingClusters();
     void UpdateLights();
     void DrawSkybox();
-    void Update();
+    //void Update();
     void UpdateRenderComponents(float dt);
 
     // updates the freecam based off user input (WASD and mouse)

@@ -195,7 +195,7 @@ private:
 
 
     // the VAO basically tells openGL how our vertices are structured
-    CheckedUint vaoId;
+    unsigned int vaoId;
 
     // stores vertices for all the pool's meshes.
     BufferedBuffer vertices;

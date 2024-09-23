@@ -326,6 +326,7 @@ void GraphicsEngine::RenderScene(float dt) {
 
     // std::cout << "\tSetting uniforms.\n";
     // Update shaders with the camera's new rotation/projection
+
     glm::mat4x4 cameraMatrix = GetCurrentCamera().GetCamera();
     glm::mat4x4 cameraMatrixNoFloatingOrigin = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamCamera.position : (glm::vec3) -GetCurrentCamera().position);
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
@@ -403,7 +404,6 @@ void GraphicsEngine::UpdateLights() {
         PointLightComponent& pointLight = *std::get<1>(tuple);
 
         glm::vec3 relCamPos = transform.Position() - cameraPos;
-        DebugLogInfo("rel pos = ", glm::to_string(relCamPos));
         auto info = PointLightInfo {
             .colorAndRange = glm::vec4(pointLight.Color().x, pointLight.Color().y, pointLight.Color().z, pointLight.Range()),
             .relPos = glm::vec4(relCamPos.x, relCamPos.y, relCamPos.z, 0)
@@ -559,6 +559,8 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
             
             // }
         // tell shaders where the object is, rot/scl
+        // TODO: this assumes that the object has a model matrix attribute and crashes (gracefully) if it doesn't
+        //GraphicsEngine::Get().meshpools[renderComp.meshpoolId]->SetInstancedVertexAttribute<glm::mat4x4>(renderComp.drawHandle, MeshVertexFormat::MODEL_MATRIX_ATTRIBUTE_NAME, glm::translate(glm::identity<glm::mat4x4>(), glm::vec3(-cameraPos)));
         GraphicsEngine::Get().meshpools[renderComp.meshpoolId]->SetInstancedVertexAttribute<glm::mat4x4>(renderComp.drawHandle, MeshVertexFormat::MODEL_MATRIX_ATTRIBUTE_NAME, transformComp.GetGraphicsModelMatrix(cameraPos));
         GraphicsEngine::Get().meshpools[renderComp.meshpoolId]->SetInstancedVertexAttribute<glm::mat3x3>(renderComp.drawHandle, MeshVertexFormat::NORMAL_MATRIX_ATTRIBUTE_NAME, transformComp.GetNormalMatrix());
         //SetNormalMatrix(renderComp, transformComp.GetNormalMatrix()); 
@@ -586,8 +588,10 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
             // }
             // TODO: we only need to call SetNormalMatrix() when the object is rotated
         // // tell shaders where the object is, rot/scl
-        GraphicsEngine::Get().meshpools[renderCompNoFO.meshpoolId]->SetInstancedVertexAttribute<glm::mat4x4>(renderCompNoFO.drawHandle, MeshVertexFormat::AttributeIndexFromAttributeName(MeshVertexFormat::MODEL_MATRIX_ATTRIBUTE_NAME), transformComp.GetGraphicsModelMatrix({0, 0, 0}));
-        GraphicsEngine::Get().meshpools[renderCompNoFO.meshpoolId]->SetInstancedVertexAttribute<glm::mat3x3>(renderCompNoFO.drawHandle, MeshVertexFormat::AttributeIndexFromAttributeName(MeshVertexFormat::NORMAL_MATRIX_ATTRIBUTE_NAME), transformComp.GetNormalMatrix());
+        
+        // TODO: this assumes that the object has a model matrix attribute and crashes (gracefully) if it doesn't
+        GraphicsEngine::Get().meshpools[renderCompNoFO.meshpoolId]->SetInstancedVertexAttribute<glm::mat4x4>(renderCompNoFO.drawHandle, MeshVertexFormat::MODEL_MATRIX_ATTRIBUTE_NAME, transformComp.GetGraphicsModelMatrix({0, 0, 0}));
+        GraphicsEngine::Get().meshpools[renderCompNoFO.meshpoolId]->SetInstancedVertexAttribute<glm::mat3x3>(renderCompNoFO.drawHandle, MeshVertexFormat::NORMAL_MATRIX_ATTRIBUTE_NAME, transformComp.GetNormalMatrix());
         //SetNormalMatrix(renderCompNoFO, transformComp.GetNormalMatrix()); 
         //SetModelMatrix(renderCompNoFO, transformComp.GetGraphicsModelMatrix({0, 0, 0}));
             

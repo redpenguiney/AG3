@@ -234,6 +234,9 @@
     <ClCompile Include="..\code\src\utility\uint.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\code\src\tests\gameobject_tests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\code\src\events\base_event.hpp">
@@ -468,6 +471,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\code\src\utility\uint.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\code\src\tests\gameobject_tests.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -14,9 +14,10 @@ struct MaterialCreateParams {
 
     Texture::TextureType type;
 
-    // set to true for fonts.
-    //TODO remember what this does
-    bool depthMask = false;
+    // set to false for fonts. 
+    // Determines whether objects drawn with this material will affect the depth buffer (which will affect whether objects behind them could be drawn over them).
+    // For pretty much everything this should be set to true.
+    bool depthMask = true;
 
     // if true, the material will not be appended to any other materials (as a drawcall optimization).
     // Other materials may still be appended to it unless allowAppendation is also false.

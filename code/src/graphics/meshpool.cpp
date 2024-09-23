@@ -54,7 +54,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         }
         else {
             // for simplicity we like to assume indices and vertices are the same size in bytes and pad up the difference
-            CheckedUint meshNBytes = std::max(mesh->vertices.size() * vertexSize, mesh->indices.size() * indexSize);
+            CheckedUint meshNBytes = std::max(mesh->vertices.size() * size_t(vertexSize), mesh->indices.size() * indexSize);
 
             CheckedUint powerOfTwo = vertexSize;
             CheckedUint exponent = 0;
@@ -62,6 +62,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
                 powerOfTwo *= 2;
                 exponent++;
             }
+            Assert(exponent < availableMeshSlots.size());
 
             // first, check availableMeshSlots
             if (availableMeshSlots.at(exponent).size() > 0) {
@@ -79,17 +80,19 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
                 }
             }
 
+            meshUpdates.emplace_back(MeshUpdate{ MESH_BUFFERING_FACTOR, mesh, slot });
+            
             meshUsers[mesh->meshId] = slot;
             meshSlotContents[slot] = MeshSlotUsageInfo{
                 .meshId = unsigned(mesh->meshId),
-                .sizeClass = powerOfTwo,
+                .sizeClass = exponent,
                 .nUsers = 0
             };
         }
     }
     
     
-    meshUpdates.emplace_back(MeshUpdate { MESH_BUFFERING_FACTOR, mesh, slot });
+    
 
     std::vector<DrawHandle> ret;
     CheckedUint nCreated = 0;
@@ -119,7 +122,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         IndirectDrawCommand command = {
             .count = static_cast<CheckedUint>(mesh->indices.size()),
             .instanceCount = nInstances,
-            .firstIndex = slot * (indexSize), /// TODO MIGHT BE WRONG 
+            .firstIndex = (unsigned int)slot * (indexSize), /// TODO MIGHT BE WRONG 
             .baseVertex = static_cast<int>(slot),
             .baseInstance = firstInstance
         };
@@ -132,7 +135,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
             .command = command,
             .commandSlot = drawCommandIndex
-        });
+            });
 
         nCreated += nInstances;
 
@@ -141,19 +144,23 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
                 .meshIndex = (int)slot,
                 .instanceSlot = (int)(firstInstance + i),
                 .drawBufferIndex = (int)drawCommandBufferIndex
-            });
+                });
 
-            instanceSlotsToCommands[firstInstance + i] = CommandLocation{ .drawCommandIndex = drawCommandIndex};
+            instanceSlotsToCommands[firstInstance + i] = CommandLocation{ .drawCommandIndex = drawCommandIndex };
         }
+
+        meshSlotContents[slot].nUsers++;
+
     }
     
+    Assert(meshSlotContents[slot].nUsers != 0);
 
     return ret;
 }
 
 void Meshpool::RemoveObject(const DrawHandle& handle)
 {
-    DebugLogInfo("Removing object ", handle.instanceSlot);
+    
 
     // something else can use this instance
     availableInstanceSlots.push_back(handle.instanceSlot);
@@ -164,12 +171,17 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
     CheckedUint originalNInstances = drawBuffer.clientCommands[commandIndex].instanceCount;
     IndirectDrawCommand emptyCommand(0, 0, 0, 0, 0);
 
+    Assert(handle.instanceSlot >= drawBuffer.clientCommands[commandIndex].baseInstance);
+    Assert(handle.instanceSlot < originalNInstances + drawBuffer.clientCommands[commandIndex].baseInstance);
+
+    //DebugLogInfo("Removing object with instance ", handle.instanceSlot, " mesh index ", handle.meshIndex, " command buffer ", handle.drawBufferIndex, " command index ", commandIndex, " object's command has (before this call) ", originalNInstances);
+
     // to remove the object, we need to remove its draw command, or, if it's one of multiple instances being drawn in a single command, we have to split that command up.
-    if (originalNInstances == 1) {
+    if ((unsigned int)originalNInstances == 1) {
 
         // mark the draw command slot as free
         drawBuffer.availableDrawCommandSlots.push_back(instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex);
-        //DebugLogInfo("Freed ", instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex);
+        //DebugLogInfo("Freed command index ", instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex);
 
         drawBuffer.clientCommands[commandIndex] = emptyCommand;
         drawBuffer.commandUpdates.emplace_back(IndirectDrawCommandUpdate{
@@ -184,33 +196,41 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
             //drawCommands[handle.drawBufferIndex] = std::nullopt;
         //}
 
-        if (--meshSlotContents.at(handle.meshIndex).nUsers == 0) { // decrement count and if we just took out the last command using this mesh, then we should free it up
-            meshSlotContents.erase(handle.meshIndex);
+        Assert(meshSlotContents.contains(handle.meshIndex));
+        Assert(meshSlotContents.at(handle.meshIndex).nUsers > 0);
+        if ((unsigned int)(--(meshSlotContents.at(handle.meshIndex).nUsers)) == 0) { // decrement count and if we just took out the last command using this mesh, then we should free up the mesh too
+            //DebugLogInfo("Freed mesh index ", handle.meshIndex);
             availableMeshSlots[meshSlotContents.at(handle.meshIndex).sizeClass].push_back(handle.meshIndex);
-            meshSlotContents.erase(meshSlotContents.at(handle.meshIndex).meshId);
+            //meshSlotContents.erase(meshSlotContents.at(handle.meshIndex).meshId);
 
             if (GraphicsEngine::Get().dynamicMeshLocations.count(meshSlotContents.at(handle.meshIndex).meshId)) {
                 GraphicsEngine::Get().dynamicMeshLocations.erase(meshSlotContents.at(handle.meshIndex).meshId);
             }
+
+            meshSlotContents.erase(handle.meshIndex);
         }
     }
     else {
-        // then this the first instance out of multiple being removed
+        // then one instance out of multiple is being removed; we have to (potentially) split up the draw command
 
-        CheckedUint firstIndex = instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex;
+        CheckedUint firstIndex = commandIndex;
 
         IndirectDrawCommand firstHalf = drawBuffer.clientCommands[firstIndex];
         IndirectDrawCommand secondHalf = firstHalf;
         
+        Assert(firstHalf.baseInstance <= handle.instanceSlot);
+
         firstHalf.instanceCount = handle.instanceSlot - firstHalf.baseInstance;
 
-        if (firstHalf.instanceCount + 1 < originalNInstances) {
+        if (firstHalf.instanceCount + 1 < (unsigned int)originalNInstances) {
             secondHalf.baseInstance = handle.instanceSlot + 1;
-            secondHalf.instanceCount = originalNInstances - firstHalf.instanceCount - 1;
+            secondHalf.instanceCount = originalNInstances - (firstHalf.instanceCount) - 1;
         }
         else {
             secondHalf.instanceCount = 0;
         }
+
+        Assert(firstHalf.instanceCount + secondHalf.instanceCount == originalNInstances - 1);
 
         if (firstHalf.instanceCount == 0) {
             std::swap(firstHalf, secondHalf);
@@ -229,7 +249,10 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
             .commandSlot = firstIndex
         });
 
+        // if we need a second half, add it
         if (secondHalf.instanceCount != 0) {
+            meshSlotContents.at(handle.meshIndex).nUsers++;
+
             // find slot for draw command
             CheckedUint secondIndex = drawBuffer.GetNewDrawCommandSlot();
              
@@ -245,7 +268,7 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
             
 
             // TODO this makes me sad because O(n)
-            for (CheckedUint i = secondHalf.baseInstance; i < secondHalf.instanceCount; i++) {
+            for (CheckedUint i = secondHalf.baseInstance; i < secondHalf.baseInstance + secondHalf.instanceCount; i++) {
                 instanceSlotsToCommands[i].drawCommandIndex = secondIndex;
             }
         }
@@ -266,7 +289,7 @@ void Meshpool::SetBoneState(const DrawHandle& handle, CheckedUint nBones, glm::m
 {
     Assert(format.supportsAnimation);
         
-    Assert(format.maxBones <= nBones);
+    Assert(format.maxBones <= nBones.value);
     glm::mat4x4* bonesLocation = (glm::mat4x4*)(bones->Data() + handle.instanceSlot * sizeof(glm::mat4x4));
     
     // make sure we don't segfault 
@@ -276,7 +299,7 @@ void Meshpool::SetBoneState(const DrawHandle& handle, CheckedUint nBones, glm::m
     Assert((char*)bonesLocation >= bones->Data());
     
     // copy in bone transforms
-    memcpy(bonesLocation, offsets, nBones * sizeof(glm::mat4x4));
+    memcpy(bonesLocation, offsets, nBones.value * sizeof(glm::mat4x4));
 }
 
 void Meshpool::Draw(bool prePostProc) {
@@ -353,9 +376,9 @@ void Meshpool::Draw(bool prePostProc) {
             shader->Uniform("colorMappingEnabled", material->HasColorMap());
         }
 
-        glPointSize(15.0);
+        //glPointSize(15.0);
         //glDrawElements(GL_TRIANGLES, indices.GetSize() / indexSize, GL_UNSIGNED_INT, 0);
-        //DebugLogInfo("Drawing ", command->GetDrawCount(), " Offset ", command->buffer.GetOffset());
+        DebugLogInfo("Drawing ", command->GetDrawCount(), " Offset ", command->buffer.GetOffset());
         glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
     }
      
@@ -364,7 +387,7 @@ void Meshpool::Draw(bool prePostProc) {
 
 void Meshpool::Commit() {
     // write vertex/index changes to buffer
-    for (CheckedUint i = 0; i < meshUpdates.size(); i++) {
+    for (unsigned int i = 0; i < meshUpdates.size(); i++) {
         auto meshUpdate = meshUpdates[i];
 
         // copy vertices and indices
@@ -381,13 +404,13 @@ void Meshpool::Commit() {
     // write indirect draw commands to buffer
     for (auto& drawBuffer : drawCommands) {
         if (!drawBuffer.has_value()) { continue; }
-        for (CheckedUint i = 0; i < drawBuffer->commandUpdates.size(); i++) {
+        for (unsigned int i = 0; i < drawBuffer->commandUpdates.size(); i++) {
             auto& update = drawBuffer->commandUpdates[i];
             Assert(update.updatesLeft != 0);
             update.updatesLeft--;
 
             IndirectDrawCommand command = update.command; // deliberate copy
-            DebugLogInfo("Command ", command.firstIndex, " ", command.count);
+            //DebugLogInfo("Command ", command.firstIndex, " ", command.count);
 
             command.baseInstance += instances.GetOffset() / instanceSize;
             command.baseVertex += vertices.GetOffset() / vertexSize;
@@ -507,6 +530,10 @@ Meshpool::DrawCommandBuffer& Meshpool::DrawCommandBuffer::operator=(DrawCommandB
 
 void Meshpool::ExpandInstanceCapacity()
 {
+    if (currentInstanceCapacity > instanceEnd) {
+        return;
+    }
+
     // determine new instance capacity
     if (currentInstanceCapacity == 0) {
         currentInstanceCapacity = 1;
@@ -588,6 +615,7 @@ void Meshpool::SetInstancedVertexAttribute(const DrawHandle& handle, const Check
 
     AttributeType* attributeLocation = (AttributeType*)(format.vertexAttributes[attributeIndex]->offset + instances.Data() + (handle.instanceSlot * instanceSize));
 
+    bool test = int(1) < currentInstanceCapacity;
     // make sure we don't segfault 
     Assert(handle.instanceSlot < currentInstanceCapacity);
     Assert((char*)attributeLocation <= instances.Data() + (instanceSize * currentInstanceCapacity));

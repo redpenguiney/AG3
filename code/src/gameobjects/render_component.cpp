@@ -18,7 +18,7 @@ RenderComponent::RenderComponent(unsigned int mId, unsigned int matId, unsigned 
     // colorChanged = (Mesh::Get(meshId)->vertexFormat.attributes.color->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
     // textureZChanged = (Mesh::Get(meshId)->vertexFormat.attributes.textureZ->instanced)? INSTANCED_VERTEX_BUFFERING_FACTOR : -1;
 
-    DebugLogInfo("Initializing ", this);
+    //DebugLogInfo("Initializing ", this);
 
     GraphicsEngine::Get().AddObject(shaderId, materialId, meshId, this); 
 

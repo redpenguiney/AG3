@@ -96,7 +96,7 @@ std::tuple<void*, int, int> ComponentPool::GetObject() {
 	// We use something called a "free list" to find a component set. If a component is not in use, the start of its memory is a pointer to the next unallocated component.
 	for (pageI = 0; pageI < firstFree.size(); pageI++) {
 		auto ptr = firstFree[pageI];
-		if (ptr != nullptr) {
+		if (ptr != nullptr && ptr != LAST_COMPONENT) {
 			// then this component will work
 			foundComponents = ptr;
 
