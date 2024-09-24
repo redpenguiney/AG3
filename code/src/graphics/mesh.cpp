@@ -458,6 +458,7 @@ void Mesh::StopModifying(bool normalizeSize) {
                 if (!commandBuffer->dynamicMeshCommandLocations.contains(meshId)) continue;
 
                 auto commandIndices = commandBuffer->dynamicMeshCommandLocations.at(meshId);
+                DebugLogInfo("UPdating ", commandIndices.size());
                 for (auto& i : commandIndices) {
                     auto& ogCommand = commandBuffer->clientCommands[i];
                     commandBuffer->commandUpdates.emplace_back(IndirectDrawCommandUpdate{

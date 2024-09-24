@@ -127,6 +127,10 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             .baseInstance = firstInstance
         };
 
+        if (mesh->dynamic) {
+            commandBuffer.dynamicMeshCommandLocations[mesh->meshId].push_back(drawCommandIndex);
+        }
+
         commandBuffer.clientCommands[drawCommandIndex] = command;
         //commandBuffer.drawCount++;
 
@@ -189,6 +193,23 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
             .command = emptyCommand,
             .commandSlot = instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex
         });
+
+        unsigned int meshId = meshSlotContents.at(handle.meshIndex).meshId;
+        if (Mesh::Get(meshId)->dynamic) {
+            for (unsigned int i = 0; i < drawBuffer.dynamicMeshCommandLocations[meshId].size(); i++) {
+                if (drawBuffer.dynamicMeshCommandLocations[meshId][i] == instanceSlotsToCommands[handle.instanceSlot].drawCommandIndex) {
+                    drawBuffer.dynamicMeshCommandLocations[meshId][i] = drawBuffer.dynamicMeshCommandLocations[meshId].back();
+                    drawBuffer.dynamicMeshCommandLocations[meshId].pop_back();
+                    if (drawBuffer.dynamicMeshCommandLocations[meshId].size() == 0) {
+                        drawBuffer.dynamicMeshCommandLocations.erase(meshId);
+                    }
+                    break;
+                }
+
+            }
+            
+        }
+
         //drawBuffer.drawCount--;
 
         //if (drawBuffer.drawCount == 0) { // then we just took out the last thing being drawn in this indirect draw buffer, delete it
