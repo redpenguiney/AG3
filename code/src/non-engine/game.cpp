@@ -89,7 +89,7 @@ void GameInit()
     //auto& LUA = LuaHandler::Get();
     //auto& CR = ComponentRegistry::Get();
 
-    MakeMainMenu();
+    //MakeMainMenu();
 
     GE.SetDebugFreecamEnabled(true);
 
@@ -105,7 +105,7 @@ void GameInit()
 
     debugText->scalePos = { 0, 1 };
     debugText->scaleSize = { 0, 0 };
-    debugText->offsetSize = { 300, 60 };
+    debugText->offsetSize = { 600, 60 };
     debugText->offsetPos = { 200, -200 };
     debugText->anchorPoint = { 0, 0 };
 
@@ -116,6 +116,7 @@ void GameInit()
 
     debugText->UpdateGuiGraphics();
     debugText->UpdateGuiTransform();
+    debugText->UpdateGuiText();
 
     GE.preRenderEvent.Connect([&GE, debugText](float dt) {
 
@@ -154,7 +155,7 @@ void GameInit()
     }
     GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 
-    TestCubeArray(2, 2, 2);
+    TestCubeArray(2, 4, 2, false);
     TestStationaryPointlight();
     //TestSpinningSpotlight();
     TestGrassFloor();
@@ -163,23 +164,23 @@ void GameInit()
 
     GE.window.InputDown.Connect([](InputObject input) {
         auto m = CubeMesh();
-        if (input.input == InputObject::T) {
-            //auto castResult = Raycast(GraphicsEngine::Get().GetDebugFreecamCamera().position, LookVector(glm::radians(GraphicsEngine::Get().debugFreecamPitch), glm::radians(GraphicsEngine::Get().debugFreecamYaw)));
+        if (input.input == InputObject::LMB) {
+            auto castResult = Raycast(GraphicsEngine::Get().GetDebugFreecamCamera().position, LookVector(glm::radians(GraphicsEngine::Get().debugFreecamPitch), glm::radians(GraphicsEngine::Get().debugFreecamYaw)));
 
-            //if (castResult.hitObject != nullptr) {
+            if (castResult.hitObject != nullptr) {
 
                 GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
                 params.meshId = m->meshId;
                 //params.materialId = brickMaterial->id;
-                auto g = GameObject::New(params);
-                g->Get<TransformComponent>()->SetPos(glm::vec3(10, -5, 10));
+                //auto g = GameObject::New(params);
+                //g->Get<TransformComponent>()->SetPos(glm::vec3(10, -5, 10));
 
-                //if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
+                if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RigidbodyComponent>()) {
 
-                    //castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
+                    castResult.hitObject->RawGet<RigidbodyComponent>()->velocity += castResult.hitNormal * 2.0;
                     //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
-                //}    
-            //}
+                }    
+            }
 
             //        if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
 

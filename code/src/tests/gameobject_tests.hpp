@@ -9,7 +9,7 @@ std::shared_ptr<Mesh> CubeMesh();
 std::pair<float, std::shared_ptr<Material>> GrassMaterial();
 std::pair<float, std::shared_ptr<Material>> BrickMaterial();
 
-void TestCubeArray(int x, int y, int z);
+void TestCubeArray(int x, int y, int z, bool physics);
 void TestBrickWall();
 void TestGrassFloor();
 void TestVoxelTerrain();

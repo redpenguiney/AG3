@@ -136,6 +136,8 @@ private:
         // all 0s for empty/available command slots
         std::vector<IndirectDrawCommand> clientCommands = {}; // equivelent contents to drawCommands, but we can't read from that because its a GPU buffer
 
+        std::unordered_map<unsigned int, std::vector<unsigned int>> dynamicMeshCommandLocations; // for dynamic mesh modification; key is meshid of a dynamic mesh, value is vector of all the indices of commands referencing that mesh.
+
         CheckedUint GetNewDrawCommandSlot();
 
         int GetDrawCount();

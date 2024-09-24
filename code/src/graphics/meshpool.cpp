@@ -378,7 +378,6 @@ void Meshpool::Draw(bool prePostProc) {
 
         //glPointSize(15.0);
         //glDrawElements(GL_TRIANGLES, indices.GetSize() / indexSize, GL_UNSIGNED_INT, 0);
-        DebugLogInfo("Drawing ", command->GetDrawCount(), " Offset ", command->buffer.GetOffset());
         glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
     }
      

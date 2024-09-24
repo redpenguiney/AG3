@@ -7,7 +7,6 @@
 
 class PhysicsMesh;
 
-// TODO: RIGIDBODIES CURRENTLY DON'T DO PHYSICS IF THEY DON'T HAVE A COLLIDER, MB.
 // Created rigidbodies are immobile (infinite mass & moi) until you call SetMass() on them.
 class RigidbodyComponent: public BaseComponent {
     public:

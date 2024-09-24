@@ -436,19 +436,43 @@ void Mesh::StopModifying(bool normalizeSize) {
         m->RefreshMesh();
     }
 
-    if (GraphicsEngine::Get().dynamicMeshLocations.contains(meshId)) {
+    if (GraphicsEngine::Get().dynamicMeshLocations.contains(meshId)) { //  this could be legitimately not the case if the mesh just isn't in use
         auto [meshpoolId, currentMeshSlot] = GraphicsEngine::Get().dynamicMeshLocations.at(meshId);
         Meshpool& pool = *GraphicsEngine::Get().meshpools.at(meshpoolId);
         if // if the meshpool slot the mesh was in can still hold the mesh with its new size...
             (pow(2, (int)pool.meshSlotContents.at(pool.meshUsers.at(meshId)).sizeClass) * vertexFormat.GetNonInstancedVertexSize()
                 <
                 std::max(indices.size() * sizeof(GLuint), vertexFormat.GetNonInstancedVertexSize() * vertices.size()))
-        { // then just update the vertices and draw command and we're done
+        { 
+            // then just update the vertices and draw command and we're done
+            // update mesh
             pool.meshUpdates.emplace_back(Meshpool::MeshUpdate{
                 .updatesLeft = MESH_BUFFERING_FACTOR,
                 .mesh = shared_from_this(),
                 .meshIndex = pool.meshUsers.at(meshId),
-                });
+            });
+
+            // update draw command
+            for (auto& commandBuffer : pool.drawCommands) {
+                if (!commandBuffer.has_value()) continue;
+                if (!commandBuffer->dynamicMeshCommandLocations.contains(meshId)) continue;
+
+                auto commandIndices = commandBuffer->dynamicMeshCommandLocations.at(meshId);
+                for (auto& i : commandIndices) {
+                    auto& ogCommand = commandBuffer->clientCommands[i];
+                    commandBuffer->commandUpdates.emplace_back(IndirectDrawCommandUpdate{
+                        .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
+                        .command = IndirectDrawCommand {
+                            .count = indices.size(),
+                            .instanceCount = ogCommand.instanceCount,
+                            .firstIndex = ogCommand.firstIndex,
+                            .baseVertex = ogCommand.baseVertex,
+                            .baseInstance = ogCommand.baseInstance,   
+                        },
+                        .commandSlot = i   
+                    });
+                }
+            }
         }
         else { // we have to move the mesh to a new slot, which means removing each render component and readding it to the meshpool. 
             // todo: could potentially do some crazy optimization here by manually wiping the mesh from the pool then directly setting pool ids for new pool?

@@ -31,7 +31,7 @@ std::pair<float, std::shared_ptr<Material>> BrickMaterial() {
    }, .type = Texture::Texture2D });
 }
 
-void TestCubeArray(int dimX, int dimY, int dimZ)
+void TestCubeArray(int dimX, int dimY, int dimZ, bool physics)
 {
     auto m = CubeMesh();
 
@@ -39,13 +39,13 @@ void TestCubeArray(int dimX, int dimY, int dimZ)
     for (int x = 0; x < dimX; x++) {
         for (int y = 0; y < dimY; y++) {
             for (int z = 0; z < dimZ; z++) {
-                GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
+                GameobjectCreateParams params = physics ? GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider , ComponentBitIndex::Rigidbody }) : GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
                 params.meshId = m->meshId;
                 //params.materialId = brickMaterial->id;
                 auto g = GameObject::New(params);
                 g->Get<TransformComponent>()->SetPos({ 0 + x * 3, 2 + y * 2, 0 + z * 3 });
                 g->Get<ColliderComponent>()->elasticity = 0.3;
-                g->Get<ColliderComponent>()->friction = 2.0;
+                g->Get<ColliderComponent>()->friction = 1.0;
                 // g->rigidbodyComponent->angularDrag = 1.0;
                 // g->rigidbodyComponent->linearDrag = 1.0;
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
@@ -56,6 +56,10 @@ void TestCubeArray(int dimX, int dimY, int dimZ)
                 g->name = std::string("Gameobject #") + std::to_string(nObjs);
                 ////goWeakPtr = g;
                 //nObjs++;
+
+                if (physics) {
+                    g->RawGet<RigidbodyComponent>()->SetMass(1.0, *g->RawGet<TransformComponent>());
+                }
 
     //            g->rigidbodyComponent->SetMass(5.0, *g->transformComponent);
 

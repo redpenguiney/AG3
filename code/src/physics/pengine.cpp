@@ -40,6 +40,10 @@ PhysicsEngine& PhysicsEngine::Get() {
 
 // Simulates physics of a single rigidbody.
 void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::vector<std::pair<TransformComponent*, glm::dvec3>>& seperations) {    
+    if (rigidbody.InverseMass() == 0) {
+        return; // infinite mass = collisions/forces ain't doing nothing to this
+    }
+    
     // TODO: should REALLY use tight fitting AABB here
     auto aabbToTest = collider.GetAABB();
     std::vector<ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest);
@@ -55,7 +59,8 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
         auto collisionTestResult = IsColliding(*otherColliderPtr->gameobject->RawGet<TransformComponent>(), *otherColliderPtr, transform, collider);
         if (collisionTestResult) {
 
-            const RigidbodyComponent* otherRigidbody = otherColliderPtr->gameobject->RawGet<RigidbodyComponent>();
+            
+            const RigidbodyComponent* otherRigidbody = otherColliderPtr->gameobject->MaybeRawGet<RigidbodyComponent>(); // might be nullptr
             const TransformComponent* otherTransform = otherColliderPtr->gameobject->RawGet<TransformComponent>();
 
             Assert(collisionTestResult->contactPoints.size() > 0);
@@ -165,12 +170,16 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
                     
                     float impulse = abs(elasticityTerm * relVelocityAlongNormal * reducedMass);
 
+                    // impulse is only infinite if the object has infinite mass, in which case it just can't move. (and we shouldn't try to hit it with an infinite force to make it move)
+                    Assert(!std::isinf(impulse));
+
                     collisionResolutionImpulse = normal * impulse;
                     // rigidbody.accumulatedForce += collisionResolutionImpulse;
                     // DebugLogInfo("Resolving collision with force ", glm::to_string(collisionResolutionImpulse), " applied at ", glm::to_string(-d1));
                     rigidbody.Impulse(-d1, collisionResolutionImpulse);
                     // DebugLogInfo("Torque axs is ", glm::to_string(torqueAxis1), " normal ", glm::to_string(normal), " d1 ", glm::to_string(d1), " crossing those gives ", glm::to_string(glm::cross(normal, d1)));
                     // rigidbody.accumulatedTorque += torqueAxis1 * impulse;
+                    
                 }
 
                 // friction impulse #3: electric boogalee
@@ -274,6 +283,8 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
             //std::cout << "aw.\n";
         }
     }
+
+    
 }
 
 void PhysicsEngine::Step(const double timestep) {
@@ -300,7 +311,12 @@ void PhysicsEngine::Step(const double timestep) {
         // a = t/i
         // glm::mat3 globalInverseInertiaTensor = rigidbody.GetInverseGlobalMomentOfInertia(transform); 
         // rigidbody.angularVelocity += globalInverseInertiaTensor * rigidbody.accumulatedTorque;
-        rigidbody.angularVelocity += glm::vec3(rigidbody.InverseMomentOfInertiaAroundAxis(transform, {1, 0, 0}), rigidbody.InverseMomentOfInertiaAroundAxis(transform, {0, 1, 0}), rigidbody.InverseMomentOfInertiaAroundAxis(transform, {0, 0, 1})) * rigidbody.accumulatedTorque;
+        auto deltaAngularVelocity = glm::vec3(
+            rigidbody.InverseMomentOfInertiaAroundAxis(transform, { 1, 0, 0 }),
+            rigidbody.InverseMomentOfInertiaAroundAxis(transform, { 0, 1, 0 }),
+            rigidbody.InverseMomentOfInertiaAroundAxis(transform, { 0, 0, 1 })
+        ) * rigidbody.accumulatedTorque;
+        rigidbody.angularVelocity += deltaAngularVelocity;
         rigidbody.accumulatedTorque = {0, 0, 0};
 
         if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {
