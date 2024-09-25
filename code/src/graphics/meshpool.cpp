@@ -88,6 +88,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
                 .sizeClass = exponent,
                 .nUsers = 0
             };
+            DebugLogInfo("Wrote id ", mesh->meshId, " to mesh index ", slot);
         }
     }
     
@@ -228,6 +229,7 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
                 GraphicsEngine::Get().dynamicMeshLocations.erase(meshSlotContents.at(handle.meshIndex).meshId);
             }
 
+            DebugLogInfo("Erasing contents at mesh index ", handle.meshIndex);
             meshSlotContents.erase(handle.meshIndex);
         }
     }

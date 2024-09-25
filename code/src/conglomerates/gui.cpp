@@ -107,12 +107,9 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : 0);
     objectParams.meshId = Mesh::Square()->meshId;
     objectParams.shaderId = guiShader->shaderProgramId;
-    if (billboardGuiInfo.has_value()) {
-        object = GameObject::New(objectParams);
-    }
-    else {
-        object = GameObject::New(objectParams);
-    }
+
+    object = GameObject::New(objectParams);
+
     object->name = "GuiObject";
 
     guiScaleMode = ScaleXY;
@@ -288,7 +285,6 @@ void Gui::UpdateGuiText() {
     
 
     auto & textMesh = Mesh::Get(guiTextInfo->object->Get<RenderComponent>()->meshId);
-    auto [vers, inds] = textMesh->StartModifying();
 
     // convert margins into weird unit i made the actual function take
     float absoluteLeftMargin = guiTextInfo->leftMargin - GetPixelSize().x/2.0f;
@@ -308,8 +304,11 @@ void Gui::UpdateGuiText() {
         
         // .scalingFactor = TEXT_SCALING_FACTOR
     };
-    TextMeshFromText(guiTextInfo->text, guiTextInfo->fontMaterial->fontMapConstAccess.value(), params, textMesh->vertexFormat, vers, inds);
-    textMesh->StopModifying(false);
+
+    TextMeshProvider provider(MeshCreateParams::Default(), guiTextInfo->fontMaterial);
+    provider.textParams = params;
+    provider.text = guiTextInfo->text;
+    textMesh->Remesh(provider, false);
 }
 
 glm::vec2 Gui::GetPixelSize() {

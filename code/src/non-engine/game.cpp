@@ -89,7 +89,7 @@ void GameInit()
     //auto& LUA = LuaHandler::Get();
     //auto& CR = ComponentRegistry::Get();
 
-    //MakeMainMenu();
+    MakeMainMenu();
 
     GE.SetDebugFreecamEnabled(true);
 
@@ -109,7 +109,7 @@ void GameInit()
     debugText->offsetPos = { 200, -200 };
     debugText->anchorPoint = { 0, 0 };
 
-    debugText->GetTextInfo().text = "---";
+    debugText->GetTextInfo().text = "abcdefghijklmnopqrstuvwxyz";
     debugText->GetTextInfo().rgba = { 1, 1, 1, 0.6 };
     debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
     debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
@@ -161,6 +161,8 @@ void GameInit()
     TestGrassFloor();
 
     //TestGarticMusic(); 
+
+    
 
     GE.window.InputDown.Connect([](InputObject input) {
         auto m = CubeMesh();

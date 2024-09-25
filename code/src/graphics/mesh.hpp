@@ -113,8 +113,8 @@ class Mesh: public std::enable_shared_from_this<Mesh> {
 
     // Replaces all vertices/indices with those given by the provider. Equivalent to setting vertices/indices using MeshProvider::GetMesh() with StartModifying() + StopModifying().
     // Mesh must be dynamic. 
-    // Mesh vertex positions will be normalized after calling this.
-    void Remesh(const MeshProvider& provider);
+    // Mesh vertex positions will be normalized after calling this if normalizeSize == true.
+    void Remesh(const MeshProvider& provider, bool normalizeSize = true);
 
     // returns a square for gui meshes
     static std::shared_ptr<Mesh> Square();

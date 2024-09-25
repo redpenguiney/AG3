@@ -489,11 +489,11 @@ void Mesh::StopModifying(bool normalizeSize) {
     
 }
 
-void Mesh::Remesh(const MeshProvider& provider)
+void Mesh::Remesh(const MeshProvider& provider, bool normalizeSize)
 {
     auto [v, i] = StartModifying();
     auto [newV, newI] = provider.GetMesh();
     v = newV;
     i = newI;
-    StopModifying(true);
+    StopModifying(normalizeSize);
 }
