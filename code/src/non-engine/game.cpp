@@ -155,7 +155,7 @@ void GameInit()
     }
     GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 
-    TestCubeArray(2, 4, 2, false);
+    TestCubeArray(2, 4, 2, true);
     TestStationaryPointlight();
     //TestSpinningSpotlight();
     TestGrassFloor();

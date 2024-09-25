@@ -482,6 +482,9 @@ void Mesh::StopModifying(bool normalizeSize) {
 
             for (auto& renderComponent : GraphicsEngine::Get().dynamicMeshUsers.at(meshId)) {
                 GraphicsEngine::Get().RemoveObject(renderComponent);
+                renderComponent->drawHandle.drawBufferIndex = -1;
+                renderComponent->drawHandle.instanceSlot = -1;
+                renderComponent->drawHandle.meshIndex = -1;
                 GraphicsEngine::Get().AddObject(renderComponent->shaderProgramId, renderComponent->materialId, meshId, renderComponent);
             }
         }

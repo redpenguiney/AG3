@@ -51,6 +51,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         // see if this mesh is already in the pool
         if (meshUsers.contains(mesh->meshId)) {
             slot = meshUsers.at(mesh->meshId);
+            
         }
         else {
             // for simplicity we like to assume indices and vertices are the same size in bytes and pad up the difference
@@ -229,7 +230,8 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
                 GraphicsEngine::Get().dynamicMeshLocations.erase(meshSlotContents.at(handle.meshIndex).meshId);
             }
 
-            DebugLogInfo("Erasing contents at mesh index ", handle.meshIndex);
+            DebugLogInfo("Erasing meshid ", meshSlotContents[handle.meshIndex].meshId , " at mesh index ", handle.meshIndex);
+            meshUsers.erase(meshSlotContents[handle.meshIndex].meshId); // TODO: could potentially lead to unneccesarily recopying mesh
             meshSlotContents.erase(handle.meshIndex);
         }
     }
