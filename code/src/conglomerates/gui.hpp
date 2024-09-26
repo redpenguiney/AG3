@@ -145,12 +145,12 @@ class Gui {
     glm::vec2 GetPixelPos();
 
     // Won't fire if the gui entered and exited in the same frame.
-    Event<> onMouseEnter;
-    Event<> onMouseExit;
+    std::shared_ptr<Event<>> onMouseEnter;
+    std::shared_ptr<Event<>> onMouseExit;
 
     // Like window input events, but only fire when the mouse is over the gui.
-    Event<InputObject> onInputBegin;
-    Event<InputObject> onInputEnd;
+    std::shared_ptr<Event<InputObject>> onInputBegin;
+    std::shared_ptr<Event<InputObject>> onInputEnd;
 
     // returns mouseHover; true if mouse is over the gui.
     bool IsMouseOver();

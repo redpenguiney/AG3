@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <memory>
 
 // Abstract event class. See Event for actual info.
 class BaseEvent {
@@ -12,7 +13,7 @@ protected:
 	BaseEvent();
 	virtual ~BaseEvent();
 
-	static std::vector<BaseEvent*>& EventQueue();
+	static std::vector<std::weak_ptr<BaseEvent>>& EventQueue();
 
 	//bool inQueue = false;
 public:

@@ -131,9 +131,9 @@ public:
     std::shared_ptr<ShaderProgram> crummyDebugShader;
 
     // float is dt
-    Event<float> preRenderEvent;
+    std::shared_ptr<Event<float>> preRenderEvent;
     // float is dt; note, fires before buffers are flipped which might be bad idk lol
-    Event<float> postRenderEvent;
+    std::shared_ptr<Event<float>> postRenderEvent;
 
 private:
 

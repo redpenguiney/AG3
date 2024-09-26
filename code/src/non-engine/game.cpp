@@ -56,15 +56,15 @@ void MakeMainMenu() {
     startGame->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
 
     // note that we aren't passing in the shared_ptr but a normal pointer; if we didn't, the gui's event would store a shared_ptr to itself and it would never get destroyed.
-    startGame->onMouseEnter.Connect([p = startGame.get()]() {
+    startGame->onMouseEnter->Connect([p = startGame.get()]() {
         p->GetTextInfo().rgba = { 1, 1, 0, 1 };
         p->UpdateGuiGraphics();
     });
-    startGame->onMouseExit.Connect([p = startGame.get()]() {
+    startGame->onMouseExit->Connect([p = startGame.get()]() {
         p->GetTextInfo().rgba = { 1, 0, 0, 1 };
         p->UpdateGuiGraphics();
     });
-    startGame->onInputEnd.Connect([](InputObject input) {
+    startGame->onInputEnd->Connect([](InputObject input) {
         
         if (input.input == InputObject::LMB) {
             inMainMenu = false;
@@ -118,7 +118,7 @@ void GameInit()
     debugText->UpdateGuiTransform();
     debugText->UpdateGuiText();
 
-    GE.preRenderEvent.Connect([&GE, debugText](float dt) {
+    GE.preRenderEvent->Connect([&GE, debugText](float dt) {
 
         debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
         debugText->UpdateGuiText();
@@ -164,7 +164,7 @@ void GameInit()
 
     
 
-    GE.window.InputDown.Connect([](InputObject input) {
+    GE.window.inputDown->Connect([](InputObject input) {
         auto m = CubeMesh();
         if (input.input == InputObject::LMB) {
             auto castResult = Raycast(GraphicsEngine::Get().GetDebugFreecamCamera().position, LookVector(glm::radians(GraphicsEngine::Get().debugFreecamPitch), glm::radians(GraphicsEngine::Get().debugFreecamYaw)));

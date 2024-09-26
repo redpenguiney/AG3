@@ -39,7 +39,7 @@ void Gui::FireInputEvents()
     for (auto& ui : GuiGlobals::Get().listOfGuis) {
 
         // if no one cares whether the mouse is on this gui, don't bother calculating it.
-        if (!ui->onMouseEnter.HasConnections() && !ui->onMouseExit.HasConnections() && !ui->onInputBegin.HasConnections() && !ui->onInputEnd.HasConnections()) {
+        if (!ui->onMouseEnter->HasConnections() && !ui->onMouseExit->HasConnections() && !ui->onInputBegin->HasConnections() && !ui->onInputEnd->HasConnections()) {
             continue;
         }
 
@@ -62,22 +62,22 @@ void Gui::FireInputEvents()
 
         if (ui->mouseHover != isMouseIntersecting) { // then the cursor has either moved onto or off of the gui.
             if (isMouseIntersecting) { // then we started being on the ui.
-                ui->onMouseEnter.Fire();
+                ui->onMouseEnter->Fire();
             }
             else { // then we stopped being on the ui.
-                ui->onMouseExit.Fire();
+                ui->onMouseExit->Fire();
             }
         }
 
         // fire input events
-        if (isMouseIntersecting && ui->onInputBegin.HasConnections()) {
+        if (isMouseIntersecting && ui->onInputBegin->HasConnections()) {
             for (const InputObject& event : GraphicsEngine::Get().window.PRESS_BEGAN_KEYS) {
-                ui->onInputBegin.Fire(event);
+                ui->onInputBegin->Fire(event);
             }  
         }
-        if (isMouseIntersecting && ui->onInputEnd.HasConnections()) {
+        if (isMouseIntersecting && ui->onInputEnd->HasConnections()) {
             for (const InputObject& event : GraphicsEngine::Get().window.PRESS_ENDED_KEYS) {
-                ui->onInputEnd.Fire(event);
+                ui->onInputEnd->Fire(event);
             }
         }
 
@@ -87,9 +87,9 @@ void Gui::FireInputEvents()
 
 void Gui::Init()
 {
-    GraphicsEngine::Get().GetWindow().onWindowResize.Connect(&UpdateGuiForNewWindowResolution);
-    GraphicsEngine::Get().GetWindow().postInputProccessing.Connect(&FireInputEvents);
-    GraphicsEngine::Get().preRenderEvent.Connect(&UpdateBillboardGuis);
+    GraphicsEngine::Get().GetWindow().onWindowResize->Connect(&UpdateGuiForNewWindowResolution);
+    GraphicsEngine::Get().GetWindow().postInputProccessing->Connect(&FireInputEvents);
+    GraphicsEngine::Get().preRenderEvent->Connect(&UpdateBillboardGuis);
 }
 
 
@@ -99,7 +99,12 @@ void Gui::UpdateBillboardGuis(float) {
     }
 }
 
-Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<BillboardGuiInfo> billboardGuiInfo, std::shared_ptr<ShaderProgram> guiShader) {
+Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<BillboardGuiInfo> billboardGuiInfo, std::shared_ptr<ShaderProgram> guiShader):
+    onMouseEnter(Event<>::New()),
+    onMouseExit(Event<>::New()),
+    onInputBegin(Event<InputObject>::New()),
+    onInputEnd(Event<InputObject>::New())
+{
     //DebugLogInfo("Generated gui ", this);
     
     GameobjectCreateParams objectParams({ComponentBitIndex::Transform, billboardGuiInfo.has_value() ? ComponentBitIndex::Render : ComponentBitIndex::RenderNoFO});

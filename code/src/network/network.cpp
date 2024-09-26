@@ -69,7 +69,10 @@ void NetworkingEngine::Update()
     
 }
 
-NetworkingEngine::NetworkingEngine() {
+NetworkingEngine::NetworkingEngine():
+    onConnectionAttemptComplete(Event<ConnectionAttemptResult>::New()),
+    onInitialSyncComplete(Event<>::New())
+{
     status = NetworkStatus::Offline;
     serverSocket = std::nullopt;
 }

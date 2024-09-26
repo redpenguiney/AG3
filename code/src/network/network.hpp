@@ -55,10 +55,10 @@ class NetworkingEngine {
 		std::optional<std::string> failureMessage; // extra failure information, such as a message from the server if the failure reason was ServerRejected.
 	};
 
-	Event<ConnectionAttemptResult> OnConnectionAttemptComplete;
+	std::shared_ptr<Event<ConnectionAttemptResult>> onConnectionAttemptComplete;
 
 	// fired on client when server has finished syncing all of its stuff with the client.
-	Event<> OnInitialSyncComplete;
+	std::shared_ptr<Event<>> onInitialSyncComplete;
 
 	// A function that the server will call to decide whether to let a potential client connect. Should return <true, nullopt> if the client is allowed to join, or <false, reason> if they are not. 
 	// the returned reason must be less than ~400 characters because i don't want to have to use multiple packets for this.

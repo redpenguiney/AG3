@@ -94,15 +94,15 @@ class Window {
     unsigned int width = 0;
     unsigned int height = 0;
     
-    Event<InputObject> InputDown;
-    Event<InputObject> InputUp;
+    std::shared_ptr<Event<InputObject>> inputDown;
+    std::shared_ptr<Event<InputObject>> inputUp;
     
     // fired after Update() finishes
-    Event<> postInputProccessing;
+    std::shared_ptr<Event<>> postInputProccessing;
 
     // fired during Update() before postInputProccesing if the window was resized that frame.
     // first uvec2 is old window size, secon is new window size
-    Event<glm::uvec2, glm::uvec2> onWindowResize;
+    std::shared_ptr<Event<glm::uvec2, glm::uvec2>> onWindowResize;
 
     Window() = delete; 
 

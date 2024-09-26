@@ -5,7 +5,12 @@
 #include <cstdio>
 #include <cstdlib>
 
-Window::Window(int widthh, int heightt) {
+Window::Window(int widthh, int heightt):
+    inputDown(Event<InputObject>::New()),
+    inputUp(Event<InputObject>::New()),
+    postInputProccessing(Event<>::New()),
+    onWindowResize(Event<glm::uvec2, glm::uvec2>::New())
+{
     width = widthh;
     height = heightt;
     mouseLocked = false;
@@ -95,7 +100,7 @@ void Window::Update() {
     
     
 
-    postInputProccessing.Fire();
+    postInputProccessing->Fire();
 }
 
 void Window::FlipBuffers() {
@@ -235,12 +240,12 @@ void Window::KeyCallback(GLFWwindow* window, int key, int scancode, int action, 
     if (action == GLFW_PRESS) {
         GraphicsEngine::Get().window.PRESS_BEGAN_KEYS.insert(input);
         GraphicsEngine::Get().window.PRESSED_KEYS.insert(input.input);
-        GraphicsEngine::Get().window.InputDown.Fire(input);
+        GraphicsEngine::Get().window.inputDown->Fire(input);
     }
     else if (action == GLFW_RELEASE) {
         GraphicsEngine::Get().window.PRESS_ENDED_KEYS.insert(input);
         GraphicsEngine::Get().window.PRESSED_KEYS.erase(input.input);
-        GraphicsEngine::Get().window.InputUp.Fire(input);
+        GraphicsEngine::Get().window.inputUp->Fire(input);
     }
 } 
 
@@ -259,12 +264,12 @@ void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int
         if (action == GLFW_RELEASE) {
             GraphicsEngine::Get().window.PRESS_ENDED_KEYS.insert(input);
             GraphicsEngine::Get().window.PRESSED_KEYS.erase(input.input);
-            GraphicsEngine::Get().window.InputDown.Fire(input);
+            GraphicsEngine::Get().window.inputDown->Fire(input);
         }
         else if (action == GLFW_PRESS) {
             GraphicsEngine::Get().window.PRESS_BEGAN_KEYS.insert(input);
             GraphicsEngine::Get().window.PRESSED_KEYS.insert(input.input);
-            GraphicsEngine::Get().window.InputUp.Fire(input);
+            GraphicsEngine::Get().window.inputUp->Fire(input);
         }
     }
     else if (button == GLFW_MOUSE_BUTTON_2) {
@@ -273,12 +278,12 @@ void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int
         if (action == GLFW_RELEASE) {
             GraphicsEngine::Get().window.PRESS_ENDED_KEYS.insert(input);
             GraphicsEngine::Get().window.PRESSED_KEYS.erase(input.input);
-            GraphicsEngine::Get().window.InputDown.Fire(input);
+            GraphicsEngine::Get().window.inputDown->Fire(input);
         }
         else if (action == GLFW_PRESS) {
             GraphicsEngine::Get().window.PRESS_BEGAN_KEYS.insert(input);
             GraphicsEngine::Get().window.PRESSED_KEYS.insert(input.input);
-            GraphicsEngine::Get().window.InputUp.Fire(input);
+            GraphicsEngine::Get().window.inputUp->Fire(input);
         }
     }
 }
@@ -292,7 +297,7 @@ void Window::ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindo
         GraphicsEngine::Get().window.width = newWindowWidth;
         GraphicsEngine::Get().window.height = newWindowHeight;
 
-        GraphicsEngine::Get().window.onWindowResize.Fire(oldWidth, glm::uvec2(newWindowWidth, newWindowHeight));
+        GraphicsEngine::Get().window.onWindowResize->Fire(oldWidth, glm::uvec2(newWindowWidth, newWindowHeight));
     }
     
 }

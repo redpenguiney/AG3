@@ -60,7 +60,10 @@ const std::vector<GLuint> screenQuadIndices = {
 GraphicsEngine::GraphicsEngine():
 pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(PointLightInfo) * 1000)),
 spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(SpotLightInfo) * 1000)),
-screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false))
+screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false)),
+
+preRenderEvent(Event<float>::New()),
+postRenderEvent(Event<float>::New())
 {
     pointLightCount = 0;
     spotLightCount = 0;
@@ -294,7 +297,7 @@ void GraphicsEngine::RenderScene(float dt) {
     pointLightDataBuffer.Flip();
     spotLightDataBuffer.Flip();
 
-    preRenderEvent.Fire(dt);
+    preRenderEvent->Fire(dt);
     BaseEvent::FlushEventQueue(); // we want preRenderEvent to be fired NOW, not later, so if they make objects or whatever it gets rendered this frame.
 
     // glEnable(GL_FRAMEBUFFER_SRGB); // gamma correction; google it. TODO: when we start using postprocessing/framebuffers, turn this off except for final image output
@@ -372,7 +375,7 @@ void GraphicsEngine::RenderScene(float dt) {
 
     glFlush(); // Tell OpenGL we're done drawing.
 
-    postRenderEvent.Fire(dt);
+    postRenderEvent->Fire(dt);
     BaseEvent::FlushEventQueue();
 }
 

@@ -6,33 +6,44 @@
 void BaseEvent::FlushEventQueue() {
 
 	// we have to copy the queue because Flush() can result in the destruction of an event thus invalidating the iterator if we held onto the reference
-	auto q = EventQueue();
+	//auto q = EventQueue();
+	auto& q = EventQueue();
 
-	for (auto event : q) {
-		DebugLogInfo("Flushing ", event);
-		event->Flush();
+	for (auto it = q.begin(); it != q.end(); it++) {
+		auto event = *it;
+		if (event.expired()) {
+			*it = q.back();
+			q.pop_back();
+			it--;
+		}
+		else {
+			//DebugLogInfo("Flushing ", even);
+			event.lock()->Flush();
+		}
+		
 	}
 }
 
-std::vector<BaseEvent*>& BaseEvent::EventQueue()
+std::vector<std::weak_ptr<BaseEvent>>& BaseEvent::EventQueue()
 {
-	static std::vector<BaseEvent*> eventQueue;
+	static std::vector<std::weak_ptr<BaseEvent >> eventQueue;
 	return eventQueue;
 }
 ;
 
 BaseEvent::BaseEvent() {
-	EventQueue().push_back(this);
+	// CANNOT do this here because a shared_ptr hasn't been made yet.
+	//EventQueue().push_back(enable_shared_from_this<BaseEvent>::weak_from_this(this));
 }
 
 BaseEvent::~BaseEvent() { // todo: unoptimized for frequent removal 
 	//if (!inQueue) { return; }
-	BaseEvent* ptr = this;
+	/*BaseEvent* ptr = this;
 	for (unsigned int i = 0; i < EventQueue().size(); i++) {
 		if (EventQueue()[i] = ptr) {
 			EventQueue()[i] = EventQueue().back();
 			EventQueue().pop_back();
 			return;
 		}
-	}
+	}*/
 }

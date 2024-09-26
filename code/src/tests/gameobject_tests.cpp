@@ -223,7 +223,7 @@ void TestSpinningSpotlight()
     coolLight->Get<SpotLightComponent>()->SetColor({ 1, 1, 1 });
     coolLight->Get<RenderComponent>()->SetColor({ 0, 1, 0.5, 1 });
 
-    PhysicsEngine::Get().prePhysicsEvent.Connect([coolLight](float dt) {
+    PhysicsEngine::Get().prePhysicsEvent->Connect([coolLight](float dt) {
         coolLight->Get<TransformComponent>()->SetPos({ cos(Time()) * 10, 5.0, sin(Time()) * 10 });
         coolLight->Get<TransformComponent>()->SetRot(glm::quatLookAt(glm::vec3(cos(Time()), 0.0, sin(Time())), glm::vec3(0, 1, 0)));
     });

@@ -15,7 +15,10 @@
 #include "glm/gtx/string_cast.hpp"
 
 
-PhysicsEngine::PhysicsEngine() {
+PhysicsEngine::PhysicsEngine():
+prePhysicsEvent(Event<float>::New()) ,
+postPhysicsEvent(Event<float>::New())
+{
     // GRAVITY = {0, -0.0, 0};
     GRAVITY = {0, -9, 0};
 }

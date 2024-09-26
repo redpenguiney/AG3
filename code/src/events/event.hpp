@@ -8,15 +8,18 @@
 // You can connect functions to those events to make code run when an event is fired, as well as fire custom events.
 // Connected functions are not called immediately for performance reasons, but are instead stored in a queue then fired all at once.
 template <typename ... eventArgs>
-class Event: BaseEvent {
+class Event: public BaseEvent {
 	public:
 
 	using ConnectableFunctionArgs = std::tuple<eventArgs...>;
 	using ConnectableFunction = std::function<void(eventArgs...)>;
 
-	Event(): BaseEvent() {
-		eventInvocations = std::make_shared< std::vector<ConnectableFunctionArgs>>();
-		connectedFunctions = std::make_shared< std::vector<ConnectableFunction>>();
+	// sadly, we have to use shared_ptr for events to handle the situation where firing an event results in the destruction of that fired event.
+	// this means no default constructing event either :(
+	static std::shared_ptr<Event> New() {
+		auto ptr = std::make_shared < Event>();
+		EventQueue().push_back(std::weak_ptr<BaseEvent>(std::static_pointer_cast<BaseEvent>(ptr)));
+		return std::move(ptr);
 	}
 
 	Event(const Event&) = delete;
@@ -47,6 +50,16 @@ class Event: BaseEvent {
 	};
 
 	private:
+
+	// private to enforce use of factory constructor
+	Event() : BaseEvent() {
+		eventInvocations = std::make_shared< std::vector<ConnectableFunctionArgs>>();
+		connectedFunctions = std::make_shared< std::vector<ConnectableFunction>>();
+	}
+
+	private:
+	template <typename T>
+	friend class std::shared_ptr<T>;
 
 	// Internal helper for FlushEventQueue()
 	inline void Flush() {

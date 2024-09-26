@@ -10,9 +10,9 @@ class PhysicsEngine {
     static PhysicsEngine& Get();
 
     // float is dt, unlike graphical events dt should be constant. Called in main.cpp because Step() is called repeatedly.
-    Event<float> prePhysicsEvent;
+    std::shared_ptr<Event<float>> prePhysicsEvent;
     // float is dt, unlike graphical events dt should be constant. Callded in main.cpp because Step() is called repeatedly.
-    Event<float> postPhysicsEvent;
+    std::shared_ptr<Event<float>> postPhysicsEvent;
     
     // When modules (shared libraries) get their copy of this code, they need to use a special version of PhysicsEngine::Get().
     // This is so that both the module and the main executable have access to the same singleton. 
