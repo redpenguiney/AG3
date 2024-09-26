@@ -100,6 +100,8 @@ void Gui::UpdateBillboardGuis(float) {
 }
 
 Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<BillboardGuiInfo> billboardGuiInfo, std::shared_ptr<ShaderProgram> guiShader) {
+    //DebugLogInfo("Generated gui ", this);
+    
     GameobjectCreateParams objectParams({ComponentBitIndex::Transform, billboardGuiInfo.has_value() ? ComponentBitIndex::Render : ComponentBitIndex::RenderNoFO});
 
     mouseHover = false;
@@ -203,6 +205,8 @@ Gui::~Gui() {
     if (guiTextInfo.has_value()) {
         guiTextInfo->object->Destroy();
     }
+
+    //DebugLogInfo("Destroyed gui ", this);
 }
 
 void Gui::UpdateGuiTransform() {

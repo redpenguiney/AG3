@@ -43,7 +43,7 @@ Meshpool::~Meshpool()
 
 std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, const std::shared_ptr<ShaderProgram>& shader, CheckedUint count)
 {
-    DebugLogInfo("Adding count ", count, " for meshid ", mesh->meshId);
+    //DebugLogInfo("Adding count ", count, " for meshid ", mesh->meshId);
 
     // find valid slot for mesh
     CheckedUint slot;
@@ -89,7 +89,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
                 .sizeClass = exponent,
                 .nUsers = 0
             };
-            DebugLogInfo("Wrote id ", mesh->meshId, " to mesh index ", slot);
+            //DebugLogInfo("Wrote id ", mesh->meshId, " to mesh index ", slot);
         }
     }
     
@@ -230,7 +230,7 @@ void Meshpool::RemoveObject(const DrawHandle& handle)
                 GraphicsEngine::Get().dynamicMeshLocations.erase(meshSlotContents.at(handle.meshIndex).meshId);
             }
 
-            DebugLogInfo("Erasing meshid ", meshSlotContents[handle.meshIndex].meshId , " at mesh index ", handle.meshIndex);
+            //DebugLogInfo("Erassing meshid ", meshSlotContents[handle.meshIndex].meshId , " at mesh index ", handle.meshIndex);
             meshUsers.erase(meshSlotContents[handle.meshIndex].meshId); // TODO: could potentially lead to unneccesarily recopying mesh
             meshSlotContents.erase(handle.meshIndex);
         }

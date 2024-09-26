@@ -4,9 +4,12 @@
 
 
 void BaseEvent::FlushEventQueue() {
-	auto& q = EventQueue();
+
+	// we have to copy the queue because Flush() can result in the destruction of an event thus invalidating the iterator if we held onto the reference
+	auto q = EventQueue();
+
 	for (auto event : q) {
-		//DebugLogInfo("Flushing ", event);
+		DebugLogInfo("Flushing ", event);
 		event->Flush();
 	}
 }

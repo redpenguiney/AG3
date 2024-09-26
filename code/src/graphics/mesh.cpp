@@ -480,7 +480,8 @@ void Mesh::StopModifying(bool normalizeSize) {
             // low priority in any case
             // TODO: could making component no longer in a meshpool could break stuff that calls methods of rendercomponent before it's readded?
 
-            for (auto& renderComponent : GraphicsEngine::Get().dynamicMeshUsers.at(meshId)) {
+            auto componentsToUpdate = GraphicsEngine::Get().dynamicMeshUsers.at(meshId); // deliberate vector copy. Calling RemoveObject() will modify the vector otherwise which is undesirable
+            for (auto& renderComponent : componentsToUpdate) {
                 GraphicsEngine::Get().RemoveObject(renderComponent);
                 renderComponent->drawHandle.drawBufferIndex = -1;
                 renderComponent->drawHandle.instanceSlot = -1;

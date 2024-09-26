@@ -15,7 +15,8 @@ class Event: BaseEvent {
 	using ConnectableFunction = std::function<void(eventArgs...)>;
 
 	Event(): BaseEvent() {
-		
+		eventInvocations = std::make_shared< std::vector<ConnectableFunctionArgs>>();
+		connectedFunctions = std::make_shared< std::vector<ConnectableFunction>>();
 	}
 
 	Event(const Event&) = delete;
@@ -30,37 +31,40 @@ class Event: BaseEvent {
 			//inQueue = true;
 		//}
 		ConnectableFunctionArgs tupledArgs = std::make_tuple(args...);
-		eventInvocations.push_back(tupledArgs); 
+		eventInvocations->push_back(tupledArgs); 
 	}
 
 	// Connects the given function to the event, so that it will be called every time the event is fired.
 	// WARNING: if the function is a lambda which captures a shared_ptr, then that shared_ptr gets stored in this event.
 	// TODO: disconnecting events
-	// TODO: might not work with templated functions? do we care?
 	void Connect(ConnectableFunction function) {
-		connectedFunctions.push_back(function);
+		connectedFunctions->push_back(function);
 	}
 
 	// returns true if anything is connected to this event.
 	bool HasConnections() {
-		return connectedFunctions.size() > 0;
+		return connectedFunctions->size() > 0;
 	};
 
 	private:
 
 	// Internal helper for FlushEventQueue()
 	inline void Flush() {
-		for (auto& cfa : eventInvocations) {
-			for (auto& f : connectedFunctions) {
+		// annoyingly, because a function can destroy the event which called it (FOR EXAMPLE (AHEM), if a gui DESTROYS itself when clicked), we have to create shared_ptrs in here
+		std::shared_ptr<std::vector<ConnectableFunctionArgs>> eventInvocationsLock = eventInvocations;
+		std::shared_ptr<std::vector<ConnectableFunction>> connectedFunctionsLock = connectedFunctions;
+
+		for (auto& cfa : *eventInvocationsLock) {
+			for (auto& f : *connectedFunctionsLock) {
 				std::apply(f, cfa); // std::apply basically calls f using the tuple cfa as a variaidic for us.
 			}
 		}
-		
-		eventInvocations.clear();
+
+		eventInvocationsLock->clear();
 	}
 	
-
-	std::vector<ConnectableFunctionArgs> eventInvocations;
-	std::vector<ConnectableFunction> connectedFunctions;
+	// shared_ptrs needed so that Flush() can keep working without segfaults, even if the event is destroyed by calling a connected function.
+	std::shared_ptr<std::vector<ConnectableFunctionArgs>> eventInvocations;
+	std::shared_ptr<std::vector<ConnectableFunction>> connectedFunctions;
 	
 };
