@@ -70,7 +70,7 @@ void MakeMainMenu() {
             inMainMenu = false;
             mainMenuGuis.clear();
             //DebugLogInfo("STARTING GAME");
-            Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
+            //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
             
         }
     });
@@ -123,9 +123,9 @@ void GameInit()
         debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
         debugText->UpdateGuiText();
 
-        if (!inMainMenu) {
+        /*if (!inMainMenu) {
             Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
-        }
+        }*/
     });
 
     // TODO BROKEN, prob just dll outdated
@@ -156,9 +156,9 @@ void GameInit()
     GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 
     TestCubeArray(2, 4, 2, true);
-    TestStationaryPointlight();
+    //TestStationaryPointlight();
     //TestSpinningSpotlight();
-    TestGrassFloor();
+    //TestGrassFloor();
 
     //TestGarticMusic(); 
 
@@ -174,8 +174,8 @@ void GameInit()
                 GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
                 params.meshId = m->meshId;
                 //params.materialId = brickMaterial->id;
-                //auto g = GameObject::New(params);
-                //g->Get<TransformComponent>()->SetPos(glm::vec3(10, -5, 10));
+                auto g = GameObject::New(params);
+                g->Get<TransformComponent>()->SetPos(glm::vec3(10, -5, 10));
 
                 if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RigidbodyComponent>()) {
 

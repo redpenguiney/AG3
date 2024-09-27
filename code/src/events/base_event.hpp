@@ -22,6 +22,6 @@ public:
 	static void FlushEventQueue();
 
 private:
-	
+	friend class std::shared_ptr<BaseEvent>;
 };
 

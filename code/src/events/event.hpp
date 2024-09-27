@@ -17,7 +17,7 @@ class Event: public BaseEvent {
 	// sadly, we have to use shared_ptr for events to handle the situation where firing an event results in the destruction of that fired event.
 	// this means no default constructing event either :(
 	static std::shared_ptr<Event> New() {
-		auto ptr = std::make_shared < Event>();
+		auto ptr = std::shared_ptr< Event>(new Event());
 		EventQueue().push_back(std::weak_ptr<BaseEvent>(std::static_pointer_cast<BaseEvent>(ptr)));
 		return std::move(ptr);
 	}
@@ -58,8 +58,8 @@ class Event: public BaseEvent {
 	}
 
 	private:
-	template <typename T>
-	friend class std::shared_ptr<T>;
+	//template <typename T>
+	friend class std::shared_ptr<Event>;
 
 	// Internal helper for FlushEventQueue()
 	inline void Flush() {

@@ -437,6 +437,7 @@ void Mesh::StopModifying(bool normalizeSize) {
     }
 
     if (GraphicsEngine::Get().dynamicMeshLocations.contains(meshId)) { //  this could be legitimately not the case if the mesh just isn't in use
+        DebugLogInfo("Completing modification for ", meshId, " count ", indices.size());
         auto [meshpoolId, currentMeshSlot] = GraphicsEngine::Get().dynamicMeshLocations.at(meshId);
         Meshpool& pool = *GraphicsEngine::Get().meshpools.at(meshpoolId);
         if // if the meshpool slot the mesh was in can still hold the mesh with its new size...

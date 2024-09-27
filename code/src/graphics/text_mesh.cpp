@@ -297,5 +297,5 @@ std::pair<std::vector<float>, std::vector<unsigned int>> TextMeshProvider::GetMe
     std::vector<float> verts;
     std::vector<unsigned int> indices;
     TextMeshFromText(text, font->fontMapConstAccess.value(), textParams, meshParams.meshVertexFormat.value_or(MeshVertexFormat::DefaultGui()), verts, indices);
-    return std::pair<std::vector<float>, std::vector<unsigned int>>();
+    return std::pair<std::vector<float>, std::vector<unsigned int>>(verts, indices);
 }

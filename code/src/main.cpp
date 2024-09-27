@@ -149,7 +149,7 @@ int main(int numArgs, const char *argPtrs[]) {
                 // physicsPaused = true;
                 // printf("Stepping PE.\n");
                 
-                PE.prePhysicsEvent.Fire(SIMULATION_TIMESTEP);
+                PE.prePhysicsEvent->Fire(SIMULATION_TIMESTEP);
                 BaseEvent::FlushEventQueue(); // if we don't do this, if firing the event is meant to (for example) change velocities, it won't apply until next frame.
 
                 for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
@@ -160,7 +160,7 @@ int main(int numArgs, const char *argPtrs[]) {
                     // PE.Step(SIMULATION_TIMESTEP);
                 }
 
-                PE.postPhysicsEvent.Fire(SIMULATION_TIMESTEP);
+                PE.postPhysicsEvent->Fire(SIMULATION_TIMESTEP);
                 BaseEvent::FlushEventQueue();
             }
             
