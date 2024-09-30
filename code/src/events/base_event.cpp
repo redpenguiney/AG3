@@ -9,12 +9,12 @@ void BaseEvent::FlushEventQueue() {
 	//auto q = EventQueue();
 	auto& q = EventQueue();
 
-	for (auto it = q.begin(); it != q.end(); it++) {
-		auto event = *it;
+	for (unsigned int i = 0; i < q.size(); i++) { 
+		auto& event = q[i];
 		if (event.expired()) {
-			*it = q.back();
+			q[i] = q.back();
 			q.pop_back();
-			it--;
+			i--;
 		}
 		else {
 			//DebugLogInfo("Flushing ", even);

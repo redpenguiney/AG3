@@ -236,6 +236,7 @@ private:
 
         void ApplyUpdates() {
             //unsigned int i = 0;
+            
 
             
             for (unsigned int updateIndex = 0; updateIndex < updates.size(); updateIndex++) {
@@ -251,19 +252,22 @@ private:
                     }
                 }
 
+                // we CANNOT pop-erase here; having color set multiple times for the same object only works so long as the updates vector remains in chronological order.
                 if (!canceled && update.renderComp->meshpoolId != -1) { // we can't set these values until the render component gets a mesh pool
                     GraphicsEngine::Get().meshpools[update.renderComp->meshpoolId]->SetInstancedVertexAttribute<AttributeType>(update.renderComp->drawHandle, update.attributeName, update.newValue);
                     update.updatesRemaining -= 1;
-                    if (update.updatesRemaining == 0) {
-                        updates[updateIndex] = updates.back();
-                        updates.pop_back();
-                        updateIndex--;
-                    }
+                    
                     //i++;
                 }
 
+                
 
             }
+
+            // Instead of pop-erasing inside the loop, we use std::erase_if.
+            std::erase_if(updates, [](const AttributeUpdate& u) {
+                return u.updatesRemaining == 0;
+            });
         }
     private:
         struct AttributeUpdate{

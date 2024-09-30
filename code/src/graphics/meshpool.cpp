@@ -124,7 +124,8 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         IndirectDrawCommand command = {
             .count = static_cast<CheckedUint>(mesh->indices.size()),
             .instanceCount = nInstances,
-            .firstIndex = (unsigned int)slot * (indexSize), /// TODO MIGHT BE WRONG 
+            //.firstIndex = (unsigned int)slot * (indexSize), /// TODO MIGHT BE WRONG 
+            .firstIndex = slot.value, // TODO how in the world does THIS work?!?!
             .baseVertex = static_cast<int>(slot),
             .baseInstance = firstInstance
         };
@@ -402,7 +403,10 @@ void Meshpool::Draw(bool prePostProc) {
         }
 
         //glPointSize(15.0);
-        //glDrawElements(GL_TRIANGLES, indices.GetSize() / indexSize, GL_UNSIGNED_INT, 0);
+        //for (unsigned int i = 0; i < command->GetDrawCount(); i++) {
+            //auto cmd = command->clientCommands.at(i);
+            //glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
+        //}
         glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
     }
      

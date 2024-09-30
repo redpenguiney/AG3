@@ -4,6 +4,9 @@
 #include <physics/pengine.hpp>
 #include <conglomerates/gui.hpp>
 
+
+#include "noise/noise.h"
+
 std::shared_ptr<Mesh> CubeMesh() {
     auto makeMparams = MeshCreateParams{ .textureZ = -1.0, .opacity = 1, .expectedCount = 16384 };
     static auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/rainbowcube.obj", makeMparams).at(0);
@@ -169,43 +172,52 @@ void TestGrassFloor()
     floor->name = "ah yes the floor here is made of floor";
 }
 
+noise::module::Perlin perlinNoiseGenerator;
+
 void TestVoxelTerrain()
 {
-    abort();
+
     // 16^3, r=0.25; 0.37ms for perlin
-    //for (unsigned int i = 0; i < 3; i++) {
-    //    auto cstart = Time();
-    //    float s = 8;
-    //    auto terrainMesh = Mesh::FromVoxels(MeshCreateParams::Default(), { -s + float(i * s * 2), -s, -s }, { s + i * s * 2, s, s }, 1.0f,
-    //        [](glm::vec3 pos) {
-    //            //float altitude = pos.y + f->GenSingle2D(pos.x, pos.z, 1234);
-    //            float altitude = 16 * perlinNoiseGenerator.GetValue(pos.x / 128.0f, pos.z / 128.0f, 1234);
-    //            //if (pos.y + altitude > 1) {
-    //            //    return 1.0f;
-    //            //}
-    //            //else if (pos.y + altitude < -1) {
-    //            //    return -1.0f;
-    //            //}
-    //            //else {
-    //            return pos.y + altitude;
-    //            //}
-    //        }, std::nullopt, false
-    //    );
-    //    if (!terrainMesh.has_value()) { continue; }
+    for (unsigned int i = 0; i < 3; i++) {
+        auto cstart = Time();
+        float s = 8;
+        DualContouringMeshProvider p;
+        p.distanceFunction = [](glm::vec3 pos) {
+            //float altitude = pos.y + f->GenSingle2D(pos.x, pos.z, 1234);
+            float altitude = 16 * perlinNoiseGenerator.GetValue(pos.x / 128.0f, pos.z / 128.0f, 1234);
+            //if (pos.y + altitude > 1) {
+            //    return 1.0f;
+            //}
+            //else if (pos.y + altitude < -1) {
+            //    return -1.0f;
+            //}
+            //else {
+            return pos.y + altitude;
+            //}
+        };
 
-    //    GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
-    //    params.meshId = terrainMesh.value()->meshId;
-    //    params.materialId = grassMaterial->id;
+        p.fixVertexCenters = false;
+        p.atlas = std::nullopt;
+        //p.meshParams = MeshCreateParams::Default();
+        p.point1 = { -s + float(i * s * 2), -s, -s };
+        p.point2 = { s + i * s * 2, s, s };
+        p.resolution = 1.0f;
+        auto terrainMesh = Mesh::New(p, false);
+        //if (!terrainMesh.has_value()) { continue; }
 
-    //    auto chunk = CR.NewGameObject(params);
-    //    chunk->Get<TransformComponent>().SetPos({ 16 + i * s * 2, 0, 16 });
-    //    chunk->Get<TransformComponent>().SetScl(terrainMesh.value()->originalSize);
-    //    glm::vec4 color = { 0, 0, 0, 1 };
-    //    color[i] = 1;
-    //    //chunk->renderComponent->SetColor(color);
+        GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
+        params.meshId = terrainMesh->meshId;
+        params.materialId = GrassMaterial().second->id;
 
-    //    DebugLogInfo("CHUNK HAS ", glm::to_string(terrainMesh.value()->originalSize), " size, nverts = ", terrainMesh.value()->vertices.size(), " elapsed = ", Time() - cstart);
-    //}
+        auto chunk = GameObject::New(params);
+        chunk->Get<TransformComponent>()->SetPos({ 16 + i * s * 2, 0, 16 });
+        chunk->Get<TransformComponent>()->SetScl(terrainMesh->originalSize);
+        glm::vec4 color = { 0, 0, 0, 1 };
+        color[i] = 1;
+        chunk->Get<RenderComponent>()->SetColor(color);
+
+        DebugLogInfo("CHUNK HAS ", glm::to_string(terrainMesh->originalSize), " size, nverts = ", terrainMesh->vertices.size(), " elapsed = ", Time() - cstart);
+    }
 
 }
 
@@ -242,7 +254,7 @@ void TestStationaryPointlight()
     coolLight->RawGet<RenderComponent>()->SetTextureZ(-1);
     coolLight->RawGet<TransformComponent>()->SetPos({ 40, 5, 40 });
     coolLight->RawGet<PointLightComponent>()->SetRange(1000);
-    coolLight->RawGet<PointLightComponent>()->SetColor({ 0.0, 1.0, 0.0 });
+    coolLight->RawGet<PointLightComponent>()->SetColor({ 0.8, 1.0, 0.8 });
 
     
     auto coolerLight = GameObject::New(params);
@@ -299,16 +311,16 @@ void TestUi()
     ui->UpdateGuiGraphics();
     ui->UpdateGuiTransform();
 
-    Gui ui2(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
-    ui2.scaleSize = {0.25, 0.05};
-    ui2.guiScaleMode = Gui::ScaleXX;
-    ui2.offsetPos = {0.0, 0.0};
-    ui2.scalePos = {0.75, 0.0};
-    ui2.anchorPoint = {0.0, -1.0};   
+    Gui* ui2 = new Gui(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
+    ui2->scaleSize = {0.25, 0.05};
+    ui2->guiScaleMode = Gui::ScaleXX;
+    ui2->offsetPos = {0.0, 0.0};
+    ui2->scalePos = {0.75, 0.0};
+    ui2->anchorPoint = {0.0, -1.0};
 
-    ui2.rgba = {1.0, 0.5, 0.0, 1.0};
-    ui2.UpdateGuiGraphics();
-    ui2.UpdateGuiTransform();
+    ui2->rgba = {1.0, 0.5, 0.0, 1.0};
+    ui2->UpdateGuiGraphics();
+    ui2->UpdateGuiTransform();
 }
 
 void TestAnimation()

@@ -803,6 +803,7 @@ void GraphicsEngine::AddCachedMeshes() {
 void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, RenderComponent* component) {
     //static int nAdded = 0;
     //DebugLogInfo("Adding #", ++nAdded);
+    Assert(Mesh::IsValidForGameObject(meshId));
     renderComponentsToAdd[meshId][shaderId][materialId].push_back(component);
 }
 
@@ -810,9 +811,9 @@ void GraphicsEngine::RemoveObject(RenderComponent* comp)
 {
 
     // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from renderComponentsToAdd
-    unsigned int shaderId = comp->shaderProgramId, textureId = comp->materialId;
+    unsigned int shaderId = comp->shaderProgramId, materialId = comp->materialId;
     if (comp->meshpoolId == -1) {
-        auto& vec = renderComponentsToAdd.at(shaderId).at(textureId).at(comp->meshId);
+        auto& vec = renderComponentsToAdd.at(comp->meshId).at(shaderId).at(materialId);
         for (unsigned int i = 0; i < vec.size(); i++) {
             if (vec[i] == comp) {
                 vec[i] = vec.back();

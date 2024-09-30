@@ -87,6 +87,7 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	object->Get<TransformComponent>()->SetPos(pos);
 	object->Get<TransformComponent>()->SetScl(glm::vec3(Size()));
 	object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
+	object->Get<RenderComponent>()->SetTextureZ(-1);
 	Update();
 }
 

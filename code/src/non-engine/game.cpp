@@ -93,42 +93,52 @@ void GameInit()
 
     GE.SetDebugFreecamEnabled(true);
 
-    auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
-    ttfParams.fontHeight = 16;
-    ttfParams.format = Texture::Grayscale_8Bit;
-    auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
+    //
 
-    auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
+    
 
-    debugText->rgba = { 1, 1, 1, 0 };
-    debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
+    {
+        //auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
+        //ttfParams.fontHeight = 16;
+        //ttfParams.format = Texture::Grayscale_8Bit;
+        //auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
 
-    debugText->scalePos = { 0, 1 };
-    debugText->scaleSize = { 0, 0 };
-    debugText->offsetSize = { 600, 60 };
-    debugText->offsetPos = { 200, -200 };
-    debugText->anchorPoint = { 0, 0 };
+        //auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
 
-    debugText->GetTextInfo().text = "abcdefghijklmnopqrstuvwxyz";
-    debugText->GetTextInfo().rgba = { 1, 1, 1, 0.6 };
-    debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
-    debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+        //debugText->rgba = { 0, 1, 0, 0 };
+        //debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
 
-    debugText->UpdateGuiGraphics();
-    debugText->UpdateGuiTransform();
-    debugText->UpdateGuiText();
+        //debugText->scalePos = { 0, 1 };
+        //debugText->scaleSize = { 0, 0 };
+        //debugText->offsetSize = { 600, 60 };
+        //debugText->offsetPos = { 200, -200 };
+        //debugText->anchorPoint = { 0, 0 };
 
-    GE.preRenderEvent->Connect([&GE, debugText](float dt) {
+        //debugText->GetTextInfo().text = "abcdefghijklmnopqrstuvwxyz";
+        //debugText->GetTextInfo().rgba = { 1, 1, 1, 1.0 };
+        //debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+        //debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
 
-        debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
-        debugText->UpdateGuiText();
+        //debugText->UpdateGuiGraphics();
+        //debugText->UpdateGuiTransform();
+        //debugText->UpdateGuiText();
 
-        /*if (!inMainMenu) {
+        //GE.preRenderEvent->Connect([&GE](float dt) {
+
+            //debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
+            //debugText->UpdateGuiText();
+        //});
+    }
+
+    GE.preRenderEvent->Connect([](float dt) {
+        if (!inMainMenu) {
             Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
-        }*/
-    });
+        }
 
-    // TODO BROKEN, prob just dll outdated
+      
+    });
+    
+    // TODO 
     //Module::LoadModule("..\\modules\\libtest_module.dll");
 
     // Gui* ui;
@@ -155,8 +165,11 @@ void GameInit()
     }
     GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 
-    TestCubeArray(2, 4, 2, true);
-    //TestStationaryPointlight();
+    //TestCubeArray(2, 4, 2, false);
+    //TestUi();
+    //
+    TestStationaryPointlight();
+    //TestVoxelTerrain();
     //TestSpinningSpotlight();
     //TestGrassFloor();
 
