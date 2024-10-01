@@ -738,7 +738,7 @@ void GraphicsEngine::UpdateDebugFreecam() {
 void GraphicsEngine::AddCachedMeshes() {
     unsigned int count = 0;
     for (auto & [meshId, map] : renderComponentsToAdd) {
-            
+        //auto &l = MeshGlobals::Get();
         std::shared_ptr<Mesh>& m = Mesh::Get(meshId);
 
         
@@ -809,15 +809,33 @@ void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, u
 
 void GraphicsEngine::RemoveObject(RenderComponent* comp)
 {
-
+    
     // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from renderComponentsToAdd
     unsigned int shaderId = comp->shaderProgramId, materialId = comp->materialId;
     if (comp->meshpoolId == -1) {
-        auto& vec = renderComponentsToAdd.at(comp->meshId).at(shaderId).at(materialId);
-        for (unsigned int i = 0; i < vec.size(); i++) {
-            if (vec[i] == comp) {
-                vec[i] = vec.back();
-                vec.pop_back();
+        if (comp->meshId == 7) {
+            DebugLogInfo("DELETING #7");
+        }
+
+        auto& mvec = renderComponentsToAdd.at(comp->meshId);
+        auto& svec = mvec.at(shaderId);
+        auto& cvec = svec.at(materialId);
+        for (unsigned int i = 0; i < cvec.size(); i++) {
+            if (cvec[i] == comp) {
+                cvec[i] = cvec.back();
+                cvec.pop_back();
+
+                // we have to clear the empty bits of the map now if there are any
+                if (cvec.size() == 0) {
+                    svec.erase(materialId);
+                    if (svec.size() == 0) {
+                        mvec.erase(shaderId);
+                        if (mvec.size() == 0) {
+                            renderComponentsToAdd.erase(comp->meshId);
+                        }
+                    }
+                }
+
                 break;
             }
         }

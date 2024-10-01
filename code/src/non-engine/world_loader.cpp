@@ -101,59 +101,59 @@ std::unordered_map<glm::vec3, std::unique_ptr<Chunk>>& Chunk::GetChunks()
 constexpr int BASE_GRID_SIZE = 1;
 void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance) {
 
-	GetChunks().emplace(std::make_pair(glm::vec3(0, 0, 0), std::make_unique<Chunk>(glm::vec3(0, 0, 0), 0)));
+	//GetChunks().emplace(std::make_pair(glm::vec3(0, 0, 0), std::make_unique<Chunk>(glm::vec3(0, 0, 0), 0)));
 	
 	// mark all existing chunks for deletion
-	//for (auto& [pos, c] : GetChunks()) {
-	//	(void)pos;
-	//	c->toDelete = true;
-	//}
+	for (auto& [pos, c] : GetChunks()) {
+		(void)pos;
+		c->toDelete = true;
+	}
 
-	//// build octree array around camera
-	//OctreeNode nodes[BASE_GRID_SIZE * 2 + 1][BASE_GRID_SIZE * 2 + 1][BASE_GRID_SIZE * 2 + 1];
-	//for (int x = -BASE_GRID_SIZE; x <= BASE_GRID_SIZE; x++) {
-	//	for (int y = -BASE_GRID_SIZE; y <= BASE_GRID_SIZE; y++) {
-	//		for (int z = -BASE_GRID_SIZE; z <= BASE_GRID_SIZE; z++) {
-	//			nodes[x + BASE_GRID_SIZE][y + BASE_GRID_SIZE][z + BASE_GRID_SIZE].position = glm::roundMultiple(cameraPos, glm::vec3(MAX_CHUNK_SIZE)) + MAX_CHUNK_SIZE * glm::vec3(x, y, z);
-	//			//DebugLogInfo("Rounded c is ", glm::to_string(glm::roundMultiple(cameraPos, glm::vec3(MAX_CHUNK_SIZE)) + MAX_CHUNK_SIZE * glm::vec3(x, y, z)));
-	//		}
-	//	}
-	//}
-	//
-	//// split octree nodes based on distance from camera (closer = get split more)
-	//unsigned int depth = 0;
-	//for (unsigned int depth = 0; depth < MAX_LOD_LEVELS; depth++) {
+	// build octree array around camera
+	OctreeNode nodes[BASE_GRID_SIZE * 2 + 1][BASE_GRID_SIZE * 2 + 1][BASE_GRID_SIZE * 2 + 1];
+	for (int x = -BASE_GRID_SIZE; x <= BASE_GRID_SIZE; x++) {
+		for (int y = -BASE_GRID_SIZE; y <= BASE_GRID_SIZE; y++) {
+			for (int z = -BASE_GRID_SIZE; z <= BASE_GRID_SIZE; z++) {
+				nodes[x + BASE_GRID_SIZE][y + BASE_GRID_SIZE][z + BASE_GRID_SIZE].position = glm::roundMultiple(cameraPos, glm::vec3(MAX_CHUNK_SIZE)) + MAX_CHUNK_SIZE * glm::vec3(x, y, z);
+				//DebugLogInfo("Rounded c is ", glm::to_string(glm::roundMultiple(cameraPos, glm::vec3(MAX_CHUNK_SIZE)) + MAX_CHUNK_SIZE * glm::vec3(x, y, z)));
+			}
+		}
+	}
+	
+	// split octree nodes based on distance from camera (closer = get split more)
+	unsigned int depth = 0;
+	for (unsigned int depth = 0; depth < MAX_LOD_LEVELS; depth++) {
 
-	//	float splitThresholdSquared = powf(minBaseLodDistance * powf(2, -float(depth)), 2);
+		float splitThresholdSquared = powf(minBaseLodDistance * powf(2, -float(depth)), 2);
 
-	//	for (unsigned int ix = 0; ix < BASE_GRID_SIZE * 2 + 1; ix++) {
-	//		for (unsigned int iy = 0; iy < BASE_GRID_SIZE * 2 + 1; iy++) {
-	//			for (unsigned int iz = 0; iz < BASE_GRID_SIZE * 2 + 1; iz++) {
-	//				RecursiveSplit(&nodes[ix][iy][iz], depth, splitThresholdSquared, cameraPos);
-	//			}
-	//		}
-	//	}
-	//}
+		for (unsigned int ix = 0; ix < BASE_GRID_SIZE * 2 + 1; ix++) {
+			for (unsigned int iy = 0; iy < BASE_GRID_SIZE * 2 + 1; iy++) {
+				for (unsigned int iz = 0; iz < BASE_GRID_SIZE * 2 + 1; iz++) {
+					RecursiveSplit(&nodes[ix][iy][iz], depth, splitThresholdSquared, cameraPos);
+				}
+			}
+		}
+	}
 
-	//// load chunks based on octree nodes
-	//for (unsigned int depth = 0; depth < MAX_LOD_LEVELS; depth++) {
+	// load chunks based on octree nodes
+	for (unsigned int depth = 0; depth < MAX_LOD_LEVELS; depth++) {
 
-	//	float splitThresholdSquared = powf(minBaseLodDistance * powf(2, -float(depth)), 2);
+		float splitThresholdSquared = powf(minBaseLodDistance * powf(2, -float(depth)), 2);
 
-	//	int loadedSoFar = 0;
-	//	for (unsigned int ix = 0; ix < BASE_GRID_SIZE * 2 + 1; ix++) {
-	//		for (unsigned int iy = 0; iy < BASE_GRID_SIZE * 2 + 1; iy++) {
-	//			for (unsigned int iz = 0; iz < BASE_GRID_SIZE * 2 + 1; iz++) {
-	//				RecursiveLoad(&nodes[ix][iy][iz], loadedSoFar);
-	//			}
-	//		}
-	//	}
-	//}
+		int loadedSoFar = 0;
+		for (unsigned int ix = 0; ix < BASE_GRID_SIZE * 2 + 1; ix++) {
+			for (unsigned int iy = 0; iy < BASE_GRID_SIZE * 2 + 1; iy++) {
+				for (unsigned int iz = 0; iz < BASE_GRID_SIZE * 2 + 1; iz++) {
+					RecursiveLoad(&nodes[ix][iy][iz], loadedSoFar);
+				}
+			}
+		}
+	}
 
-	//// lastly delete every chunk that remained marked for deletion. (RecursiveLoad() will have unmarked chunks that should have stayed loaded)
-	//std::erase_if(GetChunks(), [](const auto& item) {
-	//	return item.second->toDelete;
-	//});
+	// lastly delete every chunk that remained marked for deletion. (RecursiveLoad() will have unmarked chunks that should have stayed loaded)
+	std::erase_if(GetChunks(), [](const auto& item) {
+		return item.second->toDelete;
+	});
 
 
 	//DebugLogInfo("THERE ARE ", GetChunks().size());
