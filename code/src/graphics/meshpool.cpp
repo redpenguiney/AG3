@@ -421,13 +421,23 @@ void Meshpool::Commit() {
         auto meshUpdate = meshUpdates[i];
 
         // copy vertices and indices
+        // TODO: if something only modifies a portion of a mesh, we could optimize that by not memcpying everything
         memcpy(vertices.Data() + meshUpdate.meshIndex * vertexSize, meshUpdate.mesh->vertices.data(), meshUpdate.mesh->vertices.size() * sizeof(GLfloat));
         memcpy(indices.Data() + meshUpdate.meshIndex * indexSize, meshUpdate.mesh->indices.data(), meshUpdate.mesh->indices.size() * sizeof(GLuint));
 
         meshUpdate.updatesLeft--;
-        if (meshUpdate.updatesLeft == 0) {
-            meshUpdates[i] = meshUpdates.back();
-            meshUpdates.pop_back();
+        if (meshUpdate.updatesLeft == 0) {     
+            // pop erase isn't always acceptable;
+            // we have to ensure that when multiple updates affect the same object, 
+            //  the last update (closest to the end of the vector) stays at the end so it takes precedence
+            // Order doesn't need to be preserved between updates affecting different objects, though. (TODO: can we exploit this to avoid using erase()?)
+            //if (meshUpdates.back().meshIndex == meshUpdates[i].meshIndex) {
+                meshUpdates.erase(meshUpdates.begin() + i);
+            //}
+            //else {
+                //meshUpdates[i] = meshUpdates.back();
+                //meshUpdates.pop_back();
+            //}
             i--;
         }
     }
@@ -448,9 +458,19 @@ void Meshpool::Commit() {
             memcpy(drawBuffer->buffer.Data() + (update.commandSlot * sizeof(IndirectDrawCommand)), &command, sizeof(IndirectDrawCommand));
 
             if (update.updatesLeft == 0) {
-                drawBuffer->commandUpdates[i] = drawBuffer->commandUpdates.back();
-                drawBuffer->commandUpdates.pop_back();
+                // pop erase isn't always acceptable;
+                // we have to ensure that when multiple updates affect the same object, 
+                //  the last update (closest to the end of the vector) stays at the end so it takes precedence
+                // Order doesn't need to be preserved between updates affecting different objects, though. (TODO: can we exploit this to avoid using erase()?)
+                //if (drawBuffer->commandUpdates.back().commandSlot == drawBuffer->commandUpdates[i].commandSlot) {
+                    drawBuffer->commandUpdates.erase(drawBuffer->commandUpdates.begin() + i);
+                //}
+                //else {
+                    //drawBuffer->commandUpdates[i] = drawBuffer->commandUpdates.back();
+                    //drawBuffer->commandUpdates.pop_back();
+                //}
                 i--;
+
                 //DebugLogInfo("bye bye")
             }
         }

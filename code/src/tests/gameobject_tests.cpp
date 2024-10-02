@@ -255,6 +255,7 @@ void TestStationaryPointlight()
 
     auto coolLight = GameObject::New(params);
     coolLight->RawGet<RenderComponent>()->SetTextureZ(-1);
+    coolLight->RawGet<RenderComponent>()->SetColor({ 0.5, 1.0, 1.0, 1.0 });
     coolLight->RawGet<TransformComponent>()->SetPos({ 40, 5, 40 });
     coolLight->RawGet<PointLightComponent>()->SetRange(1000);
     coolLight->RawGet<PointLightComponent>()->SetColor({ 0.8, 1.0, 0.8 });
