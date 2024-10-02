@@ -337,7 +337,7 @@ Mesh::~Mesh() {
     /*if (GraphicsEngine::Get().dynamicMeshLocations.count(meshId)) {
         GraphicsEngine::Get().dynamicMeshLocations.erase(meshId);
     }*/
-    DebugLogInfo("Deleting mesh with id ", meshId);
+    //DebugLogInfo("Deleting mesh with id ", meshId);
 }
 
 Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshCreateParams& params, bool dynamic, bool fromText, std::optional<std::vector<Bone>> bonez, std::optional<std::vector<Animation>> anims, unsigned int rootBoneIndex):
@@ -355,7 +355,7 @@ meshAnimations(anims),
 rootBoneId(rootBoneIndex),
 originalSize(1)
 {    
-    DebugLogInfo("Generated mesh with id ", meshId);
+    //DebugLogInfo("Generated mesh with id ", meshId);
 
     //DebugLogInfo("New mesh with id ", meshId);
     //Assert(meshVertices.size() > 0);
@@ -439,10 +439,10 @@ void Mesh::StopModifying(bool normalizeSize) {
     }
 
     if (GraphicsEngine::Get().dynamicMeshLocations.contains(meshId)) { //  this could be legitimately not the case if the mesh just isn't in use
-        DebugLogInfo("Completing modification for ", meshId, " count ", indices.size());
+        //DebugLogInfo("Completing modification for ", meshId, " count ", indices.size());
         auto [meshpoolId, currentMeshSlot] = GraphicsEngine::Get().dynamicMeshLocations.at(meshId);
         Meshpool& pool = *GraphicsEngine::Get().meshpools.at(meshpoolId);
-        DebugLogInfo("Current slot byte capacity is ", pow(2, (int)pool.meshSlotContents.at(pool.meshUsers.at(meshId)).sizeClass) * vertexFormat.GetNonInstancedVertexSize(), " we need capacity of ", std::max(indices.size() * sizeof(GLuint), vertexFormat.GetNonInstancedVertexSize() * vertices.size()));
+        //DebugLogInfo("Current slot byte capacity is ", pow(2, (int)pool.meshSlotContents.at(pool.meshUsers.at(meshId)).sizeClass) * vertexFormat.GetNonInstancedVertexSize(), " we need capacity of ", std::max(indices.size() * sizeof(GLuint), vertexFormat.GetNonInstancedVertexSize() * vertices.size()));
 
 
         if // if the meshpool slot the mesh was in can still hold the mesh with its new size...
@@ -450,7 +450,7 @@ void Mesh::StopModifying(bool normalizeSize) {
                 >
                 std::max(indices.size() * sizeof(GLuint), vertexFormat.GetNonInstancedVertexSize() * vertices.size()))
         { 
-            DebugLogInfo("Slot still fits, resolving draw buffers.");
+            //DebugLogInfo("Slot still fits, resolving draw buffers.");
             // then just update the vertices and draw command and we're done
             // update mesh
             pool.meshUpdates.emplace_back(Meshpool::MeshUpdate{
@@ -465,7 +465,7 @@ void Mesh::StopModifying(bool normalizeSize) {
                 if (!commandBuffer->dynamicMeshCommandLocations.contains(meshId)) continue;
 
                 auto commandIndices = commandBuffer->dynamicMeshCommandLocations.at(meshId);
-                DebugLogInfo("UPdating ", commandIndices.size());
+                //DebugLogInfo("UPdating ", commandIndices.size());
                 for (auto& i : commandIndices) {
                     auto& ogCommand = commandBuffer->clientCommands[i];
                     auto newCommand = IndirectDrawCommand{

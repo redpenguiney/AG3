@@ -89,7 +89,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
                 .sizeClass = exponent,
                 .nUsers = 0
             };
-            //DebugLogInfo("Wrote id ", mesh->meshId, " to mesh index ", slot);
+            
         }
     }
     
@@ -120,6 +120,8 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
 
         // find slot for draw command
         CheckedUint drawCommandIndex = commandBuffer.GetNewDrawCommandSlot();
+
+        //DebugLogInfo("Wrote id ", mesh->meshId, " to command ", drawCommandIndex);
 
         IndirectDrawCommand command = {
             .count = static_cast<CheckedUint>(mesh->indices.size()),

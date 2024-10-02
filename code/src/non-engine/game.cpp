@@ -98,36 +98,36 @@ void GameInit()
     
 
     {
-        //auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
-        //ttfParams.fontHeight = 16;
-        //ttfParams.format = Texture::Grayscale_8Bit;
-        //auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
+        auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
+        ttfParams.fontHeight = 16;
+        ttfParams.format = Texture::Grayscale_8Bit;
+        auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
 
-        //auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
+        auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
 
-        //debugText->rgba = { 0, 1, 0, 0 };
-        //debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
+        debugText->rgba = { 0, 1, 0, 0 };
+        debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
 
-        //debugText->scalePos = { 0, 1 };
-        //debugText->scaleSize = { 0, 0 };
-        //debugText->offsetSize = { 600, 60 };
-        //debugText->offsetPos = { 200, -200 };
-        //debugText->anchorPoint = { 0, 0 };
+        debugText->scalePos = { 0, 1 };
+        debugText->scaleSize = { 0, 0 };
+        debugText->offsetSize = { 600, 60 };
+        debugText->offsetPos = { 200, -200 };
+        debugText->anchorPoint = { 0, 0 };
 
-        //debugText->GetTextInfo().text = "abcdefghijklmnopqrstuvwxyz";
-        //debugText->GetTextInfo().rgba = { 1, 1, 1, 1.0 };
-        //debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
-        //debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+        debugText->GetTextInfo().text = "abcdefghijklmnopqrstuvwxyz";
+        debugText->GetTextInfo().rgba = { 1, 1, 1, 1.0 };
+        debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+        debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
 
-        //debugText->UpdateGuiGraphics();
-        //debugText->UpdateGuiTransform();
-        //debugText->UpdateGuiText();
+        debugText->UpdateGuiGraphics();
+        debugText->UpdateGuiTransform();
+        debugText->UpdateGuiText();
 
-        //GE.preRenderEvent->Connect([&GE](float dt) {
+        GE.preRenderEvent->Connect([&GE, debugText](float dt) {
 
             //debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
             //debugText->UpdateGuiText();
-        //});
+        });
     }
 
     GE.preRenderEvent->Connect([](float dt) {

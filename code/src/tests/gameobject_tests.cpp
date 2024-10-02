@@ -10,6 +10,9 @@
 std::shared_ptr<Mesh> CubeMesh() {
     auto makeMparams = MeshCreateParams{ .textureZ = -1.0, .opacity = 1, .expectedCount = 16384 };
     static auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/rainbowcube.obj", makeMparams).at(0);
+
+    //DebugLogInfo("CUBE HAS MESH ID ", m->meshId);
+
     return m;
 }
 

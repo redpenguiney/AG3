@@ -762,7 +762,7 @@ void GraphicsEngine::AddCachedMeshes() {
             meshpools[poolIndex] = new Meshpool(m->vertexFormat);
         }
       
-
+        DebugLogInfo("Adding mesh ", meshId, " to pool ", poolIndex);
         for (auto& [shaderId, map2] : map) {
             auto shader = ShaderProgram::Get(shaderId);
 
@@ -777,7 +777,7 @@ void GraphicsEngine::AddCachedMeshes() {
                 for (unsigned int i = 0; i < components.size(); i++) {
                     components[i]->meshpoolId = poolIndex;
                     components[i]->drawHandle = drawHandles.at(i);
-                    //DebugLogInfo("Wrote component to ", bestPoolId, " ", objectPositions[i].first, " ", objectPositions[i].second);
+                    //DebugLogInfo("Wrote component to cslot ", drawHandles.at(i).drawBufferIndex);
 
                     if (m->dynamic) {
                         dynamicMeshUsers[meshId].push_back(components[i]);
@@ -813,9 +813,6 @@ void GraphicsEngine::RemoveObject(RenderComponent* comp)
     // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from renderComponentsToAdd
     unsigned int shaderId = comp->shaderProgramId, materialId = comp->materialId;
     if (comp->meshpoolId == -1) {
-        if (comp->meshId == 7) {
-            DebugLogInfo("DELETING #7");
-        }
 
         auto& mvec = renderComponentsToAdd.at(comp->meshId);
         auto& svec = mvec.at(shaderId);
