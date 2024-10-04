@@ -16,6 +16,15 @@ std::shared_ptr<Mesh> CubeMesh() {
     return m;
 }
 
+std::shared_ptr<Mesh> SphereMesh() {
+    auto makeMparams = MeshCreateParams{ .textureZ = -1.0, .opacity = 1, .expectedCount = 16384 };
+    static auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/icosphere.obj", makeMparams).at(0);
+
+    //DebugLogInfo("CUBE HAS MESH ID ", m->meshId);
+
+    return m;
+}
+
 std::pair<float, std::shared_ptr<Material>> GrassMaterial() {
     static auto grass = Material::New(MaterialCreateParams{
         .textureParams = {
@@ -175,7 +184,7 @@ void TestGrassFloor()
     floor->name = "ah yes the floor here is made of floor";
 }
 
-noise::module::Perlin perlinNoiseGenerator;
+inline noise::module::Perlin perlinNoiseGenerator;
 
 void TestVoxelTerrain()
 {
@@ -209,7 +218,8 @@ void TestVoxelTerrain()
         //if (!terrainMesh.has_value()) { continue; }
 
         GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
-        params.meshId = terrainMesh->meshId;
+        //params.meshId = terrainMesh->meshId;
+        params.meshId = SphereMesh()->meshId;
         params.materialId = GrassMaterial().second->id;
 
         auto chunk = GameObject::New(params);

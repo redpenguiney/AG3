@@ -6,6 +6,7 @@ class Mesh;
 class Material;
 
 std::shared_ptr<Mesh> CubeMesh();
+std::shared_ptr<Mesh> SphereMesh();
 std::pair<float, std::shared_ptr<Material>> GrassMaterial();
 std::pair<float, std::shared_ptr<Material>> BrickMaterial();
 

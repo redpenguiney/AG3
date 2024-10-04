@@ -126,7 +126,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         IndirectDrawCommand command = {
             .count = static_cast<CheckedUint>(mesh->indices.size()),
             .instanceCount = nInstances,
-            //.firstIndex = (unsigned int)slot * (indexSize), /// TODO MIGHT BE WRONG 
+            //.firstIndex = slot.value * (indexSize), /// TODO MIGHT BE WRONG 
             .firstIndex = slot.value, // TODO how in the world does THIS work?!?!
             .baseVertex = static_cast<int>(slot),
             .baseInstance = firstInstance
@@ -444,14 +444,14 @@ void Meshpool::Commit() {
     // write indirect draw commands to buffer
     for (auto& drawBuffer : drawCommands) {
         if (!drawBuffer.has_value()) { continue; }
-        for (unsigned int i = 0; i < drawBuffer->commandUpdates.size(); i++) {
-            auto& update = drawBuffer->commandUpdates[i];
+        for (auto it = drawBuffer->commandUpdates.begin(); it != drawBuffer->commandUpdates.end(); it++) {
+            auto& update = *it;
             Assert(update.updatesLeft != 0);
             update.updatesLeft--;
 
             IndirectDrawCommand command = update.command; // deliberate copy
-            //DebugLogInfo("Command ", command.firstIndex, " ", command.count);
 
+            // confirmed correct
             command.baseInstance += instances.GetOffset() / instanceSize;
             command.baseVertex += vertices.GetOffset() / vertexSize;
 
@@ -463,13 +463,12 @@ void Meshpool::Commit() {
                 //  the last update (closest to the end of the vector) stays at the end so it takes precedence
                 // Order doesn't need to be preserved between updates affecting different objects, though. (TODO: can we exploit this to avoid using erase()?)
                 //if (drawBuffer->commandUpdates.back().commandSlot == drawBuffer->commandUpdates[i].commandSlot) {
-                    drawBuffer->commandUpdates.erase(drawBuffer->commandUpdates.begin() + i);
+                    it = drawBuffer->commandUpdates.erase(it);
                 //}
                 //else {
                     //drawBuffer->commandUpdates[i] = drawBuffer->commandUpdates.back();
                     //drawBuffer->commandUpdates.pop_back();
                 //}
-                i--;
 
                 //DebugLogInfo("bye bye")
             }

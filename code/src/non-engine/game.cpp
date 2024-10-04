@@ -132,7 +132,7 @@ void GameInit()
 
     GE.preRenderEvent->Connect([](float dt) {
         if (!inMainMenu) {
-            Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
+            //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
         }
 
       
@@ -169,7 +169,7 @@ void GameInit()
     //TestUi();
     //
     TestStationaryPointlight();
-    //TestVoxelTerrain();
+    TestVoxelTerrain();
     //TestSpinningSpotlight();
     //TestGrassFloor();
 
