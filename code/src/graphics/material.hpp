@@ -3,8 +3,10 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <array>
 #include "texture.hpp"
 #include <optional>
+#include "shader_input_provider.hpp"
 
 struct MaterialCreateParams {
 
@@ -25,6 +27,8 @@ struct MaterialCreateParams {
 
     // If false, other materials will not be able to be appended to this one (as a drawcall optimization) unless you explicitly do it.
     bool allowAppendaton = true;
+
+    ShaderInputProvider inputProvider = ShaderInputProvider();
 };
 
 // A material is a collection of textures and a collection of uniforms/other shader program inputs.
@@ -43,11 +47,11 @@ public:
     const unsigned int id;
     const Texture::TextureType materialType;
 
-    bool HasColorMap();
-    bool HasSpecularMap();
-    bool HasNormalMap();
-    bool HasDisplacementMap();
-    bool HasFontMap();
+    //bool HasColorMap();
+    //bool HasSpecularMap();
+    //bool HasNormalMap();
+    //bool HasDisplacementMap();
+    //bool HasFontMap();
 
     // if false, things drawn with this material won't write to the depth buffer. Should be true unless you're doing something weird with transparency, like fonts.
     const bool depthMaskEnabled;
@@ -59,7 +63,8 @@ public:
     static void Destroy(const unsigned int id);
 
     // makes all things be drawn with these textures (until Use()/Unbind() is called on another material)
-    void Use();
+    // Needs shader so it can pass uniforms/etc. to it via its inputProvider.
+    void Use(std::shared_ptr<ShaderProgram> currentShader);
 
     // makes all things not be drawn with any material (until Use() is called on a material)
     static void Unbind();
@@ -78,15 +83,19 @@ public:
     //~Material(); implicit destructor fine
     
     struct TextureCollection {
-        std::vector<std::optional<Texture>> textures;
+        // in OpenGL 3.0+ we're guaranteed to be able to bind up to 16 textures at a time (16 texture units)
+        std::array<std::optional<Texture>, 16> textures;
+
+        // returns how many textures in the collection are for the specific usage (like color)
+        unsigned int Count(Texture::TextureUsage texUsage);
     };
 
     // read only access to textures
     const std::shared_ptr<TextureCollection>& GetTextureCollection() const;
 
+    const ShaderInputProvider inputProvider;
     
 private:
-
     
     // never nullptr
     std::shared_ptr<TextureCollection> textures;

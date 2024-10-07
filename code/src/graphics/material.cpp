@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <process.h>
+#include "shader_program.hpp"
 
 void Material::Destroy(const unsigned int id) {
     Assert(MeshGlobals::Get().MATERIALS.count(id));
@@ -40,65 +41,49 @@ Material::Material(const MaterialCreateParams& params):
 id(MeshGlobals::Get().LAST_MATERIAL_ID++),
 materialType(params.type),
 depthMaskEnabled(params.depthMask),
-colorMap(std::nullopt),
-normalMap(std::nullopt),
-specularMap(std::nullopt),
-displacementMap(std::nullopt),
-fontMap(std::nullopt)
+textures(std::nullopt)
 {
     // Just go through textureParams and create each texture they ask for
     // TODO: lots of sanity checks should be made here on the params for each texture
+    unsigned int i = 0;
     for (auto & textureToMake: params.textureParams) {
+
+        Assert(textures->Count(textureToMake.usage) == 0);
+
         switch (textureToMake.usage) {
             case Texture::ColorMap:
-            if (colorMap) { // Make sure bro isn't trying to create a material with two different textures for color map
-                std::cout << "PROBLEM: you tried to give us two different color textures for this material. Thats bad.\n";
-                abort();
-            }
-            colorMap.emplace(textureToMake, COLORMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
+            textures->textures.at(i).emplace(textureToMake, COLORMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
             break;
             case Texture::NormalMap:
-            if (normalMap) { // Make sure bro isn't trying to create a material with two different textures for normal map
-                std::cout << "PROBLEM: you tried to give us two different normal textures for this material. Thats bad.\n";
-                abort();
-            }
-            normalMap.emplace(textureToMake, NORMALMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
+            textures->textures.at(i).emplace(textureToMake, NORMALMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
             break;
             case Texture::SpecularMap:
-            if (specularMap) { // Make sure bro isn't trying to create a material with two different textures for specular map
-                std::cout << "PROBLEM: you tried to give us two different specular textures for this material. Thats bad.\n";
-                abort();
-            }
-            specularMap.emplace(textureToMake, SPECULARMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
+            textures->textures.at(i).emplace(textureToMake, SPECULARMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
             break;
             case Texture::DisplacementMap:
-            if (displacementMap) { // Make sure bro isn't trying to create a material with two different textures for displacement map
-                std::cout << "PROBLEM: you tried to give us two different displacement textures for this material. Thats bad.\n";
-                abort();
-            }
-            displacementMap.emplace(textureToMake, DISPLACEMENTMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
+            textures->textures.at(i).emplace(textureToMake, DISPLACEMENTMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
             break;
             case Texture::FontMap:
-            if (fontMap) { // only one fontmap per material
-                std::cout << "PROBLEM: you tried to give us two different font textures for this material. Thats bad.\n";
-                abort();
-            }
-            fontMap.emplace(textureToMake, FONTMAP_TEXTURE_INDEX, params.type);
+            textures->textures.at(i).emplace(textureToMake, FONTMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
             break;
             default:
             std::cout << "material constructor: what are you doing???\n";
             abort();
             break;
         }
+
+        i++;
     }
 }
 
-void Material::Use() {
-    if (colorMap) colorMap->Use();
-    if (specularMap) specularMap->Use();
-    if (normalMap) normalMap->Use();
-    if (displacementMap) displacementMap->Use();
-    if (fontMap) fontMap->Use();
+void Material::Use(std::shared_ptr<ShaderProgram> currentShader) {
+    for (auto& t : textures->textures) {
+        if (t.has_value()) {
+            t->Use();
+        }
+    }
+
+    inputProvider.onBindingFunc(this, currentShader);
 
     glDepthMask(depthMaskEnabled);
 }
@@ -134,22 +119,13 @@ void Material::Unbind() {
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
-bool Material::HasNormalMap() {
-    return normalMap.has_value();
-}
-
-bool Material::HasSpecularMap() {
-    return specularMap.has_value();
-}
-
-bool Material::HasDisplacementMap() {
-    return displacementMap.has_value();
-}
-
-bool Material::HasFontMap() {
-    return fontMap.has_value();
-}
-
-bool Material::HasColorMap() {
-    return colorMap.has_value();
+unsigned int Material::TextureCollection::Count(Texture::TextureUsage texUsage)
+{
+    unsigned int count = 0;
+    for (auto& t : textures) {
+        if (t.has_value() && t->usage == texUsage) {
+            count++;
+        }
+    }
+    return count;
 }
