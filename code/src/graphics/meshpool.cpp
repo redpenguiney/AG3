@@ -104,13 +104,11 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             nInstances = 1;
             firstInstance = availableInstanceSlots.back();
             availableInstanceSlots.pop_back();
-
             
         }
         else {
             firstInstance = instanceEnd;
             nInstances = count - nCreated;
-
             instanceEnd += nInstances;
             ExpandInstanceCapacity();
         }
@@ -442,19 +440,24 @@ void Meshpool::Commit() {
         }
     }
     // write indirect draw commands to buffer
+    //DebugLogInfo("Offset of  ", this, " is ", instances.GetOffset() / instanceSize);
     for (auto& drawBuffer : drawCommands) {
         if (!drawBuffer.has_value()) { continue; }
-        for (auto it = drawBuffer->commandUpdates.begin(); it != drawBuffer->commandUpdates.end(); it++) {
+        for (auto it = drawBuffer->commandUpdates.begin(); it != drawBuffer->commandUpdates.end(); ) {
             auto& update = *it;
             Assert(update.updatesLeft != 0);
             update.updatesLeft--;
 
             IndirectDrawCommand command = update.command; // deliberate copy
 
-            // confirmed correct
+            // The tricky thing is, when either vertices or instances grow, these base instances/vertices need to get fixed too!
+            // (TODO: why didn't i just use 3 seperate buffers for triple buffering like a sane person)
+            // TODO: also GL_UNSYCRONIZED_BIT good?
             command.baseInstance += instances.GetOffset() / instanceSize;
+            //DebugLogInfo("Offsetting base instance by ", instances.GetOffset() / instanceSize);
             command.baseVertex += vertices.GetOffset() / vertexSize;
 
+            //DebugLogInfo("UPdating ", update.commandSlot);
             memcpy(drawBuffer->buffer.Data() + (update.commandSlot * sizeof(IndirectDrawCommand)), &command, sizeof(IndirectDrawCommand));
 
             if (update.updatesLeft == 0) {
@@ -464,6 +467,7 @@ void Meshpool::Commit() {
                 // Order doesn't need to be preserved between updates affecting different objects, though. (TODO: can we exploit this to avoid using erase()?)
                 //if (drawBuffer->commandUpdates.back().commandSlot == drawBuffer->commandUpdates[i].commandSlot) {
                     it = drawBuffer->commandUpdates.erase(it);
+                    
                 //}
                 //else {
                     //drawBuffer->commandUpdates[i] = drawBuffer->commandUpdates.back();
@@ -471,6 +475,9 @@ void Meshpool::Commit() {
                 //}
 
                 //DebugLogInfo("bye bye")
+            }
+            else {
+                it++;
             }
         }
 
@@ -533,6 +540,23 @@ void Meshpool::ExpandVertexCapacity()
         instances.Bind();
         format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
     }
+
+    // Tragically, for every indirect draw command we have to update the 2nd and 3rd buffers' baseVertex since it was offset to correct for the OLD instance buffer's size.
+    if (MESH_BUFFERING_FACTOR > 1) {
+        for (auto& b : drawCommands) {
+            if (!b.has_value()) { continue; }
+            CheckedUint commandSlot = 0;
+            for (auto& command : b->clientCommands) {
+                b->commandUpdates.emplace_back(IndirectDrawCommandUpdate{
+                    .updatesLeft = 3,
+                    .command = command,
+                    .commandSlot = commandSlot
+                    });
+                commandSlot++;
+            }
+        }
+    }
+    
 }
 
 void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
@@ -604,6 +628,26 @@ void Meshpool::ExpandInstanceCapacity()
     Assert(vaoId != 0);
     instances.Bind();
     format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
+
+    // Tragically, for every indirect draw command we have to update the 2nd and 3rd buffers' baseInstance since it was offset to correct for the OLD instance buffer's size.
+    if (INSTANCED_VERTEX_BUFFERING_FACTOR > 1) {
+        for (auto& b : drawCommands) {
+            if (!b.has_value()) { continue; }
+            //DebugLogInfo("Updating ", b->clientCommands.size(), " for instance buffer resize");
+
+            CheckedUint commandSlot = 0;
+            for (auto& command : b->clientCommands) {
+                if (command.instanceCount == 0) { continue; }
+                b->commandUpdates.emplace_back(IndirectDrawCommandUpdate{
+                    .updatesLeft = 3,
+                    .command = command,
+                    .commandSlot = commandSlot
+                    });
+                commandSlot++;
+            }
+        }
+    }
+    
 }
 
 CheckedUint Meshpool::GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material)

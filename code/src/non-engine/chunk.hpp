@@ -57,4 +57,8 @@ private:
 
 	// nullptr when no mesh bc empty
 	std::shared_ptr<GameObject> object;
+
+	float Resolution() const;
+
+	
 };

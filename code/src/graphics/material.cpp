@@ -24,6 +24,11 @@ std::pair<float, std::shared_ptr<Material>> Material::New(const MaterialCreatePa
     return std::make_pair(0, ptr);
 }
 
+const std::shared_ptr<Material::TextureCollection>& Material::GetTextureCollection() const
+{
+    return textures;
+}
+
 std::optional<float> Material::TryAppendLayer(const MaterialCreateParams& params)
 {
     if (params.depthMask != depthMaskEnabled || materialType != params.type) {

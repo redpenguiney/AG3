@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cwchar>
 #include <iostream>
+#include "indirect_draw_command.hpp"
 
 BufferedBuffer::BufferedBuffer(GLenum bindingLocation, const unsigned int bufferCount, GLuint initalSize): 
 bufferBindingLocation(bindingLocation),
@@ -44,6 +45,10 @@ void BufferedBuffer::Flip() {
 }
 
 void BufferedBuffer::Commit() {
+    //if (bufferBindingLocation == GL_DRAW_INDIRECT_BUFFER) {
+        //IndirectDrawCommand* ptr = (IndirectDrawCommand*)(void*)_bufferData;
+    //}
+
     // if the buffer we're about to write to is currently in use by the GPU we have to wait (should not happen often when multibuffering)
     if (sync[currentBuffer] != 0) {
         auto syncStatus = glClientWaitSync(sync[currentBuffer], GL_SYNC_FLUSH_COMMANDS_BIT, SYNC_TIMEOUT);
@@ -88,9 +93,14 @@ void BufferedBuffer::Reallocate(unsigned int newSize) {
     GLuint newBufferId;
     glGenBuffers(1, &newBufferId);
 
+    auto flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+#ifdef _DEBUG
+    flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_MAP_READ_BIT;
+#endif
+
     glBindBuffer(bufferBindingLocation, newBufferId);
-    glBufferStorage(bufferBindingLocation, newSize * numBuffers, nullptr, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
-    void* newBufferData = glMapBufferRange(bufferBindingLocation, 0, newSize * numBuffers, GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT);
+    glBufferStorage(bufferBindingLocation, newSize * numBuffers, nullptr, flags);
+    void* newBufferData = glMapBufferRange(bufferBindingLocation, 0, newSize * numBuffers, flags);
 
     // If there was a previous buffer, copy its data in and then delete it.
     if (oldSize != 0) {

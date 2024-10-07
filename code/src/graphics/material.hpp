@@ -27,7 +27,7 @@ struct MaterialCreateParams {
     bool allowAppendaton = true;
 };
 
-// A material is just a collection of textures.
+// A material is a collection of textures and a collection of uniforms/other shader program inputs.
 // On the GPU, each object has a materialId that it uses to get color, normal, etc. textures.
 // On the CPU, meshpools are sorted by their material to minimize texture bindings.
 class Material {
@@ -72,16 +72,24 @@ public:
     // Aborts if arguments are inherently invalid, but throws an exception if texture files is nonexistent/incompatible with those arguments.
     static std::pair<float, std::shared_ptr<Material>> New(const MaterialCreateParams& params);
 
+    // Creates a new material that shares the same textures as the original but can have different uniform/shader inputs.
+    static std::pair<float, std::shared_ptr<Material>> NewCopy(const std::shared_ptr<Material>& original);
+
     //~Material(); implicit destructor fine
     
-    // read only access to materials
-    const std::optional<Texture>& colorMapConstAccess = colorMap;
-    const std::optional<Texture>& normalMapConstAccess = normalMap;
-    const std::optional<Texture>& specularMapConstAccess = specularMap;
-    const std::optional<Texture>& displacementMapConstAccess = displacementMap;
-    const std::optional<Texture>& fontMapConstAccess = fontMap;
+    struct TextureCollection {
+        std::vector<std::optional<Texture>> textures;
+    };
+
+    // read only access to textures
+    const std::shared_ptr<TextureCollection>& GetTextureCollection() const;
+
     
 private:
+
+    
+    // never nullptr
+    std::shared_ptr<TextureCollection> textures;
     
     // For optimization purposes, when you ask for a new texture, it will try to simply add a new layer to an existing material of the same size if it can.
     // If the given textures are compatible with this material and it successfully adds a new layer for them, it will return the textureZ they were put on.
@@ -91,10 +99,6 @@ private:
     // private constructor to enforce usage of factory method
     Material(const MaterialCreateParams& params);
 
-    std::optional<Texture> colorMap;
-    std::optional<Texture> normalMap; 
-    std::optional<Texture> specularMap;
-    std::optional<Texture> displacementMap;
-    std::optional<Texture> fontMap;
+    
 
 };

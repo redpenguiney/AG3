@@ -1,6 +1,7 @@
 #include "chunk.hpp"
 #include "worldgen.hpp"
 #include <algorithm>
+#include <tests/gameobject_tests.hpp>
 
 //std::vector<std::pair<unsigned int, glm::vec3>> CalculateChunkLoadOrder()
 //{
@@ -66,9 +67,16 @@
 //    return ret;
 //}
 
+unsigned int TerrainShader() {
+	static auto shader = ShaderProgram::New("../shaders/world_triplanar_vertex.glsl", "../shaders/world_triplanar_fragment.glsl");
+	return shader->shaderProgramId;
+}
+
 GameobjectCreateParams MakeCGOParams(int meshId) {
 	GameobjectCreateParams p({ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider});
 	p.meshId = meshId;
+	p.materialId = GrassMaterial().second->id;
+	p.shaderId = TerrainShader();
 	return p;
 }
 
@@ -79,7 +87,7 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	toDelete(false),
 	dirty(true),
 
-	mesh(Mesh::New(RawMeshProvider({}, {}, MeshCreateParams {.expectedCount = 1}), true)),
+	mesh(Mesh::New(RawMeshProvider({}, {}, MeshCreateParams { .meshVertexFormat = MeshVertexFormat::DefaultTriplanarMapping, .expectedCount = 1 }), true)),
 	object(GameObject::New(MakeCGOParams(mesh->meshId)))
 {
 	Assert(lodLevel < MAX_LOD_LEVELS);
@@ -87,7 +95,7 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	object->Get<TransformComponent>()->SetPos(pos);
 	object->Get<TransformComponent>()->SetScl(glm::vec3(Size()));
 	object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
-	object->Get<RenderComponent>()->SetTextureZ(-1);
+	object->Get<RenderComponent>()->SetTextureZ(GrassMaterial().first);
 	Update();
 }
 
@@ -107,6 +115,11 @@ float Chunk::Size() {
 	return MAX_CHUNK_SIZE * powf(2, -lod);
 }
 
+float Chunk::Resolution() const
+{
+	return MAX_CHUNK_RESOLUTION * powf(2, -lod);
+}
+
 void Chunk::Update()
 {
 	if (dirty) {
@@ -114,7 +127,7 @@ void Chunk::Update()
 		provider.point1 = pos - Size() / 2.0f;
 		provider.point2 = pos + Size() / 2.0f;
 		provider.fixVertexCenters = false;
-		provider.resolution = MAX_CHUNK_RESOLUTION * powf(2, -lod);
+		provider.resolution = Resolution();
 		provider.distanceFunction = CalcWorldHeightmap;
 		
 		mesh->Remesh(provider);

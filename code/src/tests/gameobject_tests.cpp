@@ -112,6 +112,31 @@ void TestCubeArray(int dimX, int dimY, int dimZ, bool physics)
     }
 }
 
+void TestSphere(int x, int y, int z, bool physics)
+{
+    GameobjectCreateParams params = physics ? GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider , ComponentBitIndex::Rigidbody }) : GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
+    params.meshId = SphereMesh()->meshId;
+    //params.materialId = brickMaterial->id;
+    auto g = GameObject::New(params);
+    g->Get<TransformComponent>()->SetPos({ x, y, z });
+    g->Get<ColliderComponent>()->elasticity = 0.3;
+    g->Get<ColliderComponent>()->friction = 1.0;
+    // g->rigidbodyComponent->angularDrag = 1.0;
+    // g->rigidbodyComponent->linearDrag = 1.0;
+    // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
+    // g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
+    g->Get<TransformComponent>()->SetScl(glm::dvec3(1.0, 1.0, 1.0));
+    g->Get<RenderComponent>()->SetColor(glm::vec4(1, 1, 1, 1));
+    g->Get<RenderComponent>()->SetTextureZ(-1);
+    g->name = std::string("Sphereobject") ;
+    ////goWeakPtr = g;
+    //nObjs++;
+
+    if (physics) {
+        g->RawGet<RigidbodyComponent>()->SetMass(1.0, *g->RawGet<TransformComponent>());
+    }
+}
+
 void TestBrickWall()
 {
     auto m = CubeMesh();
@@ -218,8 +243,8 @@ void TestVoxelTerrain()
         //if (!terrainMesh.has_value()) { continue; }
 
         GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
-        //params.meshId = terrainMesh->meshId;
-        params.meshId = SphereMesh()->meshId;
+        params.meshId = terrainMesh->meshId;
+        //params.meshId = SphereMesh()->meshId;
         params.materialId = GrassMaterial().second->id;
 
         auto chunk = GameObject::New(params);

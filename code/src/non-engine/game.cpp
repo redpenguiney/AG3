@@ -69,6 +69,10 @@ void MakeMainMenu() {
         if (input.input == InputObject::LMB) {
             inMainMenu = false;
             mainMenuGuis.clear();
+            //TestVoxelTerrain();
+            //TestSphere(4, 4, 4, false);
+            //TestSphere(6, 4, 4, false);
+            //TestCubeArray(1, 2, 1, false);
             //DebugLogInfo("STARTING GAME");
             //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
             
@@ -132,7 +136,7 @@ void GameInit()
 
     GE.preRenderEvent->Connect([](float dt) {
         if (!inMainMenu) {
-            //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
+            Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
         }
 
       
@@ -169,7 +173,7 @@ void GameInit()
     //TestUi();
     //
     TestStationaryPointlight();
-    TestVoxelTerrain();
+    //TestVoxelTerrain();
     //TestSpinningSpotlight();
     //TestGrassFloor();
 

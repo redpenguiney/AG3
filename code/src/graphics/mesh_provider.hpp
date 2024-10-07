@@ -122,6 +122,11 @@ struct MeshVertexFormat {
     // Returns a simple mesh vertex format that should work for normal people doing normal things with GUI. Just XYZ UV (plus instanced stuff).
     static MeshVertexFormat DefaultGui();
 
+    // triplanar mapping is a shader technique that allows for texturing meshes that don't have UVs, which is useful for things like procedural terrain.
+    // noninstanced: XYZ, NormalXYZ, TangentXYZ, RGBA if !instanceColor, vec3(textureZ1, textureZ2, weightOfTextureZ1).
+    // instanced:  model matrix, normal matrix, rgba if instanced
+    static MeshVertexFormat DefaultTriplanarMapping(bool instancedColor = true);
+
     // Takes a VAO and sets its noninstanced vertex attributes using VertexAttribPointer().
     // The VAO must ALREADY BE BOUND.s
     void SetNonInstancedVaoVertexAttributes(unsigned int& vaoId, unsigned int instancedSize, unsigned int nonInstancedSize) const;
