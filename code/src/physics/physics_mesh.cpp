@@ -63,13 +63,13 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(const std::s
     std::vector<std::pair<glm::vec3, glm::vec3>> edges;
 
     Assert(mesh->indices.size() % 3 == 0);
-    for (auto it = mesh->indices.begin(); it != mesh->indices.end(); it+=3) {
+    for (auto it = mesh->indices.begin(); it != mesh->indices.end();) {
         
-        auto itCopy = it;
+        //auto itCopy = it;
 
-        auto vertexIndex1 = *(itCopy) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
-        auto vertexIndex2 =  *(itCopy + 1) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
-        auto vertexIndex3 =  *(itCopy + 2) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
+        auto vertexIndex1 = *(it++) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
+        auto vertexIndex2 =  *(it++) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
+        auto vertexIndex3 =  *(it++) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
 
         auto offset = mesh->vertexFormat.attributes.position->offset/sizeof(GLfloat);
         glm::vec3 vertex1 = {mesh->vertices[vertexIndex1 + offset], mesh->vertices[vertexIndex1 + 1 + offset], mesh->vertices[vertexIndex1 + 2 + offset]};

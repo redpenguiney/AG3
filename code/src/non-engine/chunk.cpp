@@ -80,6 +80,8 @@ GameobjectCreateParams MakeCGOParams(int meshId) {
 	return p;
 }
 
+const MeshCreateParams meshParams { .meshVertexFormat = MeshVertexFormat::DefaultTriplanarMapping(), .expectedCount = 1 };
+
 Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	pos(centerPos),
 	lod(lodLevel),
@@ -87,15 +89,15 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	toDelete(false),
 	dirty(true),
 
-	mesh(Mesh::New(RawMeshProvider({}, {}, MeshCreateParams { .meshVertexFormat = MeshVertexFormat::DefaultTriplanarMapping(), .expectedCount = 1}), true)),
+	mesh(Mesh::New(RawMeshProvider({}, {}, meshParams), true)),
 	object(GameObject::New(MakeCGOParams(mesh->meshId)))
 {
 	Assert(lodLevel < MAX_LOD_LEVELS);
 
 	object->Get<TransformComponent>()->SetPos(pos);
 	object->Get<TransformComponent>()->SetScl(glm::vec3(Size()));
-	object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
-	object->Get<RenderComponent>()->SetTextureZ(GrassMaterial().first);
+	//object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
+	//object->Get<RenderComponent>()->SetTextureZ(GrassMaterial().first);
 	Update();
 }
 
@@ -123,7 +125,7 @@ float Chunk::Resolution() const
 void Chunk::Update()
 {
 	if (dirty) {
-		DualContouringMeshProvider provider;
+		DualContouringMeshProvider provider(meshParams);
 		provider.point1 = pos - Size() / 2.0f;
 		provider.point2 = pos + Size() / 2.0f;
 		provider.fixVertexCenters = false;
