@@ -134,7 +134,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     rgba = {1, 0, 0, 1};
 
     if (haveText) {
-        Assert(fontMaterial.has_value() && fontMaterial->second->textures->Count(Texture::FontMap));
+        Assert(fontMaterial.has_value() && fontMaterial->second->Count(Texture::FontMap));
 
         GameobjectCreateParams textObjectParams({ComponentBitIndex::Transform, billboardGuiInfo.has_value() ? ComponentBitIndex::Render : ComponentBitIndex::RenderNoFO });
         textObjectParams.materialId = fontMaterial->second->id;

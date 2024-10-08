@@ -76,7 +76,7 @@ GameobjectCreateParams MakeCGOParams(int meshId) {
 	GameobjectCreateParams p({ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider});
 	p.meshId = meshId;
 	p.materialId = GrassMaterial().second->id;
-	p.shaderId = TerrainShader();
+	//p.shaderId = TerrainShader();
 	return p;
 }
 
@@ -87,7 +87,7 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	toDelete(false),
 	dirty(true),
 
-	mesh(Mesh::New(RawMeshProvider({}, {}, MeshCreateParams { .meshVertexFormat = MeshVertexFormat::DefaultTriplanarMapping, .expectedCount = 1 }), true)),
+	mesh(Mesh::New(RawMeshProvider({}, {}, MeshCreateParams { .meshVertexFormat = MeshVertexFormat::DefaultTriplanarMapping(), .expectedCount = 1}), true)),
 	object(GameObject::New(MakeCGOParams(mesh->meshId)))
 {
 	Assert(lodLevel < MAX_LOD_LEVELS);

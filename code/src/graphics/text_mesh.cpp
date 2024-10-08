@@ -292,10 +292,10 @@ void TextMeshFromText(std::string text, const Texture& font, const TextMeshCreat
 std::pair<std::vector<float>, std::vector<unsigned int>> TextMeshProvider::GetMesh() const
 {
     Assert(font);
-    Assert(font->HasFontMap());
+    Assert(font->Count(Texture::FontMap));
 
     std::vector<float> verts;
     std::vector<unsigned int> indices;
-    TextMeshFromText(text, font->fontMapConstAccess.value(), textParams, meshParams.meshVertexFormat.value_or(MeshVertexFormat::DefaultGui()), verts, indices);
+    TextMeshFromText(text, font->Get(Texture::FontMap), textParams, meshParams.meshVertexFormat.value_or(MeshVertexFormat::DefaultGui()), verts, indices);
     return std::pair<std::vector<float>, std::vector<unsigned int>>(verts, indices);
 }

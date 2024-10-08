@@ -82,12 +82,17 @@ public:
 
     //~Material(); implicit destructor fine
     
+    // returns how many textures in the texture collection are for the specific usage (like color)
+    unsigned int Count(Texture::TextureUsage texUsage) const;
+
+    // requires that Count(type) == 1
+    const Texture& Get(Texture::TextureUsage texUsage) const;
+
     struct TextureCollection {
         // in OpenGL 3.0+ we're guaranteed to be able to bind up to 16 textures at a time (16 texture units)
         std::array<std::optional<Texture>, 16> textures;
 
-        // returns how many textures in the collection are for the specific usage (like color)
-        unsigned int Count(Texture::TextureUsage texUsage);
+        
     };
 
     // read only access to textures

@@ -389,17 +389,17 @@ void Meshpool::Draw(bool prePostProc) {
         else {
 
             auto& material = command->material;
-            material->Use();
+            material->Use(shader);
 
             // if (materialId == 4) {
             //     std::cout << "BINDING THING WITH FONTMAP.\n";
             // }
 
-            shader->Uniform("specularMappingEnabled", material->HasSpecularMap());
-            shader->Uniform("fontMappingEnabled", material->HasFontMap());
-            shader->Uniform("normalMappingEnabled", material->HasNormalMap());
-            shader->Uniform("parallaxMappingEnabled", material->HasDisplacementMap());
-            shader->Uniform("colorMappingEnabled", material->HasColorMap());
+            shader->Uniform("specularMappingEnabled", material->Count(Texture::SpecularMap));
+            shader->Uniform("fontMappingEnabled", material->Count(Texture::FontMap));
+            shader->Uniform("normalMappingEnabled", material->Count(Texture::NormalMap));
+            shader->Uniform("parallaxMappingEnabled", material->Count(Texture::DisplacementMap));
+            shader->Uniform("colorMappingEnabled", material->Count(Texture::ColorMap));
         }
 
         //glPointSize(15.0);

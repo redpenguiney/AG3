@@ -25,6 +25,27 @@ std::pair<float, std::shared_ptr<Material>> Material::New(const MaterialCreatePa
     return std::make_pair(0, ptr);
 }
 
+unsigned int Material::Count(Texture::TextureUsage texUsage) const
+{
+    unsigned int count = 0;
+    for (auto& t : textures->textures) {
+        if (t.has_value() && t->usage == texUsage) {
+            count++;
+        }
+    }
+    return count;
+}
+
+const Texture& Material::Get(Texture::TextureUsage texUsage) const
+{
+    Assert(Count(texUsage) == 1);
+    for (auto& t : textures->textures) {
+        if (t.has_value() && t->usage == texUsage) {
+            return *t;
+        }
+    }
+}
+
 const std::shared_ptr<Material::TextureCollection>& Material::GetTextureCollection() const
 {
     return textures;
@@ -41,14 +62,14 @@ Material::Material(const MaterialCreateParams& params):
 id(MeshGlobals::Get().LAST_MATERIAL_ID++),
 materialType(params.type),
 depthMaskEnabled(params.depthMask),
-textures(std::nullopt)
+textures(std::make_shared<TextureCollection>())
 {
     // Just go through textureParams and create each texture they ask for
     // TODO: lots of sanity checks should be made here on the params for each texture
     unsigned int i = 0;
     for (auto & textureToMake: params.textureParams) {
 
-        Assert(textures->Count(textureToMake.usage) == 0);
+        Assert(Count(textureToMake.usage) == 0);
 
         switch (textureToMake.usage) {
             case Texture::ColorMap:
@@ -117,15 +138,4 @@ void Material::Unbind() {
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     glBindTexture(GL_TEXTURE_3D, 0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-}
-
-unsigned int Material::TextureCollection::Count(Texture::TextureUsage texUsage)
-{
-    unsigned int count = 0;
-    for (auto& t : textures) {
-        if (t.has_value() && t->usage == texUsage) {
-            count++;
-        }
-    }
-    return count;
 }
