@@ -2,11 +2,11 @@
 
 in vec4 fragmentColor;
 in vec3 fragmentNormal;
-in vec3 fragmentTexCoords;
 in vec3 cameraToFragmentPosition;
 in vec3 cameraToFragmentInTangentSpace;
-in mat3 TBNmatrix;
 // in vec4 lightSpaceCoords;
+
+#$INCLUDE$ "../shaders/phong_lighting.glsl"
 
 layout(location = 0) out vec4 Output;
 
@@ -20,183 +20,57 @@ uniform bool parallaxMappingEnabled;
 uniform bool specularMappingEnabled;
 uniform bool colorMappingEnabled;
 
-uniform vec3 envLightDirection;
-uniform vec3 envLightColor;
-uniform float envLightDiffuse;
-uniform float envLightAmbient;
-uniform float envLightSpecular;
+#$INCLUDE$ "../shaders/parallax_mapping.glsl"
 
-uniform uint pointLightCount;
-uniform uint spotLightCount;
-uniform uint pointLightOffset;
-uniform uint spotLightOffset;
+vec4 TriplanarProjection(vec3 normal, sampler2DArray sampler) {
+    vec3 blending = abs( normal );
+	blending = normalize(max(blending, 0.00001)); // Force weights to sum to 1.0
+	float b = (blending.x + blending.y + blending.z);
+	blending /= vec3(b, b, b);
 
-struct pointLight {
-    vec4 colorAndRange; // w-coord is range, xyz is rgb
-    vec4 rel_pos; // w-coord is padding
-};
+    float normalRepeat = 4.0;
+    float normalScale = 2.0;
 
-layout(std430, binding = 0) buffer pointLightSSBO {
-    pointLight pointLights[];
-};
+    vec3 xaxis = texture( sampler, vec3(cameraToFragmentPosition.yz * normalRepeat, 0.0)).rgb;
+	vec3 yaxis = texture( sampler, vec3(cameraToFragmentPosition.xz * normalRepeat, 0.0)).rgb;
+	vec3 zaxis = texture( sampler, vec3(cameraToFragmentPosition.xy * normalRepeat, 0.0)).rgb;
+	vec3 normalTex = xaxis * blending.x + xaxis * blending.y + zaxis * blending.z;
+	normalTex = normalTex * 2.0 - 1.0;
+	normalTex.xy *= normalScale;
+	normalTex = normalize( normalTex );
 
-struct spotLight {
-    vec4 colorAndRange; // w-coord is range, xyz is rgb
-    vec4 relPosAndInnerAngle; // w-coord is cos(inner angle)
-    vec4 directionAndOuterAngle; // w-coord is cos(outer angle)
-};
+	//vec3 T = vec3(0.,1.,0.);
+  	//vec3 BT = normalize( cross( vNormal, T ) * 1.0 );
 
-layout(std430, binding = 1) buffer spotLightSSBO {
-    spotLight spotLights[];
-};
-
-// parallax mapping
-vec2 CalculateTexCoords(vec3 texCoords) { 
-    vec3 viewDir = normalize(cameraToFragmentInTangentSpace);
-
-    // float height = 1- texture(displacementMap, texCoords).r;    
-    // vec2 p = viewDir.xy / viewDir.z * (height * 0.4);
-    // return texCoords.xy - p;   
-
-    // number of depth layers
-    const float minLayers = 8;
-    const float maxLayers = 32;
-    
-    // TODO: make uniform
-    const float heightScale = 0.4;
-
-    float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDir)));  
-    // calculate the size of each layer
-    float layerDepth = 1.0 / numLayers;
-    // depth of current layer
-    float currentLayerDepth = 0.0;
-    // the amount to shift the texture coordinates per layer (from vector P)
-    vec2 P = viewDir.xy * heightScale; 
-    vec2 deltaTexCoords = P / numLayers;
-  
-    // get initial values
-    vec2  currentTexCoords = texCoords.xy;
-    float texZ = texCoords.z;
-    float currentDepthMapValue = texture(displacementMap, vec3(currentTexCoords, texZ)).r;
-      
-    while(currentLayerDepth < currentDepthMapValue)
-    {
-        // shift texture coordinates along direction of P
-        currentTexCoords -= deltaTexCoords;
-        // get depthmap value at current texture coordinates
-        currentDepthMapValue = texture(displacementMap, vec3(currentTexCoords, texZ)).r;  
-        // get depth of next layer
-        currentLayerDepth += layerDepth;  
-    }
-    
-    // get texture coordinates before collision (reverse operations)
-    vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
-
-    // get depth after and before collision for linear interpolation
-    float afterDepth  = currentDepthMapValue - currentLayerDepth;
-    float beforeDepth = texture(displacementMap, vec3(prevTexCoords, texZ)).r - currentLayerDepth + layerDepth;
-    
-    // interpolation of texture coordinates
-    float weight = afterDepth / (afterDepth - beforeDepth);
-    vec2 finalTexCoords = prevTexCoords * weight + currentTexCoords * (1.0 - weight);
-
-    return finalTexCoords;
+  	//mat3 tsb = mat3( normalize( T ), normalize( BT ), normalize( vNormal ) );
+  	//vec3 N = tsb * normalTex;
+    return normalTex;
 }
-
-vec3 CalculateEnvLightInfluence( float specularStrength, vec3 normal) {
-    float diff = max(dot(normal, envLightDirection), 0.0);
-    vec3 diffuse = diff * envLightDiffuse * envLightColor;
-
-    vec3 viewDir = normalize(-cameraToFragmentPosition);
-    // vec3 reflectDir = reflect(-lightDir, normal); // replace reflectDir with halfwayDir for blinn-phong lighting, which is better than phong lighting
-    vec3 halfwayDir = normalize(envLightDirection + viewDir);
-    float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 32);
-    vec3 specular = specularStrength * spec * envLightSpecular * envLightColor;  
-
-    vec3 ambient = envLightColor * envLightAmbient;
-
-    return ambient + diffuse + specular;
-}
-
-vec3 CalculateSpotlightInfluence(vec3 lightColor, vec3 rel_pos, float range, float innerAngle, float outerAngle, vec3 lightDirection, float specularStrength, vec3 normal) {
-    float distance = length(rel_pos - cameraToFragmentPosition);
-    vec3 lightDir = normalize(rel_pos - cameraToFragmentPosition); 
-    
-    float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor;
-
-    vec3 viewDir = normalize(-cameraToFragmentPosition);
-    // vec3 reflectDir = reflect(-lightDir, normal); // replace reflectDir with halfwayDir for blinn-phong lighting, which is better than phong lighting
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 32);
-    vec3 specular = specularStrength * spec * lightColor;
-
-    float theta = dot(lightDir, lightDirection);
-    float spotlightStrength = range/pow(distance, 2) * max(0, (theta - outerAngle)/(innerAngle - outerAngle));
-    
-    //return vec3(theta, theta, theta);
-    return spotlightStrength * (diffuse + specular);
-}
-
-vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, float specularStrength, vec3 normal) {
-    
-    float distance = length(rel_pos - cameraToFragmentPosition);
-    vec3 lightDir = normalize(rel_pos - cameraToFragmentPosition); 
-    // float d = ;
-    float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor;
-
-    vec3 viewDir = normalize(-cameraToFragmentPosition);
-    // vec3 reflectDir = reflect(-lightDir, normal); // replace reflectDir with halfwayDir for blinn-phong lighting, which is better than phong lighting
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(viewDir, halfwayDir), 0.0), 32);
-    vec3 specular = specularStrength * spec * lightColor;  
-
-    vec3 ambient = lightColor * 0.1;
-
-    float strength = range/pow(distance, 2);
-    
-    return strength * (ambient + diffuse + specular);
-};
 
 // TODO; to avoid color banding add dithering 
 void main()
 {
-    vec3 realTexCoords;
-    if (parallaxMappingEnabled) {
-        realTexCoords = vec3(CalculateTexCoords(fragmentTexCoords).xy, fragmentTexCoords.z);       
-        // if(realTexCoords.x > 1.0 || realTexCoords.y > 1.0 || realTexCoords.x < 0.0 || realTexCoords.y < 0.0) {
-        //     discard;
-        // }
-    }
-    else {    
-        realTexCoords = fragmentTexCoords;
-    }
-    
     vec3 normal = normalize(fragmentNormal);
-    if (normalMappingEnabled) {normal = normalize(TBNmatrix * (texture(normalMap, realTexCoords).rgb * 2.0 - 1.0));} // todo: matrix multiplication in fragment shader is really bad, maybe?
+    //vec3 realTexCoords = TriplanarProjectionUvs(normal);
+    //if (normalMappingEnabled) {normal = normalize(TBNmatrix * (texture(normalMap, realTexCoords).rgb * 2.0 - 1.0));} // todo: matrix multiplication in fragment shader is really bad, maybe?
+    //if (normalMappingEnabled) {
+      //  normal = 
+    //}
 
     float specularStrength = 0.5;
     if (specularMappingEnabled) {
-        specularStrength = texture(specularMap, realTexCoords).x;
+        specularStrength = TriplanarProjection(normal, specularMap).x;
     }
 
-    vec3 light = vec3(0, 0, 0);
-    for (uint i = pointLightOffset; i < pointLightOffset + pointLightCount; i++) {
-        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, specularStrength, normal);
-    }
-    for (uint i = spotLightOffset; i < spotLightOffset + spotLightCount; i++) {
-        light += CalculateSpotlightInfluence(spotLights[i].colorAndRange.xyz, spotLights[i].relPosAndInnerAngle.xyz, spotLights[i].colorAndRange.w, spotLights[i].relPosAndInnerAngle.w, spotLights[i].directionAndOuterAngle.w, spotLights[i].directionAndOuterAngle.xyz, specularStrength, normal);
-    }
-    light += CalculateEnvLightInfluence(specularStrength, normal);
+    vec3 light = CalculateLighting(specularStrength, normal);
 
     vec4 tx;
-    if (realTexCoords.z < 0) {
-        tx = vec4(1.0, 1.0, 1.0, 1.0);
-    }
-    else {
-        tx = texture(colorMap, realTexCoords);
-    }
+    //if (realTexCoords.z < 0) {
+      //  tx = vec4(1.0, 1.0, 1.0, 1.0);
+    //}
+    //else {
+        tx = TriplanarProjection(normal, colorMap);
+    //}
     if (tx.a < 0.1) {
         discard;
     };

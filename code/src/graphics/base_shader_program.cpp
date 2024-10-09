@@ -52,11 +52,12 @@ std::string Shader::PreprocessFile(std::string filepath)
                 }
 
                 pathsubStr = pathsubStr.substr(0, secondQuoteIndex);
-                DebugLogInfo("Including file ", pathsubStr);
+                //DebugLogInfo("Including file ", pathsubStr);
                 preprocessedSource += PreprocessFile(pathsubStr) + "\n";
             }
         }
 
+        fileCache[filepath] = preprocessedSource;
         return preprocessedSource;
     }
 }

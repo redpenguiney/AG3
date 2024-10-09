@@ -83,3 +83,17 @@ vec3 CalculateLightInfluence(vec3 lightColor, vec3 rel_pos, float range, float s
     
     return strength * (ambient + diffuse + specular);
 };
+
+vec3 CalculateLighting(float specularStrength, vec3 normal) {
+    vec3 light = vec3(0, 0, 0);
+    for (uint i = pointLightOffset; i < pointLightOffset + pointLightCount; i++) {
+        light += CalculateLightInfluence(pointLights[i].colorAndRange.xyz, pointLights[i].rel_pos.xyz, pointLights[i].colorAndRange.w, specularStrength, normal);
+    }
+    for (uint i = spotLightOffset; i < spotLightOffset + spotLightCount; i++) {
+        light += CalculateSpotlightInfluence(spotLights[i].colorAndRange.xyz, spotLights[i].relPosAndInnerAngle.xyz, spotLights[i].colorAndRange.w, spotLights[i].relPosAndInnerAngle.w, spotLights[i].directionAndOuterAngle.w, spotLights[i].directionAndOuterAngle.xyz, specularStrength, normal);
+    }
+    light += CalculateEnvLightInfluence(specularStrength, normal);
+
+
+    return light;
+}

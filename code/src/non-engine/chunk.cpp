@@ -76,7 +76,7 @@ GameobjectCreateParams MakeCGOParams(int meshId) {
 	GameobjectCreateParams p({ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider});
 	p.meshId = meshId;
 	p.materialId = GrassMaterial().second->id;
-	//p.shaderId = TerrainShader();
+	p.shaderId = TerrainShader();
 	return p;
 }
 
