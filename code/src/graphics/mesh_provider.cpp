@@ -120,14 +120,10 @@ MeshVertexFormat MeshVertexFormat::DefaultTriplanarMapping(bool instancedColor)
 {
     return MeshVertexFormat({
         .position = VertexAttribute {.nFloats = 3, .instanced = false},
-        .textureUV = VertexAttribute {.nFloats = 2, .instanced = false},
-        .textureZ = VertexAttribute {.nFloats = 3, .instanced = false},
         .color = VertexAttribute {.nFloats = 4, .instanced = instancedColor},
         .modelMatrix = VertexAttribute {.nFloats = 16, .instanced = true},
         .normalMatrix = VertexAttribute {.nFloats = 9, .instanced = true},
         .normal = VertexAttribute {.nFloats = 3, .instanced = false},
-        .tangent = VertexAttribute {.nFloats = 3, .instanced = false},
-
     });
 }
 

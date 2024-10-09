@@ -314,7 +314,7 @@ void Gui::UpdateGuiText() {
         // .scalingFactor = TEXT_SCALING_FACTOR
     };
 
-    TextMeshProvider provider(MeshCreateParams::Default(), guiTextInfo->fontMaterial);
+    TextMeshProvider provider(MeshCreateParams::DefaultGui(), guiTextInfo->fontMaterial);
     provider.textParams = params;
     provider.text = guiTextInfo->text;
     textMesh->Remesh(provider, false);

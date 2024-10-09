@@ -504,6 +504,8 @@ void Mesh::StopModifying(bool normalizeSize) {
 
 void Mesh::Remesh(const MeshProvider& provider, bool normalizeSize)
 {
+    // TODO: why does normalizeSize argument exist when it's a property of provider?
+    Assert(provider.meshParams.meshVertexFormat == vertexFormat);
     auto [v, i] = StartModifying();
     auto [newV, newI] = provider.GetMesh();
     v = newV;

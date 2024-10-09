@@ -29,8 +29,7 @@ class ShaderProgram: public BaseShaderProgram {
     static void SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 cameraProjMatrixNoFloatingOrigin, glm::mat4x4 orthrographicMatrix);
 
     // Returns id of generated program.
-    // additionalIncludedFiles is an optional vector of filepaths to files included by the other shaders.
-    static std::shared_ptr<ShaderProgram> New(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles = {}, const bool floatingOrigin = true, const bool useLightClusters = true, const bool ignorePostProc = false);
+    static std::shared_ptr<ShaderProgram> New(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin = true, const bool useLightClusters = true, const bool ignorePostProc = false);
 
     // Creates a compute shader for performing arbitrary GPU calculations.
     // Returns id of generated program.
@@ -60,7 +59,7 @@ class ShaderProgram: public BaseShaderProgram {
     Shader fragment; // processes each fragment/pixel
     // TODO: tesselation, geometry shaders
 
-    ShaderProgram(const char* vertexPath, const char* fragmentPath, const std::vector<const char*>& additionalIncludedFiles, const bool floatingOrigin, const bool useLightClusters, const bool ignorePostProc);
+    ShaderProgram(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin, const bool useLightClusters, const bool ignorePostProc);
     //ShaderProgram(const char* computePath);
 
 };

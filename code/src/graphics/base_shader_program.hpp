@@ -10,11 +10,19 @@ class Shader {
     friend class BaseShaderProgram;
     friend class ShaderProgram;
     friend class ComputeShaderProgram;
-    Shader(const char* path, GLenum shaderType, const std::vector<const char*>& includedFiles);
+    Shader(const char* path, GLenum shaderType);
     std::string GetInfoLog();
     ~Shader();
 
     GLuint shaderId;
+
+    // keys are (relative) filepaths, values are file contents (after PreprocessFile() has run on them, so #$INCLUDE$s have already been resolved)
+    // useful for inlcuding the same file by different shaders
+    static inline std::unordered_map<std::string, std::string> fileCache;
+
+    // Tries to load the shader at filepath, handling the #$INCLUDE$ macro correctly, and returning the shader source if successful. 
+    // Throws an exception if filepath or a file included by the shader cannot be found. 
+    static std::string PreprocessFile(std::string filepath);
 };
 
 
@@ -57,8 +65,6 @@ protected:
     static void Unload(unsigned int shaderProgramId);
 
 private:
-
-    
 
     static inline GLuint LOADED_PROGRAM_ID = 0; // id of the currently loaded shader program
     

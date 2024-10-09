@@ -123,7 +123,8 @@ struct MeshVertexFormat {
     static MeshVertexFormat DefaultGui();
 
     // triplanar mapping is a shader technique that allows for texturing meshes that don't have UVs, which is useful for things like procedural terrain.
-    // noninstanced: XYZ, NormalXYZ, TangentXYZ, RGBA if !instanceColor, vec3(textureZ1, textureZ2, weightOfTextureZ1).
+    // Has to be used with a buffer that corresponds vertex indices to textureZ/atlas data.
+    // noninstanced: XYZ, NormalXYZ, RGBA if !instanceColor.
     // instanced:  model matrix, normal matrix, rgba if instanced
     static MeshVertexFormat DefaultTriplanarMapping(bool instancedColor = true);
 
