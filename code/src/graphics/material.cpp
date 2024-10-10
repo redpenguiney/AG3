@@ -62,8 +62,12 @@ Material::Material(const MaterialCreateParams& params):
 id(MeshGlobals::Get().LAST_MATERIAL_ID++),
 materialType(params.type),
 depthMaskEnabled(params.depthMask),
-textures(std::make_shared<TextureCollection>())
+textures(std::make_shared<TextureCollection>()),
+inputProvider(params.inputProvider)
 {
+    // TODO: there might be legitimate cases where you have a textureless material
+    //Assert(params.textureParams.size() > 0);
+
     // Just go through textureParams and create each texture they ask for
     // TODO: lots of sanity checks should be made here on the params for each texture
     unsigned int i = 0;

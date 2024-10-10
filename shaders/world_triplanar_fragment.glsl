@@ -22,22 +22,23 @@ uniform bool colorMappingEnabled;
 
 #$INCLUDE$ "../shaders/parallax_mapping.glsl"
 
+uniform float textureRepeat;
+uniform vec3 triplanarCameraPosition;
+
 vec4 TriplanarProjection(vec3 normal, sampler2DArray sampler) {
     vec3 blending = abs( normal );
 	blending = normalize(max(blending, 0.00001)); // Force weights to sum to 1.0
 	float b = (blending.x + blending.y + blending.z);
 	blending /= vec3(b, b, b);
 
-    float normalRepeat = 4.0;
-    float normalScale = 2.0;
-
-    vec3 xaxis = texture( sampler, vec3(cameraToFragmentPosition.yz * normalRepeat, 0.0)).rgb;
-	vec3 yaxis = texture( sampler, vec3(cameraToFragmentPosition.xz * normalRepeat, 0.0)).rgb;
-	vec3 zaxis = texture( sampler, vec3(cameraToFragmentPosition.xy * normalRepeat, 0.0)).rgb;
-	vec3 normalTex = xaxis * blending.x + xaxis * blending.y + zaxis * blending.z;
-	normalTex = normalTex * 2.0 - 1.0;
-	normalTex.xy *= normalScale;
-	normalTex = normalize( normalTex );
+    vec3 pos = cameraToFragmentPosition + triplanarCameraPosition;
+    vec4 xaxis = texture( sampler, vec3(pos.yz * textureRepeat, 0.0));
+	vec4 yaxis = texture( sampler, vec3(pos.xz * textureRepeat, 0.0));
+	vec4 zaxis = texture( sampler, vec3(pos.xy * textureRepeat, 0.0));
+	vec4 normalTex = xaxis * blending.x + yaxis * blending.y + zaxis * blending.z;
+	//normalTex = normalTex * 2.0 - 1.0;
+	//normalTex.xy *= normalScale;
+    //normalTex = normalize( normalTex );
 
 	//vec3 T = vec3(0.,1.,0.);
   	//vec3 BT = normalize( cross( vNormal, T ) * 1.0 );
@@ -45,6 +46,7 @@ vec4 TriplanarProjection(vec3 normal, sampler2DArray sampler) {
   	//mat3 tsb = mat3( normalize( T ), normalize( BT ), normalize( vNormal ) );
   	//vec3 N = tsb * normalTex;
     return normalTex;
+    //return vec4(blending, 1.0);
 }
 
 // TODO; to avoid color banding add dithering 
@@ -67,7 +69,7 @@ void main()
     vec4 tx;
     //if (realTexCoords.z < 0) {
       //  tx = vec4(1.0, 1.0, 1.0, 1.0);
-    //}
+    //}a
     //else {
         tx = TriplanarProjection(normal, colorMap);
     //}
@@ -75,9 +77,11 @@ void main()
         discard;
     };
 
-    vec3 globalAmbient = vec3(0.1, 0.1, 0.1);
-    vec4 color = tx * fragmentColor * vec4((light + globalAmbient), 1);
-    Output = color;
+    //vec4 color = tx * vec4(light, 1);
+
+    //vec4 color = vec4(light * tx.xyz, 1);
+    Output = fragmentColor * vec4(light * tx.xyz, 1.0);
+    //Output = color;
     //Output = vec4(light, 1.0);
     //Output = vec4(spotLightOffset, 1.0, 1.0, 1.0);
     //Output = vec4(spotLights[0].directionAndOuterAngle.xyz, 1.0);

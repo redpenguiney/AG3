@@ -262,15 +262,20 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
             ProcessTextures(texParams, aiTextureType_DISPLACEMENT, Texture::TextureUsage::DisplacementMap, material, scene);
             ProcessTextures(texParams, aiTextureType_NORMALS, Texture::TextureUsage::NormalMap, material, scene);
             
-            try {
-                auto pair = Material::New(MaterialCreateParams{.textureParams = texParams, .type = Texture::TextureType::Texture2D });
-            matPtr = pair.second;
-            textureZ = pair.first;
+            if (texParams.size() == 0) { 
+                // then it lied and there is no material
             }
-            catch (std::runtime_error& error) {
-                DebugLogError("In the loading of the material \"", material->GetName().C_Str(), "\" for the mesh \"", mesh->mName.C_Str(), "\" from the file \"", path, "\", the following exception was thrown:\n\t", error.what(), "\n\tUsing fallback texture.");
-                matPtr = GraphicsEngine::Get().errorMaterial;
-                textureZ = GraphicsEngine::Get().errorMaterialTextureZ;
+            else {
+                try {
+                    auto pair = Material::New(MaterialCreateParams{ .textureParams = texParams, .type = Texture::TextureType::Texture2D });
+                    matPtr = pair.second;
+                    textureZ = pair.first;
+                }
+                catch (std::runtime_error& error) {
+                    DebugLogError("In the loading of the material \"", material->GetName().C_Str(), "\" for the mesh \"", mesh->mName.C_Str(), "\" from the file \"", path, "\", the following exception was thrown:\n\t", error.what(), "\n\tUsing fallback texture.");
+                    matPtr = GraphicsEngine::Get().errorMaterial;
+                    textureZ = GraphicsEngine::Get().errorMaterialTextureZ;
+                }
             }
         }
 

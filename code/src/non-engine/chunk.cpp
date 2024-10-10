@@ -67,15 +67,38 @@
 //    return ret;
 //}
 
+void TerrainInputProvider(Material* material, std::shared_ptr<ShaderProgram> program) {
+	float tile = 4.0f;
+	program->Uniform("textureRepeat", 1.0f/tile);
+	glm::vec3 cPos = GraphicsEngine::Get().GetCurrentCamera().position;
+	cPos.x = fmodf(cPos.x, tile);
+	cPos.y = fmodf(cPos.y, tile);
+	cPos.z = fmodf(cPos.z, tile);
+	program->Uniform("triplanarCameraPosition", cPos);
+}
+
 unsigned int TerrainShader() {
 	static auto shader = ShaderProgram::New("../shaders/world_triplanar_vertex.glsl", "../shaders/world_triplanar_fragment.glsl");
 	return shader->shaderProgramId;
 }
 
+unsigned int TerrainMaterial() {
+	static auto material = Material::New(MaterialCreateParams{ 
+		.textureParams = {
+			TextureCreateParams({TextureSource("../textures/grass.png"),}, Texture::ColorMap)
+		},
+		.requireSingular = true,
+		.allowAppendaton = false,
+		.inputProvider = ShaderInputProvider(TerrainInputProvider),
+		
+	});
+	return material.second->id;
+}
+
 GameobjectCreateParams MakeCGOParams(int meshId) {
 	GameobjectCreateParams p({ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider});
 	p.meshId = meshId;
-	p.materialId = GrassMaterial().second->id;
+	p.materialId = TerrainMaterial();
 	p.shaderId = TerrainShader();
 	return p;
 }
@@ -95,8 +118,8 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	Assert(lodLevel < MAX_LOD_LEVELS);
 
 	object->Get<TransformComponent>()->SetPos(pos);
-	object->Get<TransformComponent>()->SetScl(glm::vec3(Size()));
-	//object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
+	object->Get<TransformComponent>()->SetScl(glm::vec3(Size()) + Resolution() * 2.0f);
+	object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
 	//object->Get<RenderComponent>()->SetTextureZ(GrassMaterial().first);
 	Update();
 }
@@ -126,8 +149,8 @@ void Chunk::Update()
 {
 	if (dirty) {
 		DualContouringMeshProvider provider(meshParams);
-		provider.point1 = pos - Size() / 2.0f;
-		provider.point2 = pos + Size() / 2.0f;
+		provider.point1 = pos - Size() / 2.0f - Resolution();
+		provider.point2 = pos + Size() / 2.0f + Resolution();
 		provider.fixVertexCenters = false;
 		provider.resolution = Resolution();
 		provider.distanceFunction = CalcWorldHeightmap;
