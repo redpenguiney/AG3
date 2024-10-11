@@ -118,7 +118,7 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	Assert(lodLevel < MAX_LOD_LEVELS);
 
 	object->Get<TransformComponent>()->SetPos(pos);
-	object->Get<TransformComponent>()->SetScl(glm::vec3(Size()) + Resolution() * 2.0f);
+	object->Get<TransformComponent>()->SetScl(glm::vec3(Size()) + Resolution());
 	object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
 	//object->Get<RenderComponent>()->SetTextureZ(GrassMaterial().first);
 	Update();
@@ -149,8 +149,8 @@ void Chunk::Update()
 {
 	if (dirty) {
 		DualContouringMeshProvider provider(meshParams);
-		provider.point1 = pos - Size() / 2.0f - Resolution();
-		provider.point2 = pos + Size() / 2.0f + Resolution();
+		provider.point1 = pos - Size() / 2.0f - Resolution() / 2.0f;
+		provider.point2 = pos + Size() / 2.0f + Resolution() / 2.0f;
 		provider.fixVertexCenters = false;
 		provider.resolution = Resolution();
 		provider.distanceFunction = CalcWorldHeightmap;

@@ -98,9 +98,9 @@ postRenderEvent(Event<float>::New())
 
     defaultShaderProgram->Uniform("envLightDirection", glm::normalize(glm::vec3(1, 1, 1)));
     defaultShaderProgram->Uniform("envLightColor", glm::vec3(0.7, 0.7, 1));
-    defaultShaderProgram->Uniform("envLightDiffuse", 0.2f);
-    defaultShaderProgram->Uniform("envLightAmbient", 0.05f);
-    defaultShaderProgram->Uniform("envLightSpecular", 0.0f);
+    defaultShaderProgram->Uniform("envLightDiffuse", 0.3f);
+    defaultShaderProgram->Uniform("envLightAmbient", 0.2f);
+    defaultShaderProgram->Uniform("envLightSpecular", 0.02f);
 
     auto pair = Material::New({ .textureParams = {TextureCreateParams({TextureSource("../textures/error_texture.bmp")}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D });
     errorMaterial = pair.second;
