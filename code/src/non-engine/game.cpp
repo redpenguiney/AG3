@@ -150,7 +150,7 @@ void GameInit()
 
     //// auto m2 = Mesh::FromFile("../models/rainbowcube.obj", makeMparams);
     
-    GE.defaultShaderProgram->Uniform("envLightDiffuse", 0.0f);
+    //GE.defaultShaderProgram->Uniform("envLightDiffuse", 0.0f);
 
     auto skyboxFaces = std::vector<TextureSource>(
         {
@@ -175,7 +175,7 @@ void GameInit()
     TestStationaryPointlight();
     //TestVoxelTerrain();
     //TestSpinningSpotlight();
-    TestGrassFloor();
+    //TestGrassFloor();
 
     //TestGarticMusic(); 
 
@@ -191,14 +191,21 @@ void GameInit()
                 GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
                 params.meshId = m->meshId;
                 //params.materialId = brickMaterial->id;
-                auto g = GameObject::New(params);
-                g->Get<TransformComponent>()->SetPos(glm::vec3(10, -5, 10));
+                for (unsigned int i = 0; i < 1; i++) {
+                    //auto g = GameObject::New(params);
+                    //g->Get<TransformComponent>()->SetPos(glm::vec3(10, -5, 10));
+                }
+                
 
                 if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RigidbodyComponent>()) {
 
                     castResult.hitObject->RawGet<RigidbodyComponent>()->velocity += castResult.hitNormal * 2.0;
                     //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
-                }    
+                }
+
+                else if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RenderComponent>()) {
+                    //castResult.hitObject->RawGet<RenderComponent>()->SetColor({ 1.0, 1.0, 1.0, 0.0 });
+                }
             }
 
             //        if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {

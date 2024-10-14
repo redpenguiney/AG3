@@ -7,6 +7,7 @@
 #include <debug/log.hpp>
 #include <glm/vec3.hpp>
 #include "texture_atlas.hpp"
+#include <GL/glew.h>
 
 class Material;
 
@@ -31,6 +32,9 @@ struct VertexAttribute {
 
 // Describes which vertex attributes a mesh has, which of them are instanced, and in what order they are in.
 struct MeshVertexFormat {
+
+    // should pretty much always be triangles unless ur tryna debug
+    GLenum primitiveType = GL_TRIANGLES;
 
     // true if the mesh format supports animation.
     const unsigned int supportsAnimation;

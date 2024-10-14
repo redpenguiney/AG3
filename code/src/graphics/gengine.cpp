@@ -98,9 +98,9 @@ postRenderEvent(Event<float>::New())
 
     defaultShaderProgram->Uniform("envLightDirection", glm::normalize(glm::vec3(1, 1, 1)));
     defaultShaderProgram->Uniform("envLightColor", glm::vec3(0.7, 0.7, 1));
-    defaultShaderProgram->Uniform("envLightDiffuse", 0.3f);
+    defaultShaderProgram->Uniform("envLightDiffuse", 0.7f);
     defaultShaderProgram->Uniform("envLightAmbient", 0.2f);
-    defaultShaderProgram->Uniform("envLightSpecular", 0.02f);
+    defaultShaderProgram->Uniform("envLightSpecular", 0.0f);
 
     auto pair = Material::New({ .textureParams = {TextureCreateParams({TextureSource("../textures/error_texture.bmp")}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D });
     errorMaterial = pair.second;
@@ -111,7 +111,10 @@ postRenderEvent(Event<float>::New())
 
     // tell opengl how to do transparency
     glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD); // this is default
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_ALPHA_TEST);
+    glAlphaFunc(GL_GREATER, 0.0f);
 }
 
 GraphicsEngine::~GraphicsEngine() {
@@ -762,7 +765,7 @@ void GraphicsEngine::AddCachedMeshes() {
             meshpools[poolIndex] = new Meshpool(m->vertexFormat);
         }
       
-        DebugLogInfo("Adding mesh ", meshId, " to pool ", poolIndex);
+        //DebugLogInfo("Adding mesh ", meshId, " to pool ", poolIndex);
         for (auto& [shaderId, map2] : map) {
             auto shader = ShaderProgram::Get(shaderId);
 

@@ -23,6 +23,7 @@ struct OctreeNode {
 	}
 
 	void Split() {
+		//DebugLogInfo("Splitting ", glm::to_string(position), " with size ", Size());
 		Assert(children == nullptr);
 		Assert(lod != MAX_LOD_LEVELS);
 		children = new OctreeNode[8];
@@ -30,7 +31,12 @@ struct OctreeNode {
 			for (float y = 0; y < 2; y ++) {
 				for (float z = 0; z < 2; z ++) {
 					children[int(x * 4 + y * 2 + z)].lod = lod + 1;
-					children[int(x * 4 + y * 2 + z)].position = position + (glm::vec3(x - 0.5, y - 0.5, z - 0.5) * Size());
+					glm::vec3 offset = glm::vec3(x - 0.5, y - 0.5, z - 0.5) * Size() / 2.0f;
+					children[int(x * 4 + y * 2 + z)].position = position + offset;
+					//auto pos = children[int(x * 4 + y * 2 + z)].position;
+					//auto roundedPos = glm::roundMultiple(children[int(x * 4 + y * 2 + z)].position, glm::vec3(Size() / 4));
+					//Assert(roundedPos == children[int(x * 4 + y * 2 + z)].position);
+					//DebugLogInfo("Child with pos ", glm::to_string(children[int(x * 4 + y * 2 + z)].position));
 				}
 			}
 		}
@@ -66,6 +72,7 @@ void Chunk::RecursiveLoad(OctreeNode* n, int& loadedSoFar) {
 	}
 
 	if (n->children) {
+
 		for (unsigned int i = 0; i < 8; i++) {
 			RecursiveLoad(&n->children[i], loadedSoFar);
 		}
@@ -87,6 +94,7 @@ void Chunk::RecursiveLoad(OctreeNode* n, int& loadedSoFar) {
 			}
 		}
 		// if not, make one
+		//DebugLogInfo("Loading at pos ", glm::to_string(n->position), " and lod ", n->lod);
 		GetChunks().emplace(std::make_pair(n->position, std::make_unique<Chunk>(n->position, n->lod)));
 		loadedSoFar++;
 	}
@@ -98,16 +106,18 @@ std::unordered_map<glm::vec3, std::unique_ptr<Chunk>>& Chunk::GetChunks()
 	return chunks;
 }
 
-constexpr int BASE_GRID_SIZE = 1;
+constexpr int BASE_GRID_SIZE = 2;
 void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance) {
 
-	//GetChunks().emplace(std::make_pair(glm::vec3(0, 0, 0), std::make_unique<Chunk>(glm::vec3(0, 0, 0), 0)));
-	
 	// mark all existing chunks for deletion
 	for (auto& [pos, c] : GetChunks()) {
 		(void)pos;
 		c->toDelete = true;
 	}
+
+	//GetChunks().emplace(std::make_pair(glm::vec3(0, 0, 0), std::make_unique<Chunk>(glm::vec3(0, 0, 0), 0)));
+	//GetChunks().emplace(std::make_pair(glm::vec3(32, 0, 0), std::make_unique<Chunk>(glm::vec3(32, 0, 0), 0)));
+	//return;
 
 	// build octree array around camera
 	OctreeNode nodes[BASE_GRID_SIZE * 2 + 1][BASE_GRID_SIZE * 2 + 1][BASE_GRID_SIZE * 2 + 1];
@@ -125,7 +135,7 @@ void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance) {
 	for (unsigned int depth = 0; depth < MAX_LOD_LEVELS; depth++) {
 
 		float splitThresholdSquared = powf(minBaseLodDistance * powf(2, -float(depth)), 2);
-
+		//DebugLogInfo("Split threshold = ", splitThresholdSquared);
 		for (unsigned int ix = 0; ix < BASE_GRID_SIZE * 2 + 1; ix++) {
 			for (unsigned int iy = 0; iy < BASE_GRID_SIZE * 2 + 1; iy++) {
 				for (unsigned int iz = 0; iz < BASE_GRID_SIZE * 2 + 1; iz++) {
@@ -155,6 +165,16 @@ void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance) {
 		return item.second->toDelete;
 	});
 
+	unsigned int count = 0;
+	for (auto& [ptr, c] : GetChunks()) {
+		if (c->mesh->indices.size() > 0) {
+			count++;
 
-	//DebugLogInfo("THERE ARE ", GetChunks().size());
+			if (c->lod != 0) {
+				DebugLogInfo("Chunk lod y ", c->lod, " ", c->pos.y);
+
+			}
+		}
+	}
+	//DebugLogInfo("THERE ARE ", count);
 }

@@ -73,14 +73,17 @@ void main()
     //else {
         tx = TriplanarProjection(normal, colorMap);
     //}
-    if (tx.a < 0.1) {
-        discard;
-    };
+    
 
     //vec4 color = tx * vec4(light, 1);
 
     //vec4 color = vec4(light * tx.xyz, 1);
     Output = fragmentColor * vec4(light * tx.xyz, 1.0);
+
+    if (Output.a < 0.1) {
+        discard;
+    };
+
     //Output = color;
     //Output = vec4(light, 1.0);
     //Output = vec4(spotLightOffset, 1.0, 1.0, 1.0);

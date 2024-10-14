@@ -74,6 +74,13 @@ void TerrainInputProvider(Material* material, std::shared_ptr<ShaderProgram> pro
 	cPos.x = fmodf(cPos.x, tile);
 	cPos.y = fmodf(cPos.y, tile);
 	cPos.z = fmodf(cPos.z, tile);
+
+	program->Uniform("envLightDirection", glm::normalize(glm::vec3(1, 1, 1)));
+	program->Uniform("envLightColor", glm::vec3(0.7, 0.7, 1));
+	program->Uniform("envLightDiffuse", 0.7f);
+	program->Uniform("envLightAmbient", 0.2f);
+	program->Uniform("envLightSpecular", 0.0f);
+
 	program->Uniform("triplanarCameraPosition", cPos);
 }
 
@@ -103,7 +110,7 @@ GameobjectCreateParams MakeCGOParams(int meshId) {
 	return p;
 }
 
-const MeshCreateParams meshParams { .meshVertexFormat = MeshVertexFormat::DefaultTriplanarMapping(), .expectedCount = 1 };
+MeshCreateParams meshParams { .meshVertexFormat = MeshVertexFormat::DefaultTriplanarMapping(), .expectedCount = 1 };
 
 Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	pos(centerPos),
@@ -112,20 +119,32 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	toDelete(false),
 	dirty(true),
 
-	mesh(Mesh::New(RawMeshProvider({}, {}, meshParams), true)),
+	mesh(Mesh::New(RawMeshProvider({}, {}, (meshParams.meshVertexFormat->primitiveType = GL_TRIANGLES, meshParams)), true)),
 	object(GameObject::New(MakeCGOParams(mesh->meshId)))
 {
+
 	Assert(lodLevel < MAX_LOD_LEVELS);
 
 	object->Get<TransformComponent>()->SetPos(pos);
-	object->Get<TransformComponent>()->SetScl(glm::vec3(Size()) + Resolution());
+	object->Get<TransformComponent>()->SetScl(glm::vec3(Size() + Resolution() ));
+	//object->Get<TransformComponent>()->SetScl(glm::vec3(1, 1, 1));
+	object->Get<TransformComponent>()->SetScl(glm::vec3(Size() + Resolution() / 2.0f));
+
 	object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
 	//object->Get<RenderComponent>()->SetTextureZ(GrassMaterial().first);
+
+	//object->Get<RenderCompdonent>()->SetColor(glm::vec4(pos / Resolution() + 0.3f, 1.0));
+
+	if (pos.y != 0) {
+		object->Get<RenderComponent>()->SetColor(glm::vec4(1, 0, 0, 1));
+	}
+
 	Update();
 }
 
 Chunk::~Chunk()
 {
+
 	if (mesh) {
 		object->Destroy();
 		object = nullptr;
@@ -149,15 +168,23 @@ void Chunk::Update()
 {
 	if (dirty) {
 		DualContouringMeshProvider provider(meshParams);
-		provider.point1 = pos - Size() / 2.0f - Resolution() / 2.0f;
-		provider.point2 = pos + Size() / 2.0f + Resolution() / 2.0f;
+		provider.point1 = pos - Size() / 2.0f; // 2.0f - Resolution() / 2.0f;
+		provider.point2 = pos + Size() / 2.0f; // 2.0f + Resolution() / 2.0f;
 		provider.fixVertexCenters = false;
 		provider.resolution = Resolution();
 		provider.distanceFunction = CalcWorldHeightmap;
+		provider.distanceFunction = [](glm::vec3 pos) {
+			return pos.y;
+			};
 		
-		mesh->Remesh(provider);
+		//DebugLogInfo("Chunk at ", glm::to_string(pos), " size ", Size());
+		mesh->Remesh(provider, true);
 
-		//DebugLogInfo("Chunk at ", glm::to_string(object->Get<TransformComponent>().Position()), " size ", object->Get<TransformComponent>().Scale(), " verts ", mesh->indices.size(), " lod ", lod);
+		//object->Get<TransformComponent>()->SetScl(mesh->originalSize);
+		//if (lod != 0) {
+			//DebugLogInfo("Meshed from ", glm::to_string(provider.point1), " to ", glm::to_string(provider.point2));
+			//DebugLogInfo("Chunk at ", glm::to_string(object->RawGet<TransformComponent>()->Position()), " size ", object->RawGet<TransformComponent>()->Scale(), " verts ", mesh->indices.size(), " lod ", lod);
+		//}
 	}
 }
 

@@ -96,4 +96,5 @@ vec3 CalculateLighting(float specularStrength, vec3 normal) {
 
 
     return light;
+    //return vec3(1, 1, 1);
 }

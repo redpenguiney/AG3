@@ -20,10 +20,10 @@ std::optional<glm::vec3> FindBestVertex(
 	bool blocky,
 	std::function<float(glm::vec3)> distanceFunction) 
 {
-	//if (blocky) {
-		//return cellPos + (resolution * 0.5f);
-	//}
-	//else {
+	if (blocky) {
+		return cellPos;// +(resolution * 0.5f);
+	}
+	else {
 
 		// evaluate the distance function at each corner of the cell
 		float distances[2][2][2];
@@ -97,7 +97,7 @@ std::optional<glm::vec3> FindBestVertex(
 		}
 
 
-	//}
+	}
 }
 
 unsigned int IndexFromCell(glm::uvec3 xyz, glm::uvec3 dim) {
@@ -135,8 +135,10 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 {
 	// based on https://github.com/BorisTheBrave/mc-dc/blob/a165b326849d8814fb03c963ad33a9faf6cc6dea/dual_contour_3d.py
 	// and now that it doesn't work, also https://github.com/emilk/Dual-Contouring/blob/master/src/vol/Contouring.cpp
-	auto p1 = point1;
-	auto p2 = point2 + resolution;
+	auto p1 = point1; //- resolution/2;
+	auto p2 = point2; //+ resolution/2;
+
+	//DebugLogInfo("Meshing from ", glm::to_string(point1), " to ", glm::to_string(point2));
 
 	Assert(!atlas.has_value() || atlas.value() != nullptr);
 
@@ -148,6 +150,7 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 	Assert(std::fmodf(fdim.y, resolution) == 0);
 	Assert(std::fmodf(fdim.z, resolution) == 0);
 	glm::uvec3 dim = glm::ceil((p2 - p1) / resolution);
+	dim += 1;
 
 	// find vertices
 	std::vector<glm::vec3> vertexPositions;
@@ -162,9 +165,7 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 
 
 				if (vert.has_value()) {
-					if (cellX == 0) {
-						//DebugLogInfo("P1 = ", glm::to_string(p1), " vPos = ", glm::to_string(*vert));
-					}
+					//DebugLogInfo(" vPos = ", glm::to_string(*vert));
 					unsigned int i = IndexFromCell({ cellX, cellY, cellZ }, dim);
 					cellIndicesToVertexIndices.at(i) = vertexPositions.size();
 					vertexPositions.push_back(vert.value() - p1);
@@ -177,7 +178,6 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 	std::vector<GLuint> indices;
 
 
-
 	// if one cell's edge has positive distance (outside terrain) and another has negative distance (inside terrain), then a face of the boundary should be between those two faces.
 	for (unsigned int cellX = 0; cellX < dim.x; cellX++) {
 		for (unsigned int cellY = 0; cellY < dim.y; cellY++) {
@@ -187,7 +187,7 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 
 				glm::vec3 worldPos = glm::vec3(cellX, cellY, cellZ) * resolution + p1;
 
-				if (cellX > 0 && cellY > 0) {
+				if (cellX > 0 && cellY > 0 && cellZ != dim.z - 1) {
 
 					bool positive1 = distanceFunction({ worldPos.x, worldPos.y, worldPos.z }) > 0;
 					bool positive2 = distanceFunction({ worldPos.x, worldPos.y, worldPos.z + resolution }) > 0;
@@ -214,7 +214,7 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 					}
 				}
 
-				if (cellX > 0 && cellZ > 0) {
+				if (cellX > 0 && cellZ > 0 && cellY != dim.y - 1) {
 
 					bool positive1 = distanceFunction({ worldPos.x, worldPos.y, worldPos.z }) > 0;
 					bool positive2 = distanceFunction({ worldPos.x, worldPos.y + resolution, worldPos.z }) > 0;
@@ -241,7 +241,7 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 					}
 				}
 
-				if (cellY > 0 && cellZ > 0) {
+				if (cellY > 0 && cellZ > 0 && cellX != dim.x - 1) {
 
 					bool positive1 = distanceFunction({ worldPos.x, worldPos.y, worldPos.z }) > 0;
 					bool positive2 = distanceFunction({ worldPos.x + resolution, worldPos.y, worldPos.z }) > 0;
@@ -271,6 +271,7 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 			}
 		}
 	}
+
 	/*for (float x = p1.x; x <= p2.x; x += resolution) {
 		for (float y = p1.y; y <= p2.y; y += resolution) {
 			for (float z = p1.z; z <= p2.z; z += resolution) {

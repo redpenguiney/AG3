@@ -402,7 +402,7 @@ void Meshpool::Draw(bool prePostProc) {
             shader->Uniform("colorMappingEnabled", material->Count(Texture::ColorMap));
         }
 
-        //glPointSize(15.0);
+        glPointSize(15.0);
         //for (unsigned int i = 0; i < command->GetDrawCount(); i++) {
             //auto cmd = command->clientCommands.at(i);
             //glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
@@ -628,6 +628,8 @@ void Meshpool::ExpandInstanceCapacity()
     Assert(vaoId != 0);
     instances.Bind();
     format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
+
+    //DebugLogInfo("Updating instance capacity.");
 
     // Tragically, for every indirect draw command we have to update the 2nd and 3rd buffers' baseInstance since it was offset to correct for the OLD instance buffer's size.
     if (INSTANCED_VERTEX_BUFFERING_FACTOR > 1) {
