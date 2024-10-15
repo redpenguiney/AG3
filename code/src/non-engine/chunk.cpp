@@ -128,14 +128,14 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	object->Get<TransformComponent>()->SetPos(pos);
 	object->Get<TransformComponent>()->SetScl(glm::vec3(Size() + Resolution() ));
 	//object->Get<TransformComponent>()->SetScl(glm::vec3(1, 1, 1));
-	object->Get<TransformComponent>()->SetScl(glm::vec3(Size() + Resolution() / 2.0f));
+	object->Get<TransformComponent>()->SetScl(glm::vec3(Size() /*+ Resolution() / 2.0f*/));
 
 	object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
 	//object->Get<RenderComponent>()->SetTextureZ(GrassMaterial().first);
 
 	//object->Get<RenderCompdonent>()->SetColor(glm::vec4(pos / Resolution() + 0.3f, 1.0));
 
-	if (pos.y != 0) {
+	if (int(pos.x) % 32 != 0) {
 		object->Get<RenderComponent>()->SetColor(glm::vec4(1, 0, 0, 1));
 	}
 

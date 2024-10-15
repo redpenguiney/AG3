@@ -171,7 +171,7 @@ void Chunk::LoadWorld(glm::vec3 cameraPos, float minBaseLodDistance) {
 			count++;
 
 			if (c->lod != 0) {
-				DebugLogInfo("Chunk lod y ", c->lod, " ", c->pos.y);
+				//DebugLogInfo("Chunk lod y ", c->lod, " ", c->pos.y);
 
 			}
 		}

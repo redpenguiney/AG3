@@ -46,19 +46,19 @@ std::pair<float, std::shared_ptr<Material>> BrickMaterial() {
    }, .type = Texture::Texture2D });
 }
 
-void TestCubeArray(int dimX, int dimY, int dimZ, bool physics)
+void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim,  bool physics)
 {
     auto m = CubeMesh();
 
     int nObjs = 0;
-    for (int x = 0; x < dimX; x++) {
-        for (int y = 0; y < dimY; y++) {
-            for (int z = 0; z < dimZ; z++) {
+    for (int x = 0; x < dim.x; x++) {
+        for (int y = 0; y < dim.y; y++) {
+            for (int z = 0; z < dim.z; z++) {
                 GameobjectCreateParams params = physics ? GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider , ComponentBitIndex::Rigidbody }) : GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
                 params.meshId = m->meshId;
                 //params.materialId = brickMaterial->id;
                 auto g = GameObject::New(params);
-                g->Get<TransformComponent>()->SetPos({ 0 + x * 3, 2 + y * 2, 0 + z * 3 });
+                g->Get<TransformComponent>()->SetPos(glm::dvec3(start + stride * glm::uvec3(x, y, z)));
                 g->Get<ColliderComponent>()->elasticity = 0.3;
                 g->Get<ColliderComponent>()->friction = 1.0;
                 // g->rigidbodyComponent->angularDrag = 1.0;
@@ -297,7 +297,7 @@ void TestStationaryPointlight()
 
     
     auto coolerLight = GameObject::New(params);
-    coolerLight->RawGet<TransformComponent>()->SetPos({ 8, 5, 0 });
+    coolerLight->RawGet<TransformComponent>()->SetPos({ 0, 0, 0 });
     coolerLight->RawGet<RenderComponent>()->SetColor({ 1, 0.5, 0, 1.0 });
     coolerLight->RawGet<PointLightComponent>()->SetRange(20);
     coolerLight->RawGet<PointLightComponent>()->SetColor({ 1, 0.3, 0.7 });

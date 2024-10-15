@@ -169,7 +169,7 @@ void GameInit()
     }
     GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 
-    TestCubeArray(2, 4, 2, false);
+    TestCubeArray(glm::uvec3(16, 16, 16), glm::uvec3(0, 0, 0), glm::uvec3(16, 1, 16), false);
     //TestUi();
     //
     TestStationaryPointlight();
