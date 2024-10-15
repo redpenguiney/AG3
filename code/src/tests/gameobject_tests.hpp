@@ -11,7 +11,7 @@ std::shared_ptr<Mesh> SphereMesh();
 std::pair<float, std::shared_ptr<Material>> GrassMaterial();
 std::pair<float, std::shared_ptr<Material>> BrickMaterial();
 
-void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool physics);
+void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool physics, glm::vec3 scale = {1, 1, 1});
 void TestSphere(int x, int y, int z, bool physics);
 void TestBrickWall();
 void TestGrassFloor();

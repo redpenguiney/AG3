@@ -46,7 +46,7 @@ std::pair<float, std::shared_ptr<Material>> BrickMaterial() {
    }, .type = Texture::Texture2D });
 }
 
-void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim,  bool physics)
+void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool physics, glm::vec3 size)
 {
     auto m = CubeMesh();
 
@@ -65,7 +65,7 @@ void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim,  bool ph
                 // g->rigidbodyComponent->linearDrag = 1.0;
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
                 // g->rigidbodyComponent->angularVelocity = {0.20, 1.6, 1.0};
-                g->Get<TransformComponent>()->SetScl(glm::dvec3(1.0, 1.0, 1.0));
+                g->Get<TransformComponent>()->SetScl(size);
                 g->Get<RenderComponent>()->SetColor(glm::vec4(1, 1, 1, 1));
                 g->Get<RenderComponent>()->SetTextureZ(-1);
                 g->name = std::string("Gameobject #") + std::to_string(nObjs);

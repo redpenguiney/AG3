@@ -126,9 +126,9 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 	Assert(lodLevel < MAX_LOD_LEVELS);
 
 	object->Get<TransformComponent>()->SetPos(pos);
-	object->Get<TransformComponent>()->SetScl(glm::vec3(Size() + Resolution() ));
+	//object->Get<TransformComponent>()->SetScl(glm::vec3(Size() + Resolution() ));
 	//object->Get<TransformComponent>()->SetScl(glm::vec3(1, 1, 1));
-	object->Get<TransformComponent>()->SetScl(glm::vec3(Size() /*+ Resolution() / 2.0f*/));
+	//object->Get<TransformComponent>()->SetScl(glm::vec3(Size() /*+ Resolution() / 2.0f*/));
 
 	object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
 	//object->Get<RenderComponent>()->SetTextureZ(GrassMaterial().first);
@@ -180,6 +180,7 @@ void Chunk::Update()
 		//DebugLogInfo("Chunk at ", glm::to_string(pos), " size ", Size());
 		mesh->Remesh(provider, true);
 
+		DebugLogInfo("Scl ", mesh->originalSize, " Size ", Size());
 		//object->Get<TransformComponent>()->SetScl(mesh->originalSize);
 		//if (lod != 0) {
 			//DebugLogInfo("Meshed from ", glm::to_string(provider.point1), " to ", glm::to_string(provider.point2));

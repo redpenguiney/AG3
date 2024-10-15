@@ -135,8 +135,8 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 {
 	// based on https://github.com/BorisTheBrave/mc-dc/blob/a165b326849d8814fb03c963ad33a9faf6cc6dea/dual_contour_3d.py
 	// and now that it doesn't work, also https://github.com/emilk/Dual-Contouring/blob/master/src/vol/Contouring.cpp
-	auto p1 = point1; - resolution;
-	auto p2 = point2; //+ resolution/2;
+	auto p1 = point1;// -resolution / 2.0f;
+	auto p2 = point2;//+resolution / 2.0f;
 
 	//DebugLogInfo("Meshing from ", glm::to_string(point1), " to ", glm::to_string(point2));
 
