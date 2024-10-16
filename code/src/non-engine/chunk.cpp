@@ -125,19 +125,20 @@ Chunk::Chunk(glm::vec3 centerPos, unsigned int lodLevel):
 
 	Assert(lodLevel < MAX_LOD_LEVELS);
 
+	// scale and position are correct. Don't change them.
 	object->Get<TransformComponent>()->SetPos(pos);
 	//object->Get<TransformComponent>()->SetScl(glm::vec3(Size() + Resolution() ));
 	//object->Get<TransformComponent>()->SetScl(glm::vec3(1, 1, 1));
-	//object->Get<TransformComponent>()->SetScl(glm::vec3(Size() /*+ Resolution() / 2.0f*/));
+	object->Get<TransformComponent>()->SetScl(glm::vec3(Size() /*+ Resolution() / 2.0f*/));
 
 	object->Get<RenderComponent>()->SetColor({ 0.5, 0.7, 0.5, 1.0 });
-	//object->Get<RenderComponent>()->SetTextureZ(GrassMaterial().first);
+	//object->Get<RenderComponent>()->SetTextureZ(-1);
 
-	//object->Get<RenderCompdonent>()->SetColor(glm::vec4(pos / Resolution() + 0.3f, 1.0));
+	//object->Get<RenderComponent>()->SetColor(glm::vec4(glm::vec3(Resolution()/4.0f) + pos/10.0f + 0.3f, 1.0));
 
-	if (int(pos.x) % 32 != 0) {
-		object->Get<RenderComponent>()->SetColor(glm::vec4(1, 0, 0, 1));
-	}
+	//if (int(pos.y) > 0) {
+		//object->Get<RenderComponent>()->SetColor(glm::vec4(1, 0, 0, 0));
+	//}
 
 	Update();
 }
@@ -168,9 +169,9 @@ void Chunk::Update()
 {
 	if (dirty) {
 		DualContouringMeshProvider provider(meshParams);
-		provider.point1 = pos - Size() / 2.0f; // 2.0f - Resolution() / 2.0f;
-		provider.point2 = pos + Size() / 2.0f; // 2.0f + Resolution() / 2.0f;
-		provider.fixVertexCenters = false;
+		provider.point1 = pos -Size() / 2.0f; // 2.0f - Resolution() / 2.0f;
+		provider.point2 = pos +Size() / 2.0f; // 2.0f + Resolution() / 2.0f;
+		provider.fixVertexCenters = true;
 		provider.resolution = Resolution();
 		provider.distanceFunction = CalcWorldHeightmap;
 		provider.distanceFunction = [](glm::vec3 pos) {
@@ -180,7 +181,11 @@ void Chunk::Update()
 		//DebugLogInfo("Chunk at ", glm::to_string(pos), " size ", Size());
 		mesh->Remesh(provider, true);
 
-		DebugLogInfo("Scl ", mesh->originalSize, " Size ", Size());
+		if (mesh->indices.size() > 0) {
+			DebugLogInfo("Scl ", mesh->originalSize, " Size ", Size(), " Pos ", pos, " had ", mesh->indices.size());
+			Assert(mesh->originalSize == glm::vec3(Size()));
+		}
+		
 		//object->Get<TransformComponent>()->SetScl(mesh->originalSize);
 		//if (lod != 0) {
 			//DebugLogInfo("Meshed from ", glm::to_string(provider.point1), " to ", glm::to_string(provider.point2));

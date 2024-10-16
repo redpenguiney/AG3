@@ -165,10 +165,27 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 
 
 				if (vert.has_value()) {
-					//DebugLogInfo(" vPos = ", glm::to_string(*vert));
-					unsigned int i = IndexFromCell({ cellX, cellY, cellZ }, dim);
-					cellIndicesToVertexIndices.at(i) = vertexPositions.size();
-					vertexPositions.push_back(vert.value() - p1);
+					
+
+					// verify that all vertices are in range from point1 to point2
+					if (
+						(vert->x >= point1.x) &&
+						(vert->y >= point1.y) &&
+						(vert->z >= point1.z) &&
+
+						(vert->x <= point2.x) &&
+						(vert->y <= point2.y) &&
+						(vert->z <= point2.z)
+					) {
+						vert.value() -= p1;
+
+						//DebugLogInfo(" vPos = ", glm::to_string(*vert));
+						unsigned int i = IndexFromCell({ cellX, cellY, cellZ }, dim);
+						cellIndicesToVertexIndices.at(i) = vertexPositions.size();
+						vertexPositions.push_back(vert.value());
+					}
+
+					
 				}
 			}
 		}
@@ -335,6 +352,8 @@ std::pair<std::vector<float>, std::vector<unsigned int>> DualContouringMeshProvi
 	vertices.at(format.attributes.position->offset / sizeof(GLfloat) + (vertexPositions.size() + 1) * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 0) = p2.x - p1.x;
 	vertices.at(format.attributes.position->offset / sizeof(GLfloat) + (vertexPositions.size() + 1) * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 1) = p2.y - p1.y;
 	vertices.at(format.attributes.position->offset / sizeof(GLfloat) + (vertexPositions.size() + 1) * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + 2) = p2.z - p1.z;
+
+	
 
 	return std::pair(vertices, indices);
 }
