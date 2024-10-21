@@ -8,6 +8,7 @@
 Window::Window(int widthh, int heightt):
     inputDown(Event<InputObject>::New()),
     inputUp(Event<InputObject>::New()),
+    onScroll(Event<double, double>::New()),
     postInputProccessing(Event<>::New()),
     onWindowResize(Event<glm::uvec2, glm::uvec2>::New())
 {
@@ -30,6 +31,7 @@ Window::Window(int widthh, int heightt):
 
     glfwMakeContextCurrent(glfwWindow);
     glfwSetKeyCallback(glfwWindow, KeyCallback);
+    glfwSetScrollCallback(glfwWindow, ScrollCallback);
     glfwSetMouseButtonCallback(glfwWindow, MouseButtonCallback);
     glfwSetFramebufferSizeCallback(glfwWindow, ResizeCallback);
     glfwSwapInterval(1); // do vsync
@@ -280,8 +282,13 @@ void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int
     
 }
 
+void Window::ScrollCallback(GLFWwindow* window, double deltaScrollX, double deltaScrollY)
+{
+    GraphicsEngine::Get().window.onScroll->Fire(deltaScrollX, deltaScrollY);
+}
+
 void Window::ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindowHeight) { // called on window resize
-    // Tell OpenGL to draw to the whole screen
+    // Tell OpenGL to draw to the whole screen (TODO: Window class should not be concerned with the graphics library)
     glViewport(0, 0, newWindowWidth, newWindowHeight);
 
     if (newWindowWidth != 0 && newWindowHeight != 0) {
@@ -293,5 +300,3 @@ void Window::ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindo
     }
     
 }
-
-

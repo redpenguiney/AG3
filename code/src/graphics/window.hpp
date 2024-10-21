@@ -101,6 +101,9 @@ class Window {
     
     std::shared_ptr<Event<InputObject>> inputDown;
     std::shared_ptr<Event<InputObject>> inputUp;
+
+    // passes scroll delta x/y
+    std::shared_ptr<Event<double, double>> onScroll;
     
     // fired after Update() finishes
     std::shared_ptr<Event<>> postInputProccessing;
@@ -166,4 +169,5 @@ class Window {
     static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindowHeight);
     static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+    static void ScrollCallback(GLFWwindow* window, double deltaScrollX, double deltaScrollY);
 };

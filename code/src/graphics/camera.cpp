@@ -25,3 +25,10 @@ glm::vec3 Camera::ProjectToScreen(glm::dvec3 point, float aspect) {
     glm::vec4 clipSpacePoint = GetProj(aspect) * GetCamera() * glm::vec4(relPos.x, relPos.y, relPos.z, 1.0);
     return (1.0f + glm::vec3(clipSpacePoint/clipSpacePoint.w))/2.0f;
 }
+
+glm::vec3 Camera::ProjectToWorld(glm::vec2 screenPos, glm::ivec2 windowSize)
+{
+    glm::vec4 clipSpacePos((screenPos / glm::vec2(windowSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
+    glm::vec3 worldSpacePos = glm::vec3(GetProj(windowSize.x/windowSize.y) * GetCamera() * clipSpacePos);
+    return glm::normalize(position - glm::dvec3(worldSpacePos));
+}

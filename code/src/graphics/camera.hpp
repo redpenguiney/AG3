@@ -24,6 +24,6 @@ class Camera {
     glm::vec3 ProjectToScreen(glm::dvec3, float aspect);
 
     // Takes a point in screen space (the range [0, 1]) and returns a normal vector facing into the screen.
-    // aspect is window width/height.
-    glm::vec3 ProjectToWorld(glm::vec2, float aspect);
+    // Window size is in pixels.
+    glm::vec3 ProjectToWorld(glm::vec2 point, glm::ivec2 windowSize);
 };
