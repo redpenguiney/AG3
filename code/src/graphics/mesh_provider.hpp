@@ -236,9 +236,26 @@ public:
 // Will also generate normals, tangents, etc. if requested by the format.
 // Mesh will be designed to be of dimensions size.
 // Note that this provider may return an empty mesh (if the terrain area sampled is completely solid or completely hollow). TODO is that okay?
+// TODO currently basically broken
 class DualContouringMeshProvider: public MeshProvider {
 public:
     DualContouringMeshProvider(const MeshCreateParams& = MeshCreateParams::Default());
+
+    // defined in mesh_voxels.cpp
+    std::pair < std::vector < float >, std::vector< unsigned int> > GetMesh() const override;
+
+    glm::vec3 point1;
+    glm::vec3 point2;
+    float resolution;
+    std::function<float(glm::vec3)> distanceFunction;
+    std::optional<const TextureAtlas*> atlas = std::nullopt; // sorry its a pointer, should be a reference but it doesn't like optionals with references.
+    bool fixVertexCenters = false; // if true will create minecraft-style blocky terrain
+};
+
+// Mesh provider that uses marching cubes based on a signed distance function.
+class MarchingCubesMeshProvider : public MeshProvider {
+public:
+    MarchingCubesMeshProvider(const MeshCreateParams & = MeshCreateParams::Default());
 
     // defined in mesh_voxels.cpp
     std::pair < std::vector < float >, std::vector< unsigned int> > GetMesh() const override;

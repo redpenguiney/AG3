@@ -228,3 +228,5 @@ void MeshVertexFormat::SetInstancedVaoVertexAttributes(GLuint& vaoId, unsigned i
 MeshProvider::MeshProvider(const MeshCreateParams& p) : meshParams(p)
 {
 }
+
+

@@ -171,12 +171,12 @@ void Chunk::Update()
 		DualContouringMeshProvider provider(meshParams);
 		provider.point1 = pos -Size() / 2.0f; // 2.0f - Resolution() / 2.0f;
 		provider.point2 = pos +Size() / 2.0f; // 2.0f + Resolution() / 2.0f;
-		provider.fixVertexCenters = true;
+		provider.fixVertexCenters = false;
 		provider.resolution = Resolution();
 		provider.distanceFunction = CalcWorldHeightmap;
-		provider.distanceFunction = [](glm::vec3 pos) {
-			return pos.y;
-			};
+		//provider.distanceFunction = [](glm::vec3 pos) {
+			//return pos.y;
+			//};
 		
 		//DebugLogInfo("Chunk at ", glm::to_string(pos), " size ", Size());
 		mesh->Remesh(provider, true);

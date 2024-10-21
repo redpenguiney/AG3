@@ -258,8 +258,11 @@ void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int
         .shiftDown = bool(mods & GLFW_MOD_SHIFT)
     };
 
-    if (button == GLFW_MOUSE_BUTTON_1) {
-        input.input = InputObject::LMB;
+    if (button > GLFW_MOUSE_BUTTON_LAST) {
+        DebugLogError("Goofy mouse button value of ", button);
+    }
+    else {
+        input.input = InputObject::InputType(InputObject::LMB + button);
 
         if (action == GLFW_RELEASE) {
             GraphicsEngine::Get().window.PRESS_ENDED_KEYS.insert(input);
@@ -272,20 +275,9 @@ void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int
             GraphicsEngine::Get().window.inputUp->Fire(input);
         }
     }
-    else if (button == GLFW_MOUSE_BUTTON_2) {
-        input.input = InputObject::RMB;
+    
 
-        if (action == GLFW_RELEASE) {
-            GraphicsEngine::Get().window.PRESS_ENDED_KEYS.insert(input);
-            GraphicsEngine::Get().window.PRESSED_KEYS.erase(input.input);
-            GraphicsEngine::Get().window.inputDown->Fire(input);
-        }
-        else if (action == GLFW_PRESS) {
-            GraphicsEngine::Get().window.PRESS_BEGAN_KEYS.insert(input);
-            GraphicsEngine::Get().window.PRESSED_KEYS.insert(input.input);
-            GraphicsEngine::Get().window.inputUp->Fire(input);
-        }
-    }
+    
 }
 
 void Window::ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindowHeight) { // called on window resize

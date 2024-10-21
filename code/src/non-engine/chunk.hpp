@@ -6,7 +6,7 @@
 
 const inline unsigned int MAX_LOD_LEVELS = 4;
 const inline float MAX_CHUNK_SIZE = 16 * powf(2, MAX_LOD_LEVELS - 1); // size of the lowest-detail possible chunk
-const inline float MAX_CHUNK_RESOLUTION = 16 * powf(2, MAX_LOD_LEVELS - 1); // resolution of the lowest-detail possible chunk; meters per sample
+const inline float MAX_CHUNK_RESOLUTION = 8 * powf(2, MAX_LOD_LEVELS - 1); // resolution of the lowest-detail possible chunk; meters per sample
 const inline unsigned int MAX_LOADED_CHUNKS_PER_FRAME = 4000000;
 
 // returns pairs of <lodLevel, relPos> for chunks.

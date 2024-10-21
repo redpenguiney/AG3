@@ -59,9 +59,14 @@ class InputObject {
         Shift,
         Alt,
 
-        LMB,
-        RMB,
-        MMB,
+        LMB,// mouse button 1
+        RMB,// mouse button 2
+        MMB,// mouse button 3
+        MB4,
+        MB5,
+        MB6,
+        MB7,
+        MB8,
 
         ScrollUp,
         ScrollDown,
