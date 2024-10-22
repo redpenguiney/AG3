@@ -104,6 +104,8 @@ void GameInit()
         auto& GE = GraphicsEngine::Get();
         auto& PE = PhysicsEngine::Get();
 
+        DebugLogInfo("Pos ", GE.window.MOUSE_POS);
+
         glm::vec3 mouseDirection = GE.camera.ProjectToWorld(GE.window.MOUSE_POS, glm::vec2(GE.window.width, GE.window.height)) * y;
         GE.camera.position += mouseDirection;
     });
