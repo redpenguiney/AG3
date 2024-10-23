@@ -29,7 +29,7 @@ glm::vec3 Camera::ProjectToScreen(glm::dvec3 point, float aspect) {
 glm::vec3 Camera::ProjectToWorld(glm::vec2 screenPos, glm::ivec2 windowSize)
 {
     glm::vec4 clipSpacePos((screenPos / glm::vec2(windowSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
-    //clipSpacePos =  - clipSpacePos;
+    clipSpacePos.y =  -clipSpacePos.y;
 
     DebugLogInfo("Clip space = ", clipSpacePos);
 

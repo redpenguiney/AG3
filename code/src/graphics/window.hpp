@@ -71,6 +71,11 @@ class InputObject {
         ScrollUp,
         ScrollDown,
 
+        LeftArrow,
+        RightArrow,
+        UpArrow,
+        DownArrow,
+
         Unknown
     };
 

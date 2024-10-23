@@ -97,17 +97,39 @@ void GameInit()
 
     //GE.SetDebugFreecamEnabled(true);
     GE.camera.rotation = glm::quatLookAt(glm::vec3(0, -1, 0), glm::vec3(0, 0, 1));
-
+    GE.camera.position = glm::vec3(0, 1, 0);
     //
 
     GE.window.onScroll->Connect([](double x, double y) {
         auto& GE = GraphicsEngine::Get();
-        auto& PE = PhysicsEngine::Get();
 
         DebugLogInfo("Pos ", GE.window.MOUSE_POS);
 
-        glm::vec3 mouseDirection = GE.camera.ProjectToWorld(GE.window.MOUSE_POS, glm::vec2(GE.window.width, GE.window.height)) * y;
-        GE.camera.position += mouseDirection;
+        if (x == 0) {
+            glm::vec3 mouseDirection = GE.camera.ProjectToWorld(GE.window.MOUSE_POS, glm::vec2(GE.window.width, GE.window.height)) * y;
+            GE.camera.position += mouseDirection;
+        }
+        else {
+            //GE.camera.position.x += x;
+            //GE.camera.position.z += y;
+        }
+        
+    });
+
+    GE.window.postInputProccessing->Connect([]() {
+        auto& GE = GraphicsEngine::Get();
+
+        // cast to int bc otherwise subtracting unsigned ints
+        int right = GE.window.PRESSED_KEYS.count(InputObject::D) || GE.window.PRESSED_KEYS.count(InputObject::RightArrow);
+        int left = GE.window.PRESSED_KEYS.count(InputObject::A) || GE.window.PRESSED_KEYS.count(InputObject::LeftArrow);
+
+        int up = GE.window.PRESSED_KEYS.count(InputObject::W) || GE.window.PRESSED_KEYS.count(InputObject::UpArrow);
+        int down = GE.window.PRESSED_KEYS.count(InputObject::S) || GE.window.PRESSED_KEYS.count(InputObject::DownArrow);
+
+        float dx = left - right;
+        float dz = up - down;
+        GE.camera.position.x += dx;
+        GE.camera.position.z += dz;
     });
 
     {

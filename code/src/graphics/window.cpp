@@ -30,7 +30,7 @@ Window::Window(int widthh, int heightt):
     }
 
     glfwMakeContextCurrent(glfwWindow);
-    glfwSetKeyCallback(glfwWindow, KeyCallback);
+    glfwSetKeyCallback(glfwWindow, KeyCallback); // TODO: for text input we want character callback, not key callback
     glfwSetScrollCallback(glfwWindow, ScrollCallback);
     glfwSetMouseButtonCallback(glfwWindow, MouseButtonCallback);
     glfwSetFramebufferSizeCallback(glfwWindow, ResizeCallback);
@@ -215,6 +215,14 @@ InputObject::InputType glfwKeyToInputType(int key) {
         return InputObject::LBracket;
     case GLFW_KEY_RIGHT_BRACKET:
         return InputObject::RBracket;
+    case GLFW_KEY_UP:
+        return InputObject::UpArrow;
+    case GLFW_KEY_DOWN:
+        return InputObject::DownArrow;
+    case GLFW_KEY_LEFT:
+        return InputObject::LeftArrow;
+    case GLFW_KEY_RIGHT:
+        return InputObject::RightArrow;
     case GLFW_KEY_LEFT_SUPER: // windows key, here to avoid an annoying unrecognized key msg 
         return InputObject::Unknown;
     case GLFW_KEY_UNKNOWN:
