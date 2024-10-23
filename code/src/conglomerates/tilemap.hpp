@@ -1,7 +1,8 @@
 #pragma once
 #include "graphics/texture_atlas.hpp"
+#include "graphics/mesh_provider.hpp"
 
-// TODO
-class Tilemap {
+// Creates a mesh from the 
+class TilemapMeshProvider: public MeshProvider {
 
 };
