@@ -56,6 +56,9 @@ struct BodyPart {
 	// just a reference to the containing body's oxygen level. 
 	float& bodyOxygen;
 
+	//  relevant to prostheses and stuff
+	bool organic;
+
 	// determines rate at which condition/health decreases
 	Attribute resilience;
 

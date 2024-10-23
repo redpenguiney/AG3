@@ -11,6 +11,12 @@ template <typename ... eventArgs>
 class Event: public BaseEvent {
 	public:
 
+	// Represents a function's connection to a specific event. 
+	// When this goes out of scope, it disconnects the function from the event.
+	class Connection {
+		~Connection();
+	};
+
 	using ConnectableFunctionArgs = std::tuple<eventArgs...>;
 	using ConnectableFunction = std::function<void(eventArgs...)>;
 
@@ -39,8 +45,13 @@ class Event: public BaseEvent {
 
 	// Connects the given function to the event, so that it will be called every time the event is fired.
 	// WARNING: if the function is a lambda which captures a shared_ptr, then that shared_ptr gets stored in this event.
-	// TODO: disconnecting events
+	// This connection is permanent and lasts until the event is destroyed. For a temporary connection use ConnectTemporary().
 	void Connect(ConnectableFunction function) {
+		connectedFunctions->push_back(function);
+	}
+
+
+	Connection ConnectTemporary() {
 		connectedFunctions->push_back(function);
 	}
 
