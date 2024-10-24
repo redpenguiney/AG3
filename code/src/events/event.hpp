@@ -51,9 +51,9 @@ class Event: public BaseEvent {
 	}
 
 
-	Connection ConnectTemporary() {
-		connectedFunctions->push_back(function);
-	}
+	//Connection ConnectTemporary() {
+	//	connectedFunctions->push_back(function);
+	//}
 
 	// returns true if anything is connected to this event.
 	bool HasConnections() {

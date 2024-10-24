@@ -240,6 +240,9 @@
     <ClCompile Include="..\code\src\graphics\shader_input_provider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\code\src\utility\tree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\code\src\events\base_event.hpp">
@@ -480,6 +483,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\code\src\graphics\shader_input_provider.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\code\src\utility\tree.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
