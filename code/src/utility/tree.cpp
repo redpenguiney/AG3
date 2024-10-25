@@ -81,3 +81,4 @@ template class Tree<2>;
 template class Tree<4>;
 template class Tree<8>;
 template class Tree<27>;
+template class Tree<256>;

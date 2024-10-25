@@ -28,20 +28,20 @@ private:
 	const static inline int rootNodeIndex = 0;
 
 	struct Node {
-		int childIndex = -1; // (-1 if no children) index to first of 4 children
+		int childIndex = -1; // (-1 if no children) index to first of NodeChildrenCount children
 		int data = -1; // (-1 if no data) index to arbitrary user data stored outside the quadtree. It is expected that this index will be updated if the data it points to moves.
 	};
 
 	struct MaybeNode { // used for free list of nodes
 		union {
 			Node node;
-			int nextFree; // nonowning pointer to the next set of 4 free nodes. -1 if there is none.
+			int nextFree; // nonowning pointer to the next set of NodeChildrenCount free nodes. -1 if there is none.
 		};
 		
 		MaybeNode();
 	};
 
-	// free list of nodes. Guaranteed to have free nodes in contiguous sets of 4 so that a node's children are contiguous.
+	// free list of nodes. Guaranteed to have free nodes in contiguous sets of NodeChildrenCount so that a node's children are contiguous.
 	std::vector<MaybeNode> nodes;
 	int firstFreeIndex = -1; // first free node in nodes, -1 if none
 
@@ -54,4 +54,5 @@ using BinaryTree = Tree<2>;
 using Quadtree = Tree<4>;
 using Octree = Tree<8>;
 using Icoseptree = Tree<27>;
+using ChunkTree = Tree<256>;
 

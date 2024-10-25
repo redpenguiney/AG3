@@ -24,7 +24,14 @@ public:
 	TerrainTile GetTile(int x, int z);
 
 private:
-	Quadtree world;
+	// depth 0 = root (16 million m)^2
+	// depth 1 = LOD for climate simulation (1 million m)^2
+	// depth 2  (
+	//
+	//
+	//
+	// depth 6 = individual tiles 
+	ChunkTree world;
 	std::vector<TerrainTile> tiles;
 
 	World();
