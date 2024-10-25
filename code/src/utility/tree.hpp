@@ -38,6 +38,7 @@ private:
 			int nextFree; // nonowning pointer to the next set of 4 free nodes. -1 if there is none.
 		};
 		
+		MaybeNode();
 	};
 
 	// free list of nodes. Guaranteed to have free nodes in contiguous sets of 4 so that a node's children are contiguous.
@@ -53,3 +54,4 @@ using BinaryTree = Tree<2>;
 using Quadtree = Tree<4>;
 using Octree = Tree<8>;
 using Icoseptree = Tree<27>;
+

@@ -2,7 +2,7 @@
 
 template <unsigned int NodeChildrenCount>
 Tree<NodeChildrenCount>::Tree() {
-	nodes.push_back(MaybeNode(Node(-1, -1)));
+	nodes.emplace_back();
 }
 
 template <unsigned int NodeChildrenCount>
@@ -23,7 +23,7 @@ void Tree<NodeChildrenCount>::Split(Node& node) {
 		firstFreeIndex = nodes.size();
 
 		for (unsigned int i = 0; i < NodeChildrenCount; i++) {
-			nodes.push_back(MaybeNode(-1));
+			nodes.emplace_back();
 		}
 	}
 
@@ -68,6 +68,12 @@ void Tree<NodeChildrenCount>::VisitChildren(int nodeIndex, int nodeDepth, std::f
 			VisitChildren(node.childIndex + i, nodeDepth + 1, func);
 		}
 	}
+}
+
+template<unsigned int NodeChildrenCount>
+inline Tree<NodeChildrenCount>::MaybeNode::MaybeNode()
+{
+	node = { .childIndex = -1, .data = -1 };
 }
 
 // explicit template instantiations
