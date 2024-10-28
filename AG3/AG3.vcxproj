@@ -300,6 +300,7 @@
     <ClCompile Include="..\code\src\non-engine\health.cpp" />
     <ClCompile Include="..\code\src\non-engine\humanoid.cpp" />
     <ClCompile Include="..\code\src\non-engine\modifier.cpp" />
+    <ClCompile Include="..\code\src\non-engine\tile_chunk.cpp" />
     <ClCompile Include="..\code\src\non-engine\world.cpp" />
     <ClCompile Include="..\code\src\non-engine\worldgen.cpp" />
     <ClCompile Include="..\code\src\non-engine\world_loader.cpp" />
@@ -381,6 +382,7 @@
     <ClInclude Include="..\code\src\non-engine\injury.hpp" />
     <ClInclude Include="..\code\src\non-engine\modifier.hpp" />
     <ClInclude Include="..\code\src\non-engine\player.hpp" />
+    <ClInclude Include="..\code\src\non-engine\tile_chunk.hpp" />
     <ClInclude Include="..\code\src\non-engine\world.hpp" />
     <ClInclude Include="..\code\src\non-engine\worldgen.hpp" />
     <ClInclude Include="..\code\src\physics\aabb.hpp" />

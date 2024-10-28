@@ -6,6 +6,7 @@
 #include <memory>
 #include <glm/vec3.hpp>
 #include "events/event.hpp"
+#include "tile_chunk.hpp"
 
 class Entity;
 
@@ -89,6 +90,8 @@ private:
 	std::vector<TerrainChunk> terrain;
 	std::vector<ClimateTile> climate;
 	std::vector<BiomeTile> biomes;
+
+	std::unordered_map<glm::ivec2, RenderChunk>
 
 	World();
 	
