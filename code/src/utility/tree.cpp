@@ -8,13 +8,14 @@ Tree<NodeChildrenCount>::Tree() {
 template <unsigned int NodeChildrenCount>
 void Tree<NodeChildrenCount>::ForEach(int nodeDepth, std::function<void(Node&)> func)
 {
-	VisitChildren(rootNodeIndex, nodeDepth, func);
+	VisitChildren(rootNodeIndex, 0, nodeDepth, func);
 }
 
 template <unsigned int NodeChildrenCount>
-void Tree<NodeChildrenCount>::ForEach(std::function<void(Node&)> func)
+void Tree<NodeChildrenCount>::ForEach(std::function<void(Node&, int)> func)
 {
-	VisitChildren(rootNodeIndex, func);
+
+	VisitChildren(rootNodeIndex, 0, func);
 }
 
 template <unsigned int NodeChildrenCount>
@@ -45,27 +46,36 @@ void Tree<NodeChildrenCount>::Collapse(Node& node) {
 }
 
 template <unsigned int NodeChildrenCount>
-void Tree<NodeChildrenCount>::VisitChildren(int nodeIndex, std::function<void(Node&)> func)
+Tree<NodeChildrenCount>::Node& Tree<NodeChildrenCount>::Root() {
+	return nodes[rootNodeIndex].node;
+}
+
+template <unsigned int NodeChildrenCount>
+void Tree<NodeChildrenCount>::VisitChildren(int nodeIndex, int currentNodeDepth, std::function<void(Node&, int)> func)
 {
 	Node& node = nodes[nodeIndex].node;
-	func(node);
+	func(node, currentNodeDepth);
 
 	if (node.childIndex != -1) {
 		for (unsigned int i = 0; i < NodeChildrenCount; i++) {
-			VisitChildren(node.childIndex + i, func);
+			VisitChildren(node.childIndex + i, currentNodeDepth + 1, func);
 		}
 	}
 }
 
 template <unsigned int NodeChildrenCount>
-void Tree<NodeChildrenCount>::VisitChildren(int nodeIndex, int nodeDepth, std::function<void(Node&)> func)
+void Tree<NodeChildrenCount>::VisitChildren(int nodeIndex, int currentNodeDepth, int targetNodeDepth, std::function<void(Node&)> func)
 {
+	if (currentNodeDepth > targetNodeDepth) { return; }
 	Node& node = nodes[nodeIndex].node;
-	func(node);
 
+	if (currentNodeDepth == targetNodeDepth) {
+		func(node);
+	}
+	
 	if (node.childIndex != -1) {
 		for (unsigned int i = 0; i < NodeChildrenCount; i++) {
-			VisitChildren(node.childIndex + i, nodeDepth + 1, func);
+			VisitChildren(node.childIndex + i, currentNodeDepth + 1, targetNodeDepth, func);
 		}
 	}
 }

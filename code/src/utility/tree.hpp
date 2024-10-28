@@ -13,16 +13,19 @@ public:
 	struct Node;
 
 	// executes the function for every node of the specified depth (where the root is depth = 0)
-	void ForEach(int nodeDepth, std::function<void(Node&)>);
+	void ForEach(int nodeDepth, std::function<void(Node& node)>);
 
-	// executes the function for every node
-	void ForEach(std::function<void(Node&)>);
+	// executes the function for every node, passing in the depth of the node
+	void ForEach(std::function<void(Node& node, int depth)>);
 
-	// Splits the given node, giving it 4 children. The data it refers to is unaffected.
+	// Splits the given node, giving it NodeChildrenCount children. The data it refers to is unaffected.
 	void Split(Node& node);
 
-	// "Removes" the node's 4 children.
+	// "Removes" the node's NodeChildrenCount children.
 	void Collapse(Node& node);
+
+	// returns the root node
+	Node& Root();
 
 private:
 	const static inline int rootNodeIndex = 0;
@@ -45,9 +48,9 @@ private:
 	std::vector<MaybeNode> nodes;
 	int firstFreeIndex = -1; // first free node in nodes, -1 if none
 
-	void VisitChildren(int nodeIndex, int nodeDepth, std::function<void(Node&)>);
+	void VisitChildren(int nodeIndex, int currentNodeDepth, int targetNodeDepth, std::function<void(Node&)>);
 
-	void VisitChildren(int nodeIndex, std::function<void(Node&)>);
+	void VisitChildren(int nodeIndex, int currentNodeDepth, std::function<void(Node&, int)>);
 };
 
 using BinaryTree = Tree<2>;

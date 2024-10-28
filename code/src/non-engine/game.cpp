@@ -14,6 +14,7 @@
 #include "chunk.hpp"
 
 #include "tests/gameobject_tests.hpp"
+#include "world.hpp"
 
 //#include "noise/noise.h"
 
@@ -75,7 +76,7 @@ void MakeMainMenu() {
             //TestCubeArray(1, 2, 1, false);
             //DebugLogInfo("STARTING GAME");
             //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
-            
+            World::Generate();
         }
     });
 
@@ -125,8 +126,16 @@ void GameInit()
         int up = GE.window.PRESSED_KEYS.count(InputObject::W) || GE.window.PRESSED_KEYS.count(InputObject::UpArrow);
         int down = GE.window.PRESSED_KEYS.count(InputObject::S) || GE.window.PRESSED_KEYS.count(InputObject::DownArrow);
 
+        
+
         float dx = left - right;
         float dz = up - down;
+
+        if (GE.window.PRESSED_KEYS.count(InputObject::MMB)) {
+            dx = 0.25 * GE.window.MOUSE_DELTA.x;
+            dz = 0.25 * GE.window.MOUSE_DELTA.y;
+        }
+
         GE.camera.position.x += dx;
         GE.camera.position.z += dz;
     });
@@ -214,40 +223,40 @@ void GameInit()
 
     
 
-    GE.window.inputDown->Connect([](InputObject input) {
-        auto m = CubeMesh();
-        if (input.input == InputObject::LMB) {
-            auto castResult = Raycast(GraphicsEngine::Get().GetDebugFreecamCamera().position, LookVector(glm::radians(GraphicsEngine::Get().debugFreecamPitch), glm::radians(GraphicsEngine::Get().debugFreecamYaw)));
+    //GE.window.inputDown->Connect([](InputObject input) {
+    //    auto m = CubeMesh();
+    //    if (input.input == InputObject::LMB) {
+    //        auto castResult = Raycast(GraphicsEngine::Get().GetDebugFreecamCamera().position, LookVector(glm::radians(GraphicsEngine::Get().debugFreecamPitch), glm::radians(GraphicsEngine::Get().debugFreecamYaw)));
 
-            if (castResult.hitObject != nullptr) {
+    //        if (castResult.hitObject != nullptr) {
 
-                GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
-                params.meshId = m->meshId;
-                //params.materialId = brickMaterial->id;
-                for (unsigned int i = 0; i < 1; i++) {
-                    //auto g = GameObject::New(params);
-                    //g->Get<TransformComponent>()->SetPos(glm::vec3(10, -5, 10));
-                }
-                
+    //            GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
+    //            params.meshId = m->meshId;
+    //            //params.materialId = brickMaterial->id;
+    //            for (unsigned int i = 0; i < 1; i++) {
+    //                //auto g = GameObject::New(params);
+    //                //g->Get<TransformComponent>()->SetPos(glm::vec3(10, -5, 10));
+    //            }
+    //            
 
-                if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RigidbodyComponent>()) {
+    //            if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RigidbodyComponent>()) {
 
-                    castResult.hitObject->RawGet<RigidbodyComponent>()->velocity += castResult.hitNormal * 2.0;
-                    //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
-                }
+    //                castResult.hitObject->RawGet<RigidbodyComponent>()->velocity += castResult.hitNormal * 2.0;
+    //                //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
+    //            }
 
-                else if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RenderComponent>()) {
-                    //castResult.hitObject->RawGet<RenderComponent>()->SetColor({ 1.0, 1.0, 1.0, 0.0 });
-                }
-            }
+    //            else if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RenderComponent>()) {
+    //                //castResult.hitObject->RawGet<RenderComponent>()->SetColor({ 1.0, 1.0, 1.0, 0.0 });
+    //            }
+    //        }
 
-            //        if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
+    //        //        if (castResult.hitObject != nullptr && castResult.hitObject->rigidbodyComponent) {
 
-            //            castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
-            //            //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
-            //        }
-        }
-        });
+    //        //            castResult.hitObject->rigidbodyComponent->velocity += castResult.hitNormal * 0.4;
+    //        //            //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
+    //        //        }
+    //    }
+    //    });
 
     //PE.prePhysicsEvent.Connect([&GE](float dt) {
     //    if (GE.window.LMB_DOWN) {

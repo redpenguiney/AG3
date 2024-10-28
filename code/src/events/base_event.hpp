@@ -3,7 +3,7 @@
 #include <memory>
 
 // Abstract event class. See Event for actual info.
-class BaseEvent {
+class BaseEvent: public std::enable_shared_from_this<BaseEvent> {
 
 
 protected:

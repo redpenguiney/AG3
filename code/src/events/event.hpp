@@ -3,18 +3,40 @@
 #include <functional>
 #include "base_event.hpp"
 #include "debug/log.hpp"
+#include <memory>
 
 // Events of various kinds are triggered by various parts of the AG3 engine (input events, collision events, etc.).
 // You can connect functions to those events to make code run when an event is fired, as well as fire custom events.
 // Connected functions are not called immediately for performance reasons, but are instead stored in a queue then fired all at once.
 template <typename ... eventArgs>
 class Event: public BaseEvent {
-	public:
+public:
+	friend class Connection;
 
 	// Represents a function's connection to a specific event. 
 	// When this goes out of scope, it disconnects the function from the event.
 	class Connection {
-		~Connection();
+	public:
+		Connection(unsigned int id, std::weak_ptr<Event> even): 
+			connectedFunctionId(id), event(even) 
+		{
+		
+		}
+
+		~Connection() {
+			if (!event.expired()) {
+				auto lockedEvent = event.lock();
+				for (auto it = lockedEvent->connectedFunctions->begin(); it != lockedEvent->connectedFunctions->end(); it++) {
+					if (it->first == connectedFunctionId) {
+						lockedEvent->connectedFunctions->erase(it);
+						return;
+					}
+				}
+			}
+		}
+	private:
+		unsigned int connectedFunctionId;
+		std::weak_ptr<Event> event;
 	};
 
 	using ConnectableFunctionArgs = std::tuple<eventArgs...>;
@@ -47,25 +69,29 @@ class Event: public BaseEvent {
 	// WARNING: if the function is a lambda which captures a shared_ptr, then that shared_ptr gets stored in this event.
 	// This connection is permanent and lasts until the event is destroyed. For a temporary connection use ConnectTemporary().
 	void Connect(ConnectableFunction function) {
-		connectedFunctions->push_back(function);
+		connectedFunctions->push_back(std::make_pair(LAST_CONNECTION_ID++, function));
 	}
 
-
-	//Connection ConnectTemporary() {
-	//	connectedFunctions->push_back(function);
-	//}
+	// Connects the given function to the event, so that it will be called every time the event is fired, until the destruction of the returned Connection object.
+	std::unique_ptr<Connection> ConnectTemporary(ConnectableFunction function) {
+		unsigned int id = LAST_CONNECTION_ID++;
+		connectedFunctions->push_back(std::make_pair(id, function));
+		std::weak_ptr<Event> wthis = std::dynamic_pointer_cast<Event>(shared_from_this()); // sadly we have to use shared_ptr, cast it, then turn it to a weak_ptr because no dynamic pointer cast for weak_ptr. stupid.
+		return std::move(std::unique_ptr<Connection>(new Connection(id, wthis)));
+	}
 
 	// returns true if anything is connected to this event.
 	bool HasConnections() {
 		return connectedFunctions->size() > 0;
 	};
 
-	private:
+private:
+	static inline unsigned int LAST_CONNECTION_ID = 0;
 
 	// private to enforce use of factory constructor
 	Event() : BaseEvent() {
 		eventInvocations = std::make_shared< std::vector<ConnectableFunctionArgs>>();
-		connectedFunctions = std::make_shared< std::vector<ConnectableFunction>>();
+		connectedFunctions = std::make_shared< std::vector<std::pair<unsigned int, ConnectableFunction>>>();
 	}
 
 	private:
@@ -76,11 +102,11 @@ class Event: public BaseEvent {
 	inline void Flush() {
 		// annoyingly, because a function can destroy the event which called it (FOR EXAMPLE (AHEM), if a gui DESTROYS itself when clicked), we have to create shared_ptrs in here
 		std::shared_ptr<std::vector<ConnectableFunctionArgs>> eventInvocationsLock = eventInvocations;
-		std::shared_ptr<std::vector<ConnectableFunction>> connectedFunctionsLock = connectedFunctions;
+		std::shared_ptr<std::vector<std::pair<unsigned int ,ConnectableFunction>>> connectedFunctionsLock = connectedFunctions;
 
 		for (auto& cfa : *eventInvocationsLock) {
 			for (auto& f : *connectedFunctionsLock) {
-				std::apply(f, cfa); // std::apply basically calls f using the tuple cfa as a variaidic for us.
+				std::apply(f.second, cfa); // std::apply basically calls f using the tuple cfa as a variaidic for us.
 			}
 		}
 
@@ -89,6 +115,8 @@ class Event: public BaseEvent {
 	
 	// shared_ptrs needed so that Flush() can keep working without segfaults, even if the event is destroyed by calling a connected function.
 	std::shared_ptr<std::vector<ConnectableFunctionArgs>> eventInvocations;
-	std::shared_ptr<std::vector<ConnectableFunction>> connectedFunctions;
+
+	// unsigned int is ID of the function, because std::function can't be compared and we need to be able to differentiate between different functions to disconnect them.
+	std::shared_ptr<std::vector<std::pair<unsigned int, ConnectableFunction>>> connectedFunctions; 
 	
 };
