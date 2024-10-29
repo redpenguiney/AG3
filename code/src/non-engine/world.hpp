@@ -68,6 +68,9 @@ public:
 
 	TerrainTile GetTile(int x, int z);
 
+	// returns the chunk that the given coordinates lie inside
+	TerrainChunk GetChunk(int x, int z); 
+
 	~World();
 
 private:
@@ -85,13 +88,13 @@ private:
 	ChunkTree world;
 
 	// indices into terrain for chunks that should always be loaded (like those around player built structures)
-	std::vector<unsigned int> forceLoadedChunks;
+	std::vector<unsigned int> forceLoadedChunkskk;
 
 	std::vector<TerrainChunk> terrain;
 	std::vector<ClimateTile> climate;
 	std::vector<BiomeTile> biomes;
 
-	std::unordered_map<glm::ivec2, RenderChunk>
+	std::unordered_map<glm::ivec2, RenderChunk> renderChunks;
 
 	World();
 	
