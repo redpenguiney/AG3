@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <optional>
+#include "gameobjects/gameobject.hpp"
 
 class Mesh;
 

@@ -1,10 +1,16 @@
 #include "world.hpp"
 #include <debug/assert.hpp>
 #include "graphics/gengine.hpp"
+#include "tile_data.hpp"
 
 TerrainTile GetTile(int x, int z)
 {
-    
+    if (x > 0) {
+        return TerrainTile(World::DIRT, -1);
+    }
+    else {
+        return TerrainTile(World::ROCK, -1);
+    }
 }
 
 void World::Generate()
@@ -15,6 +21,11 @@ void World::Generate()
 
 void World::Unload() {
     loaded = nullptr;
+    
+}
+
+TerrainTile World::GetTile(int x, int z)
+{
     
 }
 
@@ -61,5 +72,24 @@ World::World() {
         }
 
         // update those chunks
+
+        // determine which chunks must be rendered
+        chunkLocations.clear();
+        glm::vec2 topLeft = GraphicsEngine::Get().GetCurrentCamera().ProjectToWorld(glm::vec2(0, 0), glm::ivec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height));
+        glm::vec2 bottomRight = GraphicsEngine::Get().GetCurrentCamera().ProjectToWorld(glm::vec2(1, 1), glm::ivec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height));
+        topLeft = glm::floorMultiple(topLeft, glm::vec2(16.0f));
+        bottomRight = glm::ceilMultiple(bottomRight, glm::vec2(16.0f));
+        for ( )
+
+        // render
     });
 }
+
+int World::DIRT = RegisterTileData({
+    .displayName = "Dirt",
+    .texAtlasRegionId = 0
+});
+int World::ROCK = RegisterTileData({
+    .displayName = "Rock",
+    .texAtlasRegionId = 1
+});

@@ -1,6 +1,7 @@
 #pragma once
 #include <GLM/vec2.hpp>
 #include <memory>
+#include <vector>
 
 class TextureAtlas;
 class GameObject;

@@ -104,11 +104,11 @@ void GameInit()
     GE.window.onScroll->Connect([](double x, double y) {
         auto& GE = GraphicsEngine::Get();
 
-        //if (x == 0) {
+        if (y != 0) {
             glm::vec3 mouseDirection = GE.camera.ProjectToWorld(GE.window.MOUSE_POS, glm::vec2(GE.window.width, GE.window.height)) * y;
             mouseDirection *= abs(1.0 / mouseDirection.y);
             GE.camera.position += mouseDirection;
-        //}
+        }
         //else {
             //GE.camera.position.x += x;
             //GE.camera.position.z += y;

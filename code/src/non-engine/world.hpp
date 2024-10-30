@@ -7,6 +7,7 @@
 #include <glm/vec3.hpp>
 #include "events/event.hpp"
 #include "tile_chunk.hpp"
+#include "utility/hash_glm.hpp"
 
 class Entity;
 
@@ -17,7 +18,7 @@ struct TerrainTile {
 
 struct TerrainChunk {
 	std::array<std::array<TerrainTile, 16>, 16> tiles;
-	std::vector<std::unique_ptr<Entity>> entities;
+	//std::vector<std::unique_ptr<Entity>> entities;
 };
 
 struct ClimateTile {
@@ -52,6 +53,8 @@ struct ChunkLoader {
 
 class World {
 public:
+	// Tile ids; always have defined value.
+	static int DIRT, ROCK, GRASS, SNOW;
 
 	// the currently loaded world.
 	static inline std::unique_ptr<World> loaded = nullptr;
@@ -88,7 +91,7 @@ private:
 	ChunkTree world;
 
 	// indices into terrain for chunks that should always be loaded (like those around player built structures)
-	std::vector<unsigned int> forceLoadedChunkskk;
+	std::vector<unsigned int> forceLoadedChunks;
 
 	std::vector<TerrainChunk> terrain;
 	std::vector<ClimateTile> climate;
