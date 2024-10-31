@@ -97,7 +97,7 @@ private:
 	std::vector<ClimateTile> climate;
 	std::vector<BiomeTile> biomes;
 
-	std::unordered_map<glm::ivec2, RenderChunk> renderChunks;
+	std::unordered_map<glm::ivec2, std::unique_ptr<RenderChunk>> renderChunks; // unique_ptr because unordered_map::emplace was bullying me
 
 	World();
 	

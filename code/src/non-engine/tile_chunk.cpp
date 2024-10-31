@@ -35,6 +35,11 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 	for (int i = centerPos.x - radius; i < centerPos.x + radius; i += stride) {
 		for (int j = centerPos.y - radius; j < centerPos.y + radius; j += stride) {
 			const auto& tile = tiles[i * (radius + 2) + j];
+
+			if (tile.floor == -1) {
+				continue;
+			}
+
 			const auto& floorData = GetTileData(tile.floor);
 
 			if (floorData.gameobject.has_value()) {
@@ -92,7 +97,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 	mesh = Mesh::New(RawMeshProvider(vertices, indices, params), false);
 }
 
-RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, std::shared_ptr<Material>& material, std::shared_ptr<TextureAtlas>& atlas):
+RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std::shared_ptr<Material>& material, const std::shared_ptr<TextureAtlas>& atlas):
 	material(material),
 	atlas(atlas)
 {

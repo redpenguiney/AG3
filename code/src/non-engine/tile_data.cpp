@@ -9,6 +9,7 @@ std::vector<TileData>& Data() {
 }
 
 int RegisterTileData(TileData tile) {
+	DebugLogInfo("Registering ", Data().size());
 	Data().push_back(tile);
 	return Data().size() - 1;
 }

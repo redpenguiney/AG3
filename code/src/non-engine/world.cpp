@@ -2,16 +2,7 @@
 #include <debug/assert.hpp>
 #include "graphics/gengine.hpp"
 #include "tile_data.hpp"
-
-TerrainTile GetTile(int x, int z)
-{
-    if (x > 0) {
-        return TerrainTile(World::DIRT, -1);
-    }
-    else {
-        return TerrainTile(World::ROCK, -1);
-    }
-}
+#include <tests/gameobject_tests.hpp>
 
 void World::Generate()
 {
@@ -26,7 +17,12 @@ void World::Unload() {
 
 TerrainTile World::GetTile(int x, int z)
 {
-    
+    if (x > 0) {
+        return TerrainTile(World::DIRT, -1);
+    }
+    else {
+        return TerrainTile(World::ROCK, -1);
+    }
 }
 
 World::~World() {
@@ -55,7 +51,7 @@ World::World() {
         }
     });
 
-    preRenderConnection = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([](float) {
+    preRenderConnection = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([this](float) {
         Assert(loaded != nullptr);
         
         
@@ -73,15 +69,38 @@ World::World() {
 
         // update those chunks
 
+
+        auto atlas = std::shared_ptr<TextureAtlas>(new TextureAtlas());
+
         // determine which chunks must be rendered
-        chunkLocations.clear();
-        glm::vec2 topLeft = GraphicsEngine::Get().GetCurrentCamera().ProjectToWorld(glm::vec2(0, 0), glm::ivec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height));
-        glm::vec2 bottomRight = GraphicsEngine::Get().GetCurrentCamera().ProjectToWorld(glm::vec2(1, 1), glm::ivec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height));
-        topLeft = glm::floorMultiple(topLeft, glm::vec2(16.0f));
-        bottomRight = glm::ceilMultiple(bottomRight, glm::vec2(16.0f));
-        for ( )
+        auto& cam = GraphicsEngine::Get().GetCurrentCamera();
+        glm::vec3 topLeft = cam.ProjectToWorld(glm::vec2(0, 0), glm::ivec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height));
+        topLeft *= cam.position.y / topLeft.y;
+        glm::vec3 bottomRight = -topLeft;
+        glm::ivec3 roundedTopLeft = glm::floorMultiple(glm::dvec3(topLeft) + cam.position, glm::dvec3(16.0f));
+        glm::ivec3 roundedBottomRight = glm::ceilMultiple(glm::dvec3(bottomRight) + cam.position, glm::dvec3(16.0f));
+        Assert(roundedTopLeft.y == 0 && roundedBottomRight.y == 0);
+
+        for (int x = roundedTopLeft.x - 8; x <= roundedTopLeft.x + 8; x += 16) {
+            for (int y = roundedTopLeft.z - 8; y <= roundedTopLeft.z + 8; y += 16) {
+                if (!renderChunks.count({ x, y })) {
+                    renderChunks[glm::ivec2(x, y)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(x, y), 8, 1, GrassMaterial().second, atlas));
+                }
+                renderChunks[{x, y}]->dead = false;
+            }
+        }
 
         // render
+        for (auto it = renderChunks.begin(); it != renderChunks.end(); it++) {
+            auto& [_, c] = *it;
+            if (c->dead) {
+                it = renderChunks.erase(it);
+            }
+            else {
+                c->dead = true;
+            }
+            
+        }
     });
 }
 

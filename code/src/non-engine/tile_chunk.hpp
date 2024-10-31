@@ -10,11 +10,13 @@ class Material;
 
 class RenderChunk {
 public:
-	RenderChunk(glm::ivec2 centerPos, int stride, int radius, std::shared_ptr<Material>& material, std::shared_ptr<TextureAtlas>& atlas);
+	RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std::shared_ptr<Material>& material, const std::shared_ptr<TextureAtlas>& atlas);
 
 	RenderChunk(const RenderChunk&) = delete;
 
 	~RenderChunk();
+
+	bool dead = false;
 private:
 	std::shared_ptr<Material> material;
 	std::shared_ptr<TextureAtlas> atlas;
