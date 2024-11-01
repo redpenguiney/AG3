@@ -223,6 +223,8 @@ InputObject::InputType glfwKeyToInputType(int key) {
         return InputObject::LeftArrow;
     case GLFW_KEY_RIGHT:
         return InputObject::RightArrow;
+    case GLFW_KEY_LEFT_CONTROL:
+        return InputObject::Ctrl;
     case GLFW_KEY_LEFT_SUPER: // windows key, here to avoid an annoying unrecognized key msg 
         return InputObject::Unknown;
     case GLFW_KEY_UNKNOWN:

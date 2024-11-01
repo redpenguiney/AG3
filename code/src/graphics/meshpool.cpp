@@ -366,6 +366,8 @@ void Meshpool::Draw(bool prePostProc) {
         auto& shader = command->shader;
         shader->Use();
 
+        shader->Uniform("vertexColorEnabled", format.attributes.color.has_value());
+
         if (shader->useClusteredLighting) {
             shader->Uniform("pointLightCount", GraphicsEngine::Get().pointLightCount);
             shader->Uniform("spotLightCount", GraphicsEngine::Get().spotLightCount);

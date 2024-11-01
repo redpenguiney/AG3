@@ -6,20 +6,20 @@ Tree<NodeChildrenCount>::Tree() {
 }
 
 template <unsigned int NodeChildrenCount>
-void Tree<NodeChildrenCount>::ForEach(int nodeDepth, std::function<void(Node&)> func)
+void Tree<NodeChildrenCount>::ForEach(int nodeDepth, std::function<void(int)> func)
 {
 	VisitChildren(rootNodeIndex, 0, nodeDepth, func);
 }
 
 template <unsigned int NodeChildrenCount>
-void Tree<NodeChildrenCount>::ForEach(std::function<void(Node&, int)> func)
+void Tree<NodeChildrenCount>::ForEach(std::function<void(int, int)> func)
 {
 
 	VisitChildren(rootNodeIndex, 0, func);
 }
 
 template <unsigned int NodeChildrenCount>
-void Tree<NodeChildrenCount>::Split(Node& node) {
+void Tree<NodeChildrenCount>::Split(int nodeIndex) {
 	if (firstFreeIndex == -1) {
 		firstFreeIndex = nodes.size();
 
@@ -28,54 +28,53 @@ void Tree<NodeChildrenCount>::Split(Node& node) {
 		}
 	}
 
-	node.childIndex = firstFreeIndex;
+	nodes[nodeIndex].node.childIndex = firstFreeIndex;
 	firstFreeIndex = nodes[firstFreeIndex].nextFree;
 	for (unsigned int i = 0; i < NodeChildrenCount; i++) {
-		nodes[node.childIndex + i].node.childIndex = -1;
-		nodes[node.childIndex + i].node.data = -1;
+		nodes[nodes[nodeIndex].node.childIndex + i].node.childIndex = -1;
+		nodes[nodes[nodeIndex].node.childIndex + i].node.data = -1;
 	}
 }
 
 template <unsigned int NodeChildrenCount>
-void Tree<NodeChildrenCount>::Collapse(Node& node) {
+void Tree<NodeChildrenCount>::Collapse(int nodeIndex) {
 	for (unsigned int i = 0; i < NodeChildrenCount; i++) {
-		nodes[node.childIndex + i].nextFree = firstFreeIndex;
+		nodes[nodes[nodeIndex].node.childIndex + i].nextFree = firstFreeIndex;
 	}
 	
-	firstFreeIndex = node.childIndex;
+	firstFreeIndex = nodes[nodeIndex].node.childIndex;
 }
 
 template <unsigned int NodeChildrenCount>
-Tree<NodeChildrenCount>::Node& Tree<NodeChildrenCount>::Root() {
-	return nodes[rootNodeIndex].node;
-}
-
-template <unsigned int NodeChildrenCount>
-void Tree<NodeChildrenCount>::VisitChildren(int nodeIndex, int currentNodeDepth, std::function<void(Node&, int)> func)
+void Tree<NodeChildrenCount>::VisitChildren(int nodeIndex, int currentNodeDepth, std::function<void(int, int)> func)
 {
-	Node& node = nodes[nodeIndex].node;
-	func(node, currentNodeDepth);
+	func(nodeIndex, currentNodeDepth);
 
-	if (node.childIndex != -1) {
+	if (nodes[nodeIndex].node.childIndex != -1) {
 		for (unsigned int i = 0; i < NodeChildrenCount; i++) {
-			VisitChildren(node.childIndex + i, currentNodeDepth + 1, func);
+			VisitChildren(nodes[nodeIndex].node.childIndex + i, currentNodeDepth + 1, func);
 		}
 	}
 }
 
 template <unsigned int NodeChildrenCount>
-void Tree<NodeChildrenCount>::VisitChildren(int nodeIndex, int currentNodeDepth, int targetNodeDepth, std::function<void(Node&)> func)
+Tree<NodeChildrenCount>::Node& Tree<NodeChildrenCount>::GetNode(int index) {
+	return nodes[index].node;
+}
+
+template <unsigned int NodeChildrenCount>
+void Tree<NodeChildrenCount>::VisitChildren(int nodeIndex, int currentNodeDepth, int targetNodeDepth, std::function<void(int)> func)
 {
 	if (currentNodeDepth > targetNodeDepth) { return; }
-	Node& node = nodes[nodeIndex].node;
+	
 
 	if (currentNodeDepth == targetNodeDepth) {
-		func(node);
+		func(nodeIndex);
 	}
-	
-	if (node.childIndex != -1) {
+
+	if (nodes[nodeIndex].node.childIndex != -1) {
 		for (unsigned int i = 0; i < NodeChildrenCount; i++) {
-			VisitChildren(node.childIndex + i, currentNodeDepth + 1, targetNodeDepth, func);
+			VisitChildren(nodes[nodeIndex].node.childIndex + i, currentNodeDepth + 1, targetNodeDepth, func);
 		}
 	}
 }

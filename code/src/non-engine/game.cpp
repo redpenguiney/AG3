@@ -117,6 +117,8 @@ void GameInit()
     });
 
     GE.window.postInputProccessing->Connect([]() {
+        if (GraphicsEngine::Get().debugFreecamEnabled) { return; }
+
         auto& GE = GraphicsEngine::Get();
 
         // cast to int bc otherwise subtracting unsigned ints
@@ -206,6 +208,13 @@ void GameInit()
         GE.skyboxMaterial = sky_m_ptr;
         GE.skyboxMaterialLayer = index;
     }
+
+    GE.window.inputDown->Connect([](InputObject input) {
+        if (input.input == InputObject::F) {
+            GraphicsEngine::Get().SetDebugFreecamEnabled(!GraphicsEngine::Get().debugFreecamEnabled);
+        }
+    });
+
     //GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 
     TestCubeArray(glm::uvec3(16, 16, 16), glm::uvec3(0, 0, 0), glm::uvec3(16, 1, 16), false);
