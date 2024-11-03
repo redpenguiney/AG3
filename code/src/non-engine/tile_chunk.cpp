@@ -17,13 +17,13 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 	}, false, 0));
 	params.normalizeSize = true;
 
-	GLuint floatsPerVertex = sizeof(GLfloat) / params.meshVertexFormat->GetNonInstancedVertexSize();
+	GLuint floatsPerVertex = params.meshVertexFormat->GetNonInstancedVertexSize() / sizeof(GLfloat);
 
 	std::vector<GLfloat> vertices;
 	std::vector<GLuint> indices;
 
-	std::vector<TerrainTile> tiles((radius * 2 + 2) * (radius * 2 + 2));
-	auto& world = World::loaded;
+	std::vector<TerrainTile> tiles((radius * 2 + 2) * (radius * 2 + 2), TerrainTile(-2, -2));
+	auto& world = World::Loaded();
 
 	// TODO: not best way to fill up tiles, repeatedly has to fetch same chunk
 	for (int i = 0; i < radius * 2 + 2; i += stride) {
@@ -32,9 +32,12 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 		}
 	}
 
-	for (int i = centerPos.x - radius; i < centerPos.x + radius; i += stride) {
-		for (int j = centerPos.y - radius; j < centerPos.y + radius; j += stride) {
+	for (int i = 1; i < radius * 2; i += stride) {
+		for (int j = 1; j < radius * 2; j += stride) {
+
 			const auto& tile = tiles[i * (radius + 2) + j];
+
+			Assert(tile.floor != -2);
 
 			if (tile.floor == -1) {
 				continue;
@@ -51,33 +54,35 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 				GLuint vertexIndex = vertices.size() / floatsPerVertex;
 				unsigned int floatIndex = vertices.size();
 				indices.push_back(vertexIndex);
-				indices.push_back(vertexIndex + 1);
 				indices.push_back(vertexIndex + 2);
-				indices.push_back(vertexIndex);
+				indices.push_back(vertexIndex + 1);
+				indices.push_back(vertexIndex + 1);
 				indices.push_back(vertexIndex + 2);
 				indices.push_back(vertexIndex + 3);
 
 				vertices.resize(vertices.size() + floatsPerVertex * 4);
 				for (unsigned int x = 0; x < 2; x++) {
 					for (unsigned int z = 0; z < 2; z++) {
+						floatIndex += floatsPerVertex;
+
 						// positions
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x;
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = floorData.yOffset;
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = j + z;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 1] = floorData.yOffset;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = j + z;
 
 						// UVs
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = 0;
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = 0;
+						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = 0;
+						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat) + 1] = 0;
 
 						// normals
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat)] = 0;
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat)] = 1;
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat)] = 0;
+						vertices[floatIndex + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat)] = 0;
+						vertices[floatIndex + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat) + 1] = 1;
+						vertices[floatIndex + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat) + 2] = 0;
 
 						// tangents
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat)] = 1;
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat)] = 0;
-						vertices[floatIndex + x * 2 + z + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat)] = 0;
+						vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat)] = 1;
+						vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat) + 1] = 0;
+						vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat) + 2] = 0;
 					}
 				}
 			}
@@ -98,12 +103,13 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 }
 
 RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std::shared_ptr<Material>& material, const std::shared_ptr<TextureAtlas>& atlas):
+	pos(centerPos),
 	material(material),
 	atlas(atlas)
 {
-
-	MakeMesh(centerPos, stride, radius);
 	
+	MakeMesh(centerPos, stride, radius);
+	//DebugLogInfo("Created at ",  mesh->vertices.size());
 
 	auto params = GameobjectCreateParams({ComponentBitIndex::Render, ComponentBitIndex::Collider, ComponentBitIndex::Transform});
 	params.materialId = material->id;
@@ -111,10 +117,17 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 	mainObject = GameObject::New(params);
 	mainObject->RawGet<TransformComponent>()->SetPos(glm::dvec3(centerPos.x, 0, centerPos.y));
 	mainObject->RawGet<TransformComponent>()->SetScl(glm::dvec3(radius * 2.0));
-
+	mainObject->RawGet<RenderComponent>()->SetTextureZ(-1);
 }
 
 RenderChunk::~RenderChunk() {
+	//DebugLogInfo("Destroyed at ", pos);
+
 	mainObject->Destroy();
+	mainObject = nullptr;
+	for (auto& o : objects) {
+		o->Destroy();
+	}
+	objects.clear();
 	Mesh::Unload(mesh->meshId);
 }

@@ -56,8 +56,8 @@ public:
 	// Tile ids; always have defined value.
 	static int DIRT, ROCK, GRASS, SNOW;
 
-	// the currently loaded world.
-	static inline std::unique_ptr<World> loaded = nullptr;
+	// returns the currently loaded world.
+	static std::unique_ptr<World>& Loaded();
 
 	// TODO: list performance is suspect
 	std::list<ChunkLoader> chunkLoaders;

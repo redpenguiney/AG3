@@ -21,6 +21,7 @@ uniform bool normalMappingEnabled;
 uniform bool parallaxMappingEnabled;
 uniform bool specularMappingEnabled;
 uniform bool colorMappingEnabled;
+uniform bool vertexColorEnabled; // could actually refer to vertex or instance color
 
 #$INCLUDE$ "../shaders/parallax_mapping.glsl"
 
@@ -62,7 +63,12 @@ void main()
     };
 
     //vec3 globalAmbient = vec3(0.1, 0.1, 0.1);
-    vec4 color = tx * fragmentColor * vec4(light, 1);
+
+    vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+    if (vertexColorEnabled) {
+        color = fragmentColor;
+    }
+    color *= tx * vec4(light, 1);
     Output = color;
     //Output = vec4(light, 1.0);
     //Output = vec4(spotLightOffset, 1.0, 1.0, 1.0);

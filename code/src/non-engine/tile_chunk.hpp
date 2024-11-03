@@ -18,6 +18,8 @@ public:
 
 	bool dead = false;
 private:
+	const glm::ivec2 pos;
+
 	std::shared_ptr<Material> material;
 	std::shared_ptr<TextureAtlas> atlas;
 	std::shared_ptr<Mesh> mesh;

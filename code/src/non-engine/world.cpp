@@ -4,25 +4,34 @@
 #include "tile_data.hpp"
 #include <tests/gameobject_tests.hpp>
 
+std::unique_ptr<World>& World::Loaded()
+{
+    static std::unique_ptr<World> world = nullptr;
+    return world;
+}
+
 void World::Generate()
 {
-    Assert(loaded == nullptr);
-    loaded = std::unique_ptr<World>(new World());
+    Assert(Loaded() == nullptr);
+    Loaded() = std::unique_ptr<World>(new World());
 }
 
 void World::Unload() {
-    loaded = nullptr;
+    Loaded() = nullptr;
     
 }
 
 TerrainTile World::GetTile(int x, int z)
 {
+    TerrainTile t;
+    t.furniture = -1;
     if (x > 0) {
-        return TerrainTile(World::DIRT, -1);
+        t.floor = World::DIRT;
     }
     else {
-        return TerrainTile(World::ROCK, -1);
+        t.floor = World::ROCK;
     }
+    return t;
 }
 
 World::~World() {
@@ -30,36 +39,36 @@ World::~World() {
 }
 
 World::World() {
-    world.Split(world.Root());
+    world.Split(world.rootNodeIndex);
 
     climate.resize(256);
     biomes.resize(256 * 256);
     unsigned int climateIndex = 0;
     unsigned int biomeIndex = 0;
 
-    world.ForEach([&climateIndex, &biomeIndex, this](ChunkTree::Node& node, int depth) {
+    world.ForEach([&climateIndex, &biomeIndex, this](int nodeIndex, int depth) {
         
         if (depth == 1) { // climate
-            node.data = climateIndex++;
+            world.GetNode(nodeIndex).data = climateIndex++;
             //climate[node.data]. 
 
-            world.Split(node); 
+            world.Split(nodeIndex); 
         }
         else if (depth == 2) { // biome
-            node.data = biomeIndex++;
+            world.GetNode(nodeIndex).data = biomeIndex++;
             
         }
     });
 
     preRenderConnection = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([this](float) {
-        Assert(loaded != nullptr);
+        Assert(Loaded() != nullptr);
         
         
 
         // determine which chunks must be updated
         std::unordered_set<glm::ivec2> chunkLocations; // in world space, in chunks
 
-        for (auto& loader : loaded->chunkLoaders) {
+        for (auto& loader : Loaded()->chunkLoaders) {
             for (int x = loader.centerPosition.x - loader.radius / 2; x <= loader.centerPosition.x + loader.radius / 2; x++) {
                 for (int y = loader.centerPosition.y - loader.radius / 2; y <= loader.centerPosition.y + loader.radius / 2; y++) {
                     chunkLocations.insert({ x, y });
@@ -73,18 +82,18 @@ World::World() {
         auto atlas = std::shared_ptr<TextureAtlas>(new TextureAtlas());
 
         // determine which chunks must be rendered
-        auto& cam = GraphicsEngine::Get().GetCurrentCamera();
+        auto& cam = GraphicsEngine::Get().GetMainCamera();
         glm::vec3 topLeft = cam.ProjectToWorld(glm::vec2(0, 0), glm::ivec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height));
         topLeft *= cam.position.y / topLeft.y;
         glm::vec3 bottomRight = -topLeft;
         glm::ivec3 roundedTopLeft = glm::floorMultiple(glm::dvec3(topLeft) + cam.position, glm::dvec3(16.0f));
         glm::ivec3 roundedBottomRight = glm::ceilMultiple(glm::dvec3(bottomRight) + cam.position, glm::dvec3(16.0f));
-        Assert(roundedTopLeft.y == 0 && roundedBottomRight.y == 0);
+        //Assert(roundedTopLeft.y == 0 && roundedBottomRight.y == 0);
 
         /*for (int x = roundedTopLeft.x - 8; x <= roundedTopLeft.x + 8; x += 16) {
             for (int y = roundedTopLeft.z - 8; y <= roundedTopLeft.z + 8; y += 16) {
                 if (!renderChunks.count({ x, y })) {
-                    renderChunks[glm::ivec2(x, y)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(x, y), 8, 1, GrassMaterial().second, atlas));
+                    renderChunks[glm::ivec2(x, y)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(x, y), 1, 8, GrassMaterial().second, atlas));
                 }
                 renderChunks[{x, y}]->dead = false;
             }
