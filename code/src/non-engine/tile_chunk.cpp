@@ -32,8 +32,10 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 		}
 	}
 
-	for (int i = 1; i < radius * 2; i += stride) {
-		for (int j = 1; j < radius * 2; j += stride) {
+	DebugLogInfo("Radius ", radius);
+
+	for (int i = 1; i < radius * 2 + 1; i += stride) {
+		for (int j = 1; j < radius * 2 + 1; j += stride) {
 
 			const auto& tile = tiles[i * (radius + 2) + j];
 
@@ -63,7 +65,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 				vertices.resize(vertices.size() + floatsPerVertex * 4);
 				for (unsigned int x = 0; x < 2; x++) {
 					for (unsigned int z = 0; z < 2; z++) {
-						floatIndex += floatsPerVertex;
+						
 
 						// positions
 						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x;
@@ -83,6 +85,8 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 						vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat)] = 1;
 						vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat) + 1] = 0;
 						vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat) + 2] = 0;
+
+						floatIndex += floatsPerVertex;
 					}
 				}
 			}

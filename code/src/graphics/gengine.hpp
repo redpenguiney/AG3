@@ -287,6 +287,7 @@ private:
     InstancedVertexAttributeUpdater<glm::mat4x4> updater4x4;
 
     GraphicsEngine();
+    GraphicsEngine(const GraphicsEngine&) = delete;
     ~GraphicsEngine();
 
     void UpdateMainFramebuffer();

@@ -70,7 +70,7 @@ void main()
     }
     color *= tx * vec4(light, 1);
     Output = color;
-    //Output = vec4(light, 1.0);
+    Output = vec4(light, 1.0);
     //Output = vec4(spotLightOffset, 1.0, 1.0, 1.0);
     //Output = vec4(spotLights[0].directionAndOuterAngle.xyz, 1.0);
     //Output = vec4(normalize(fragmentNormal), 1.0);

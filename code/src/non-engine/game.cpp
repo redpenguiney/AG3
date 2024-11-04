@@ -41,7 +41,8 @@ void MakeMainMenu() {
     auto [arialLayer, arialFont] = Material::New(MaterialCreateParams{ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
 
     //// don't take by reference bc vector reallocation invalidates references/reference to temporary
-    auto startGame = mainMenuGuis.emplace_back(std::move(std::make_shared<Gui>(true, std::optional(std::make_pair(arialLayer, arialFont )))));
+    auto startGame = std::make_shared<Gui>(true, std::optional(std::make_pair(arialLayer, arialFont )));
+    mainMenuGuis.push_back(startGame);
 
     startGame->rgba = { 0, 0, 1, 1 };
     startGame->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
