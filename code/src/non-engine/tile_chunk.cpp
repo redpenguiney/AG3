@@ -2,20 +2,27 @@
 #include "gameobjects/gameobject.hpp"
 #include "world.hpp"
 #include "tile_data.hpp"
+#include <tests/gameobject_tests.hpp>
 
 void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 
 	MeshCreateParams params;
+	// TODO: graphics utterly fails if we try to not have color as an attribute
 	params.meshVertexFormat.emplace(MeshVertexFormat({
 		.position = VertexAttribute {.nFloats = 3, .instanced = false},
-		.textureUV = VertexAttribute {.nFloats = 2, .instanced = false},
+		//.textureUV = VertexAttribute {.nFloats = 2, .instanced = false},
 		.textureZ = VertexAttribute {.nFloats = 1, .instanced = true},
+		.color = VertexAttribute {.nFloats = 4, .instanced = true},
 		.modelMatrix = VertexAttribute {.nFloats = 16, .instanced = true},
 		.normalMatrix = VertexAttribute {.nFloats = 9, .instanced = true},
-		.normal = VertexAttribute {.nFloats = 3, .instanced = false},
-		.tangent = VertexAttribute {.nFloats = 3, .instanced = false},
+		//.normal = VertexAttribute {.nFloats = 3, .instanced = false},
+		//.tangent = VertexAttribute {.nFloats = 3, .instanced = false},
+		
 	}, false, 0));
-	params.normalizeSize = true;
+	params.meshVertexFormat->primitiveType = GL_POINTS;
+	
+	//params.meshVertexFormat.emplace(MeshVertexFormat::Default());
+	params.normalizeSize = false;
 
 	GLuint floatsPerVertex = params.meshVertexFormat->GetNonInstancedVertexSize() / sizeof(GLfloat);
 
@@ -62,10 +69,12 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 				indices.push_back(vertexIndex + 2);
 				indices.push_back(vertexIndex + 3);
 
+				DebugLogInfo("Pushing ", vertexIndex);
+
 				vertices.resize(vertices.size() + floatsPerVertex * 4);
 				for (unsigned int x = 0; x < 2; x++) {
 					for (unsigned int z = 0; z < 2; z++) {
-						
+						//DebugLogInfo("Writing position ", i + x, " ", j + z);
 
 						// positions
 						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x;
@@ -73,18 +82,18 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = j + z;
 
 						// UVs
-						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = 0;
-						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat) + 1] = 0;
+						//vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = 0;
+						//vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat) + 1] = 0;
 
 						// normals
-						vertices[floatIndex + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat)] = 0;
-						vertices[floatIndex + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat) + 1] = 1;
-						vertices[floatIndex + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat) + 2] = 0;
+						//vertices[floatIndex + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat)] = 0;
+						//vertices[floatIndex + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat) + 1] = 1;
+						//vertices[floatIndex + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat) + 2] = 0;
 
 						// tangents
-						vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat)] = 1;
-						vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat) + 1] = 0;
-						vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat) + 2] = 0;
+						//vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat)] = 1;
+						//vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat) + 1] = 0;
+						//vertices[floatIndex + params.meshVertexFormat->attributes.tangent->offset / sizeof(GLfloat) + 2] = 0;
 
 						floatIndex += floatsPerVertex;
 					}
@@ -113,15 +122,18 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 {
 	
 	MakeMesh(centerPos, stride, radius);
+
+	//mesh = CubeMesh();
 	//DebugLogInfo("Created at ",  mesh->vertices.size());
 
 	auto params = GameobjectCreateParams({ComponentBitIndex::Render, ComponentBitIndex::Collider, ComponentBitIndex::Transform});
-	params.materialId = material->id;
+	params.materialId = material ? material->id: 0;
 	params.meshId = mesh->meshId;
 	mainObject = GameObject::New(params);
 	mainObject->RawGet<TransformComponent>()->SetPos(glm::dvec3(centerPos.x, 0, centerPos.y));
 	mainObject->RawGet<TransformComponent>()->SetScl(glm::dvec3(radius * 2.0));
 	mainObject->RawGet<RenderComponent>()->SetTextureZ(-1);
+	//mainObject->RawGet<RenderComponent>()->SetColor({1, 1, 1, 1});
 }
 
 RenderChunk::~RenderChunk() {

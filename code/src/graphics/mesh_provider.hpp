@@ -32,6 +32,7 @@ struct VertexAttribute {
 
 // Describes which vertex attributes a mesh has, which of them are instanced, and in what order they are in.
 struct MeshVertexFormat {
+    // IMPLEMENTATION DETAIL: COPY CONSTRUCTOR AND OPERATOR== NEED TO BE UPDATED IF YOU ADD NEW MEMBERS
 
     // should pretty much always be triangles unless ur tryna debug
     GLenum primitiveType = GL_TRIANGLES;

@@ -100,8 +100,7 @@ World::World() {
         }*/
 
         if (!renderChunks.count({ 0, 0 })) {
-            renderChunks[glm::ivec2(0, 0)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(0, 0), 1, 8, GrassMaterial().second, atlas));
-            
+            renderChunks[glm::ivec2(0, 0)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(0, 0), 1, 8, GrassMaterial().second, atlas));    
         }
         renderChunks[{0, 0}]->dead = false;
 

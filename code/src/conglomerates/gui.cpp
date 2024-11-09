@@ -210,8 +210,6 @@ Gui::~Gui() {
     if (guiTextInfo.has_value()) {
         guiTextInfo->object->Destroy();
     }
-
-    //DebugLogInfo("Destroyed gui ", this);
 }
 
 void Gui::UpdateGuiTransform() {

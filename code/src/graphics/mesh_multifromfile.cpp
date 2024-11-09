@@ -155,6 +155,8 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
             roundedBoneCount
         );
 
+        //format.primitiveType = GL_POINTS;
+
         // TODO: custom exceptions
         if ((format.attributes.position.has_value() && !format.attributes.position->instanced) && !mesh->HasPositions()) {
             throw std::runtime_error(std::string("The mesh \"") + mesh->mName.C_Str() + "\" in \"" + path + "\" lacks vertex positions. Why.");

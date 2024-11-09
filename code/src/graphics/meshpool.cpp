@@ -43,7 +43,7 @@ Meshpool::~Meshpool()
 
 std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, const std::shared_ptr<ShaderProgram>& shader, CheckedUint count)
 {
-    //DebugLogInfo("Adding count ", count, " for meshid ", mesh->meshId);
+    DebugLogInfo("Adding count ", count, " for meshid ", mesh->meshId);
 
     // find valid slot for mesh
     CheckedUint slot;
@@ -119,7 +119,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         // find slot for draw command
         CheckedUint drawCommandIndex = commandBuffer.GetNewDrawCommandSlot();
 
-        //DebugLogInfo("Wrote id ", mesh->meshId, " to command ", drawCommandIndex);
+        DebugLogInfo("Wrote id ", mesh->meshId, " to command ", drawCommandIndex);
 
         IndirectDrawCommand command = {
             .count = static_cast<CheckedUint>(mesh->indices.size()),
@@ -404,12 +404,13 @@ void Meshpool::Draw(bool prePostProc) {
             shader->Uniform("colorMappingEnabled", material->Count(Texture::ColorMap));
         }
 
-        glPointSize(15.0);
+        glPointSize(3.0);
+        
         //for (unsigned int i = 0; i < command->GetDrawCount(); i++) {
             //auto cmd = command->clientCommands.at(i);
             //glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
         //}
-        glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
+        glMultiDrawElementsIndirect(format.primitiveType, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
     }
      
     
