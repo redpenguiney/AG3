@@ -59,6 +59,10 @@ public:
 	// returns the currently loaded world.
 	static std::unique_ptr<World>& Loaded();
 
+	static std::shared_ptr<TextureAtlas>& TerrainAtlas();
+
+	static std::shared_ptr<Material>& TerrainMaterial();
+
 	// TODO: list performance is suspect
 	std::list<ChunkLoader> chunkLoaders;
 

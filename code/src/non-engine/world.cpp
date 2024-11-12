@@ -10,6 +10,32 @@ std::unique_ptr<World>& World::Loaded()
     return world;
 }
 
+std::shared_ptr<TextureAtlas>& World::TerrainAtlas()
+{
+    static std::shared_ptr<TextureAtlas> atlas = std::make_shared<TextureAtlas>();
+    return atlas;
+}
+
+std::shared_ptr<Material>& World::TerrainMaterial()
+{
+    auto p = TextureCreateParams({
+        TextureSource("../textures/terrain_color_atlas.png")
+    }, Texture::ColorMap);
+    p.filteringBehaviour = Texture::NoTextureFiltering;
+    p.mipmapBehaviour = Texture::NoMipmaps;
+    p.wrappingBehaviour = Texture::WrapClampToEdge;
+
+    static auto [_, texture] = Material::New(MaterialCreateParams{
+        .textureParams = {
+            p
+        },
+        .type = Texture::Texture2D,
+        .requireSingular = true
+    });
+
+    return texture;
+}
+
 void World::Generate()
 {
     Assert(Loaded() == nullptr);
@@ -78,9 +104,6 @@ World::World() {
 
         // update those chunks
 
-
-        auto atlas = std::shared_ptr<TextureAtlas>(new TextureAtlas());
-
         // determine which chunks must be rendered
         auto& cam = GraphicsEngine::Get().GetMainCamera();
         glm::vec3 topLeft = cam.ProjectToWorld(glm::vec2(0, 0), glm::ivec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height));
@@ -100,7 +123,7 @@ World::World() {
         }*/
 
         if (!renderChunks.count({ 0, 0 })) {
-            renderChunks[glm::ivec2(0, 0)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(0, 0), 1, 8, GrassMaterial().second, atlas));
+            renderChunks[glm::ivec2(0, 0)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(0, 0), 1, 8, TerrainMaterial(), TerrainAtlas()));
             
         }
         renderChunks[{0, 0}]->dead = false;
@@ -119,11 +142,17 @@ World::World() {
     });
 }
 
+int AddAtlasRegion(int x, int y) {
+    //auto atlasSize = //World::TerrainMaterial()->GetTextureCollection()->textures[0]->GetSize();
+    World::TerrainAtlas()->regions.push_back(TextureAtlas::Region(x * 256, y * 256, 256, 256, 1024, 1024));
+    return World::TerrainAtlas()->regions.size() - 1;
+}
+
 int World::DIRT = RegisterTileData({
     .displayName = "Dirt",
-    .texAtlasRegionId = 0
+    .texAtlasRegionId = AddAtlasRegion(0, 0)
 });
 int World::ROCK = RegisterTileData({
     .displayName = "Rock",
-    .texAtlasRegionId = 1
+    .texAtlasRegionId = AddAtlasRegion(1, 0)
 });

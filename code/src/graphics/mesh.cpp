@@ -406,13 +406,13 @@ void Mesh::NormalizePositions() {
     for (unsigned int i = 0; i < vertices.size(); i++) {
         float & v = meshVertices[i];
         unsigned int remainder = (i % (nonInstancedVertexSize/sizeof(GLfloat))) - (vertexFormat.attributes.position->offset/sizeof(GLfloat));
-        if (remainder == 0) {
+        if (remainder == 0 && minX != maxX) { // if mesh is 2D, we don't want to scale it on this axis cuz will result in 0/0
             v = 1.0f*(v-minX)/(maxX-minX) - 0.5f; // i don't really know how this bit works i got it from stack overflow and modified it
         }
-        else if (remainder == 1) {
+        else if (remainder == 1 && minY != maxY) { // if mesh is 2D, we don't want to scale it on this axis cuz will result in 0/0
             v = 1.0f*(v-minY)/(maxY-minY) - 0.5f; // i don't really know how this bit works i got it from stack overflow and modified it
         }
-        else if (remainder == 2 && vertexFormat.attributes.position->nFloats == 3) {
+        else if (remainder == 2 && vertexFormat.attributes.position->nFloats == 3 && minZ != maxZ) { // if mesh is 2D, we don't want to scale it on this axis cuz will result in 0/0
             v = 1.0f*(v-minZ)/(maxZ-minZ) - 0.5f; // i don't really know how this bit works i got it from stack overflow and modified it
         }
     }

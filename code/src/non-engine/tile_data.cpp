@@ -9,6 +9,7 @@ std::vector<TileData>& Data() {
 }
 
 int RegisterTileData(TileData tile) {
+	Assert(tile.texAtlasRegionId > -1);
 	DebugLogInfo("Registering ", Data().size());
 	Data().push_back(tile);
 	return Data().size() - 1;

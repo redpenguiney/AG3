@@ -219,6 +219,10 @@ glTextureIndex(textureIndex)
         //     std:: cout << (int)(imageDatas.back()[i]) << " ";
         // }
         Use();
+
+        // setup wrapping, mipmaps, etc.
+        ConfigTexture(params);
+
         // glBindTexture(bindingLocation, glTextureId);
         if (type == Texture::Texture2D) {
             depth = 1; 
@@ -228,21 +232,34 @@ glTextureIndex(textureIndex)
             // glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
             void* data = imageDatas.back()->imageData;
             glTexImage3D(bindingLocation, 0, internalFormat, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, data); // put data in opengl
+
+            if (params.mipmapGenerationMethod != TextureMipmapGeneration::GlGenerate) {
+                GenMipmap(params, imageDatas.back()->imageData, internalFormat, sourceFormat, nChannels);
+            }
+            
         }
         else if (type == Texture::TextureCubemap) {
             depth = 1; 
             for (unsigned int i = 0; i < 6; i++) {
                 void* data = imageDatas.at(i)->imageData;
                 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, data);
+                
+                if (params.mipmapGenerationMethod != TextureMipmapGeneration::GlGenerate) {
+                    GenMipmap(params, imageDatas.at(i)->imageData, internalFormat, sourceFormat, nChannels);
+                }
             }
-            
         }
         else {
             Assert(false); // unreachable
         }
     
+        if (params.mipmapGenerationMethod == TextureMipmapGeneration::GlGenerate) {
+            GenMipmap(params, nullptr, internalFormat, sourceFormat, nChannels);
+        }
+
     }
     else { // to create font textures, we use freetype to rasterize them for us from vector ttf fonts
+        // TODO: fontmaps have no mipmapping rn
         Assert(params.format == TextureFormat::Grayscale_8Bit);
         Assert(std::holds_alternative<std::string>(params.textureSources.back().imageData));
         std::string fontPath = std::get<std::string>(params.textureSources.back().imageData);
@@ -342,10 +359,14 @@ glTextureIndex(textureIndex)
         // tell freetype it can delete all its data now
         FT_Done_Face(face);
         FT_Done_FreeType(ft); // TODO: WAIT WE SHOULDN'T INIT AND UNINIT FREETYPE EVERY TIME WE MAKE A FONT
+
+        // setup wrapping, mipmaps, etc.
+        ConfigTexture(params);
     }
     
-    // setup wrapping, mipmaps, etc.
-    ConfigTexture(params);
+    
+
+    
     
 }
 
@@ -394,10 +415,55 @@ Texture::~Texture() {
     glDeleteTextures(1, &glTextureId);
 }
 
+glm::uvec3 Texture::GetSize() {
+    return glm::uvec3(width, height, depth);
+}
+
 void Texture::Use() {
     glActiveTexture(GL_TEXTURE0 + glTextureIndex);
     //glBindTextureUnit(GL_TEXTURE0 + glTextureIndex, textureId); // TODOD: opengl 4.5 only
     glBindTexture(bindingLocation, glTextureId);
+}
+
+void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, TextureFormat internalFormat, unsigned int sourceFormat, unsigned int nChannels, int face, int level) {
+    if (params.mipmapGenerationMethod == GlGenerate) {
+        DebugLogInfo("Mipmapping ", textureId, " face ", face, " level ", level);
+        glGenerateMipmap(bindingLocation);
+    }
+    else {
+        // confirm that texture dimensions are a power of two
+        if ((width & (width - 1)) != 0 || (height & (height - 1)) == 0) {
+            throw std::runtime_error("Invalid texture dimensions for automatic mipmap generation by AG3 (must be power of two).");
+        }
+
+        int mipWidth = width / (pow(2, level));
+        int mipHeight = height / (pow(2, level));
+
+        // generate mipmap
+        uint8_t* dst = new uint8_t[mipWidth * mipHeight * nChannels];
+        for (int x = 0; x < mipWidth; x++) {
+            for (int y = 0; y < mipHeight; y++) {
+                dst[x * nChannels * mipHeight + y * nChannels] = 1;
+            }
+        }
+        
+        // give OpenGL the mipmap
+        if (type == TextureType::Texture2D) {
+            glTexImage3D(bindingLocation, level, internalFormat, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, dst); // put data in opengl
+        }
+        else if (type == TextureType::TextureCubemap) {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, dst);
+        }
+        else {
+            Assert(false); // unreachable
+        }
+        // generate next mipmap level unless this is the last one
+        if (mipWidth != 1 && mipHeight != 1) { // TODO: technically not the right condition
+            GenMipmap(params, dst, internalFormat, sourceFormat, nChannels, face, level + 1);
+        }
+
+        delete[] dst;
+    }
 }
 
 // Sets all of the OpenGL texture parameters.
@@ -434,10 +500,9 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
         glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST); 
         break;
         default:
-        std::cout << "something very wrong in config texture filtering\n"; abort();
+        DebugLogError("something very wrong in config texture filtering"); abort();
         }
 
-    glGenerateMipmap(bindingLocation); // make sure we actually have mipmaps to use in this case
 
     break;
     case Texture::LinearMipmapInterpolation:
@@ -450,14 +515,13 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
         glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST); 
         break;
         default:
-        std::cout << "something very wrong in config texture filtering\n"; abort();
+        DebugLogError("something very wrong in config texture filtering"); abort();
         }
     
-    glGenerateMipmap(bindingLocation); // make sure we actually have mipmaps to use in this case
 
     break;
     default:
-    std::cout << "something very wrong in config texture mipmapping\n"; abort();
+    DebugLogError("something very wrong in config texture mipmapping"); abort();
     }
 
     // wrapping settings
@@ -483,7 +547,7 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
     if (glTextureIndex == GL_TEXTURE_CUBE_MAP) {glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_MIRROR_CLAMP_TO_EDGE); }
     break;
     default:
-    std::cout << "something very wrong in config texture wrappnig\n"; abort();
+    DebugLogError("something very wrong in config texture wrapping"); abort();
     }
 
     // filtering settings again for the mag filter
@@ -496,7 +560,7 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
     glTexParameteri(bindingLocation, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // nearest means choose the closest pixel instead of interpolating between multiple
     break;
     default:
-    std::cout << "something very wrong in config texture filtering\n"; abort();
+    DebugLogError("something very wrong in config texture filtering"); abort();
     }
     
     
@@ -605,6 +669,7 @@ TextureCreateParams::TextureCreateParams(const std::vector<TextureSource>& image
     wrappingBehaviour = Texture::WrapTiled;
     mipmapBehaviour = Texture::LinearMipmapInterpolation;
     filteringBehaviour = Texture::LinearTextureFiltering;
+    mipmapGenerationMethod = Texture::GlGenerate;
     
     fontHeight = 48;
 }

@@ -2,6 +2,7 @@
 #include "gameobjects/gameobject.hpp"
 #include "world.hpp"
 #include "tile_data.hpp"
+#include <tests/gameobject_tests.hpp>
 
 void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 
@@ -9,7 +10,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 	params.meshVertexFormat.emplace(MeshVertexFormat({
 		.position = VertexAttribute {.nFloats = 3, .instanced = false},
 		.textureUV = VertexAttribute {.nFloats = 2, .instanced = false},
-		.textureZ = VertexAttribute {.nFloats = 1, .instanced = true},
+		.textureZ = VertexAttribute {.nFloats = 1, .instanced = false},
 		.modelMatrix = VertexAttribute {.nFloats = 16, .instanced = true},
 		.normalMatrix = VertexAttribute {.nFloats = 9, .instanced = true},
 		.normal = VertexAttribute {.nFloats = 3, .instanced = false},
@@ -56,11 +57,14 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 				GLuint vertexIndex = vertices.size() / floatsPerVertex;
 				unsigned int floatIndex = vertices.size();
 				indices.push_back(vertexIndex);
-				indices.push_back(vertexIndex + 2);
-				indices.push_back(vertexIndex + 1);
 				indices.push_back(vertexIndex + 1);
 				indices.push_back(vertexIndex + 2);
+				indices.push_back(vertexIndex + 1);
 				indices.push_back(vertexIndex + 3);
+				indices.push_back(vertexIndex + 2);
+
+				float hUvs[2] = {World::TerrainAtlas()->regions[floorData.texAtlasRegionId].left, World::TerrainAtlas()->regions[floorData.texAtlasRegionId].right };
+				float vUvs[2] = {World::TerrainAtlas()->regions[floorData.texAtlasRegionId].top, World::TerrainAtlas()->regions[floorData.texAtlasRegionId].bottom };
 
 				vertices.resize(vertices.size() + floatsPerVertex * 4);
 				for (unsigned int x = 0; x < 2; x++) {
@@ -73,8 +77,9 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = j + z;
 
 						// UVs
-						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = 0;
-						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat) + 1] = 0;
+						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = hUvs[x];
+						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat) + 1] = vUvs[z];
+						vertices[floatIndex + params.meshVertexFormat->attributes.textureZ->offset / sizeof(GLfloat)] = floorData.texArrayZ;
 
 						// normals
 						vertices[floatIndex + params.meshVertexFormat->attributes.normal->offset / sizeof(GLfloat)] = 0;
@@ -121,7 +126,6 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 	mainObject = GameObject::New(params);
 	mainObject->RawGet<TransformComponent>()->SetPos(glm::dvec3(centerPos.x, 0, centerPos.y));
 	mainObject->RawGet<TransformComponent>()->SetScl(glm::dvec3(radius * 2.0));
-	mainObject->RawGet<RenderComponent>()->SetTextureZ(-1);
 }
 
 RenderChunk::~RenderChunk() {

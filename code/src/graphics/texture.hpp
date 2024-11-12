@@ -32,7 +32,7 @@ struct Glyph {
 };
 
 class Framebuffer;
-
+struct TextureAtlas;
 class aiScene; // assimp can load models that have embedded textures. In those cases, the texture constructor needs to ask the assimp scene for the embedded texture.
 
 class Texture {
@@ -74,6 +74,12 @@ class Texture {
         LinearMipmapInterpolation = 2, // smoothly interpolate between mipmaps with distance, may reduce moire patterns/artifacts
     };
 
+    enum TextureMipmapGeneration {
+        GlGenerate = 0, // The graphics driver will generate mipmaps automatically. May fallback to AutoGeneration on some devices (TODO) 
+        AutoGeneration = 1, // Mipmaps are generated at runtime by AG3. Only supported for textures with power-of-two dimensions. If a texture atlas is supplied with the TextureCreateParams, it will use it to create more intelligent mipmaps that reduce texture bleeding.
+        // TODO: allow user-supplied mipmaps
+    };
+
     enum TextureUsage {
         ColorMap = 0,
         SpecularMap = 1,
@@ -109,6 +115,7 @@ class Texture {
 
     ~Texture();
 
+    // Returns vec3(width, height, depth)
     glm::uvec3 GetSize();
 
     // Makes OpenGL draw everything with this texture, until Use() is called on a different texture.
@@ -130,7 +137,9 @@ class Texture {
     const GLenum bindingLocation; // basically what kind of opengl texture it is; cubemap, 3d, 2d, 2d array, etc.
     const GLuint glTextureIndex; // multiple textures can be bound at once; this is which index it is bound to
     
-    
+    // Recursively generates texture mipmap.
+    // face is for cubemap, -1 if not cubemap
+    void GenMipmap(const TextureCreateParams& params, uint8_t* src, TextureFormat internalFormat, unsigned int sourceFormat, unsigned int nChannels, int face = -1, int level = 1);
 
     // Sets all of the OpenGL texture parameters.
     void ConfigTexture(const TextureCreateParams& params);
@@ -199,6 +208,10 @@ struct TextureCreateParams {
 
     // whether a texture uses mipmaps and if so, how it interpolates between them (if at all)
     Texture::TextureMipmapBehaviour mipmapBehaviour;
+
+    Texture::TextureMipmapGeneration mipmapGenerationMethod;
+
+    std::optional<std::shared_ptr<TextureAtlas>> mipmapAtlas = std::nullopt; // May NOT be nullptr. Only used for mipmap generation (depending on mipmapGenerationMethod).
 
     TextureCreateParams(const std::vector<TextureSource>& imagePaths, const Texture::TextureUsage usage);
 
