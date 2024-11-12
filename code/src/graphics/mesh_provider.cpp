@@ -45,7 +45,13 @@ unsigned int MeshVertexFormat::GetNonInstancedVertexSize() const {
     return size;
 }
 
-MeshVertexFormat::MeshVertexFormat(const MeshVertexFormat& other) : supportsAnimation(other.supportsAnimation), maxBones(other.maxBones), attributes(other.attributes) {
+MeshVertexFormat::MeshVertexFormat(const MeshVertexFormat& other) :
+    primitiveType(other.primitiveType),
+    supportsAnimation(other.supportsAnimation),
+    maxBones(other.maxBones), 
+    attributes(other.attributes) 
+
+{
     // we have to calculate attribute offsets
     unsigned int noninstancedOffset = 0, instancedOffset = 0;
     for (auto& attrib : vertexAttributes) {
@@ -86,7 +92,7 @@ MeshVertexFormat::MeshVertexFormat(const MeshVertexFormat::FormatVertexAttribute
 
 MeshVertexFormat MeshVertexFormat::Default(unsigned int nBones, bool instancedColor, bool instancedTextureZ) {
     bool animations = nBones != 0;
-    return MeshVertexFormat({
+    auto format = MeshVertexFormat({
         .position = VertexAttribute {.nFloats = 3, .instanced = false},
         .textureUV = VertexAttribute {.nFloats = 2, .instanced = false},
         .textureZ = VertexAttribute {.nFloats = 1, .instanced = instancedTextureZ},
@@ -98,6 +104,8 @@ MeshVertexFormat MeshVertexFormat::Default(unsigned int nBones, bool instancedCo
         .arbitrary1 = animations ? std::optional(VertexAttribute {.nFloats = 4, .instanced = false, .integer = true}) : std::nullopt, // bone ids
         .arbitrary2 = animations ? std::optional(VertexAttribute {.nFloats = 4, .instanced = false}) : std::nullopt, // bone weights
         }, animations, nBones);
+    //format.primitiveType = GL_POINTS;
+    return format;
 }
 
 // noninstanced (XYZ, TextureXY).
@@ -170,13 +178,14 @@ void MeshVertexFormat::HandleAttribute(GLuint& vaoId, const std::optional<Vertex
     }
 }
 
-bool MeshVertexFormat::operator==(const MeshVertexFormat& other) const {
+bool MeshVertexFormat::operator==(const MeshVertexFormat& other) const { // TODO; last line was previously just return true, kinda sus?
     for (unsigned int i = 0; i < N_ATTRIBUTES; i++) {
         if (vertexAttributes[i] != other.vertexAttributes[i]) {
             return false;
         }
     }
-    return true;
+
+    return primitiveType == other.primitiveType && maxBones == other.maxBones && supportsAnimation == other.supportsAnimation;
 }
 
 void MeshVertexFormat::SetNonInstancedVaoVertexAttributes(GLuint& vaoId, unsigned int instancedSize, unsigned int nonInstancedSize) const {

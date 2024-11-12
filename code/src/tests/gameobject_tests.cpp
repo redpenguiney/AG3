@@ -9,7 +9,10 @@
 
 std::shared_ptr<Mesh> CubeMesh() {
     auto makeMparams = MeshCreateParams{ .textureZ = -1.0, .opacity = 1, .expectedCount = 16384 };
+    
+    Assert(makeMparams.meshVertexFormat == std::nullopt);
     static auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/rainbowcube.obj", makeMparams).at(0);
+    //Assert(m->vertexFormat.primitiveType == GL_POINTS);
 
     //DebugLogInfo("CUBE HAS MESH ID ", m->meshId);
 

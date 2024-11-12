@@ -76,7 +76,7 @@ void main()
     //Output = vec4(normalize(fragmentNormal), 1.0);
     //Output = vec4(-envLightDirection, 1.0);
     //Output = vec4(fragmentColor.xyz, 1.0);
-    //Output = vec4(1.0, 1.0, 1.0, 1.0);
+    Output = vec4(1.0, 1.0, 1.0, 1.0);
     //Output = vec4(gl_FragCoord.www, 1.0);
     //Output = vec4(dot(normal, envLightDirection));
 
