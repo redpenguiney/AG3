@@ -71,7 +71,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 				float hUvs[2] = {World::TerrainAtlas()->regions[floorData.texAtlasRegionId].left, World::TerrainAtlas()->regions[floorData.texAtlasRegionId].right };
 				float vUvs[2] = {World::TerrainAtlas()->regions[floorData.texAtlasRegionId].top, World::TerrainAtlas()->regions[floorData.texAtlasRegionId].bottom };
 
-				DebugLogInfo("Pushing ", vertexIndex);
+				//DebugLogInfo("Pushing ", vertexIndex);
 
 				vertices.resize(vertices.size() + floatsPerVertex * 4);
 				for (unsigned int x = 0; x < 2; x++) {
