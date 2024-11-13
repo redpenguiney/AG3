@@ -197,6 +197,7 @@ void GraphicsEngine::UpdateMainFramebuffer() {
     if (!mainFramebuffer.has_value() || mainFramebuffer->width != window.width || mainFramebuffer->height != window.height) {
         TextureCreateParams colorTextureParams({}, Texture::ColorMap);
         colorTextureParams.filteringBehaviour = Texture::LinearTextureFiltering;
+        colorTextureParams.mipmapBehaviour = Texture::NoMipmaps;
         colorTextureParams.format = Texture::RGBA_16Float;
         colorTextureParams.wrappingBehaviour = Texture::WrapClampToEdge;
         mainFramebuffer.emplace(window.width, window.height, std::vector {colorTextureParams}, true);

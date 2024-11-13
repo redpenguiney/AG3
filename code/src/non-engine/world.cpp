@@ -21,8 +21,9 @@ std::shared_ptr<Material>& World::TerrainMaterial()
     auto p = TextureCreateParams({
         TextureSource("../textures/terrain_color_atlas.png")
     }, Texture::ColorMap);
-    p.filteringBehaviour = Texture::NoTextureFiltering;
-    p.mipmapBehaviour = Texture::NoMipmaps;
+    p.filteringBehaviour = Texture::LinearTextureFiltering;
+    //p.mipmapBehaviour = Texture::NoMipmaps;
+    p.mipmapGenerationMethod = Texture::AutoGeneration;
     p.wrappingBehaviour = Texture::WrapClampToEdge;
 
     static auto [_, texture] = Material::New(MaterialCreateParams{
@@ -123,7 +124,7 @@ World::World() {
         }*/
 
         if (!renderChunks.count({ 0, 0 })) {
-            renderChunks[glm::ivec2(0, 0)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(0, 0), 1, 8, GrassMaterial().second, TerrainAtlas()));
+            renderChunks[glm::ivec2(0, 0)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(0, 0), 1, 8, TerrainMaterial(), TerrainAtlas()));
             
         }
         renderChunks[{0, 0}]->dead = false;
@@ -150,9 +151,12 @@ int AddAtlasRegion(int x, int y) {
 
 int World::DIRT = RegisterTileData({
     .displayName = "Dirt",
-    .texAtlasRegionId = AddAtlasRegion(0, 0)
+    .texAtlasRegionId = AddAtlasRegion(0, 0),
+    .texArrayZ = 0.0f
 });
 int World::ROCK = RegisterTileData({
     .displayName = "Rock",
-    .texAtlasRegionId = AddAtlasRegion(1, 0)
+    .texAtlasRegionId = AddAtlasRegion(1, 0),
+    .texArrayZ = 0.0f
+    
 });

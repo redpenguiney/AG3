@@ -259,7 +259,6 @@ glTextureIndex(textureIndex)
 
     }
     else { // to create font textures, we use freetype to rasterize them for us from vector ttf fonts
-        // TODO: fontmaps have no mipmapping rn
         Assert(params.format == TextureFormat::Grayscale_8Bit);
         Assert(std::holds_alternative<std::string>(params.textureSources.back().imageData));
         std::string fontPath = std::get<std::string>(params.textureSources.back().imageData);
@@ -353,6 +352,14 @@ glTextureIndex(textureIndex)
             
         };
 
+        if (params.mipmapGenerationMethod != TextureMipmapGeneration::GlGenerate) {
+            Assert(false); // TODO
+            //GenMipmap(params, imageDatas.at(i)->imageData, internalFormat, sourceFormat, nChannels);
+        }
+        else {
+            GenMipmap(params, nullptr, TextureFormat::Grayscale_8Bit, GL_RED, nChannels);
+        }
+
         // delete the glyph image data ptrs
         // TODO LITERAL MEMORY LEAK
 
@@ -426,13 +433,17 @@ void Texture::Use() {
 }
 
 void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, TextureFormat internalFormat, unsigned int sourceFormat, unsigned int nChannels, int face, int level) {
+    DebugLogInfo("Mipmapping ", textureId, " face ", face, " level ", level);
+
     if (params.mipmapGenerationMethod == GlGenerate) {
-        DebugLogInfo("Mipmapping ", textureId, " face ", face, " level ", level);
+       
         glGenerateMipmap(bindingLocation);
     }
     else {
+        nMipmapLevels++;
+
         // confirm that texture dimensions are a power of two
-        if ((width & (width - 1)) != 0 || (height & (height - 1)) == 0) {
+        if ((width & (width - 1)) != 0 || (height & (height - 1)) != 0) {
             throw std::runtime_error("Invalid texture dimensions for automatic mipmap generation by AG3 (must be power of two).");
         }
 
@@ -443,16 +454,18 @@ void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, Texture
         uint8_t* dst = new uint8_t[mipWidth * mipHeight * nChannels];
         for (int x = 0; x < mipWidth; x++) {
             for (int y = 0; y < mipHeight; y++) {
-                dst[x * nChannels * mipHeight + y * nChannels] = 1;
+                for (int channel = 0; channel < nChannels; channel++) {
+                    dst[x * nChannels * mipHeight + y * nChannels + channel] = 255;
+                }
             }
         }
         
         // give OpenGL the mipmap
         if (type == TextureType::Texture2D) {
-            glTexImage3D(bindingLocation, level, internalFormat, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, dst); // put data in opengl
+            glTexImage3D(bindingLocation, level, internalFormat, mipWidth, mipHeight, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, dst); // put data in opengl
         }
         else if (type == TextureType::TextureCubemap) {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, dst);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, internalFormat, mipWidth, mipHeight, 0, sourceFormat, GL_UNSIGNED_BYTE, dst);
         }
         else {
             Assert(false); // unreachable
@@ -473,6 +486,10 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
     // min filter is used when each fragment covers up many pixels on a texture (for far away objects)
 
     Use();
+
+    if (nMipmapLevels != 0) {
+        glTexParameteri(bindingLocation, GL_TEXTURE_MAX_LEVEL, nMipmapLevels);
+    }
 
     // mipmapping and filtering settings used for determining min filter
     switch (params.mipmapBehaviour) {

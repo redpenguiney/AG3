@@ -78,6 +78,7 @@ class Texture {
         GlGenerate = 0, // The graphics driver will generate mipmaps automatically. May fallback to AutoGeneration on some devices (TODO) 
         AutoGeneration = 1, // Mipmaps are generated at runtime by AG3. Only supported for textures with power-of-two dimensions. If a texture atlas is supplied with the TextureCreateParams, it will use it to create more intelligent mipmaps that reduce texture bleeding.
         // TODO: allow user-supplied mipmaps
+        // TODO: fontmaps currently mandate GlGenerate.
     };
 
     enum TextureUsage {
@@ -132,6 +133,7 @@ class Texture {
 
     private:
     int width, height, depth, nChannels; // if the texture is not an array texture or a 3d texture, depth = 1
+    int nMipmapLevels = 0; // 0 if mipmaps are generated via openGL
 
     GLuint glTextureId; // id is used by opengl
     const GLenum bindingLocation; // basically what kind of opengl texture it is; cubemap, 3d, 2d, 2d array, etc.

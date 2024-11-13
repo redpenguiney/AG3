@@ -18,10 +18,10 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 		//.tangent = VertexAttribute {.nFloats = 3, .instanced = false},
 		
 	}, false, 0));
-	params.meshVertexFormat->primitiveType = GL_POINTS;
+	params.meshVertexFormat->primitiveType = GL_TRIANGLES;
 	
 	//params.meshVertexFormat.emplace(MeshVertexFormat::Default());
-	params.normalizeSize = false;
+	params.normalizeSize = true;
 
 	GLuint floatsPerVertex = params.meshVertexFormat->GetNonInstancedVertexSize() / sizeof(GLfloat);
 

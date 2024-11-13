@@ -12,7 +12,7 @@ struct TileData {
 	std::optional<GameobjectCreateParams> gameobject = std::nullopt; // If non-existent, object will just be a quad (or cube if yOffset != 0) textured based on texAtlasRegionId.
 	
 	int texAtlasRegionId = 0; // which part of the texture atlas textures this tile, should never be negative
-	float texArrayZ = 0;
+	float texArrayZ = -1;
 
 	float yOffset = 0.0;
 	int id = -1; // value assigned when RegisterTile() is called

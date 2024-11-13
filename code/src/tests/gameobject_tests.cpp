@@ -310,7 +310,7 @@ void TestStationaryPointlight()
     coolestLight->RawGet<RenderComponent>()->SetTextureZ(-1);
     coolestLight->RawGet<RenderComponent>()->SetColor({ 0.5, 1.0, 1.0, 1.0 });
     coolestLight->RawGet<TransformComponent>()->SetPos({ 0, 500, 0 });
-    coolestLight->RawGet<PointLightComponent>()->SetRange(100000);
+    coolestLight->RawGet<PointLightComponent>()->SetRange(1000000);
     coolestLight->RawGet<PointLightComponent>()->SetColor({ 0.8, 1.0, 0.6 });
 }
 

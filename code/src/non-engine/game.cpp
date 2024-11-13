@@ -97,9 +97,9 @@ void GameInit()
     //auto& LUA = LuaHandler::Get();
     //auto& CR = ComponentRegistry::Get();
 
-    //MakeMainMenu();
+    MakeMainMenu();
 
-    World::Generate();
+    //World::Generate();
 
     //GE.SetDebugFreecamEnabled(true);
     GE.camera.rotation = glm::quatLookAt(glm::vec3(0, -1, 0), glm::vec3(0, 0, 1));
@@ -147,38 +147,38 @@ void GameInit()
         GE.camera.position.z += dz;
     });
 
-    //{
-    //    auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
-    //    ttfParams.fontHeight = 16;
-    //    ttfParams.format = Texture::Grayscale_8Bit;
-    //    auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
+    {
+        auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
+        ttfParams.fontHeight = 16;
+        ttfParams.format = Texture::Grayscale_8Bit;
+        auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
 
-    //    auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
+        auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
 
-    //    debugText->rgba = { 0, 1, 0, 0 };
-    //    debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
+        debugText->rgba = { 0, 1, 0, 0 };
+        debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
 
-    //    debugText->scalePos = { 0, 1 };
-    //    debugText->scaleSize = { 0, 0 };
-    //    debugText->offsetSize = { 600, 60 };
-    //    debugText->offsetPos = { 200, -200 };
-    //    debugText->anchorPoint = { 0, 0 };
+        debugText->scalePos = { 0, 1 };
+        debugText->scaleSize = { 0, 0 };
+        debugText->offsetSize = { 600, 60 };
+        debugText->offsetPos = { 200, -200 };
+        debugText->anchorPoint = { 0, 0 };
 
-    //    debugText->GetTextInfo().text = "abcdefghijklmnopqrstuvwxyz";
-    //    debugText->GetTextInfo().rgba = { 1, 1, 1, 1.0 };
-    //    debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
-    //    debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+        debugText->GetTextInfo().text = "abcdefghijklmnopqrstuvwxyz";
+        debugText->GetTextInfo().rgba = { 1, 1, 1, 1.0 };
+        debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+        debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
 
-    //    debugText->UpdateGuiGraphics();
-    //    debugText->UpdateGuiTransform();
-    //    debugText->UpdateGuiText();
+        debugText->UpdateGuiGraphics();
+        debugText->UpdateGuiTransform();
+        debugText->UpdateGuiText();
 
-    //    GE.preRenderEvent->Connect([&GE, debugText](float dt) {
+        GE.preRenderEvent->Connect([&GE, debugText](float dt) {
 
-    //        debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
-    //        debugText->UpdateGuiText();
-    //    });
-    //}
+            debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
+            debugText->UpdateGuiText();
+        });
+    }
 
     GE.preRenderEvent->Connect([](float dt) {
         if (!inMainMenu) {
@@ -217,6 +217,8 @@ void GameInit()
     GE.window.inputDown->Connect([](InputObject input) {
         if (input.input == InputObject::F) {
             GraphicsEngine::Get().SetDebugFreecamEnabled(!GraphicsEngine::Get().debugFreecamEnabled);
+            //GraphicsEngine::Get().GetDebugFreecamCamera().position = GraphicsEngine::Get().camera.position;
+            //GraphicsEngine::Get().GetDebugFreecamCamera().rotation = GraphicsEngine::Get().camera.rotation;
         }
     });
 
@@ -228,7 +230,7 @@ void GameInit()
     TestCubeArray(glm::uvec3(1, 1, 1), glm::uvec3(0, 0, 0), glm::uvec3(64, 1, 64), false, glm::vec3(0.05, 0.05, 0.05));
     //TestUi();
     //
-    //TestStationaryPointlight();
+    TestStationaryPointlight();
     //TestVoxelTerrain();
     //TestSpinningSpotlight();
     //TestGrassFloor();
