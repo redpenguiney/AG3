@@ -8,8 +8,8 @@ TextureAtlas::Region::Region(int x, int y, int regionWidth, int regionHeight, in
 	float correctedY = float(y);
 
 
-	left = float(correctedX + 1) / float(atlasWidth);
-	right = float(correctedX - 1 + regionWidth) / float(atlasWidth);
-	top = float(correctedY + 1) / float(atlasHeight);
-	bottom = float(correctedY - 1 + regionHeight) / float(atlasHeight);
+	left = float(correctedX + 2) / float(atlasWidth);
+	right = float(correctedX - 2 + regionWidth) / float(atlasWidth);
+	top = float(correctedY + 2) / float(atlasHeight);
+	bottom = float(correctedY - 2 + regionHeight) / float(atlasHeight);
 }
