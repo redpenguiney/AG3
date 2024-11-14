@@ -21,7 +21,7 @@ std::shared_ptr<Material>& World::TerrainMaterial()
     auto p = TextureCreateParams({
         TextureSource("../textures/terrain_color_atlas.png")
     }, Texture::ColorMap);
-    p.filteringBehaviour = Texture::LinearTextureFiltering;
+    p.filteringBehaviour = Texture::NoTextureFiltering;
     //p.mipmapBehaviour = Texture::NoMipmaps;
     p.mipmapGenerationMethod = Texture::AutoGeneration;
     p.wrappingBehaviour = Texture::WrapClampToEdge;

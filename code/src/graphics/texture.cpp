@@ -432,6 +432,68 @@ void Texture::Use() {
     glBindTexture(bindingLocation, glTextureId);
 }
 
+// for mipmapping
+uint8_t Sample(uint8_t* pixels, int width, int height, int nChannels, Texture::TextureWrappingBehaviour wrapping, int x, int y, int channel) {
+    //if (x >= width) {
+    //    return 0;
+    //    if (wrapping == Texture::WrapClampToEdge) {
+    //        x = width - 1;
+    //    }
+    //    else if (wrapping == Texture::WrapTiled) {
+    //        while (x >= width) x -= width;
+    //    }
+    //    else {
+    //        Assert(false); // TODO, currently unsupported
+    //    }
+    //}
+
+    //if (x < 0) {
+    //    return 0;
+    //    if (wrapping == Texture::WrapClampToEdge) {
+    //        x = 0;
+    //    }
+    //    else if (wrapping == Texture::WrapTiled) {
+    //        while (x < 0) x += width;
+    //    }
+    //    else {
+    //        Assert(false); // TODO, currently unsupported
+    //    }
+    //}
+
+    //if (y >= height) {
+    //    return 0;
+    //    if (wrapping == Texture::WrapClampToEdge) {
+    //        y = height - 1;
+    //    }
+    //    else if (wrapping == Texture::WrapTiled) {
+    //        while (y >= height) y -= height;
+    //    }
+    //    else {
+    //        Assert(false); // TODO, currently unsupported
+    //    }
+    //}
+
+    //if (y < 0) {
+    //    return 0;
+    //    if (wrapping == Texture::WrapClampToEdge) {
+    //        y = 0;
+    //    }
+    //    else if (wrapping == Texture::WrapTiled) {
+    //        while (y < 0) y += height;
+    //    }
+    //    else {
+    //        Assert(false); // TODO, currently unsupported
+    //    }
+    //}
+
+    //if (y / 4 % 2 == 0) {
+    //    return 0;
+    //}
+    //
+    //return 255;
+    return pixels[x * nChannels * height + y * nChannels + channel];
+}
+
 void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, TextureFormat internalFormat, unsigned int sourceFormat, unsigned int nChannels, int face, int level) {
     DebugLogInfo("Mipmapping ", textureId, " face ", face, " level ", level);
 
@@ -455,7 +517,28 @@ void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, Texture
         for (int x = 0; x < mipWidth; x++) {
             for (int y = 0; y < mipHeight; y++) {
                 for (int channel = 0; channel < nChannels; channel++) {
-                    dst[x * nChannels * mipHeight + y * nChannels + channel] = 255;
+                    float sum = 0;
+
+                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x * 2, y * 2, channel);
+                    //sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x * 2 + 1, y * 2, channel);
+                    //sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x * 2, y * 2 + 1, channel);
+                    //sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x * 2 + 1, y * 2 + 1, channel);
+
+                   /* sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x - 1, y - 1, channel);
+                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x + 0, y - 1, channel);
+                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x + 1, y - 1, channel);
+                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x - 1, y + 0, channel);
+                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x + 0, y + 0, channel);
+                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x + 1, y + 0, channel);
+                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x - 1, y + 1, channel);
+                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x + 0, y + 1, channel);
+                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x + 1, y + 1, channel);*/
+
+                    //DebugLogInfo("Sample for channel ", channel, " is ", sum);
+
+                    //sum /= 4;
+
+                    dst[x * nChannels * mipHeight + y * nChannels + channel] = std::lround(sum);
                 }
             }
         }
