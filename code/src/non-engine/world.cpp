@@ -22,7 +22,7 @@ std::shared_ptr<Material>& World::TerrainMaterial()
         TextureSource("../textures/terrain_color_atlas.png")
     }, Texture::ColorMap);
     p.filteringBehaviour = Texture::NoTextureFiltering;
-    //p.mipmapBehaviour = Texture::NoMipmaps;
+    p.mipmapBehaviour = Texture::UseNearestMipmap;
     p.mipmapGenerationMethod = Texture::AutoGeneration;
     p.wrappingBehaviour = Texture::WrapClampToEdge;
 

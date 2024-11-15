@@ -233,7 +233,7 @@ glTextureIndex(textureIndex)
             void* data = imageDatas.back()->imageData;
             glTexImage3D(bindingLocation, 0, internalFormat, width, height, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, data); // put data in opengl
 
-            if (params.mipmapGenerationMethod != TextureMipmapGeneration::GlGenerate) {
+            if (params.mipmapBehaviour != TextureMipmapBehaviour::NoMipmaps && params.mipmapGenerationMethod != TextureMipmapGeneration::GlGenerate) {
                 GenMipmap(params, imageDatas.back()->imageData, internalFormat, sourceFormat, nChannels);
             }
             
@@ -244,7 +244,7 @@ glTextureIndex(textureIndex)
                 void* data = imageDatas.at(i)->imageData;
                 glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, sourceFormat, GL_UNSIGNED_BYTE, data);
                 
-                if (params.mipmapGenerationMethod != TextureMipmapGeneration::GlGenerate) {
+                if (params.mipmapBehaviour != TextureMipmapBehaviour::NoMipmaps && params.mipmapGenerationMethod != TextureMipmapGeneration::GlGenerate) {
                     GenMipmap(params, imageDatas.at(i)->imageData, internalFormat, sourceFormat, nChannels);
                 }
             }
@@ -253,7 +253,7 @@ glTextureIndex(textureIndex)
             Assert(false); // unreachable
         }
     
-        if (params.mipmapGenerationMethod == TextureMipmapGeneration::GlGenerate) {
+        if (params.mipmapBehaviour != TextureMipmapBehaviour::NoMipmaps && params.mipmapGenerationMethod == TextureMipmapGeneration::GlGenerate) {
             GenMipmap(params, nullptr, internalFormat, sourceFormat, nChannels);
         }
 
@@ -352,13 +352,16 @@ glTextureIndex(textureIndex)
             
         };
 
-        if (params.mipmapGenerationMethod != TextureMipmapGeneration::GlGenerate) {
-            Assert(false); // TODO
-            //GenMipmap(params, imageDatas.at(i)->imageData, internalFormat, sourceFormat, nChannels);
+        if (params.mipmapBehaviour != TextureMipmapBehaviour::NoMipmaps) {
+            if (params.mipmapGenerationMethod != TextureMipmapGeneration::GlGenerate) {
+                Assert(false); // TODO
+                //GenMipmap(params, imageDatas.at(i)->imageData, internalFormat, sourceFormat, nChannels);
+            }
+            else {
+                GenMipmap(params, nullptr, TextureFormat::Grayscale_8Bit, GL_RED, nChannels);
+            }
         }
-        else {
-            GenMipmap(params, nullptr, TextureFormat::Grayscale_8Bit, GL_RED, nChannels);
-        }
+        
 
         // delete the glyph image data ptrs
         // TODO LITERAL MEMORY LEAK
@@ -495,6 +498,8 @@ uint8_t Sample(uint8_t* pixels, int width, int height, int nChannels, Texture::T
 }
 
 void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, TextureFormat internalFormat, unsigned int sourceFormat, unsigned int nChannels, int face, int level) {
+    Assert(params.mipmapBehaviour != NoMipmaps);
+
     DebugLogInfo("Mipmapping ", textureId, " face ", face, " level ", level);
 
     if (params.mipmapGenerationMethod == GlGenerate) {
@@ -514,15 +519,18 @@ void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, Texture
 
         // generate mipmap
         uint8_t* dst = new uint8_t[mipWidth * mipHeight * nChannels];
+        int tx = 0;
+        int ty = 0;
+        int stride = 2;
         for (int x = 0; x < mipWidth; x++) {
             for (int y = 0; y < mipHeight; y++) {
                 for (int channel = 0; channel < nChannels; channel++) {
                     float sum = 0;
 
-                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x * 2, y * 2, channel);
-                    //sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x * 2 + 1, y * 2, channel);
-                    //sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x * 2, y * 2 + 1, channel);
-                    //sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x * 2 + 1, y * 2 + 1, channel);
+                    sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, tx,     ty, channel);
+                    //sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, tx + 1, ty, channel);
+                    //sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, tx    , ty + 1, channel);
+                    //sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, tx + 1, ty + 1, channel);
 
                    /* sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x - 1, y - 1, channel);
                     sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, x + 0, y - 1, channel);
@@ -538,9 +546,13 @@ void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, Texture
 
                     //sum /= 4;
 
-                    dst[x * nChannels * mipHeight + y * nChannels + channel] = std::lround(sum);
+                    //sum = (x % 8 > 3) * 255;
+
+                    dst[x * nChannels * mipHeight + y * nChannels + channel] = sum;
                 }
+                ty += stride;
             }
+            tx += stride;
         }
         
         // give OpenGL the mipmap
@@ -548,7 +560,7 @@ void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, Texture
             glTexImage3D(bindingLocation, level, internalFormat, mipWidth, mipHeight, depth, 0, sourceFormat, GL_UNSIGNED_BYTE, dst); // put data in opengl
         }
         else if (type == TextureType::TextureCubemap) {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, internalFormat, mipWidth, mipHeight, 0, sourceFormat, GL_UNSIGNED_BYTE, dst);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, level, internalFormat, mipWidth, mipHeight, 0, sourceFormat, GL_UNSIGNED_BYTE, dst);
         }
         else {
             Assert(false); // unreachable
@@ -612,7 +624,7 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
         glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         break;
         case Texture::NoTextureFiltering:
-        glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST); 
+        glTexParameteri(bindingLocation, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR); 
         break;
         default:
         DebugLogError("something very wrong in config texture filtering"); abort();

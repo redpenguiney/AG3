@@ -79,7 +79,7 @@ void MakeMainMenu() {
             //TestCubeArray(1, 2, 1, false);
             DebugLogInfo("STARTING GAME");
             //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
-            //World::Generate();
+            World::Generate();
         }
     });
 
@@ -99,7 +99,7 @@ void GameInit()
 
     MakeMainMenu();
 
-    World::Generate();
+    //World::Generate();
 
     //GE.SetDebugFreecamEnabled(true);
     GE.camera.rotation = glm::quatLookAt(glm::vec3(0, -1, 0), glm::vec3(0, 0, 1));
