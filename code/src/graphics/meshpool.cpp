@@ -43,7 +43,7 @@ Meshpool::~Meshpool()
 
 std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, const std::shared_ptr<ShaderProgram>& shader, CheckedUint count)
 {
-    DebugLogInfo("Adding count ", count, " for meshid ", mesh->meshId);
+    //DebugLogInfo("Adding count ", count, " for meshid ", mesh->meshId);
 
     // find valid slot for mesh
     CheckedUint slot;
@@ -119,7 +119,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
         // find slot for draw command
         CheckedUint drawCommandIndex = commandBuffer.GetNewDrawCommandSlot();
 
-        DebugLogInfo("Wrote id ", mesh->meshId, " to command ", drawCommandIndex);
+        //DebugLogInfo("Wrote id ", mesh->meshId, " to command ", drawCommandIndex);
 
         IndirectDrawCommand command = {
             .count = static_cast<CheckedUint>(mesh->indices.size()),
@@ -514,6 +514,8 @@ void Meshpool::FlipBuffers()
 
 void Meshpool::ExpandVertexCapacity()
 {
+    DebugLogInfo("Expanding vertex capacity from ", currentVertexCapacity, " for ", this);
+
     // determine new vertex capacity
     if (currentVertexCapacity == 0) {
         currentVertexCapacity = 1;
@@ -544,7 +546,7 @@ void Meshpool::ExpandVertexCapacity()
         format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
     }
 
-    // Tragically, for every indirect draw command we have to update the 2nd and 3rd buffers' baseVertex since it was offset to correct for the OLD instance buffer's size.
+    // Tragically, for every indirect draw command we have to update the 2nd and 3rd buffers' baseVertex since it was offset to correct for the OLD vertex buffer's size.
     if (MESH_BUFFERING_FACTOR > 1) {
         for (auto& b : drawCommands) {
             if (!b.has_value()) { continue; }
@@ -564,6 +566,8 @@ void Meshpool::ExpandVertexCapacity()
 
 void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
 {
+    DebugLogInfo("Expanding drawcommand capacity from ", currentDrawCommandCapacity, " for ", this);
+
     // update capacity
     CheckedUint oldCapacity = currentDrawCommandCapacity;
     if (currentDrawCommandCapacity == 0) {
@@ -584,6 +588,21 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
         availableDrawCommandSlots.push_back(i);
     }
     std::sort(availableDrawCommandSlots.begin(), availableDrawCommandSlots.end(), std::greater<CheckedUint>());
+
+    // we need to update all the commands on the GPU now because (with multiple buffering) idk something breaks (TODO: WHY)
+    if (INSTANCED_VERTEX_BUFFERING_FACTOR > 1) { // TODO: wrong condition?
+        CheckedUint commandSlot = 0;
+        for (auto& command : clientCommands) {
+            if (command.instanceCount == 0) { continue; }
+            commandUpdates.emplace_back(IndirectDrawCommandUpdate{
+                .updatesLeft = 3,
+                .command = command,
+                .commandSlot = commandSlot
+            });
+            commandSlot++;
+        }
+    }
+
 }
 
 Meshpool::DrawCommandBuffer::DrawCommandBuffer(DrawCommandBuffer&& old) noexcept :
@@ -606,9 +625,12 @@ Meshpool::DrawCommandBuffer& Meshpool::DrawCommandBuffer::operator=(DrawCommandB
 
 void Meshpool::ExpandInstanceCapacity()
 {
+    // if this is true, then we don't actually need to expan
     if (currentInstanceCapacity > instanceEnd) {
         return;
     }
+
+    DebugLogInfo("Expanding instance capacity from ", currentInstanceCapacity, " for ", this);
 
     // determine new instance capacity
     if (currentInstanceCapacity == 0) {
@@ -630,6 +652,7 @@ void Meshpool::ExpandInstanceCapacity()
     // Associate data with the vao and describe format of instanced data
     Assert(vaoId != 0);
     instances.Bind();
+    glBindVertexArray(vaoId);
     format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
 
     //DebugLogInfo("Updating instance capacity.");
@@ -644,10 +667,10 @@ void Meshpool::ExpandInstanceCapacity()
             for (auto& command : b->clientCommands) {
                 if (command.instanceCount == 0) { continue; }
                 b->commandUpdates.emplace_back(IndirectDrawCommandUpdate{
-                    .updatesLeft = 3,
+                    .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
                     .command = command,
                     .commandSlot = commandSlot
-                    });
+                });
                 commandSlot++;
             }
         }

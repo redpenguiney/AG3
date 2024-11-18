@@ -76,6 +76,7 @@ void MakeMainMenu() {
             //TestVoxelTerrain();
             //TestSphere(4, 4, 4, false);
             //TestSphere(6, 4, 4, false);
+            //TestCubeArray(glm::uvec3(8, 8, 8), glm::uvec3(0, 0, 0), glm::uvec3(16, 1, 16), false, glm::vec3(0.5, 0.5, 0.5));
             //TestCubeArray(1, 2, 1, false);
             DebugLogInfo("STARTING GAME");
             //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
@@ -220,14 +221,21 @@ void GameInit()
             //GraphicsEngine::Get().GetDebugFreecamCamera().position = GraphicsEngine::Get().camera.position;
             //GraphicsEngine::Get().GetDebugFreecamCamera().rotation = GraphicsEngine::Get().camera.rotation;
         }
+        else if (input.input == InputObject::T) {
+            static int y = 0;
+
+            for (int i = 0; i < 1; i++) {
+                TestSphere(-2, -2, y += 2, false);
+            }
+        }
     });
 
     //GE.GetDebugFreecamCamera().position = glm::dvec3(0, 15, 0);
 
-    TestCubeArray(glm::uvec3(16, 16, 16), glm::uvec3(0, 0, 0), glm::uvec3(16, 1, 16), false);
-    TestCubeArray(glm::uvec3(8, 8, 8), glm::uvec3(0, 0, 0), glm::uvec3(16, 1, 16), false, glm::vec3(0.5, 0.5, 0.5));
-    TestCubeArray(glm::uvec3(4, 4, 4), glm::uvec3(0, 0, 0), glm::uvec3(16, 1, 16), false, glm::vec3(0.25, 0.25, 0.25));
-    TestCubeArray(glm::uvec3(1, 1, 1), glm::uvec3(0, 0, 0), glm::uvec3(64, 1, 64), false, glm::vec3(0.05, 0.05, 0.05));
+    //TestCubeArray(glm::uvec3(16, 16, 16), glm::uvec3(0, 0, 0), glm::uvec3(16, 1, 16), false);
+    
+    //TestCubeArray(glm::uvec3(4, 4, 4), glm::uvec3(0, 0, 0), glm::uvec3(16, 1, 16), false, glm::vec3(0.25, 0.25, 0.25));
+    //TestCubeArray(glm::uvec3(1, 1, 1), glm::uvec3(0, 0, 0), glm::uvec3(64, 1, 64), false, glm::vec3(0.05, 0.05, 0.05));
     //TestUi();
     //
     TestStationaryPointlight();

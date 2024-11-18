@@ -114,20 +114,20 @@ World::World() {
         glm::ivec3 roundedBottomRight = glm::ceilMultiple(glm::dvec3(bottomRight) + cam.position, glm::dvec3(16.0f));
         //Assert(roundedTopLeft.y == 0 && roundedBottomRight.y == 0);
 
-        /*for (int x = roundedTopLeft.x - 8; x <= roundedTopLeft.x + 8; x += 16) {
-            for (int y = roundedTopLeft.z - 8; y <= roundedTopLeft.z + 8; y += 16) {
+        for (int x = roundedTopLeft.x - 8; x <= roundedBottomRight.x + 8; x += 16) {
+            for (int y = roundedTopLeft.z - 8; y <= roundedBottomRight.z + 8; y += 16) {
                 if (!renderChunks.count({ x, y })) {
-                    renderChunks[glm::ivec2(x, y)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(x, y), 1, 8, GrassMaterial().second, atlas));
+                    renderChunks[glm::ivec2(x, y)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(x, y), 1, 8, TerrainMaterial(), TerrainAtlas()));
                 }
                 renderChunks[{x, y}]->dead = false;
             }
-        }*/
-
-        if (!renderChunks.count({ 0, 0 })) {
-            renderChunks[glm::ivec2(0, 0)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(0, 0), 1, 8, TerrainMaterial(), TerrainAtlas()));
-            
         }
-        renderChunks[{0, 0}]->dead = false;
+
+        //if (!renderChunks.count({ 0, 0 })) {
+            //renderChunks[glm::ivec2(0, 0)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(0, 0), 1, 8, TerrainMaterial(), TerrainAtlas()));
+            
+        //}
+        //renderChunks[{0, 0}]->dead = false;
 
         // render
         for (auto it = renderChunks.begin(); it != renderChunks.end(); it++) {

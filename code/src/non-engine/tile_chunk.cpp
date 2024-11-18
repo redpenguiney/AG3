@@ -38,7 +38,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 		}
 	}
 
-	DebugLogInfo("Radius ", radius);
+	//DebugLogInfo("Radius ", radius);
 
 	for (int i = 1; i < radius * 2 + 1; i += stride) {
 		for (int j = 1; j < radius * 2 + 1; j += stride) {
