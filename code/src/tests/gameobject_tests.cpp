@@ -21,7 +21,7 @@ std::shared_ptr<Mesh> CubeMesh() {
 
 std::shared_ptr<Mesh> SphereMesh() {
     auto makeMparams = MeshCreateParams{ .textureZ = -1.0, .opacity = 1, .expectedCount = 16384 };
-    static auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/icosphere.obj", makeMparams).at(0);
+    auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/icosphere.obj", makeMparams).at(0);
 
     //DebugLogInfo("CUBE HAS MESH ID ", m->meshId);
 

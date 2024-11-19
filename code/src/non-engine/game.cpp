@@ -225,7 +225,7 @@ void GameInit()
             static int y = 0;
 
             for (int i = 0; i < 1; i++) {
-                TestSphere(-2, -2, y += 2, false);
+                TestSphere(-2 - i * 2, -2, y += 2, false);
             }
         }
     });

@@ -595,7 +595,7 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
         for (auto& command : clientCommands) {
             if (command.instanceCount == 0) { continue; }
             commandUpdates.emplace_back(IndirectDrawCommandUpdate{
-                .updatesLeft = 3,
+                .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
                 .command = command,
                 .commandSlot = commandSlot
             });

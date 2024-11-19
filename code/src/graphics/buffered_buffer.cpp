@@ -31,12 +31,18 @@ BufferedBuffer::~BufferedBuffer() {
         glDeleteBuffers(1, &_bufferId);
     }
     
-    // TODO: delete sync?
+    if (sync != nullptr) {
+        for (unsigned int i = 0; i < numBuffers; i++) {
+            if (sync[i] != 0) {
+                glDeleteSync(sync[i]);
+            }
+        }
+    }
 }
 
 void BufferedBuffer::Flip() {
     // Make the buffer section we just modified have a sync object so we won't write to it again until the GPU has finished using it.
-    //sync[currentBuffer] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    sync[currentBuffer] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
     currentBuffer += 1;
     if (currentBuffer == numBuffers) {
@@ -93,10 +99,10 @@ void BufferedBuffer::Reallocate(unsigned int newSize) {
     GLuint newBufferId;
     glGenBuffers(1, &newBufferId);
 
-    auto flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-#ifdef _DEBUG
-    flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_MAP_READ_BIT;
-#endif
+    auto flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_MAP_READ_BIT;
+//#ifdef _DEBUG
+//    flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT | GL_MAP_READ_BIT;
+//#endif
 
     glBindBuffer(bufferBindingLocation, newBufferId);
     glBufferStorage(bufferBindingLocation, newSize * numBuffers, nullptr, flags);
