@@ -134,6 +134,7 @@ World::World() {
             auto& [_, c] = *it;
             if (c->dead) {
                 it = renderChunks.erase(it);
+                if (it == renderChunks.end()) break;
             }
             else {
                 c->dead = true;

@@ -410,6 +410,7 @@ void Meshpool::Draw(bool prePostProc) {
             //auto cmd = command->clientCommands.at(i);
             //glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
         //}
+        //if (!prePostProc)
         glMultiDrawElementsIndirect(format.primitiveType, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
     }
      
@@ -571,7 +572,7 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
     // update capacity
     CheckedUint oldCapacity = currentDrawCommandCapacity;
     if (currentDrawCommandCapacity == 0) {
-        currentDrawCommandCapacity = 16;
+        currentDrawCommandCapacity = 10;
     }
     else {
         currentDrawCommandCapacity *= 2;
