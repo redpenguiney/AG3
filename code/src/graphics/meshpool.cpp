@@ -573,7 +573,7 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
     // update capacity
     CheckedUint oldCapacity = currentDrawCommandCapacity;
     if (currentDrawCommandCapacity == 0) {
-        currentDrawCommandCapacity = 10;
+        currentDrawCommandCapacity = 1; // TODO: why does putting any number besides 1 cause problems?
     }
     else {
         currentDrawCommandCapacity *= 2;
