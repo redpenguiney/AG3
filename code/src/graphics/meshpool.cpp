@@ -447,6 +447,7 @@ void Meshpool::Commit() {
     //DebugLogInfo("Offset of  ", this, " is ", instances.GetOffset() / instanceSize);
     for (auto& drawBuffer : drawCommands) {
         if (!drawBuffer.has_value()) { continue; }
+        if (drawBuffer->commandUpdates.size() > 0) DebugLogInfo("Updating ", drawBuffer->commandUpdates.size());
         for (auto it = drawBuffer->commandUpdates.begin(); it != drawBuffer->commandUpdates.end(); ) {
             auto& update = *it;
             Assert(update.updatesLeft != 0);
@@ -578,7 +579,7 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
         currentDrawCommandCapacity *= 2;
     }
 
-    clientCommands.resize(currentDrawCommandCapacity, IndirectDrawCommand(0, 0, 0, 0, 0));
+    
     
 
     // expand draw command buffer
@@ -599,11 +600,12 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
                 .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
                 .command = command,
                 .commandSlot = commandSlot
-            });
+                });
             commandSlot++;
         }
     }
 
+    clientCommands.resize(currentDrawCommandCapacity, IndirectDrawCommand(0, 0, 0, 0, 0));
 }
 
 Meshpool::DrawCommandBuffer::DrawCommandBuffer(DrawCommandBuffer&& old) noexcept :
