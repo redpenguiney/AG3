@@ -406,12 +406,15 @@ void Meshpool::Draw(bool prePostProc) {
 
         glPointSize(3.0);
         
-        //for (unsigned int i = 0; i < command->GetDrawCount(); i++) {
-            //auto cmd = command->clientCommands.at(i);
-            //glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
-        //}
+        // TODO: MAKE INDIRECT DRAWING WORK AGAIN
+        for (int i = 0; i < command->GetDrawCount(); i++) {
+            auto cmd = command->clientCommands.at(i);
+            cmd.baseInstance += instances.GetOffset() / instanceSize; //command->buffer.GetOffset() / sizeof(IndirectDrawCommand);
+            cmd.baseVertex += vertices.GetOffset() / vertexSize;
+            glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
+        }
         //if (!prePostProc)
-        glMultiDrawElementsIndirect(format.primitiveType, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
+        //glMultiDrawElementsIndirect(format.primitiveType, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
     }
      
     
