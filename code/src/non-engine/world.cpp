@@ -61,6 +61,11 @@ TerrainTile World::GetTile(int x, int z)
     return t;
 }
 
+TerrainChunk& World::GetChunk(int x, int z)
+{
+    return TerrainChunk();
+}
+
 World::~World() {
     preRenderConnection = nullptr;
 }

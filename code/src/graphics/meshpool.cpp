@@ -411,7 +411,8 @@ void Meshpool::Draw(bool prePostProc) {
             auto cmd = command->clientCommands.at(i);
             cmd.baseInstance += instances.GetOffset() / instanceSize; //command->buffer.GetOffset() / sizeof(IndirectDrawCommand);
             cmd.baseVertex += vertices.GetOffset() / vertexSize;
-            glDrawElementsInstancedBaseVertexBaseInstance(GL_TRIANGLES, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
+            //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDrawElementsInstancedBaseVertexBaseInstance(format.primitiveType, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
         }
         //if (!prePostProc)
         //glMultiDrawElementsIndirect(format.primitiveType, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
@@ -450,7 +451,7 @@ void Meshpool::Commit() {
     //DebugLogInfo("Offset of  ", this, " is ", instances.GetOffset() / instanceSize);
     for (auto& drawBuffer : drawCommands) {
         if (!drawBuffer.has_value()) { continue; }
-        if (drawBuffer->commandUpdates.size() > 0) DebugLogInfo("Updating ", drawBuffer->commandUpdates.size());
+        //if (drawBuffer->commandUpdates.size() > 0) DebugLogInfo("Updating ", drawBuffer->commandUpdates.size());
         for (auto it = drawBuffer->commandUpdates.begin(); it != drawBuffer->commandUpdates.end(); ) {
             auto& update = *it;
             Assert(update.updatesLeft != 0);
@@ -594,7 +595,7 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
     }
     std::sort(availableDrawCommandSlots.begin(), availableDrawCommandSlots.end(), std::greater<CheckedUint>());
 
-    // we need to update all the commands on the GPU now because (with multiple buffering) idk something breaks (TODO: WHY)
+    // we need to update all the commands on the GPU now because (with multiple buffering) indirect draw commands from the 2nd buffer now overlap the 1st buffer's memory region
     if (INSTANCED_VERTEX_BUFFERING_FACTOR > 1) { // TODO: wrong condition?
         CheckedUint commandSlot = 0;
         for (auto& command : clientCommands) {

@@ -21,7 +21,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 	params.meshVertexFormat->primitiveType = GL_TRIANGLES;
 	
 	//params.meshVertexFormat.emplace(MeshVertexFormat::Default());
-	params.normalizeSize = true;
+	params.normalizeSize = false;
 
 	GLuint floatsPerVertex = params.meshVertexFormat->GetNonInstancedVertexSize() / sizeof(GLfloat);
 
@@ -134,7 +134,7 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 	params.meshId = mesh->meshId;
 	mainObject = GameObject::New(params);
 	mainObject->RawGet<TransformComponent>()->SetPos(glm::dvec3(centerPos.x, 0, centerPos.y));
-	mainObject->RawGet<TransformComponent>()->SetScl(glm::dvec3(radius * 2.0));
+	//mainObject->RawGet<TransformComponent>()->SetScl(glm::dvec3(radius * 2.0));
 }
 
 RenderChunk::~RenderChunk() {

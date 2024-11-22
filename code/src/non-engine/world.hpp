@@ -76,7 +76,7 @@ public:
 	TerrainTile GetTile(int x, int z);
 
 	// returns the chunk that the given coordinates lie inside
-	TerrainChunk GetChunk(int x, int z); 
+	TerrainChunk& GetChunk(int x, int z); 
 
 	~World();
 
