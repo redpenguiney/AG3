@@ -16,6 +16,9 @@ struct TerrainTile {
 };
 
 struct TerrainChunk {
+	TerrainChunk(glm::ivec2 position);
+	TerrainChunk(std::array<std::array<TerrainTile, 16>, 16> tiles);
+
 	std::array<std::array<TerrainTile, 16>, 16> tiles;
 	//std::vector<std::unique_ptr<Entity>> entities;
 };
@@ -99,8 +102,8 @@ private:
 	// 16m by 16m, stores terrain/buildings/etc., AI simulated at this level
 	std::unordered_map<glm::ivec2, std::unique_ptr<TerrainChunk>> terrain;
 
-
-	std::unordered_map<glm::ivec2, std::unique_ptr<ClimateTile>> biomes;
+	// 65536m by 65536m biome tiles
+	std::unordered_map<glm::ivec2, std::unique_ptr<BiomeTile>> biomes;
 
 	// each tile is 1Mm by 1Mm, climate simulation done between these 
 	std::array<std::array<std::unique_ptr<ClimateTile>, 16>, 16> climate;

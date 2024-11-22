@@ -3,6 +3,7 @@
 #include "graphics/gengine.hpp"
 #include "tile_data.hpp"
 #include <tests/gameobject_tests.hpp>
+#include <noise/noise.h>
 
 std::unique_ptr<World>& World::Loaded()
 {
@@ -51,7 +52,7 @@ void World::Unload() {
 TerrainTile World::GetTile(int x, int z)
 {
     
-    return GetChunk(x, z).tiles[x % 16][z % 16];
+    return GetChunk(x, z).tiles[std::abs(x % 16)][std::abs(z % 16)];
 }
 
 TerrainChunk& World::GetChunk(int x, int z)
@@ -59,16 +60,13 @@ TerrainChunk& World::GetChunk(int x, int z)
     glm::ivec2 pos(x, z);
     pos = glm::floorMultiple(pos + 8, glm::ivec2(16));
 
-
-
-    auto& chunk = terrain[world.GetNode()];
+    auto& chunk = terrain[pos];
 
     if (chunk == nullptr) {
+        chunk = std::make_unique<TerrainChunk>(pos);
+    }
 
-    }
-    else {
-        return *chunk;
-    }
+    return *chunk;
 }
 
 World::~World() {
@@ -76,26 +74,26 @@ World::~World() {
 }
 
 World::World() {
-    world.Split(world.rootNodeIndex);
+    //world.Split(world.rootNodeIndex);
 
-    climate.resize(256);
-    biomes.resize(256 * 256);
-    unsigned int climateIndex = 0;
-    unsigned int biomeIndex = 0;
+    //climate.resize(256);
+    //biomes.resize(256 * 256);
+    //unsigned int climateIndex = 0;
+    //unsigned int biomeIndex = 0;
 
-    world.ForEach([&climateIndex, &biomeIndex, this](int nodeIndex, int depth) {
-        
-        if (depth == 1) { // climate
-            world.GetNode(nodeIndex).data = climateIndex++;
-            //climate[node.data]. 
+    //world.ForEach([&climateIndex, &biomeIndex, this](int nodeIndex, int depth) {
+    //    
+    //    if (depth == 1) { // climate
+    //        world.GetNode(nodeIndex).data = climateIndex++;
+    //        //climate[node.data]. 
 
-            world.Split(nodeIndex); 
-        }
-        else if (depth == 2) { // biome
-            world.GetNode(nodeIndex).data = biomeIndex++;
-            
-        }
-    });
+    //        world.Split(nodeIndex); 
+    //    }
+    //    else if (depth == 2) { // biome
+    //        world.GetNode(nodeIndex).data = biomeIndex++;
+    //        
+    //    }
+    //});
 
     preRenderConnection = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([this](float) {
         Assert(Loaded() != nullptr);
@@ -171,3 +169,30 @@ int World::ROCK = RegisterTileData({
     .texArrayZ = 0.0f
     
 });
+
+TerrainChunk::TerrainChunk(glm::ivec2 position)
+{
+    static noise::module::Perlin perlinNoiseGenerator;
+    perlinNoiseGenerator.SetSeed(1);
+    perlinNoiseGenerator.SetFrequency(16);
+    perlinNoiseGenerator.SetOctaveCount(3);
+
+    int localX = 0;
+    for (int worldX = position.x - 8; worldX < position.x + 8; worldX++) {
+        int localZ = 0;
+        for (int worldZ = position.y - 8; worldZ < position.y + 8; worldZ++) {
+            float height = perlinNoiseGenerator.GetValue(worldX, worldZ, 0);
+
+            tiles[localX][localZ].furniture = -1;
+            if (height > 0) {
+                tiles[localX][localZ].floor = World::DIRT;
+            }
+            else {
+                tiles[localX][localZ].floor = World::ROCK;
+            }
+
+            localZ++;
+        }
+        localX++;
+    }
+}
