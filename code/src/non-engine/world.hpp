@@ -1,5 +1,4 @@
 #pragma once
-#include "utility/tree.hpp"
 #include <array>
 #include <vector>
 #include <list>
@@ -92,16 +91,23 @@ private:
 	// depth 5 = chunks for AI simulation, hold terrain tiles (16m)^2
 	// Note that for most of the above things (climate, biome, weather, altitude) we then interpolate.
 	// Chunks for depth 1 and 2 are immediately generated, chunks for depths 3-5 are made on demand.
-	ChunkTree world;
+	//ChunkTree world;
 
 	// indices into terrain for chunks that should always be loaded (like those around player built structures)
 	std::vector<unsigned int> forceLoadedChunks;
 
-	std::vector<TerrainChunk> terrain;
-	std::vector<ClimateTile> climate;
-	std::vector<BiomeTile> biomes;
+	// 16m by 16m, stores terrain/buildings/etc., AI simulated at this level
+	std::unordered_map<glm::ivec2, std::unique_ptr<TerrainChunk>> terrain;
 
-	std::unordered_map<glm::ivec2, std::unique_ptr<RenderChunk>> renderChunks; // unique_ptr because unordered_map::emplace was bullying me
+
+	std::unordered_map<glm::ivec2, std::unique_ptr<ClimateTile>> biomes;
+
+	// each tile is 1Mm by 1Mm, climate simulation done between these 
+	std::array<std::array<std::unique_ptr<ClimateTile>, 16>, 16> climate;
+
+	// unique_ptr because unordered_map::emplace was bullying me
+	// key is position
+	std::unordered_map<glm::ivec2, std::unique_ptr<RenderChunk>> renderChunks; 
 
 	World();
 	

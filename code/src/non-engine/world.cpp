@@ -50,20 +50,25 @@ void World::Unload() {
 
 TerrainTile World::GetTile(int x, int z)
 {
-    TerrainTile t;
-    t.furniture = -1;
-    if (x > 0) {
-        t.floor = World::DIRT;
-    }
-    else {
-        t.floor = World::ROCK;
-    }
-    return t;
+    
+    return GetChunk(x, z).tiles[x % 16][z % 16];
 }
 
 TerrainChunk& World::GetChunk(int x, int z)
 {
-    return TerrainChunk();
+    glm::ivec2 pos(x, z);
+    pos = glm::floorMultiple(pos + 8, glm::ivec2(16));
+
+
+
+    auto& chunk = terrain[world.GetNode()];
+
+    if (chunk == nullptr) {
+
+    }
+    else {
+        return *chunk;
+    }
 }
 
 World::~World() {
