@@ -47,7 +47,7 @@ public:
 	static std::shared_ptr<Event> New() {
 		auto ptr = std::shared_ptr< Event>(new Event());
 		EventQueue().push_back(std::weak_ptr<BaseEvent>(std::static_pointer_cast<BaseEvent>(ptr)));
-		return std::move(ptr);
+		return ptr;
 	}
 
 	Event(const Event&) = delete;

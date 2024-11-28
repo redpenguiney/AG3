@@ -1,12 +1,12 @@
 #pragma once
 #include "health.hpp"
-#include "gameobjects/gameobject.hpp"
+#include "entity.hpp"
 
 // Anything that needs AI should inherit from this class.
-class Creature {
+class Creature: public Entity {
 public:
 	Body body;
-	std::shared_ptr<GameObject> gameObject;
+	
 
 	// affects combat ability
 	Attribute reactionTime;
@@ -15,15 +15,10 @@ public:
 	
 	virtual ~Creature(); // virtual destructor required to ensure correct deletion by shared_ptr of subclasses
 
-	static void UpdateAll(float dt);
-
 protected:
 
 	Creature(const std::shared_ptr<Mesh>& mesh, const Body& b);
 
 	// Makes the creature update its AI and do stuff and all that.
-	virtual void Think(float dt);
-
-private:
-	static inline std::vector<std::shared_ptr<Creature>> creatures;
+	virtual void Think(float dt) override;
 };

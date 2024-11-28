@@ -7,6 +7,7 @@
 #include "events/event.hpp"
 #include "tile_chunk.hpp"
 #include "utility/hash_glm.hpp"
+#include <unordered_set>
 
 class Entity;
 
@@ -17,10 +18,13 @@ struct TerrainTile {
 
 struct TerrainChunk {
 	TerrainChunk(glm::ivec2 position);
-	TerrainChunk(std::array<std::array<TerrainTile, 16>, 16> tiles);
+	//TerrainChunk(std::array<std::array<TerrainTile, 16>, 16> tiles);
 
 	std::array<std::array<TerrainTile, 16>, 16> tiles;
 	//std::vector<std::unique_ptr<Entity>> entities;
+
+	// TODO
+	//bool modified = false; // if 
 };
 
 struct ClimateTile {
@@ -49,14 +53,14 @@ struct WeatherTile {
 
 // Generates terrain and simulates AI in the chunks around it.
 struct ChunkLoader {
-	int radius; // in chunks
-	glm::ivec2 centerPosition; // in chunks
+	int radius; // in tiles, must be multiple of 16
+	glm::ivec2 centerPosition; // in tiles, but must be a chunk position
 };
 
 class World {
 public:
 	// Tile ids; always have defined value.
-	static int DIRT, ROCK, GRASS, SNOW;
+	static int DIRT, ROCK, GRASS, SNOW, MISSING;
 
 	// returns the currently loaded world.
 	static std::unique_ptr<World>& Loaded();
@@ -83,7 +87,11 @@ public:
 	~World();
 
 private:
-	std::unique_ptr<Event<float>::Connection> preRenderConnection;
+	std::unique_ptr<Event<float>::Connection> preRenderConnection = nullptr;
+	std::unique_ptr<Event<float>::Connection> prePhysicsConnection = nullptr;
+
+	// returns center positions of all chunks within range of a chunk loader
+	std::unordered_set<glm::ivec2> GetLoadedChunks();
 
 	// depth 0 = root (16 million m)^2
 		// holds the 256 (1 Mm)^2 chunks for climate simulation 
@@ -97,7 +105,7 @@ private:
 	//ChunkTree world;
 
 	// indices into terrain for chunks that should always be loaded (like those around player built structures)
-	std::vector<unsigned int> forceLoadedChunks;
+	//std::vector<unsigned int> forceLoadedChunks;
 
 	// 16m by 16m, stores terrain/buildings/etc., AI simulated at this level
 	std::unordered_map<glm::ivec2, std::unique_ptr<TerrainChunk>> terrain;

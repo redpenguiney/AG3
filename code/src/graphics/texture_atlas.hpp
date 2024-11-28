@@ -5,7 +5,8 @@
 // The TextureAtlas struct describes where each individual object texture/region is on a larger image/texture. 
 // The TextureAtlas stores no image data of its own and is not in itself used for rendering,
 	// but rather, mesh constructors use it to create the correct UVs which the actual texture containing the atlas is rendered with.
-struct TextureAtlas {
+class TextureAtlas {
+public:
 	struct Region {
 		//int id;
 		float left;

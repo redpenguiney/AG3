@@ -297,6 +297,8 @@ void GraphicsEngine::DebugAxis() {
 void GraphicsEngine::RenderScene(float dt) {
     frameId++;
 
+    shaderTime = std::fmodf(shaderTime + dt, 1024.0f);
+
     FlipMeshpoolBuffers();
     pointLightDataBuffer.Flip();
     spotLightDataBuffer.Flip();
@@ -386,6 +388,9 @@ void GraphicsEngine::RenderScene(float dt) {
 void GraphicsEngine::DrawSkybox() {
     if (skyboxShaderProgram == nullptr || skyboxMaterial == nullptr) {return;} // make sure there is a skybox
     glDisable(GL_CULL_FACE);
+
+    skyboxShaderProgram->Uniform("shaderTime", GraphicsEngine::Get().shaderTime);
+
     // glDisable(GL_DEPTH_TEST);
     skyboxShaderProgram->Use();
     skyboxMaterial->Use(skyboxShaderProgram);

@@ -1,6 +1,7 @@
 #pragma once
 #include "physics/aabb.hpp"
 #include "physics/spatial_acceleration_structure.hpp"
+#include <bitset>
 
 class PhysicsMesh;
 class GameObject;
@@ -16,6 +17,7 @@ enum BroadPhaseAABBType {
 class ColliderComponent: public BaseComponent {
     public:
     BroadPhaseAABBType aabbType;
+
 
     // how bouncy something is, should probably be between 0 and 1 but knock urself out
     float elasticity; 
@@ -62,7 +64,12 @@ class ColliderComponent: public BaseComponent {
     // The lifetime of this pointer is as long as the lifetime of the component. Use GetGameObject() if you want to make sure the object doesn't get deleted while you're using it.
     GameObject* const gameobject;
 
+    CollisionLayer GetCollisionLayer();
+    void SetCollisionLayer(CollisionLayer newLayer);
+
     private:
+
+    CollisionLayer layer = 0;
 
     AABB aabb;
 

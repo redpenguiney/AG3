@@ -99,6 +99,13 @@ void GameInit()
     //auto& CR = ComponentRegistry::Get();
 
     MakeMainMenu();
+    MakeFPSTracker();
+
+    //TestGrassFloor();
+    //TestCubeArray({ 2, 2, 2 }, {4, 4, 4}, {2, 2, 2}, true);
+    PE.SetCollisionLayers(0, 0, false);
+
+    GE.SetSkyboxShaderProgram(ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl"));
 
     //World::Generate();
 
@@ -113,7 +120,7 @@ void GameInit()
         if (y != 0) {
             glm::vec3 mouseDirection = GE.camera.ProjectToWorld(GE.window.MOUSE_POS, glm::vec2(GE.window.width, GE.window.height)) * y;
             mouseDirection *= abs(1.0 / mouseDirection.y);
-            GE.camera.position += mouseDirection;
+            GE.camera.position += glm::normalize(mouseDirection) * std::sqrt(std::abs(GE.camera.position.y));
         }
         //else {
             //GE.camera.position.x += x;
@@ -222,11 +229,11 @@ void GameInit()
             //GraphicsEngine::Get().GetDebugFreecamCamera().rotation = GraphicsEngine::Get().camera.rotation;
         }
         else if (input.input == InputObject::T) {
-            static int y = 0;
+            /*static int y = 0;
 
             for (int i = 0; i < 1; i++) {
                 TestSphere(-2 - i * 2, -2, y += 2, false);
-            }
+            }*/
         }
     });
 
@@ -238,7 +245,7 @@ void GameInit()
     //TestCubeArray(glm::uvec3(1, 1, 1), glm::uvec3(0, 0, 0), glm::uvec3(64, 1, 64), false, glm::vec3(0.05, 0.05, 0.05));
     //TestUi();
     //
-    TestStationaryPointlight();
+    //TestStationaryPointlight();
     //TestVoxelTerrain();
     //TestSpinningSpotlight();
     //TestGrassFloor();

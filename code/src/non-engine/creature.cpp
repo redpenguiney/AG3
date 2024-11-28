@@ -1,4 +1,5 @@
 #include "creature.hpp"
+#include "graphics/mesh.hpp"
 
 GameobjectCreateParams creatureParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody, ComponentBitIndex::Animation });
 
@@ -10,23 +11,21 @@ GameobjectCreateParams GetCreatureCreateParams(unsigned int mId) {
 
 std::shared_ptr<Creature> Creature::New(const std::shared_ptr<Mesh>& mesh, const Body& b)
 {
-	return std::shared_ptr<Creature>(new Creature(mesh, b));
+	auto ptr = std::shared_ptr<Creature>(new Creature(mesh, b));
+	Entities().push_back(ptr);
+	return ptr;
 }
 
 Creature::~Creature()
 {
 }
 
-void Creature::UpdateAll(float dt)
-{
-	for (auto& c : creatures) {
-		c->Think(dt);
-	}
-}
+
 
 Creature::Creature(const std::shared_ptr<Mesh>& mesh, const Body& b) :
-	body(b),
-	gameObject(GameObject::New(GetCreatureCreateParams(mesh->meshId)))
+	Entity(mesh, GetCreatureCreateParams(mesh->meshId)),
+	body(b)
+	//gameObject(GameObject::New(GetCreatureCreateParams(mesh->meshId)))
 {
 
 }

@@ -59,11 +59,23 @@ void ColliderComponent::RecalculateAABB(const TransformComponent& colliderTransf
         aabb = AABB(min, max);
     }
     else {
-        std::printf("PROBLEM\n");
+        DebugLogError("PROBLEM");
         abort();
     }
 }
 
 const AABB& ColliderComponent::GetAABB() {
     return aabb;
+}
+
+CollisionLayer ColliderComponent::GetCollisionLayer()
+{
+    return layer;
+}
+
+void ColliderComponent::SetCollisionLayer(CollisionLayer newLayer) {
+    Assert(newLayer < MAX_COLLISION_LAYERS);
+    auto old = layer;
+    layer = newLayer;
+    SpatialAccelerationStructure::Get().UpdateColliderLayer(*this, old);
 }

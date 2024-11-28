@@ -23,11 +23,11 @@ void SpatialAccelerationStructure::Update() {
     //LogElapsed(start, "\nSAS update elapsed ");
 }
 
-void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const AABB& collider) {
-    if (node->aabb.TestIntersection(collider)) { // if this node touched the given collider, then its children may as well.
+void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const AABB& collider, CollisionLayerSet layers) {
+    if ((node->layers & layers).any() && node->aabb.TestIntersection(collider)) { // if this node touched the given collider, then its children may as well.
         if (node->children != nullptr) {
             for (auto& child : *node->children) {
-                AddIntersectingLeafNodes(child, collidingNodes, collider);
+                AddIntersectingLeafNodes(child, collidingNodes, collider, layers);
             } 
         }
         
@@ -37,12 +37,12 @@ void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationS
     }
 }
 
-void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const glm::dvec3& origin, const glm::dvec3& inverse_direction) {
-    if (node->aabb.TestIntersection(origin, inverse_direction)) { // if this node touched the given collider, then its children may as well.
+void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const glm::dvec3& origin, const glm::dvec3& inverse_direction, CollisionLayerSet layers) {
+    if ((node->layers & layers).any() && node->aabb.TestIntersection(origin, inverse_direction)) { // if this node touched the given collider, then its children may as well.
         if (node->children != nullptr) {
             //std::cout << "hay " << node->children->size() << "\n";
             for (auto& child : *(node->children)) {
-                AddIntersectingLeafNodes(child, collidingNodes, origin, inverse_direction);
+                AddIntersectingLeafNodes(child, collidingNodes, origin, inverse_direction, layers);
             } 
         }
         
@@ -52,16 +52,16 @@ void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationS
     }
 }
 
-std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& collider) {
+std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& collider, CollisionLayerSet layers) {
     // find leaf nodes whose AABBs intersect the collider
     std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
-    AddIntersectingLeafNodes(&root, collidingNodes, collider);
+    AddIntersectingLeafNodes(&root, collidingNodes, collider, layers);
     
     // test the aabbs of the objects inside each node and if so add them to the vector
     std::vector<ColliderComponent*> collidingComponents;
     for (auto & node: collidingNodes) {
         for (auto & obj: node->objects) {
-            if (obj->aabb.TestIntersection(collider)) {
+            if (layers[obj->layer] && obj->aabb.TestIntersection(collider)) {
                 collidingComponents.push_back(obj);
             }
         }
@@ -74,12 +74,12 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& 
 }
 
 // TODO: redundant code in these two query functions, could improve
-std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::dvec3& origin, const glm::dvec3& direction) {
+std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::dvec3& origin, const glm::dvec3& direction, CollisionLayerSet layers) {
     glm::dvec3 inverse_direction = glm::dvec3(1.0/direction.x, 1.0/direction.y, 1.0/direction.z); 
 
     // find leaf nodes whose AABBs intersect the ray
     std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
-    AddIntersectingLeafNodes(&root, collidingNodes, origin, inverse_direction);
+    AddIntersectingLeafNodes(&root, collidingNodes, origin, inverse_direction, layers);
 
     // test the aabbs of the objects inside each node and if so add them to the vector
     std::vector<ColliderComponent*> collidingComponents;
@@ -87,13 +87,13 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::d
     for (auto & node: collidingNodes) {
         //std::cout << "\twithin this node testing " << node->objects.size() << " collider AABBs.\n";
         for (auto & obj: node->objects) {
-            if (obj->aabb.TestIntersection(origin, inverse_direction)) {
+            if (layers[obj->layer] && obj->aabb.TestIntersection(origin, inverse_direction)) {
                 collidingComponents.push_back(obj);
             }
         }
         if (node->objects.size() > NODE_SPLIT_THRESHOLD) {
             node->Split();
-            std::cout << "WE GOTTA SPLIT\n";
+            //std::cout << "WE GOTTA SPLIT\n";
         }
     }
 
@@ -228,7 +228,7 @@ void SpatialAccelerationStructure::DebugVisualize() {
 
 // URGENT TODO: make sure not all objects put in same child node recursively
 void SpatialAccelerationStructure::SasNode::Split() {
-    // std::cout << "splitting.\n";
+    DebugLogInfo("splitting."); // keep this here so i know what happened when the above TODO i'll never do causes problems
 
     Assert(objects.size() >= NODE_SPLIT_THRESHOLD);
     // unsigned int countbefore = objects.size();
@@ -262,7 +262,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
     std::vector<unsigned int> indicesToRemove; // we cant remove the objects while we're iterating cuz that would mess up the iterator
     unsigned int i = 0;
     for (auto & obj: objects) { 
-        auto node = SasInsertHeuristic(*this, obj->aabb);
+        auto node = SasInsertHeuristic(*this, obj->aabb, obj->layer);
         if (node != nullptr && node != this) {
             //std::cout << "aoisjfoijesa " << children << " index " << index << "\n";
             node->objects.push_back(obj);   
@@ -341,7 +341,7 @@ SpatialAccelerationStructure::SasNode::SasNode() {
 }
 
 
-SpatialAccelerationStructure::SasNode* SpatialAccelerationStructure::SasInsertHeuristic(SpatialAccelerationStructure::SasNode& node, const AABB& aabb) {
+SpatialAccelerationStructure::SasNode* SpatialAccelerationStructure::SasInsertHeuristic(SasNode& node, const AABB& aabb, CollisionLayer layer) {
     if (node.children == nullptr) {return nullptr;}
     if (node.aabb.Volume() < aabb.Volume() * 8) {return &node;}
     auto splitPoint = node.splitPoint;
@@ -375,7 +375,8 @@ void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider, cons
     // Recursively pick best child node starting from root until we reach leaf node
     SasNode* currentNode = &root;
     while (true) {
-        auto childNode = SasInsertHeuristic(*currentNode, collider->aabb);
+        currentNode->layers.set(collider->layer, true);
+        auto childNode = SasInsertHeuristic(*currentNode, collider->aabb, collider->layer);
         if (childNode == nullptr) {
             break;
         }
@@ -402,15 +403,34 @@ void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider, cons
 }
 
 void ColliderComponent::RemoveFromSas() {
+   
+    bool layerExists = false; // we need to see if this is the only object with the given layer in this node 
     // remove object from node
-    for (unsigned int i = 0; i < node->objects.size(); i++) {
+    for (unsigned int i = 0; i < node->objects.size(); i++) { // todo: could maybe optimize this loop?
         if (node->objects[i] == this) {
             node->objects.erase(node->objects.begin() + i);
-            break;
+        }
+        else if (layer == node->objects[i]->layer) {
+            layerExists == true;
         }
     }
 
-    // TODO: we need to do something when node is emptied, probably    
+    if (!layerExists) {
+        node->layers.set(layer, false);
+        auto currentNode = node;
+        while (currentNode->parent) {
+            currentNode = currentNode->parent;
+            for (auto& n : *(currentNode->children)) {
+                if (n->layers[layer]) {
+                    goto done; // escape outer loop
+                }
+            }
+            currentNode->layers.set(layer, false);
+        }
+    }
+    done:;
+
+    // TODO: we need to do something when node is emptied, probably   
 }
 
 void SpatialAccelerationStructure::UpdateCollider(ColliderComponent& collider, const TransformComponent& transform) {
@@ -449,7 +469,7 @@ void SpatialAccelerationStructure::UpdateCollider(ColliderComponent& collider, c
     //std::cout << "find children.\n";
     // Then, we use the insert heuristic to go down child nodes until we find the best leaf node for the collider
     while (true) {
-        auto childNode = SasInsertHeuristic(*newNodeForCollider, newAabb);
+        auto childNode = SasInsertHeuristic(*newNodeForCollider, newAabb, collider.layer);
         //std::cout << "\tchild is " << childNode << "\n.";
         // TODO: we might need to grow this 
         if (childNode == nullptr) { // then we're at a leaf node, add the collider to it
@@ -513,6 +533,36 @@ void SpatialAccelerationStructure::UpdateCollider(ColliderComponent& collider, c
     }
 
     
+}
+
+void SpatialAccelerationStructure::UpdateColliderLayer(ColliderComponent& collider, CollisionLayer oldLayer)
+{
+    auto p = collider.node;
+    while (p && p->layers[collider.layer] == false) {
+        p->layers.set(collider.layer, true);
+        p = p->parent;
+    }
+
+    bool layerExists = false; // we need to see if this was the only object with the given layer in this node, and if so we need to remove that layer from the node itself (and possibly its parents too)
+    for (unsigned int i = 0; i < collider.node->objects.size(); i++) { // todo: could maybe optimize this loop?
+        if (oldLayer == collider.node->objects[i]->layer) {
+            layerExists == true;
+        }
+    }
+
+    if (!layerExists) {
+        collider.node->layers.set(oldLayer, false);
+        auto currentNode = collider.node;
+        while (currentNode->parent) {
+            currentNode = currentNode->parent;
+            for (auto& n : *(currentNode->children)) {
+                if (n->layers[oldLayer]) {
+                    return;
+                }
+            }
+            currentNode->layers.set(oldLayer, false);
+        }
+    }
 }
 
 SpatialAccelerationStructure::SpatialAccelerationStructure() {

@@ -10,5 +10,5 @@ struct RaycastResult {
 };
 
 // If ray did not hit anything, result.hitObject == nullptr.
-RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction);
+RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction, CollisionLayerSet layers = std::bitset<MAX_COLLISION_LAYERS>().set());
 

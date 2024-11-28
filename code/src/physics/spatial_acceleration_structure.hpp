@@ -46,10 +46,12 @@ class SpatialAccelerationStructure { // (SAS)
     void Update();
 
     // Returns the set of colliders whose AABBs intersect the given AABB (assuming the colliders are in the SAS, which they should be).
-    std::vector<ColliderComponent*> Query(const AABB& collider);
+    // Will only return colliders with one of the given layers.
+    std::vector<ColliderComponent*> Query(const AABB& collider, CollisionLayerSet layers);
 
     // Returns the set of colliders whose AABBs intersect the given ray (assuming the colliders are in the SAS, which they should be).
-    std::vector<ColliderComponent*> Query(const glm::dvec3& origin, const glm::dvec3& direction);
+    // Will only return colliders with one of the given layers.
+    std::vector<ColliderComponent*> Query(const glm::dvec3& origin, const glm::dvec3& direction, CollisionLayerSet layers);
 
     // Adds a collider to the SAS.
     void AddCollider(ColliderComponent* collider, const TransformComponent& transform);
@@ -63,13 +65,14 @@ class SpatialAccelerationStructure { // (SAS)
     void DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances, unsigned int depth=0);
 
     // recursive helper functions for Query(), ignore (member func because SasNode is private)
-    void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider);
-    void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const glm::dvec3& origin, const glm::dvec3& inverse_direction);
+    void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider, CollisionLayerSet layers);
+    void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const glm::dvec3& origin, const glm::dvec3& inverse_direction, CollisionLayerSet layers);
 
     // call whenever collider moves or changes size
     void UpdateCollider(ColliderComponent& collider, const TransformComponent& transform);
 
-    
+    // call IMMEDIATELY when collider changes its collision layer
+    void UpdateColliderLayer(ColliderComponent& collider, CollisionLayer oldLayer);
     
     SpatialAccelerationStructure();
     ~SpatialAccelerationStructure();
@@ -77,6 +80,7 @@ class SpatialAccelerationStructure { // (SAS)
     // Node in the SAS's dynamic AABB tree
     struct SasNode {
         glm::dvec3 splitPoint; // point that splits the aabb to determine aabbs of children, initialized to (nan, nan, nan) 
+        CollisionLayerSet layers; // layers this node contains are 1
 
         bool split; // when this node is queried and it has more objects than NODE_SPLIT_THRESHOLD and this bool is false, the node will be split.
             // however, if the node can't be split (because all objects are in same position or something) then we'll just set this bool to true and then set it to false when a new collider is added that might make the node splittable
@@ -99,7 +103,7 @@ class SpatialAccelerationStructure { // (SAS)
 
     // Returns best child node to insert object into, given the parent node and object's AABB.
     // Returns nullptr if no child node.    
-    static SasNode* SasInsertHeuristic(SasNode& node, const AABB& aabb);
+    static SasNode* SasInsertHeuristic(SasNode& node, const AABB& aabb, CollisionLayer layer);
 
     SasNode root;
 };

@@ -190,7 +190,7 @@ int main(int numArgs, const char *argPtrs[]) {
         LUA.PostRenderCallbacks();
         Module::PostRender();
 
-        // LogElapsed(currentTime, "Frame elapsed");
+        //LogElapsed(currentTime, "Frame elapsed");
 
     }
 

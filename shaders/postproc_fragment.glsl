@@ -38,7 +38,7 @@ void main()
         col += sampleTex[i] * kernel[i];
 
     // tonemapping
-    vec3 mapped = col / (col + vec3(1.0));
+    vec3 mapped = col; //col / (col + vec3(1.0));
     FragColor = vec4(mapped, 1.0);
     // FragColor = vec4(texture(screenTexture, vec2(TexCoords.x, 1-TexCoords.y)).xxx, 1.0);
     //FragColor = vec4(TexCoords, 0.5, 1.0);

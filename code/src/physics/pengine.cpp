@@ -19,8 +19,12 @@ PhysicsEngine::PhysicsEngine():
 prePhysicsEvent(Event<float>::New()) ,
 postPhysicsEvent(Event<float>::New())
 {
+    // make all layers collide with each other by default
+    for (auto& set : collisionLayerMatrix) {
+        set.set(); 
+    }
     // GRAVITY = {0, -0.0, 0};
-    GRAVITY = {0, -9, 0};
+    GRAVITY = {0, -9.8, 0};
 }
 PhysicsEngine::~PhysicsEngine() {}
 
@@ -30,6 +34,17 @@ void PhysicsEngine::SetModulePhysicsEngine(PhysicsEngine* engine) {
     _PHYSICS_ENGINE_ = engine;
 }
 #endif
+
+const std::array<std::bitset<MAX_COLLISION_LAYERS>, MAX_COLLISION_LAYERS>& PhysicsEngine::GetCollisionLayerMatrix()
+{
+    return collisionLayerMatrix;
+}
+
+void PhysicsEngine::SetCollisionLayers(CollisionLayer layer1, CollisionLayer layer2, bool collide)
+{
+    collisionLayerMatrix[layer1][layer2] = collide;
+    collisionLayerMatrix[layer2][layer1] = collide;
+}
 
 PhysicsEngine& PhysicsEngine::Get() {
     #ifdef IS_MODULE
@@ -49,7 +64,7 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
     
     // TODO: should REALLY use tight fitting AABB here
     auto aabbToTest = collider.GetAABB();
-    std::vector<ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest);
+    std::vector<ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest, PhysicsEngine::Get().GetCollisionLayerMatrix()[collider.GetCollisionLayer()]);
     // Assert(potentialColliding.size() == 0);
 
     // TODO: potential perf gains by using tight fitting AABB/OBB here after broadphase SAS query?

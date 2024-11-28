@@ -1,7 +1,14 @@
 #pragma once
+#include <bitset>
 
-// AABBs inserted into the SAS will be scaled by this much so that if the object moves a little bit we don't need to update its position in the SAS.
+// AABBs inserted into the SAS will be scaled by this much so that if the object moves a little bit we don't need to update its position in the SAS. (TODO?)
 static const inline double AABB_FAT_FACTOR = 1;
+
+using CollisionLayer = uint16_t;
+
+inline constexpr CollisionLayer MAX_COLLISION_LAYERS = 32;
+
+using CollisionLayerSet = std::bitset<MAX_COLLISION_LAYERS>;
 
 // For the broadphase of collisions, we use AABBs since it is easier/cheaper to determine when they are colliding
 struct AABB {

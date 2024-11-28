@@ -77,6 +77,10 @@ struct GameobjectCreateParams {
 		}
 	}
 
+	bool HasComponent(ComponentBitIndex::ComponentBitIndex bitIndex) const {
+		return requestedComponents.test(bitIndex);
+	}
+
 private:
 	friend class GameObject;
 	std::bitset<N_COMPONENT_TYPES> requestedComponents;

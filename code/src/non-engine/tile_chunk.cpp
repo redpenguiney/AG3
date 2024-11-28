@@ -28,13 +28,16 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 	std::vector<GLfloat> vertices;
 	std::vector<GLuint> indices;
 
-	std::vector<TerrainTile> tiles((radius * 2 + 2) * (radius * 2 + 2), TerrainTile(-2, -2));
+	int width = radius * 2;
+
+	// +2s for edges
+	std::vector<TerrainTile> tiles((width + 2) * (width + 2), TerrainTile(-2, -2));
 	auto& world = World::Loaded();
 
 	// TODO: not best way to fill up tiles, repeatedly has to fetch same chunk
-	for (int i = 0; i < radius * 2 + 2; i += stride) {
-		for (int j = 0; j < radius * 2 + 2; j += stride) {
-			tiles[i * (radius + 2) + j] = world->GetTile(i + centerPos.x - radius - 1, j + centerPos.y - radius - 1);
+	for (int i = 0; i < width + 2; i += stride) {
+		for (int j = 0; j < width + 2; j += stride) {
+			tiles[i * (width + 2) + j] = world->GetTile(i + centerPos.x - radius - 1, j + centerPos.y - radius - 1);
 		}
 	}
 
@@ -43,7 +46,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 	for (int i = 1; i < radius * 2 + 1; i += stride) {
 		for (int j = 1; j < radius * 2 + 1; j += stride) {
 
-			const auto& tile = tiles[i * (radius + 2) + j];
+			const auto& tile = tiles[i * (width + 2) + j];
 
 			Assert(tile.floor != -2);
 
@@ -79,9 +82,9 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 						//DebugLogInfo("Writing position ", i + x, " ", j + z);
 
 						// positions
-						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x - 1;
 						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 1] = floorData.yOffset;
-						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = j + z;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = j + z - 1;
 
 						// UVs
 						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = hUvs[x];
@@ -126,6 +129,7 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 	
 	MakeMesh(centerPos, stride, radius);
 
+	//TestSphere(pos.x, 0, pos.y, false);
 	//mesh = CubeMesh();
 	//DebugLogInfo("Created at ",  mesh->vertices.size());
 

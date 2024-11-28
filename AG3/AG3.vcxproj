@@ -296,6 +296,7 @@
     <ClCompile Include="..\code\src\non-engine\attribute.cpp" />
     <ClCompile Include="..\code\src\non-engine\chunk.cpp" />
     <ClCompile Include="..\code\src\non-engine\creature.cpp" />
+    <ClCompile Include="..\code\src\non-engine\entity.cpp" />
     <ClCompile Include="..\code\src\non-engine\game.cpp" />
     <ClCompile Include="..\code\src\non-engine\health.cpp" />
     <ClCompile Include="..\code\src\non-engine\humanoid.cpp" />
@@ -377,6 +378,7 @@
     <ClInclude Include="..\code\src\non-engine\attribute.hpp" />
     <ClInclude Include="..\code\src\non-engine\chunk.hpp" />
     <ClInclude Include="..\code\src\non-engine\creature.hpp" />
+    <ClInclude Include="..\code\src\non-engine\entity.hpp" />
     <ClInclude Include="..\code\src\non-engine\game.hpp" />
     <ClInclude Include="..\code\src\non-engine\health.hpp" />
     <ClInclude Include="..\code\src\non-engine\humanoid.hpp" />

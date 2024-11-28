@@ -49,6 +49,45 @@ std::pair<float, std::shared_ptr<Material>> BrickMaterial() {
    }, .type = Texture::Texture2D });
 }
 
+std::pair<float, std::shared_ptr<Material>> ArialFont(int size)
+{
+    auto ttfParams = TextureCreateParams({ TextureSource{"../fonts/arial.ttf"}, }, Texture::FontMap);
+    ttfParams.fontHeight = size;
+    ttfParams.format = Texture::Grayscale_8Bit;
+    return Material::New(MaterialCreateParams({ ttfParams }, Texture::Texture2D, false));
+}
+
+void MakeFPSTracker()
+{
+    auto font = ArialFont(12);
+
+    auto ui = new Gui(true,
+        std::make_optional(font),
+        std::nullopt
+        //Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), 
+        //GraphicsEngine::Get().defaultBillboardGuiShaderProgram);
+    );
+    ui->scaleSize = { 0.8, 0.15 };
+    ui->guiScaleMode = Gui::ScaleXX;
+    ui->offsetPos = { 0.0, 0.0 };
+    ui->scalePos = { 0.5, 0.5 };
+    ui->anchorPoint = { 0.0, 0.0 };
+    ui->rgba.a = 0.0;
+    ui->GetTextInfo().rgba = { 1.0, 1.0, 1.0, 1.0 };
+    ui->GetTextInfo().topMargin = 0;
+    ui->GetTextInfo().bottomMargin = 0;
+    ui->GetTextInfo().lineHeight = 1.0;
+    ui->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+    ui->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+    ui->UpdateGuiGraphics();
+    ui->UpdateGuiTransform();
+
+    GraphicsEngine::Get().preRenderEvent->Connect([ui](double t) {
+        ui->GetTextInfo().text = "frame: " + std::to_string(t * 1000) + "mss";
+        ui->UpdateGuiText();
+    });
+}
+
 void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool physics, glm::vec3 size)
 {
     auto m = CubeMesh();
@@ -203,6 +242,7 @@ void TestGrassFloor()
     params.materialId = grassMaterial->id;
 
     auto floor = GameObject::New(params);
+    floor->RawGet<ColliderComponent>()->SetCollisionLayer(1);
     floor->RawGet<TransformComponent>()->SetPos({ 0, 0, 0 });
     floor->RawGet<TransformComponent>()->SetRot(glm::vec3{ 0.0, glm::radians(0.0), glm::radians(0.0) });
     floor->RawGet<ColliderComponent>()->elasticity = 1.0;
@@ -330,10 +370,8 @@ void TestGarticMusic()
 
 void TestUi()
 {
-    auto ttfParams = TextureCreateParams({ TextureSource{"../fonts/arial.ttf"}, }, Texture::FontMap);
-    ttfParams.fontHeight = 16;
-    ttfParams.format = Texture::Grayscale_8Bit;
-    auto [arialLayer, arialFont] = Material::New(MaterialCreateParams({ttfParams}, Texture::Texture2D, false));
+
+    auto [arialLayer, arialFont] = ArialFont();
 
     auto ui = new Gui(true,
         std::make_optional(std::make_pair(arialLayer, arialFont)),

@@ -4,6 +4,8 @@
 #include "tile_data.hpp"
 #include <tests/gameobject_tests.hpp>
 #include <noise/noise.h>
+#include "entity.hpp"
+#include <physics/pengine.hpp>
 
 std::unique_ptr<World>& World::Loaded()
 {
@@ -51,14 +53,16 @@ void World::Unload() {
 
 TerrainTile World::GetTile(int x, int z)
 {
-    
-    return GetChunk(x, z).tiles[std::abs(x % 16)][std::abs(z % 16)];
+    glm::ivec2 pos = glm::ivec2(x, z) - glm::floorMultiple(glm::ivec2(x, z) + 8, glm::ivec2(16)) + 8;
+    return GetChunk(x, z).tiles[pos.x][pos.y];
 }
 
 TerrainChunk& World::GetChunk(int x, int z)
 {
+    //DebugLogInfo("Chunk ")
     glm::ivec2 pos(x, z);
-    pos = glm::floorMultiple(pos + 8, glm::ivec2(16));
+    pos = glm::floorMultiple(pos + 8, glm::ivec2(16)) + 8;
+    //DebugLogInfo("Pos ", pos);
 
     auto& chunk = terrain[pos];
 
@@ -70,10 +74,32 @@ TerrainChunk& World::GetChunk(int x, int z)
 }
 
 World::~World() {
+    // technically pointless
     preRenderConnection = nullptr;
+    prePhysicsConnection = nullptr;
+}
+
+std::unordered_set<glm::ivec2> World::GetLoadedChunks() {
+    std::unordered_set<glm::ivec2> activeChunkLocations; // in world space, in tiles
+
+    for (auto& loader : Loaded()->chunkLoaders) {
+        Assert(loader.radius % 16 == 0);
+        Assert((loader.centerPosition.x - 8) % 16 == 0);
+        Assert((loader.centerPosition.y - 8) % 16 == 0);
+        for (int x = loader.centerPosition.x - loader.radius; x <= loader.centerPosition.x + loader.radius; x++) {
+            for (int y = loader.centerPosition.y - loader.radius; y <= loader.centerPosition.y + loader.radius; y++) {
+                activeChunkLocations.insert({ x, y });
+            }
+        }
+    }
+
+    return activeChunkLocations;
 }
 
 World::World() {
+
+    chunkLoaders.push_back(ChunkLoader(16, glm::ivec2(8, 8)));
+
     //world.Split(world.rootNodeIndex);
 
     //climate.resize(256);
@@ -95,23 +121,33 @@ World::World() {
     //    }
     //});
 
-    preRenderConnection = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([this](float) {
+    prePhysicsConnection = PhysicsEngine::Get().prePhysicsEvent->ConnectTemporary([this](float dt) {
+
         Assert(Loaded() != nullptr);
-        
-        
+        Entity::UpdateAll(dt);
 
         // determine which chunks must be updated
-        std::unordered_set<glm::ivec2> chunkLocations; // in world space, in chunks
+        auto activeChunkLocations = GetLoadedChunks(); // in world space, in tiles
 
         for (auto& loader : Loaded()->chunkLoaders) {
-            for (int x = loader.centerPosition.x - loader.radius / 2; x <= loader.centerPosition.x + loader.radius / 2; x++) {
-                for (int y = loader.centerPosition.y - loader.radius / 2; y <= loader.centerPosition.y + loader.radius / 2; y++) {
-                    chunkLocations.insert({ x, y });
+            Assert(loader.radius % 16 == 0);
+            Assert((loader.centerPosition.x - 8) % 16 == 0);
+            Assert((loader.centerPosition.y - 8) % 16 == 0);
+            for (int x = loader.centerPosition.x - loader.radius; x <= loader.centerPosition.x + loader.radius; x++) {
+                for (int y = loader.centerPosition.y - loader.radius; y <= loader.centerPosition.y + loader.radius; y++) {
+                    activeChunkLocations.insert({ x, y });
                 }
             }
         }
 
         // update those chunks
+
+    });
+
+    preRenderConnection = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([this](float dt) {
+        Assert(Loaded() != nullptr);
+
+        auto activeChunkLocations = GetLoadedChunks(); // in world space, in tiles
 
         // determine which chunks must be rendered
         auto& cam = GraphicsEngine::Get().GetMainCamera();
@@ -124,6 +160,7 @@ World::World() {
 
         for (int x = roundedTopLeft.x - 8; x <= roundedBottomRight.x + 8; x += 16) {
             for (int y = roundedTopLeft.z - 8; y <= roundedBottomRight.z + 8; y += 16) {
+                if (!activeChunkLocations.contains({ x, y })) continue;
                 if (!renderChunks.count({ x, y })) {
                     renderChunks[glm::ivec2(x, y)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(x, y), 1, 8, TerrainMaterial(), TerrainAtlas()));
                 }
@@ -158,34 +195,41 @@ int AddAtlasRegion(int x, int y) {
     return World::TerrainAtlas()->regions.size() - 1;
 }
 
-int World::DIRT = RegisterTileData({
-    .displayName = "Dirt",
+int World::MISSING = RegisterTileData({
+    .displayName = "???",
     .texAtlasRegionId = AddAtlasRegion(0, 0),
+    .texArrayZ = 0.0f
+});
+int World::GRASS = RegisterTileData({
+    .displayName = "Grass",
+    .texAtlasRegionId = AddAtlasRegion(1, 0),
     .texArrayZ = 0.0f
 });
 int World::ROCK = RegisterTileData({
     .displayName = "Rock",
-    .texAtlasRegionId = AddAtlasRegion(1, 0),
-    .texArrayZ = 0.0f
-    
+    .texAtlasRegionId = AddAtlasRegion(2, 0),
+    .texArrayZ = 0.0f,
+    .yOffset = 0.5,
 });
 
 TerrainChunk::TerrainChunk(glm::ivec2 position)
 {
     static noise::module::Perlin perlinNoiseGenerator;
-    perlinNoiseGenerator.SetSeed(1);
-    perlinNoiseGenerator.SetFrequency(16);
-    perlinNoiseGenerator.SetOctaveCount(3);
+    //perlinNoiseGenerator.SetSeed(1);
+    //perlinNoiseGenerator.SetFrequency(16);
+    //perlinNoiseGenerator.SetOctaveCount(3);
 
     int localX = 0;
     for (int worldX = position.x - 8; worldX < position.x + 8; worldX++) {
         int localZ = 0;
         for (int worldZ = position.y - 8; worldZ < position.y + 8; worldZ++) {
-            float height = perlinNoiseGenerator.GetValue(worldX, worldZ, 0);
+            float height = perlinNoiseGenerator.GetValue(worldX/16.f, worldZ/16.f, 0);
+
+            //DebugLogInfo("Hiehgt ", height);
 
             tiles[localX][localZ].furniture = -1;
             if (height > 0) {
-                tiles[localX][localZ].floor = World::DIRT;
+                tiles[localX][localZ].floor = World::GRASS;
             }
             else {
                 tiles[localX][localZ].floor = World::ROCK;

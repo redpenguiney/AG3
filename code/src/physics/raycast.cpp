@@ -14,8 +14,8 @@ glm::dvec3 GetTriangleNormal(glm::dvec3 triVertex0, glm::dvec3 triVertex1, glm::
 
 // TODO: max distance for perf?
 // TODO: IGNORES ANIMATION, FIX
-RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction) {
-    auto possible_colliding = SpatialAccelerationStructure::Get().Query(origin, direction);
+RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction, CollisionLayerSet layers) {
+    auto possible_colliding = SpatialAccelerationStructure::Get().Query(origin, direction, layers);
     // std::printf("Ray might be hitting ");
     // for (auto & collider: possible_colliding) {
     //     std::cout << collider->GetGameObject()->name << " ";

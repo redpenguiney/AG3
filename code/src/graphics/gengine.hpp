@@ -41,6 +41,9 @@ public:
     // incremented by one every time RenderScene() is called.
     long long frameId = 0;
 
+    // the time passed to shaders; wraps around to stay in range [0.0f, 1024.0f) for precision reasons
+    float shaderTime = 0;
+
     // the shader used to render the skybox. Can freely change this with no issues.
     std::shared_ptr<ShaderProgram> skyboxShaderProgram;
 
