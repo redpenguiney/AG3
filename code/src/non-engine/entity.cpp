@@ -2,6 +2,8 @@
 #include "world.hpp"
 
 Entity::~Entity() {
+	GameObjectsToEntities().erase(gameObject.get());
+
 	gameObject->Destroy();
 }
 
@@ -21,8 +23,8 @@ void Entity::UpdateAll(float dt) {
 			Assert(entity);
 
 			if (!entity->IsActive()) {
-				entity->sleepTime = -1; // make entity active
 				entity->OnWakeup();
+				entity->sleepTime = -1; // make entity active			
 			}
 			
 			entity->stillActive = true;
@@ -44,6 +46,12 @@ void Entity::UpdateAll(float dt) {
 		}
 		entity->stillActive = false;
 	}
+}
+
+void Entity::Cleanup() {
+	GameObjectsToEntities().clear();
+	Entities().clear();
+	gameTime = 0; 
 }
 
 std::shared_ptr<Entity> Entity::FromGameObject(GameObject* obj) {

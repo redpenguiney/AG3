@@ -25,6 +25,9 @@ public:
 	// Loads and unloads entities based on whether they're within the bounds of a loaded chunk, then calls Think() on all the active entities
 	// dt is delta simulation time in seconds.
 	static void UpdateAll(float dt);
+
+	// should delete all entities; for world being unloaded
+	static void Cleanup();
 	
 	// entity from gameobject; returns nullptr if gameobject does not belong to an entity
 	static std::shared_ptr<Entity> FromGameObject(GameObject* obj);
@@ -35,7 +38,7 @@ protected:
 
 	Entity(const std::shared_ptr<Mesh>& mesh, const GameobjectCreateParams& goParams);
 
-	// Called after an entity becomes active.
+	// Called right before an entity becomes active (so sleep time can be used to find time asleep)a.
 	virtual void OnWakeup();
 
 	// Called before an entity becomes inactive. 

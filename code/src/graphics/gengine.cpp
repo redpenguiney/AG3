@@ -96,10 +96,10 @@ postRenderEvent(Event<float>::New())
     // }
     // std::cout << "\n";
 
-    defaultShaderProgram->Uniform("envLightDirection", glm::normalize(glm::vec3(1, 1, 1)));
-    defaultShaderProgram->Uniform("envLightColor", glm::vec3(0.7, 0.7, 1));
-    defaultShaderProgram->Uniform("envLightDiffuse", 0.7f);
-    defaultShaderProgram->Uniform("envLightAmbient", 0.2f);
+    defaultShaderProgram->Uniform("envLightDirection", glm::normalize(-glm::vec3(1, 1, 1)));
+    defaultShaderProgram->Uniform("envLightColor", glm::vec3(1.0, 0.85, 0.7));
+    defaultShaderProgram->Uniform("envLightDiffuse", 0.9f);
+    defaultShaderProgram->Uniform("envLightAmbient", 0.4f);
     defaultShaderProgram->Uniform("envLightSpecular", 0.0f);
 
     auto pair = Material::New({ .textureParams = {TextureCreateParams({TextureSource("../textures/error_texture.bmp")}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D });

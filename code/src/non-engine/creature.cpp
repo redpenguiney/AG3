@@ -13,6 +13,7 @@ std::shared_ptr<Creature> Creature::New(const std::shared_ptr<Mesh>& mesh, const
 {
 	auto ptr = std::shared_ptr<Creature>(new Creature(mesh, b));
 	Entities().push_back(ptr);
+	GameObjectsToEntities()[gameObject.get()] = ptr;
 	return ptr;
 }
 

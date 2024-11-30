@@ -74,6 +74,8 @@ TerrainChunk& World::GetChunk(int x, int z)
 }
 
 World::~World() {
+    Entity::Cleanup();
+
     // technically pointless
     preRenderConnection = nullptr;
     prePhysicsConnection = nullptr;
@@ -144,6 +146,8 @@ World::World() {
 
     });
 
+    //static std::shared_ptr<GameObject> testCorner = nullptr;
+
     preRenderConnection = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([this](float dt) {
         Assert(Loaded() != nullptr);
 
@@ -151,8 +155,19 @@ World::World() {
 
         // determine which chunks must be rendered
         auto& cam = GraphicsEngine::Get().GetMainCamera();
-        glm::vec3 topLeft = cam.ProjectToWorld(glm::vec2(0, 0), glm::ivec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height));
+        glm::vec3 topLeft = -cam.ProjectToWorld(glm::vec2(0, 0), glm::ivec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height));
+        
+        
         topLeft *= cam.position.y / topLeft.y;
+
+        /*auto params = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
+        params.meshId = CubeMesh()->meshId;
+        if (testCorner) testCorner->Destroy();
+        testCorner = GameObject::New(params);
+        testCorner->RawGet<TransformComponent>()->SetPos((glm::dvec3(topLeft) + cam.position) * glm::dvec3(1, 0, 1));
+        testCorner->RawGet<RenderComponent>()->SetColor(glm::vec4(1, 1, 1, 1));
+        testCorner->RawGet<RenderComponent>()->SetTextureZ(-1);*/
+
         glm::vec3 bottomRight = -topLeft;
         glm::ivec3 roundedTopLeft = glm::floorMultiple(glm::dvec3(topLeft) + cam.position, glm::dvec3(16.0f));
         glm::ivec3 roundedBottomRight = glm::ceilMultiple(glm::dvec3(bottomRight) + cam.position, glm::dvec3(16.0f));

@@ -10,6 +10,7 @@ Camera::Camera() {
 
 
 glm::mat4x4 Camera::GetProj(float aspect) {
+    DebugLogInfo("Aspect ", aspect);
     Assert(aspect > 0);
     Assert(near > 0);
     Assert(far > near);
@@ -31,6 +32,6 @@ glm::vec3 Camera::ProjectToWorld(glm::vec2 screenPos, glm::ivec2 windowSize)
     glm::vec4 clipSpacePos((screenPos / glm::vec2(windowSize)) * 2.0f - 1.0f, 0.0f, 1.0f);
     clipSpacePos.y =  -clipSpacePos.y;
 
-    glm::vec3 worldSpacePos = glm::vec3(glm::inverse(GetCamera()) * glm::inverse(GetProj(windowSize.x / windowSize.y)) * clipSpacePos);
+    glm::vec3 worldSpacePos = glm::vec3(glm::inverse(GetCamera()) * glm::inverse(GetProj((float)windowSize.x / windowSize.y)) * clipSpacePos);
     return worldSpacePos;//glm::normalize(position - glm::dvec3(worldSpacePos));
 }

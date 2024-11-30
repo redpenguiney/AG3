@@ -305,6 +305,7 @@ void Window::ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindo
         glm::uvec2 oldWidth(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height);
         GraphicsEngine::Get().window.width = newWindowWidth;
         GraphicsEngine::Get().window.height = newWindowHeight;
+        Assert(newWindowWidth != 0);
 
         GraphicsEngine::Get().window.onWindowResize->Fire(oldWidth, glm::uvec2(newWindowWidth, newWindowHeight));
     }
