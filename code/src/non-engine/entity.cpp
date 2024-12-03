@@ -31,6 +31,8 @@ void Entity::UpdateAll(float dt) {
 		}
 	}
 
+	DebugLogInfo("Updating ", Entities().size());
+
 	for (auto& entity : Entities()) {
 		if (entity->IsActive()) {
 			if (!entity->stillActive) { // then entity became inactive this frame
@@ -73,13 +75,19 @@ std::shared_ptr<GameObject> MakeGameObject(const GameobjectCreateParams& params)
 	auto obj = GameObject::New(params);
 	obj->RawGet<ColliderComponent>()->SetCollisionLayer(Entity::ENTITY_COLLISION_LAYER);
 
+	auto rigid = obj->MaybeRawGet<RigidbodyComponent>();
+	if (rigid) {
+		rigid->kinematic = true;
+	}
+
 	return obj;
 }
 
 Entity::Entity(const std::shared_ptr<Mesh>& mesh, const GameobjectCreateParams& goParams):
 	gameObject(MakeGameObject(goParams))
 {
-
+	gameObject->RawGet<RenderComponent>()->SetColor({1, 1, 1, 1});
+	gameObject->RawGet<RenderComponent>()->SetTextureZ(-1);
 }
 
 void Entity::OnWakeup() {

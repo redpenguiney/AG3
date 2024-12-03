@@ -76,7 +76,7 @@ public:
 	// requires that no world is currently loaded.
 	static void Generate();
 
-	// unloads the currently loaded world.
+	// unloads the currently loaded world. (does nothing if no loaded world)
 	static void Unload();
 
 	TerrainTile GetTile(int x, int z);

@@ -1,7 +1,7 @@
 #include "creature.hpp"
 #include "graphics/mesh.hpp"
 
-GameobjectCreateParams creatureParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody, ComponentBitIndex::Animation });
+GameobjectCreateParams creatureParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody, /*ComponentBitIndex::Animation*/});
 
 GameobjectCreateParams GetCreatureCreateParams(unsigned int mId) {
 	auto & p = creatureParams;
@@ -13,7 +13,7 @@ std::shared_ptr<Creature> Creature::New(const std::shared_ptr<Mesh>& mesh, const
 {
 	auto ptr = std::shared_ptr<Creature>(new Creature(mesh, b));
 	Entities().push_back(ptr);
-	GameObjectsToEntities()[gameObject.get()] = ptr;
+	GameObjectsToEntities()[ptr->gameObject.get()] = ptr;
 	return ptr;
 }
 
@@ -33,4 +33,7 @@ Creature::Creature(const std::shared_ptr<Mesh>& mesh, const Body& b) :
 
 void Creature::Think(float dt) {
 	body.Update(dt);
+
+	auto transform = gameObject->RawGet<TransformComponent>();
+	transform->SetPos(transform->Position() + glm::dvec3(0, 0, dt * 0.01));
 }

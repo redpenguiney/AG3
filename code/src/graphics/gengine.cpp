@@ -382,7 +382,7 @@ void GraphicsEngine::RenderScene(float dt) {
     glFlush(); // Tell OpenGL we're done drawing.
 
     postRenderEvent->Fire(dt);
-    BaseEvent::FlushEventQueue();
+    //BaseEvent::FlushEventQueue();
 }
 
 void GraphicsEngine::DrawSkybox() {

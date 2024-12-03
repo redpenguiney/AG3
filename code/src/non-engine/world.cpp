@@ -126,7 +126,7 @@ World::World() {
     prePhysicsConnection = PhysicsEngine::Get().prePhysicsEvent->ConnectTemporary([this](float dt) {
 
         Assert(Loaded() != nullptr);
-        Entity::UpdateAll(dt);
+       
 
         // determine which chunks must be updated
         auto activeChunkLocations = GetLoadedChunks(); // in world space, in tiles
@@ -144,6 +144,9 @@ World::World() {
 
         // update those chunks
 
+
+        // update entitise
+        Entity::UpdateAll(dt);
     });
 
     //static std::shared_ptr<GameObject> testCorner = nullptr;

@@ -11,7 +11,7 @@ public:
 	// affects combat ability
 	Attribute reactionTime;
 
-	std::shared_ptr<Creature> New(const std::shared_ptr<Mesh>& mesh, const Body& b);
+	static std::shared_ptr<Creature> New(const std::shared_ptr<Mesh>& mesh, const Body& b);
 	
 	virtual ~Creature(); // virtual destructor required to ensure correct deletion by shared_ptr of subclasses
 

@@ -15,6 +15,7 @@
 
 #include "tests/gameobject_tests.hpp"
 #include "world.hpp"
+#include "creature.hpp"
 
 //#include "noise/noise.h"
 
@@ -81,6 +82,8 @@ void MakeMainMenu() {
             DebugLogInfo("STARTING GAME");
             //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
             World::Generate();
+
+            Creature::New(CubeMesh(), Body::Humanoid());
         }
     });
 
@@ -103,7 +106,7 @@ void GameInit()
 
     //TestGrassFloor();
     //TestCubeArray({ 2, 2, 2 }, {4, 4, 4}, {2, 2, 2}, true);
-    PE.SetCollisionLayers(0, 0, false);
+    //PE.SetCollisionLayers(0, 0, false);
 
     GE.SetSkyboxShaderProgram(ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl"));
 
@@ -146,13 +149,17 @@ void GameInit()
         float dx = left - right;
         float dz = up - down;
 
+        float panSpeed = GE.camera.position.y / 50.0f;
+
         if (GE.window.PRESSED_KEYS.count(InputObject::MMB)) {
             dx = 0.25 * GE.window.MOUSE_DELTA.x;
             dz = 0.25 * GE.window.MOUSE_DELTA.y;
         }
 
-        GE.camera.position.x += dx;
-        GE.camera.position.z += dz;
+        
+
+        GE.camera.position.x += dx * panSpeed;
+        GE.camera.position.z += dz * panSpeed;
     });
 
     {
@@ -201,6 +208,8 @@ void GameInit()
 
     // Gui* ui;
     //std::weak_ptr<GameObject> goWeakPtr;
+
+    
 
     //// auto m2 = Mesh::FromFile("../models/rainbowcube.obj", makeMparams);
     
@@ -350,6 +359,9 @@ void GameInit()
 
 }
 
+void GameClose() {
+    World::Unload();
+}
 
 // ui->GetTextInfo().text = glm::to_string(goWeakPtr.lock()->rigidbodyComponent->velocity) + "\n"s + glm::to_string(goWeakPtr.lock()->rigidbodyComponent->angularVelocity);
 // ui->UpdateGuiText();

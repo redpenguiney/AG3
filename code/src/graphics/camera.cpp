@@ -10,7 +10,6 @@ Camera::Camera() {
 
 
 glm::mat4x4 Camera::GetProj(float aspect) {
-    DebugLogInfo("Aspect ", aspect);
     Assert(aspect > 0);
     Assert(near > 0);
     Assert(far > near);

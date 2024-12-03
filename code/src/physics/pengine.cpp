@@ -307,6 +307,9 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
 
 void PhysicsEngine::Step(const double timestep) {
 
+    prePhysicsEvent->Fire(timestep);
+    BaseEvent::FlushEventQueue(); // we want prePhysicsEvent to be fired NOW, not later, so if they make objects or whatever it they simulate their physics this frame.
+
     // iterate through all sets of rigidBodyComponent + transformComponent
     // first pass, apply gravity, convert applied force to velocity, apply drag, and move everything by its velocity
     for (auto it = GameObject::SystemGetComponents<TransformComponent, RigidbodyComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Rigidbody}); it.Valid(); it++) {
@@ -315,7 +318,9 @@ void PhysicsEngine::Step(const double timestep) {
         RigidbodyComponent& rigidbody = *std::get<1>(tuple);
 
         // transform.SetRot(glm::normalize(transform.Rotation()));
-        rigidbody.velocity += PhysicsEngine::Get().GRAVITY * timestep;
+        if (!rigidbody.kinematic) {
+            rigidbody.velocity += PhysicsEngine::Get().GRAVITY * timestep;
+        }
 
         // exponentiation is used to make the drag work consistently across all timesteps
         rigidbody.velocity *= powf(rigidbody.linearDrag, float(timestep));
@@ -374,4 +379,6 @@ void PhysicsEngine::Step(const double timestep) {
     for (auto & [comp, offset]: separations) {
         comp->SetPos(comp->Position() + offset);
     }
+
+    postPhysicsEvent->Fire(timestep);
 }

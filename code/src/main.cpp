@@ -194,6 +194,11 @@ int main(int numArgs, const char *argPtrs[]) {
 
     }
 
+    DebugLogInfo("Closing game.");
+    auto gtstartclosetime = Time();
+    GameClose();
+    LogElapsed(gtstartclosetime, "\nClosing game elapsed ");
+
     timeAtWhichExitProcessStarted = Time();
     DebugLogInfo("Beginning exit process.");
 
