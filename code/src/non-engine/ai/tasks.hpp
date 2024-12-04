@@ -8,8 +8,20 @@ class Task {
 	
 };
 
+// Stores work tasks of the same priority.
+struct WorkGroup {
+	int priority = 100;
+
+	// indices not stable
+	std::vector<Task> tasks;
+};
+
 class TaskScheduler {
-	// key is work group
+public:
+
+
+private:
+	// key is work group id
 	// vector indices not stable
 	std::array<std::vector<Task>, NUM_WORK_GROUPS> tasks;
 };
