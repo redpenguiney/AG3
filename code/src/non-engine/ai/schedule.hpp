@@ -17,10 +17,6 @@ struct WorkGroupConditionEvaluationArgs {
 	const Humanoid* humanoid; // mayn't be nullptr
 };
 
-namespace WorkBlockConditions {
-
-}
-
 class WorkBlock {
 public:
 	
