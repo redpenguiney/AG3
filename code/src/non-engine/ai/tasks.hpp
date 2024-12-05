@@ -18,7 +18,7 @@ struct WorkGroup {
 
 class TaskScheduler {
 public:
-
+	static TaskScheduler& Get();
 
 private:
 	// key is work group id
