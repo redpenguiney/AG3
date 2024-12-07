@@ -27,6 +27,10 @@
 
 bool inMainMenu = true;
 
+void MakeGameMenu() {
+    
+}
+
 void MakeMainMenu() {
     inMainMenu = true;
 

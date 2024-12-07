@@ -179,6 +179,12 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
 }
 
 Gui::~Gui() {
+    Orphan();
+
+    for (auto& child: children) { // orphan children
+        child->parent = nullptr;
+    }
+
     unsigned int i = 0;
     for (auto & ui: GuiGlobals::Get().listOfGuis) {
         if (ui == this) {
@@ -319,19 +325,19 @@ void Gui::UpdateGuiText() {
 }
 
 glm::vec2 Gui::GetPixelSize() {
-    glm::vec2 windowResolution {};
+    glm::vec2 parentResolution {};
     
     if (guiScaleMode == ScaleXX) {
-        windowResolution.x = GraphicsEngine::Get().window.width;
-        windowResolution.y = GraphicsEngine::Get().window.width;
+        parentResolution.x = GraphicsEngine::Get().window.width;
+        parentResolution.y = GraphicsEngine::Get().window.width;
     }
     else if (guiScaleMode == ScaleXY) {
-        windowResolution.x = GraphicsEngine::Get().window.width;
-        windowResolution.y = GraphicsEngine::Get().window.height;
+        parentResolution.x = GraphicsEngine::Get().window.width;
+        parentResolution.y = GraphicsEngine::Get().window.height;
     }
     else if (guiScaleMode == ScaleYY) {
-        windowResolution.x = GraphicsEngine::Get().window.height;
-        windowResolution.y = GraphicsEngine::Get().window.height;
+        parentResolution.x = GraphicsEngine::Get().window.height;
+        parentResolution.y = GraphicsEngine::Get().window.height;
     }
     else {
         std::cout << "Invalid guiScaleMode. Aborting.\n";
@@ -339,10 +345,10 @@ glm::vec2 Gui::GetPixelSize() {
     }    
 
     if (object->Get<TransformComponent>()->GetParent() != nullptr) {
-        windowResolution *= glm::vec2 {object->Get<TransformComponent>()->GetParent()->Scale().x, object->Get<TransformComponent>()->GetParent()->Scale().y};
+        parentResolution *= glm::vec2 {object->Get<TransformComponent>()->GetParent()->Scale().x, object->Get<TransformComponent>()->GetParent()->Scale().y};
     }
 
-    glm::vec2 size = (scaleSize * windowResolution) + offsetSize;
+    glm::vec2 size = (scaleSize * parentResolution) + offsetSize;
 
     return size;
 }
@@ -370,4 +376,31 @@ glm::vec2 Gui::GetPixelPos()
 bool Gui::IsMouseOver()
 {
     return mouseHover;
+}
+
+void Gui::SetParent(Gui* newParent)
+{
+    if (parent != newParent) {
+        Orphan();
+    }
+    parent = newParent;
+    
+}
+
+Gui* Gui::GetParent()
+{
+    return parent;
+}
+
+void Gui::Orphan() {
+    if (parent) { // remove child
+        for (int i = 0; i < parent->children.size(); i++) {
+            if (parent->children[i].get() == this) {
+                parent->children[i] = parent->children.back();
+                parent->children.pop_back();
+                break;
+            }
+        }
+    }
+    parent = nullptr;
 }

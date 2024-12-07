@@ -32,13 +32,17 @@ class GuiGlobals {
 
 };
 
-// TODO: parenting probably doesn't work
+enum class GuiChildBehaviour {
+    Relative, // positions and scaling are done in the space of the parent
+    Grid // positions are overriden according to a grid determined by the parent; scaling is done in the grandparent's space
+};
 
 // Basically a wrapper for the transform and render components that handles stuff for you when doing gui.
 // Doesn't need to be super fast.
 // Everything this does, you could just do yourself with rendercomponents + transformcomponents if you want, all this does is call functions on/set values of render/transform components when UpdateGuiTransform()/UpdateGuiGraphics() is called.
 class Gui {
-    public:
+public:
+    
 
     // called in main.cpp, connects some events
     static void Init();
@@ -83,6 +87,16 @@ class Gui {
         // if true, other gameobjects in front of this gui will cover it up
         // bool occludable;
     };
+
+    struct GridGuiInfo {
+        glm::vec2 gridScaleOffset; // relative position of first child in terms of object
+        glm::vec2 gridOffsetSize; // relative position of first child in pixels
+        glm::vec2 gridScaleSize; // spacing between anchor points of each child in terms of object's parent (child's grandparent)
+        glm::vec2 gridOffsetSize; // spacing between anchor points of each child in pixels
+    };
+
+    // only used when childBehaviour == Grid; call UpdateGuiTransform() when modified to affect children
+    GridGuiInfo gridInfo;
     
     std::shared_ptr<GameObject> object;
 
@@ -98,6 +112,9 @@ class Gui {
     GuiTextInfo& GetTextInfo();
     BillboardGuiInfo& GetBillboardInfo();
 
+    // determines how its children inherit this gui's position
+    GuiChildBehaviour childBehaviour = GuiChildBehaviour::Relative;
+
     // around center of the gui
     float rotation;
 
@@ -110,13 +127,13 @@ class Gui {
     // Offset position in pixels
     glm::vec2 offsetPos;
 
-    // % of the screen on each axis. (0.5, 0.5) is the center of the screen, screen is in interval [0, 1].
+    // % of the screen (or parent, depending on its parent's GuiChildBehaviour) on each axis. (0.5, 0.5) is the center of the screen, screen is in interval [0, 1].
     glm::vec2 scalePos;
 
     // Offset size in pixels
     glm::vec2 offsetSize;
 
-    // % of the screen on each axis. (1, 1) would cover the whole screen if centered.
+    // % of the screen (or parent, depending on its parent's GuiChildBehaviour) on each axis. (1, 1) would cover the whole screen if centered.
     glm::vec2 scaleSize;
 
     enum {
@@ -129,7 +146,7 @@ class Gui {
     std::optional<std::shared_ptr<Material>> material;
     std::optional<unsigned int> materialLayer; 
 
-    // Call after modifying any position/rotation/scale related variables to actually apply those changes to the gui's transform.
+    // Call after modifying any position/rotation/scale related variables (including changes to child behaviour and grid size) to actually apply those changes to the gui's transform (and that of its children).
     void UpdateGuiTransform();
 
     // Call after changing font, text, or text-formatting-related stuff
@@ -155,7 +172,24 @@ class Gui {
     // returns mouseHover; true if mouse is over the gui.
     bool IsMouseOver();
 
-    private:
+    const std::vector<std::shared_ptr<Gui>>& GetChildren();
+
+    // sets the gui's parent to newParent. May be nullptr.
+    void SetParent(Gui* newParent);
+
+    // will return nullptr if no parent
+    Gui* GetParent();
+
+    // sets current parent to nullptr.
+    void Orphan();
+
+private:
+
+    // nonowning pointer
+    Gui* parent;
+
+    // children are orphaned but not destroyed on parent destruction unless this is the only reference to those children 
+    std::vector<std::shared_ptr<Gui>> children;
 
     // true if mouse was on this gui last frame.
     bool mouseHover;
