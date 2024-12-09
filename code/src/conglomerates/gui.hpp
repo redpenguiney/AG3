@@ -34,13 +34,17 @@ class GuiGlobals {
 
 enum class GuiChildBehaviour {
     Relative, // positions and scaling are done in the space of the parent
-    Grid // positions are overriden according to a grid determined by the parent; scaling is done in the grandparent's space
+    
+    // positions are overriden according to a grid determined by the parent; scaling is done in the grandparent's space.
+    // SortChildren() must be called at least once to apply grid.
+    // Offset pos is still applied.
+    Grid 
 };
 
 // Basically a wrapper for the transform and render components that handles stuff for you when doing gui.
 // Doesn't need to be super fast.
 // Everything this does, you could just do yourself with rendercomponents + transformcomponents if you want, all this does is call functions on/set values of render/transform components when UpdateGuiTransform()/UpdateGuiGraphics() is called.
-class Gui {
+class Gui: public std::enable_shared_from_this<Gui> {
 public:
     
 
@@ -89,18 +93,27 @@ public:
     };
 
     struct GridGuiInfo {
-        glm::vec2 gridScaleOffset; // relative position of first child in terms of object
-        glm::vec2 gridOffsetSize; // relative position of first child in pixels
+        glm::vec2 gridScalePosition; // relative position of first child in terms of object
+        glm::vec2 gridOffsetPosition; // relative position of first child in pixels
         glm::vec2 gridScaleSize; // spacing between anchor points of each child in terms of object's parent (child's grandparent)
         glm::vec2 gridOffsetSize; // spacing between anchor points of each child in pixels
+
+        // Determines when to wrap grid around based on maximum amount of objects in the grid on the fill axis. 
+        // If maxInPixels == true, it will compare total size of objects in pixels along fill axis to this value.
+        int maxInFillDirection = 16384;
+        bool maxInPixels = false;
+        bool fillXFirst = true; // if true, grid is filled in rows; if false, grid is filled in columns
+        bool addGuiLengths = false; // makes the spacing between guis consider the size of each gui if true
     };
 
-    // only used when childBehaviour == Grid; call UpdateGuiTransform() when modified to affect children
+    // only used when childBehaviour == Grid; call UpdateGuiTransform() when modified to affect children.
+    // Set this for that PARENT of the objects you want aligned to a grid.
     GridGuiInfo gridInfo;
     
     std::shared_ptr<GameObject> object;
 
     // if haveText == true, then fontMaterial must be a material with a fontmap attached.
+    // SHOULD be used with std::make_shared/shared_ptr, but if you don't its fine as long as you don't use SetParent().
     Gui(bool haveText = false, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial = std::nullopt, std::optional<BillboardGuiInfo> billboardInfo = std::nullopt, std::shared_ptr<ShaderProgram> guiShader = GraphicsEngine::Get().defaultGuiShaderProgram);
 
     ~Gui();
@@ -116,10 +129,10 @@ public:
     GuiChildBehaviour childBehaviour = GuiChildBehaviour::Relative;
 
     // around center of the gui
-    float rotation;
+    float rotation = 0;
 
     // lower number = rendered on top
-    float zLevel;
+    float zLevel = 0;
 
     // The point (in object space) that offset + scale pos are setting the position of.
     glm::vec2 anchorPoint;
@@ -174,7 +187,15 @@ public:
 
     const std::vector<std::shared_ptr<Gui>>& GetChildren();
 
+    // (stably) sorts children vector by their sortValue and sets each child's gridPos based on the grid layout. Follow with UpdateGuiTransform().
+    // The results are undefined if gridInfo.maxFillInDirection is too restrictive, but it will not crash.
+    void SortChildren();
+
+    // lower values show up first in grid.
+    int sortValue = 0;
+
     // sets the gui's parent to newParent. May be nullptr.
+    // NOT SUPPORTED if the gui is not stored in a shared_ptr.
     void SetParent(Gui* newParent);
 
     // will return nullptr if no parent
@@ -184,9 +205,13 @@ public:
     void Orphan();
 
 private:
+    // returns parent size, grandparent size, or window size in pixels depending on gui ancestry and GuiChildBehaviour of its parent
+    glm::vec2 GetParentContainerScale();
 
-    // nonowning pointer
-    Gui* parent;
+    glm::vec2 gridPos = { 0, 0 };
+
+    // nonowning pointer, may be null
+    Gui* parent = nullptr;
 
     // children are orphaned but not destroyed on parent destruction unless this is the only reference to those children 
     std::vector<std::shared_ptr<Gui>> children;

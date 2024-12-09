@@ -258,6 +258,12 @@
     <ClCompile Include="..\code\src\non-engine\ai\schedule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\code\src\non-engine\ai\tasks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\code\src\non-engine\construct_game_guis.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\code\src\events\base_event.hpp">
@@ -516,6 +522,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\code\src\non-engine\ai\schedule.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\code\src\non-engine\ai\tasks.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\code\src\non-engine\construct_game_guis.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

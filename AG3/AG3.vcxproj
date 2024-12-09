@@ -297,6 +297,7 @@
     <ClCompile Include="..\code\src\non-engine\ai\tasks.cpp" />
     <ClCompile Include="..\code\src\non-engine\attribute.cpp" />
     <ClCompile Include="..\code\src\non-engine\chunk.cpp" />
+    <ClCompile Include="..\code\src\non-engine\construct_game_guis.cpp" />
     <ClCompile Include="..\code\src\non-engine\creature.cpp" />
     <ClCompile Include="..\code\src\non-engine\entity.cpp" />
     <ClCompile Include="..\code\src\non-engine\game.cpp" />
@@ -381,6 +382,7 @@
     <ClInclude Include="..\code\src\non-engine\ai\tasks.hpp" />
     <ClInclude Include="..\code\src\non-engine\attribute.hpp" />
     <ClInclude Include="..\code\src\non-engine\chunk.hpp" />
+    <ClInclude Include="..\code\src\non-engine\construct_game_guis.hpp" />
     <ClInclude Include="..\code\src\non-engine\creature.hpp" />
     <ClInclude Include="..\code\src\non-engine\entity.hpp" />
     <ClInclude Include="..\code\src\non-engine\game.hpp" />

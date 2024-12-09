@@ -4,6 +4,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include "graphics/gengine.hpp"
 #include "graphics/mesh.hpp"
+#include <algorithm>
 
 #ifdef IS_MODULE
 GuiGlobals* _GUI_GLOBALS_ = nullptr;
@@ -264,7 +265,9 @@ void Gui::UpdateGuiTransform() {
         guiTextInfo->object->Get<TransformComponent>()->SetRot(textRot);
     }
 
-
+    for (auto& c : children) {
+        c->UpdateGuiTransform();
+    }
 }
 
 Gui::GuiTextInfo& Gui::GetTextInfo() {
@@ -325,19 +328,19 @@ void Gui::UpdateGuiText() {
 }
 
 glm::vec2 Gui::GetPixelSize() {
-    glm::vec2 parentResolution {};
-    
+    glm::vec2 parentResolution = GetParentContainerScale();
+
     if (guiScaleMode == ScaleXX) {
-        parentResolution.x = GraphicsEngine::Get().window.width;
-        parentResolution.y = GraphicsEngine::Get().window.width;
+        //parentResolution.x = parentResolution.x;
+        parentResolution.y = parentResolution.x;
     }
     else if (guiScaleMode == ScaleXY) {
-        parentResolution.x = GraphicsEngine::Get().window.width;
-        parentResolution.y = GraphicsEngine::Get().window.height;
+        //parentResolution.x = parentResolution.x;
+        //parentResolution.y = parentResolution.y;
     }
     else if (guiScaleMode == ScaleYY) {
-        parentResolution.x = GraphicsEngine::Get().window.height;
-        parentResolution.y = GraphicsEngine::Get().window.height;
+        parentResolution.x = parentResolution.y;
+        //parentResolution.y = parentResolution.y;
     }
     else {
         std::cout << "Invalid guiScaleMode. Aborting.\n";
@@ -355,7 +358,7 @@ glm::vec2 Gui::GetPixelSize() {
 
 glm::vec2 Gui::GetPixelPos()
 {
-    glm::vec2 realWindowResolution = { GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height };
+    glm::vec2 containerSize = GetParentContainerScale();
     glm::vec2 size = GetPixelSize();
 
     glm::vec2 modifiedScalePos = scalePos;
@@ -365,7 +368,20 @@ glm::vec2 Gui::GetPixelPos()
         if (projected.z < 0 || projected.z > 1) { modifiedScalePos.x += 10000; }
     }
 
-    glm::vec2 anchorPointPosition = modifiedScalePos * realWindowResolution + offsetPos;
+    glm::vec2 anchorPointPosition;
+    if (!parent) {
+        anchorPointPosition = modifiedScalePos * containerSize + offsetPos;
+    }
+    else if (parent->childBehaviour == GuiChildBehaviour::Relative) {
+        anchorPointPosition = parent->GetPixelPos() + modifiedScalePos * containerSize + offsetPos;
+    }
+    else if (parent->childBehaviour == GuiChildBehaviour::Grid) {
+        anchorPointPosition = parent->GetPixelPos() + gridPos + offsetPos;
+    }
+    else {
+        Assert(false);
+    }
+   
     glm::vec2 centerPosition = anchorPointPosition - (anchorPoint * size);
     // std::cout << "Center pos is " << glm::to_string(centerPosition) << ".\n";
     // std::cout << "Size is " << glm::to_string(size) << ".\n";
@@ -378,6 +394,33 @@ bool Gui::IsMouseOver()
     return mouseHover;
 }
 
+const std::vector<std::shared_ptr<Gui>>& Gui::GetChildren()
+{
+    return children;
+}
+
+void Gui::SortChildren()
+{
+    std::stable_sort(children.begin(), children.end(), [](const std::shared_ptr<Gui>& a, const std::shared_ptr<Gui>& b) { return a->sortValue < b->sortValue; });
+
+    int fillAxis = gridInfo.fillXFirst ? 0 : 1;
+    int currentFillLen = 0;
+    glm::vec2 currentPos = gridInfo.gridOffsetPosition + gridInfo.gridScaleSize * GetPixelSize();
+    glm::vec2 stride = gridInfo.gridOffsetSize + gridInfo.gridScaleSize * GetParentContainerScale();
+    for (auto& ui : children) {
+        ui->gridPos = currentPos;
+        currentFillLen += gridInfo.maxInPixels ? ui->GetPixelSize()[fillAxis] : 1;
+        currentPos += stride[fillAxis];
+        if (gridInfo.addGuiLengths)
+            currentPos += ui->GetPixelSize()[fillAxis];
+        if (currentFillLen > gridInfo.maxInFillDirection) {
+            currentFillLen = 0;
+            currentPos[fillAxis] = gridInfo.gridOffsetPosition[fillAxis] + gridInfo.gridScaleSize[fillAxis] * GetPixelSize()[fillAxis];
+            currentPos[1 - fillAxis] += stride[1 - fillAxis];
+        }
+    }
+}
+
 void Gui::SetParent(Gui* newParent)
 {
     if (parent != newParent) {
@@ -385,6 +428,7 @@ void Gui::SetParent(Gui* newParent)
     }
     parent = newParent;
     
+    parent->children.push_back(shared_from_this());
 }
 
 Gui* Gui::GetParent()
@@ -403,4 +447,29 @@ void Gui::Orphan() {
         }
     }
     parent = nullptr;
+}
+
+glm::vec2 Gui::GetParentContainerScale()
+{
+    glm::vec2 parentResolution{};
+
+    if (!parent) {
+        parentResolution = glm::vec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height);
+    }
+    else {
+        if (parent->childBehaviour == GuiChildBehaviour::Relative) {
+            parentResolution = parent->GetPixelSize();
+        }
+        else if (parent->childBehaviour == GuiChildBehaviour::Grid) {
+            if (parent->parent)
+                parentResolution = parent->parent->GetPixelSize();
+            else
+                parentResolution = glm::vec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height);
+        }
+        else {
+            Assert(false);
+        }
+    }
+
+    return parentResolution;
 }
