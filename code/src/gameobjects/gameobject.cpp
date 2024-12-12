@@ -14,6 +14,10 @@ inline std::shared_ptr<GameObject> protected_make_shared(Args&&... args)
     return std::make_shared< helper >(std::forward< Args >(args)...);
 }
 
+std::tuple<void*, int, int> GameObject::GetNewGameobjectComponentData() {
+
+}
+
 std::shared_ptr<GameObject> GameObject::New(const GameobjectCreateParams& params) {
     
     if (!COMPONENT_POOLS.contains(params.requestedComponents)) {
@@ -90,6 +94,13 @@ GameObject::GameObject(const GameobjectCreateParams& params, void* components, C
     if (params.requestedComponents[ComponentBitIndex::Spotlight]) {
         std::construct_at(RawGet<SpotLightComponent>());
     }
+}
+
+GameObject::GameObject(std::tuple<void*, int, int> data) : 
+    pool(std::get<1>(data).get()),
+    objectIndex(std::get<3>(data)),
+    page(std::get<2>(data))
+{
 }
 
 GameObject::~GameObject() {

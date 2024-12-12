@@ -344,6 +344,8 @@ protected:
 
 private:
 
+	// delegating constructor used by main constructor
+	GameObject(std::tuple<std::unique_ptr<ComponentPool>, void*, int, int> data);
 
 	ComponentPool* const pool;
 	const int objectIndex;
@@ -351,4 +353,6 @@ private:
 
 	// unique_ptr so it doesn't memory leak
 	static inline std::unordered_map<std::bitset<N_COMPONENT_TYPES>, std::unique_ptr<ComponentPool>> COMPONENT_POOLS;
+
+	static std::tuple<std::unique_ptr<ComponentPool>, void*, int, int> GetNewGameobjectComponentData();
 };

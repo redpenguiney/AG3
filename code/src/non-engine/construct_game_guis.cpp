@@ -12,6 +12,10 @@ std::pair <float, std::shared_ptr<Material>> MenuFont1() {
 }
 
 void MakeGameMenu() {
+    struct Constructible {
+        
+    };
+
     struct ConstructionTab {
         // std::vector<> constructibles;
         std::string name;
@@ -24,8 +28,11 @@ void MakeGameMenu() {
             .name = "Structural",
         },
         ConstructionTab {
-            .name = "Violence"
+            .name = "Food"
         },
+        ConstructionTab {
+            .name = "Military"
+        }
     };
 
 
