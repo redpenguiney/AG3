@@ -5,9 +5,10 @@
 #include "world.hpp"
 #include "creature.hpp"
 
+template <int fontSize>
 std::pair <float, std::shared_ptr<Material>> MenuFont1() {
-    //static auto& [z, font] = Material::New()
-    return ArialFont();
+    static auto font = ArialFont(fontSize);
+    return font;
 }
 
 void MakeGameMenu() {
@@ -28,16 +29,25 @@ void MakeGameMenu() {
     };
 
 
+    constexpr int TAB_ICON_WIDTH = 48;
+    constexpr int TAB_ICON_SPACING = 8;
 
     static std::vector<std::shared_ptr<Gui>> constructionGui;
     auto constructionFrame = std::make_shared<Gui>(false);
     constructionGui.push_back(constructionFrame);
     
+    constructionFrame->scalePos = { 0, 0 };
+    constructionFrame->offsetPos = { 8, 8 };
+
+    constructionFrame->scaleSize = { 0, 0 };
+    constructionFrame->offsetSize = { constructionTabs.size() * TAB_ICON_WIDTH + (constructionTabs.size() + 1) * TAB_ICON_SPACING, TAB_ICON_WIDTH + 2 * TAB_ICON_SPACING };
+
     constructionFrame->anchorPoint = { -0.5, -0.5 };
     constructionFrame->rgba = { 1.0, 1.0, 1.0, 0.4 };
     constructionFrame->childBehaviour = GuiChildBehaviour::Grid;
     constructionFrame->gridInfo = Gui::GridGuiInfo{
-        .gridOffsetSize = {8, 0},
+        .gridOffsetPosition = {TAB_ICON_SPACING + TAB_ICON_WIDTH/2 - constructionFrame->offsetSize.x/2, 0},
+        .gridOffsetSize = {TAB_ICON_SPACING, 0},
         .maxInPixels = false,
         .fillXFirst = true,
         .addGuiLengths = true,
@@ -45,17 +55,22 @@ void MakeGameMenu() {
     
     int tabIndex = 0;
     for (auto& tabInfo : constructionTabs) {
-        auto tab = std::make_shared<Gui>(true, MenuFont1());
-        //tab->GetTextInfo().rightMargin = 1000;
+        auto tab = std::make_shared<Gui>(true, MenuFont1<10>());
+        tab->GetTextInfo().leftMargin = -1000;
+        tab->GetTextInfo().rightMargin = 1000;
+        tab->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+        tab->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
         tab->GetTextInfo().text = tabInfo.name;
 
         tab->scaleSize = { 0, 0 };
-        tab->offsetSize = { 32, 32 };
+        tab->offsetSize = { TAB_ICON_WIDTH, TAB_ICON_WIDTH };
 
         tab->sortValue = tabIndex++;
         tab->SetParent(constructionFrame.get());
         tab->UpdateGuiText();
     }
+
+    
 
     constructionFrame->SortChildren();
 

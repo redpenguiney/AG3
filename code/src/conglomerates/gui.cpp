@@ -306,6 +306,8 @@ void Gui::UpdateGuiText() {
     float absoluteLeftMargin = guiTextInfo->leftMargin - GetPixelSize().x/2.0f;
     float absoluteRightMargin = GetPixelSize().x/2.0f - guiTextInfo->rightMargin;
 
+    Assert(absoluteLeftMargin < absoluteRightMargin);
+
     float absoluteTopMargin = -GetPixelSize().y/2.0f + guiTextInfo->topMargin;
     float absoluteBottomMargin = GetPixelSize().y/2.0f - guiTextInfo->bottomMargin;
 
@@ -405,17 +407,17 @@ void Gui::SortChildren()
 
     int fillAxis = gridInfo.fillXFirst ? 0 : 1;
     int currentFillLen = 0;
-    glm::vec2 currentPos = gridInfo.gridOffsetPosition + gridInfo.gridScaleSize * GetPixelSize();
+    glm::vec2 currentPos = gridInfo.gridOffsetPosition + gridInfo.gridScalePosition * GetPixelSize();
     glm::vec2 stride = gridInfo.gridOffsetSize + gridInfo.gridScaleSize * GetParentContainerScale();
     for (auto& ui : children) {
         ui->gridPos = currentPos;
         currentFillLen += gridInfo.maxInPixels ? ui->GetPixelSize()[fillAxis] : 1;
-        currentPos += stride[fillAxis];
+        currentPos[fillAxis] += stride[fillAxis];
         if (gridInfo.addGuiLengths)
-            currentPos += ui->GetPixelSize()[fillAxis];
+            currentPos[fillAxis] += ui->GetPixelSize()[fillAxis];
         if (currentFillLen > gridInfo.maxInFillDirection) {
             currentFillLen = 0;
-            currentPos[fillAxis] = gridInfo.gridOffsetPosition[fillAxis] + gridInfo.gridScaleSize[fillAxis] * GetPixelSize()[fillAxis];
+            currentPos[fillAxis] = gridInfo.gridOffsetPosition[fillAxis] + gridInfo.gridScalePosition[fillAxis] * GetPixelSize()[fillAxis];
             currentPos[1 - fillAxis] += stride[1 - fillAxis];
         }
     }

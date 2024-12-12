@@ -500,7 +500,7 @@ uint8_t Sample(uint8_t* pixels, int width, int height, int nChannels, Texture::T
 void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, TextureFormat internalFormat, unsigned int sourceFormat, unsigned int nChannels, int face, int level) {
     Assert(params.mipmapBehaviour != NoMipmaps);
 
-    DebugLogInfo("Mipmapping ", textureId, " face ", face, " level ", level);
+    //DebugLogInfo("Mipmapping ", textureId, " face ", face, " level ", level);
 
     if (params.mipmapGenerationMethod == GlGenerate) {
        

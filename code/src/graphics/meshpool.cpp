@@ -524,7 +524,7 @@ void Meshpool::FlipBuffers()
 
 void Meshpool::ExpandVertexCapacity()
 {
-    DebugLogInfo("Expanding vertex capacity from ", currentVertexCapacity, " for ", this);
+    //DebugLogInfo("Expanding vertex capacity from ", currentVertexCapacity, " for ", this);
 
     // determine new vertex capacity
     if (currentVertexCapacity == 0) {
@@ -576,7 +576,7 @@ void Meshpool::ExpandVertexCapacity()
 
 void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
 {
-    DebugLogInfo("Expanding drawcommand capacity from ", currentDrawCommandCapacity, " for ", this);
+    //DebugLogInfo("Expanding drawcommand capacity from ", currentDrawCommandCapacity, " for ", this);
 
     // update capacity
     CheckedUint oldCapacity = currentDrawCommandCapacity;
@@ -641,7 +641,7 @@ void Meshpool::ExpandInstanceCapacity()
         return;
     }
 
-    DebugLogInfo("Expanding instance capacity from ", currentInstanceCapacity, " for ", this);
+    //DebugLogInfo("Expanding instance capacity from ", currentInstanceCapacity, " for ", this);
 
     // determine new instance capacity
     if (currentInstanceCapacity == 0) {

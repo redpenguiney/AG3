@@ -61,7 +61,7 @@ public:
         // multiplier; 1 is single spaced, 2 is MLA double spaced, etc.
         GLfloat lineHeight;
 
-        // in pixels
+        // margin is offset in pixels in screen space from sides of gui. 10 for left and right margins would shift text by 10 pixels to right
         GLfloat leftMargin, rightMargin, topMargin, bottomMargin;
 
         HorizontalAlignMode horizontalAlignment;
