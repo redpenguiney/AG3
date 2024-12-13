@@ -14,32 +14,30 @@ inline std::shared_ptr<GameObject> protected_make_shared(Args&&... args)
     return std::make_shared< helper >(std::forward< Args >(args)...);
 }
 
-std::tuple<void*, int, int> GameObject::GetNewGameobjectComponentData() {
-
-}
-
-std::shared_ptr<GameObject> GameObject::New(const GameobjectCreateParams& params) {
-    
+std::tuple<ComponentPool*, int, int> GameObject::GetNewGameobjectComponentData(const GameobjectCreateParams& params) {
     if (!COMPONENT_POOLS.contains(params.requestedComponents)) {
         COMPONENT_POOLS.emplace(params.requestedComponents, new ComponentPool(params.requestedComponents));
     }
 
     std::unique_ptr<ComponentPool>& pool = COMPONENT_POOLS.at(params.requestedComponents);
-    auto [components, page, objectIndex] = pool->GetObject();
+    auto [components, page, objectIndex] = pool->GetObject(); // TODO: components return is pointless
+    return std::make_tuple(pool.get(), page, objectIndex);
+}
+
+std::shared_ptr<GameObject> GameObject::New(const GameobjectCreateParams& params) {
+    
+    
 
     // we NEVER delete pools except when program ends (before which all gameobjects are destroyed) so this is fine
-    auto ptr = protected_make_shared(params, components, pool.get(), page, objectIndex);
+    auto ptr = protected_make_shared(params);
 
     GAMEOBJECTS()[ptr.get()] = ptr;
 
     return ptr;
 }
 
-GameObject::GameObject(const GameobjectCreateParams& params, void* components, ComponentPool* poolPtr, int objIndex, int pageIndex):
-    name("GameObject"),
-    pool(poolPtr),
-    objectIndex(objIndex),
-    page(pageIndex)
+GameObject::GameObject(const GameobjectCreateParams& params):
+    GameObject(GetNewGameobjectComponentData(params))
 {
     // TODO: can the transform comp restriction ever be lifted?
     Assert(params.requestedComponents[ComponentBitIndex::Transform]);
@@ -96,11 +94,15 @@ GameObject::GameObject(const GameobjectCreateParams& params, void* components, C
     }
 }
 
-GameObject::GameObject(std::tuple<void*, int, int> data) : 
-    pool(std::get<1>(data).get()),
-    objectIndex(std::get<3>(data)),
-    page(std::get<2>(data))
+GameObject::GameObject(std::tuple<ComponentPool*, int, int> data) : 
+    name("GameObject"),
+    pool(std::get<0>(data)),
+    objectIndex(std::get<2>(data)),
+    page(std::get<1>(data))
 {
+    Assert(pool != nullptr);
+    Assert(pool->pages.size() > page);
+
 }
 
 GameObject::~GameObject() {

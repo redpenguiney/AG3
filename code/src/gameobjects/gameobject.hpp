@@ -340,12 +340,12 @@ public:
 
 protected:
 	// protected so you have to use factory constructor
-	GameObject(const GameobjectCreateParams& params, void* components, ComponentPool* pool, int objectIndex, int page);
+	GameObject(const GameobjectCreateParams& params);
 
 private:
 
 	// delegating constructor used by main constructor
-	GameObject(std::tuple<std::unique_ptr<ComponentPool>, void*, int, int> data);
+	GameObject(std::tuple<ComponentPool*, int, int> data);
 
 	ComponentPool* const pool;
 	const int objectIndex;
@@ -354,5 +354,5 @@ private:
 	// unique_ptr so it doesn't memory leak
 	static inline std::unordered_map<std::bitset<N_COMPONENT_TYPES>, std::unique_ptr<ComponentPool>> COMPONENT_POOLS;
 
-	static std::tuple<std::unique_ptr<ComponentPool>, void*, int, int> GetNewGameobjectComponentData();
+	static std::tuple<ComponentPool*, int, int> GetNewGameobjectComponentData(const GameobjectCreateParams& params);
 };

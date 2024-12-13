@@ -121,7 +121,7 @@ std::tuple<void*, int, int> ComponentPool::GetObject() {
 	unsigned int index = static_cast<int>(((char*)foundComponents - (char*)pages[pageI]) / objectSize);
 	Assert(foundComponents != nullptr);
 
-	return std::make_tuple(foundComponents, index, pageI);
+	return std::make_tuple(foundComponents, pageI, index);
 }
 
 void ComponentPool::ReturnObject(int pageIndex, int objectIndex) {
