@@ -105,6 +105,10 @@ public:
 	// TODO: option which returns weak_ptr?
 	static std::shared_ptr<GameObject> New(const GameobjectCreateParams& params);
 
+	// lets you create subclasses of gameobject correctly
+	//template<std::derived_from<GameObject> T, typename ... tArgs>
+	//static std::shared_ptr<T> New(const GameobjectCreateParams& params, tArgs ...);
+
 	// Returns the given component (or an empty handle if it doesn't exist). The component handle will evalulate to true if the component exists.
 	// The ComponentHandle contains a shared_ptr to the gameobject, so the gameobject will not be destroyed and the component will always remain valid for the entirety of the handle's lifetime.
 	// WARNING!!! WARNING!!! You cannot call Get() inside component constructors. 

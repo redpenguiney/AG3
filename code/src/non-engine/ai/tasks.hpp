@@ -15,7 +15,7 @@ class Task {
 public:
 	Task(const Task&) = delete;
 
-	// returns true if finished (successfully or not). May call Interrupt(
+	// returns true if finished (successfully or not). May call Interrupt()
 	virtual bool Progress(Humanoid& executor);
 
 	// 
@@ -44,7 +44,8 @@ public:
 	// vector indices not stable
 	std::array<WorkGroup, NUM_WORK_GROUPS> taskInfos;
 
-	//
+	// indices are stable, some values are nullptr
 	std::vector<std::unique_ptr<Task>> tasks;
+	std::vector<unsigned int> availableTaskIndices;
 };
 
