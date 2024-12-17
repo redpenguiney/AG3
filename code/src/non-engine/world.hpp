@@ -28,10 +28,10 @@ struct TerrainChunk {
 };
 
 struct ClimateTile {
-	float temperature;
-	float temperatureDispersion; 
-	float humidity;
-	float humidityDisperion;
+	float typicalTemperature; // degrees Kelvin
+	float temperatureDispersion; // average absolute deviation from typical temperature; how much it varies
+	float typicalHumidity; // absolute humidity (g water/m^3)
+	float humidityDisperion; // average absolute deviation from typical humidity; how much it varies
 };
 //using ClimateChunk = std::array<std::array<ClimateTile, 16>, 16>;
 
@@ -48,7 +48,10 @@ struct BiomeTile {
 //using BiomeChunk = std::array<std::array<BiomeTile, 16>, 16>;
 
 struct WeatherTile {
-	// TODO
+	float cloudCover; // in range [0-1], percentage f
+	float rainfall; // m/hr 
+	glm::vec3 wind; // m/s
+
 };
 
 // Generates terrain and simulates AI in the chunks around it.
@@ -59,8 +62,16 @@ struct ChunkLoader {
 
 class World {
 public:
-	// Tile ids; always have defined value.
-	static int DIRT, ROCK, GRASS, SNOW, MISSING;
+	struct TerrainIds {
+		// Tile ids; always have defined value.
+		int DIRT, ROCK, GRASS, SNOW, MISSING;
+
+		// Furniture ids; always have defined value.
+		int TREE;
+
+		TerrainIds();
+	};
+	static TerrainIds& TERRAIN_IDS();
 
 	// returns the currently loaded world.
 	static std::unique_ptr<World>& Loaded();

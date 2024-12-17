@@ -141,7 +141,7 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
         MeshVertexFormat format = params.meshVertexFormat.has_value() ? params.meshVertexFormat.value() : MeshVertexFormat(
             {
                 .position = VertexAttribute {.nFloats = 3, .instanced = false},
-                .textureUV = VertexAttribute {.nFloats = 2, .instanced = false},   
+                .textureUV = mesh->HasTextureCoords(0) ? std::make_optional(VertexAttribute {.nFloats = 2, .instanced = false}) : std::nullopt,   
                 .textureZ = VertexAttribute {.nFloats = 1, .instanced = true},
                 .color = VertexAttribute {.nFloats = 4, .instanced = !mesh->HasVertexColors(0)}, 
                 .modelMatrix = VertexAttribute {.nFloats = 16, .instanced = true},

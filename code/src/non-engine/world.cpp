@@ -7,6 +7,12 @@
 #include "entity.hpp"
 #include <physics/pengine.hpp>
 
+World::TerrainIds& World::TERRAIN_IDS()
+{
+    static TerrainIds ids;
+    return ids;
+}
+
 std::unique_ptr<World>& World::Loaded()
 {
     static std::unique_ptr<World> world = nullptr;
@@ -213,22 +219,7 @@ int AddAtlasRegion(int x, int y) {
     return World::TerrainAtlas()->regions.size() - 1;
 }
 
-int World::MISSING = RegisterTileData({
-    .displayName = "???",
-    .texAtlasRegionId = AddAtlasRegion(0, 0),
-    .texArrayZ = 0.0f
-});
-int World::GRASS = RegisterTileData({
-    .displayName = "Grass",
-    .texAtlasRegionId = AddAtlasRegion(1, 0),
-    .texArrayZ = 0.0f
-});
-int World::ROCK = RegisterTileData({
-    .displayName = "Rock",
-    .texAtlasRegionId = AddAtlasRegion(2, 0),
-    .texArrayZ = 0.0f,
-    .yOffset = 0.5,
-});
+
 
 TerrainChunk::TerrainChunk(glm::ivec2 position)
 {
@@ -243,18 +234,58 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
         for (int worldZ = position.y - 8; worldZ < position.y + 8; worldZ++) {
             float height = perlinNoiseGenerator.GetValue(worldX/16.f, worldZ/16.f, 0);
 
+            
+
             //DebugLogInfo("Hiehgt ", height);
 
             tiles[localX][localZ].furniture = -1;
             if (height > 0) {
-                tiles[localX][localZ].floor = World::GRASS;
+                tiles[localX][localZ].floor = World::TERRAIN_IDS().GRASS;
             }
             else {
-                tiles[localX][localZ].floor = World::ROCK;
+                tiles[localX][localZ].floor = World::TERRAIN_IDS().ROCK;
+            }
+
+            if (height > 0.9) {
+                tiles[localX][localZ].furniture = World::TERRAIN_IDS().TREE;
             }
 
             localZ++;
         }
         localX++;
     }
+}
+
+GameobjectCreateParams P(std::string name) {
+    auto d = GameobjectCreateParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform });
+    auto& [mesh, mat, tz, offset] = Mesh::MultiFromFile(name)[0];
+    d.meshId = mesh->meshId;
+    return d;
+}
+
+World::TerrainIds::TerrainIds()
+{
+
+    MISSING = RegisterTileData({
+        .displayName = "???",
+        .texAtlasRegionId = AddAtlasRegion(0, 0),
+        .texArrayZ = 0.0f
+    });
+    GRASS = RegisterTileData({
+        .displayName = "Grass",
+        .texAtlasRegionId = AddAtlasRegion(1, 0),
+        .texArrayZ = 0.0f
+    });
+    ROCK = RegisterTileData({
+        .displayName = "Rock",
+        .texAtlasRegionId = AddAtlasRegion(2, 0),
+        .texArrayZ = 0.0f,
+        .yOffset = 0.5,
+    });
+
+    TREE = RegisterFurnitureData({
+        .displayName = "Anomalous Tree",
+        .gameobject = P("../models/tree.fbx"),
+        .yOffset = 0.5
+    });
 }

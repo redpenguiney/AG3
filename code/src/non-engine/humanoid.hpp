@@ -29,12 +29,10 @@ private:
 		// instead, each humanoid just evaluates a handful of options and the one they're currently doing every frame and picks the best one
 	// -1 if the NPC is doing literally nothing.
 	int currentTaskIndex = -1;
-	
-	// taskIndex mayn't be negative; returns integer representing the priority of the task.
-	// Negative return values indicate the task may/should not be completed by this Humanoid.
-	int EvaluteTaskUtility(int taskIndex);
 
 	std::shared_ptr<Schedule> schedule;
 
 	static constexpr int TASKS_PER_FRAME = 100;
+
+	friend class Task;
 };

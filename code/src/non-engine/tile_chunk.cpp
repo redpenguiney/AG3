@@ -107,13 +107,18 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 			}
 
 			if (tile.furniture != -1) {
-				const auto& furnitureData = GetTileData(tile.furniture);
+				const auto& furnitureData = GetFurnitureData(tile.furniture);
 				
-				Assert(furnitureData.gameobject.has_value());
-
-				objects.push_back(GameObject::New(furnitureData.gameobject.value()));
-				objects.back()->RawGet<TransformComponent>()->SetPos(glm::dvec3(i, furnitureData.yOffset, j));
-				objects.back()->RawGet<TransformComponent>()->SetScl(Mesh::Get(furnitureData.gameobject->meshId)->originalSize);
+				if (furnitureData.gameobject.has_value()) {
+					objects.push_back(GameObject::New(furnitureData.gameobject.value()));
+					objects.back()->RawGet<TransformComponent>()->SetPos(glm::dvec3(i, furnitureData.yOffset, j));
+					if (furnitureData.scl.has_value()) {
+						objects.back()->RawGet<TransformComponent>()->SetScl(*furnitureData.scl);
+					}
+					else {
+						objects.back()->RawGet<TransformComponent>()->SetScl(Mesh::Get(furnitureData.gameobject->meshId)->originalSize);
+					}
+				}
 			}
 		}
 	}

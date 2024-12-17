@@ -16,10 +16,14 @@ public:
 	Task(const Task&) = delete;
 
 	// returns true if finished (successfully or not). May call Interrupt()
-	virtual bool Progress(Humanoid& executor);
+	virtual bool Progress(Humanoid& executor) = 0;
 
-	// 
-	virtual void Interrupt();
+	// call when task is gracelessly cut short because NPC needs to do something else now.
+	virtual void Interrupt() = 0;
+
+	// Returns integer representing the priority of the task.
+	// Negative return values indicate the task may/should not be completed by this Humanoid.
+	virtual int EvaluteTaskUtility(const Humanoid& potentialExecutor) = 0;
 };
 
 // Copyable reference to a task which enables cache-friendly iteration through the information needed for an NPC to pick which task to do.
