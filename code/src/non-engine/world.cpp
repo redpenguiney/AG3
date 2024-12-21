@@ -286,6 +286,9 @@ World::TerrainIds::TerrainIds()
     TREE = RegisterFurnitureData({
         .displayName = "Anomalous Tree",
         .gameobject = P("../models/tree.fbx"),
-        .yOffset = 0.5
+        .rotation = {-90, 0, 0},
+        .yOffset = 0.5,
+        .scl = glm::vec3 {1, 1, 1},
+        
     });
 }

@@ -146,8 +146,8 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
                 .color = VertexAttribute {.nFloats = 4, .instanced = !mesh->HasVertexColors(0)}, 
                 .modelMatrix = VertexAttribute {.nFloats = 16, .instanced = true},
                 .normalMatrix = VertexAttribute {.nFloats = 9, .instanced = true},
-                .normal = VertexAttribute {.nFloats = 3, .instanced = false},   
-                .tangent = VertexAttribute {.nFloats = 3, .instanced = false},
+                .normal = mesh->HasNormals() ? std::make_optional(VertexAttribute {.nFloats = 3, .instanced = false}) : std::nullopt,
+                .tangent = mesh->HasTangentsAndBitangents() ? std::make_optional(VertexAttribute {.nFloats = 3, .instanced = false}) : std::nullopt,
                 .arbitrary1 = roundedBoneCount != 0 ? std::optional(VertexAttribute {.nFloats = 4, .instanced = false, .integer = true}) : std::nullopt,
                 .arbitrary2 = roundedBoneCount != 0 ? std::optional(VertexAttribute {.nFloats = 4, .instanced = false}) : std::nullopt
             },  
@@ -169,7 +169,7 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
         } 
         // assimp should have calculated these
         Assert(mesh->HasNormals());
-        Assert(mesh->HasTangentsAndBitangents());
+        Assert(!format.attributes.textureUV.has_value() || mesh->HasTangentsAndBitangents()); // can't have tangent/bitangent if no UVs
 
         Assert(mesh->HasFaces());
 

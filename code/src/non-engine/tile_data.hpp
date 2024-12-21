@@ -24,6 +24,9 @@ struct FurnitureData {
 	std::string displayName = "Unknown furniture";
 	std::optional<GameobjectCreateParams> gameobject = std::nullopt; // If non-existent, furniture will be invisible.
 
+	float texZ = -1;
+	glm::vec3 rotation = { 0, 0, 0 }; // pitch, yaw, roll in degrees.
+
 	float yOffset = 0.0;
 	int id = -1; // value assigned when RegisterTile() is called
 	std::optional<glm::vec3> scl = std::nullopt; // when nullopt, mesh's original scale is used
