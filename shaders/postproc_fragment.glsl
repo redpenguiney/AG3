@@ -1,9 +1,10 @@
-#version 330 core
+#version 420 core
 out vec4 FragColor;
   
 in vec2 TexCoords;
 
-uniform sampler2DArray screenTexture;
+layout(binding=0) uniform sampler2DArray screenTextureColor; // note: this syntax not ok until opengl 4.2
+layout(binding=1) uniform sampler2DArray screenTextureAlpha; // note: this syntax not ok until opengl 4.2
 
 const float offset = 1.0 / 1000.0;  
 
@@ -31,7 +32,7 @@ void main()
     vec3 sampleTex[9];
     for(int i = 0; i < 9; i++)
     {
-        sampleTex[i] = vec3(texture(screenTexture, vec3(TexCoords.st + offsets[i], 0.0)));
+        sampleTex[i] = vec3(texture(screenTextureColor, vec3(TexCoords.st + offsets[i], 0.0)));
     }
     vec3 col = vec3(0.0);
     for(int i = 0; i < 9; i++)
@@ -40,9 +41,9 @@ void main()
     // tonemapping
     vec3 mapped = col; //col / (col + vec3(1.0));
     FragColor = vec4(mapped, 1.0);
-    // FragColor = vec4(texture(screenTexture, vec2(TexCoords.x, 1-TexCoords.y)).xxx, 1.0);
+    //FragColor = vec4(texture(screenTextureColor, vec2(TexCoords.x, 1-TexCoords.y)).xxx, 1.0);
     //FragColor = vec4(TexCoords, 0.5, 1.0);
-    // FragColor = vec4(0, 1, 1, 1);
-    //float depthValue = texture(screenTexture, TexCoords).r;
+    //FragColor = vec4(0, 1, 1, 1);
+    //float depthValue = texture(screenTextureColor, TexCoords).r;
     // FragColor = vec4(vec3(depthValue), 1.0);
 }

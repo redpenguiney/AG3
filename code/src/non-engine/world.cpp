@@ -256,11 +256,34 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
     }
 }
 
-GameobjectCreateParams P(std::string name) {
+void P(std::string name, glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
     auto d = GameobjectCreateParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform });
-    auto& [mesh, mat, tz, offset] = Mesh::MultiFromFile(name)[0];
-    d.meshId = mesh->meshId;
-    return d;
+    auto vec = Mesh::MultiFromFile(name);
+    constexpr double SCL_FACTOR = 0.1;
+    int i = 0;
+    for (auto& ret : vec) {
+        d.meshId = ret.mesh->meshId;
+        objects.push_back(GameObject::New(d));
+
+        objects.back()->RawGet<TransformComponent>()->SetPos(glm::dvec3(ret.posOffset) * SCL_FACTOR + glm::dvec3((double)pos.x, SCL_FACTOR * ret.mesh->originalSize.y / 2.0, (double)pos.y));
+        objects.back()->RawGet<TransformComponent>()->SetRot(glm::quat(ret.rotOffset));
+        objects.back()->RawGet<TransformComponent>()->SetScl(SCL_FACTOR * ret.mesh->originalSize);
+
+        RenderComponent* render = objects.back()->MaybeRawGet<RenderComponent>();
+        if (render) {
+            render->SetTextureZ(-1);
+            if (i == 0) {
+                render->SetColor({ 0.5, 0.5, 0, 1 });
+            }
+            else {
+                render->SetColor({ 0, 1, 0, 0.5 });
+            }
+            
+        }
+        i++;
+    }
+    
+   
 }
 
 World::TerrainIds::TerrainIds()
@@ -285,10 +308,8 @@ World::TerrainIds::TerrainIds()
 
     TREE = RegisterFurnitureData({
         .displayName = "Anomalous Tree",
-        .gameobject = P("../models/tree.fbx"),
-        .rotation = {-90, 0, 0},
-        .yOffset = 0.5,
-        .scl = glm::vec3 {1, 1, 1},
-        
+        .gameobjectMaker = [](glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
+            P("../models/tree.fbx", pos, objects);
+        },
     });
 }

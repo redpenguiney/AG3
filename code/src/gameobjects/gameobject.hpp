@@ -54,6 +54,8 @@ private:
 	Component* const component;
 };
 
+class ComponentFieldInitializer;
+
 // Specifies stuff about the gameobject to create, like what components it has (and what values to initialize those components with).
 // Pass to GameObject::New().
 struct GameobjectCreateParams {
@@ -64,7 +66,7 @@ struct GameobjectCreateParams {
 
 	std::optional<std::shared_ptr<Sound>> sound; // for audio player components
 
-	GameobjectCreateParams(std::vector<ComponentBitIndex::ComponentBitIndex> componentList) :
+	GameobjectCreateParams(std::vector<ComponentBitIndex::ComponentBitIndex> componentList, std::vector<ComponentFieldInitializer*> = {}) :
 		physMesh(std::nullopt),
 		meshId(0),
 		materialId(0),
@@ -80,6 +82,8 @@ struct GameobjectCreateParams {
 	bool HasComponent(ComponentBitIndex::ComponentBitIndex bitIndex) const {
 		return requestedComponents.test(bitIndex);
 	}
+
+	//std::vector<std::unique_ptr<ComponentFieldInitializer>> componentFieldInitializers;
 
 private:
 	friend class GameObject;

@@ -81,10 +81,10 @@ postRenderEvent(Event<float>::New())
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
     crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", false, false, true);
 
-    auto [skyboxBoxmesh, skyboxMat, skyboxTz, _] = Mesh::MultiFromFile("../models/skybox.obj", MeshCreateParams{.textureZ = -1.0, .opacity = 1, .expectedCount = 1, .normalizeSize = false}).at(0);
-    skybox = new RenderableMesh(skyboxBoxmesh);
-    skyboxMaterial = skyboxMat; // ok if this is nullptr
-    skyboxMaterialLayer = skyboxTz;
+    auto skyboxImport = Mesh::MultiFromFile("../models/skybox.obj", MeshCreateParams{.textureZ = -1.0, .opacity = 1, .expectedCount = 1, .normalizeSize = false}).at(0);
+    skybox = new RenderableMesh(skyboxImport.mesh);
+    skyboxMaterial = skyboxImport.material; // ok if this is nullptr
+    skyboxMaterialLayer = skyboxImport.materialZ;
     // std::cout << "SKYBOX has indices: ";
     // for (auto & v: skybox_boxmesh->indices) {
     //     std::cout << v << ", ";
@@ -200,7 +200,13 @@ void GraphicsEngine::UpdateMainFramebuffer() {
         colorTextureParams.mipmapBehaviour = Texture::NoMipmaps;
         colorTextureParams.format = Texture::RGBA_16Float;
         colorTextureParams.wrappingBehaviour = Texture::WrapClampToEdge;
-        mainFramebuffer.emplace(window.width, window.height, std::vector {colorTextureParams}, true);
+        // 2nd color attachment used for order-independent transparency
+        TextureCreateParams alphaTextureParams({}, Texture::ColorMap);
+        alphaTextureParams.filteringBehaviour = Texture::LinearTextureFiltering;
+        alphaTextureParams.mipmapBehaviour = Texture::NoMipmaps;
+        alphaTextureParams.format = Texture::Grayscale_8Bit;
+        alphaTextureParams.wrappingBehaviour = Texture::WrapClampToEdge;
+        mainFramebuffer.emplace(window.width, window.height, std::vector {colorTextureParams, alphaTextureParams }, true);
     }
 }
 
@@ -348,7 +354,8 @@ void GraphicsEngine::RenderScene(float dt) {
      
     
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    mainFramebuffer->Clear({ { 0, 0, 0, 0 }, { 1, 1, 1, 1 } });
     DrawWorld(true);
 
     DrawSkybox(); // Draw skybox afterwards to encourage early z-test

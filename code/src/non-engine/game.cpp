@@ -162,7 +162,6 @@ void GameInit()
             TextureSource("../textures/sky/back.png"),
             TextureSource("../textures/sky/front.png")
         });
-
     {
         auto [index, sky_m_ptr] = Material::New(MaterialCreateParams{ .textureParams = { TextureCreateParams {skyboxFaces, Texture::ColorMap} }, .type = Texture::TextureCubemap });
         GE.skyboxMaterial = sky_m_ptr;

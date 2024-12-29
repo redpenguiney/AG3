@@ -34,12 +34,13 @@ sol::variadic_results LuaMeshConstructor(sol::object arg1, sol::object arg2) {
     if (arg1.is<std::string>() && (arg2 == sol::nil || arg2.is<MeshCreateParams>())) {
         auto result = (arg2 == sol::nil) ? Mesh::MultiFromFile(arg1.as<std::string>()) : Mesh::MultiFromFile(arg1.as<std::string>(), arg2.as<MeshCreateParams>());
         sol::variadic_results luaifiedResults;
-        for (auto & [a, b, c, d]: result) {
+        for (auto & ret: result) {
             sol::table tabl;
-            tabl["mesh"] = a;
-            tabl["material"] = b;
-            tabl["textureZ"] = c;
-            tabl["offset"] = d;
+            tabl["mesh"] = ret.mesh;
+            tabl["material"] = ret.material;
+            tabl["materialZ"] = ret.materialZ;
+            tabl["posOffset"] = ret.posOffset;
+            tabl["rotOffset"] = ret.rotOffset;
             luaifiedResults.push_back(tabl);
         }
         return luaifiedResults;

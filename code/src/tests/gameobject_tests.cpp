@@ -11,7 +11,7 @@ std::shared_ptr<Mesh> CubeMesh() {
     auto makeMparams = MeshCreateParams{ .textureZ = -1.0, .opacity = 1, .expectedCount = 16384 };
     
     Assert(makeMparams.meshVertexFormat == std::nullopt);
-    static auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/rainbowcube.obj", makeMparams).at(0);
+    static auto m = Mesh::MultiFromFile("../models/rainbowcube.obj", makeMparams).at(0).mesh;
     //Assert(m->vertexFormat.primitiveType == GL_POINTS);
 
     //DebugLogInfo("CUBE HAS MESH ID ", m->meshId);
@@ -21,7 +21,7 @@ std::shared_ptr<Mesh> CubeMesh() {
 
 std::shared_ptr<Mesh> SphereMesh() {
     auto makeMparams = MeshCreateParams{ .textureZ = -1.0, .opacity = 1, .expectedCount = 16384 };
-    auto [m, mat, tz, offest] = Mesh::MultiFromFile("../models/icosphere.obj", makeMparams).at(0);
+    auto m = Mesh::MultiFromFile("../models/icosphere.obj", makeMparams).at(0).mesh;
 
     //DebugLogInfo("CUBE HAS MESH ID ", m->meshId);
 
@@ -415,16 +415,16 @@ void TestAnimation()
     auto [brickTextureZ, brickMaterial] = BrickMaterial();
     auto animShader = ShaderProgram::New("../shaders/world_vertex_animation.glsl", "../shaders/world_fragment.glsl");
     auto stuff = Mesh::MultiFromFile("../models/test_anims.fbx");
-    for (auto & [mesh, mmat, matTexZ, offset] : stuff) {
+    for (auto & ret : stuff) {
         GameobjectCreateParams params({ComponentBitIndex::Transform, ComponentBitIndex::Animation, ComponentBitIndex::Render});
-        params.meshId = mesh->meshId;
-        params.materialId = mmat != nullptr ? mmat->id : brickMaterial->id;
+        params.meshId = ret.mesh->meshId;
+        params.materialId = ret.material != nullptr ? ret.material->id : brickMaterial->id;
         params.shaderId = animShader->shaderProgramId;
         auto obj = GameObject::New(params);
-        obj->RawGet<RenderComponent>()->SetTextureZ(mmat != nullptr ? matTexZ : brickTextureZ);
-        obj->RawGet<TransformComponent>()->SetPos(glm::vec3(5, 3, 5) + offset);
-        obj->RawGet<TransformComponent>()->SetScl(mesh->originalSize);
+        obj->RawGet<RenderComponent>()->SetTextureZ(ret.material != nullptr ? ret.materialZ : brickTextureZ);
+        obj->RawGet<TransformComponent>()->SetPos(glm::vec3(5, 3, 5) + ret.posOffset);
+        obj->RawGet<TransformComponent>()->SetScl(ret.mesh->originalSize);
 
-        obj->RawGet<AnimationComponent>()->PlayAnimation(mesh->animations->front().name);
+        obj->RawGet<AnimationComponent>()->PlayAnimation(ret.mesh->animations->front().name);
     }
 }

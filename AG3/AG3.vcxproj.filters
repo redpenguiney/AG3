@@ -536,5 +536,8 @@
     <ClInclude Include="..\code\src\non-engine\ai\team.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\code\src\gameobjects\component_field_initializer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -265,6 +265,7 @@
     <ClCompile Include="..\code\src\graphics\framebuffer.cpp" />
     <ClCompile Include="..\code\src\graphics\gengine.cpp" />
     <ClCompile Include="..\code\src\graphics\gl_error_handler.cpp" />
+    <ClInclude Include="..\code\src\gameobjects\component_field_initializer.hpp" />
     <ClInclude Include="..\code\src\graphics\indirect_draw_command.hpp" />
     <ClCompile Include="..\code\src\graphics\material.cpp" />
     <ClCompile Include="..\code\src\graphics\mesh.cpp" />

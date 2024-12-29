@@ -3,6 +3,7 @@
 #include <string>
 #include <optional>
 #include "gameobjects/gameobject.hpp"
+#include <functional>
 
 class Mesh;
 
@@ -22,14 +23,9 @@ struct TileData {
 // Stores intrinsic properties of a furniture. Furniture is placed on top of tiles and can store metadata unlike tiles.
 struct FurnitureData {
 	std::string displayName = "Unknown furniture";
-	std::optional<GameobjectCreateParams> gameobject = std::nullopt; // If non-existent, furniture will be invisible.
+	std::optional<std::function<void(glm::ivec2, std::vector<std::shared_ptr<GameObject>>&)>> gameobjectMaker = std::nullopt; // If non-existent, furniture will be invisible.
 
-	float texZ = -1;
-	glm::vec3 rotation = { 0, 0, 0 }; // pitch, yaw, roll in degrees.
-
-	float yOffset = 0.0;
 	int id = -1; // value assigned when RegisterTile() is called
-	std::optional<glm::vec3> scl = std::nullopt; // when nullopt, mesh's original scale is used
 };
 
 // Registers the given tile data so that it can be returned by GetTileData().

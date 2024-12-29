@@ -1,4 +1,5 @@
 #include "gameobject.hpp"
+#include "component_field_initializer.hpp"
 
 // Used to make shared_ptr for GameObject, which lacks a public constructor
 template <typename... Args>
@@ -92,6 +93,10 @@ GameObject::GameObject(const GameobjectCreateParams& params):
     if (params.requestedComponents[ComponentBitIndex::Spotlight]) {
         std::construct_at(RawGet<SpotLightComponent>());
     }
+
+    //for (auto& initializer : params.componentFieldInitializers) {
+        //initializer->Apply();
+    //}
 }
 
 GameObject::GameObject(std::tuple<ComponentPool*, int, int> data) : 

@@ -14,8 +14,11 @@ bindingLocation(GL_FRAMEBUFFER)
     Bind();
 
     // attach textures
+    int attachmentI = 0; // TODO: is there stuff besides color attachments we need to care about? 
     for (auto & params: attachmentParams) {
-        textureAttachments.emplace_back(*this, params, 0, Texture::Texture2D, GL_COLOR_ATTACHMENT0);
+        textureAttachments.emplace_back(*this, params, attachmentI, Texture::Texture2D, GL_COLOR_ATTACHMENT0 + attachmentI);
+        colorAttachmentNames.emplace_back(GL_COLOR_ATTACHMENT0 + attachmentI);
+        attachmentI++;
     }
     
     // create renderbuffer if they want it
@@ -33,6 +36,9 @@ bindingLocation(GL_FRAMEBUFFER)
 }
 
 Framebuffer::~Framebuffer() {
+    if (currentlyBound == glFramebufferId) {
+        currentlyBound = 0;
+    }
     glDeleteFramebuffers(1, &glFramebufferId);
     if (depthRenderbufferId) {
         glDeleteRenderbuffers(1, &depthRenderbufferId.value());
@@ -41,11 +47,34 @@ Framebuffer::~Framebuffer() {
 
 // TODO: apparently sometimes you want to use an argument besides GL_FRAMEBUFFER?
 void Framebuffer::Bind() {
-    glViewport(0, 0, width, height);
+    if (currentlyBound == glFramebufferId) {
+        return;
+    }
+    else {
+        currentlyBound = glFramebufferId;
+    }
+
     glBindFramebuffer(bindingLocation, glFramebufferId);
+
+    glDrawBuffers(colorAttachmentNames.size(), colorAttachmentNames.data());
+    glViewport(0, 0, width, height);
+}
+
+void Framebuffer::Clear(std::vector<glm::vec4> clearColors)
+{
+    Assert(clearColors.size() == textureAttachments.size());
+    for (int i = 0; i < clearColors.size(); i++) {
+        //if (textureAttachments[i].format == Texture::TextureFormat::RGBA_16Float) {
+            glClearBufferfv(GL_COLOR, i, &clearColors[i][0]);
+        //}
+        //else {
+            //glm::ivec4 casted =
+        //}
+    }
 }
 
 void Framebuffer::Unbind() {
+    currentlyBound = 0;
     unsigned int windowWidth = GraphicsEngine::Get().window.width;
     unsigned int windowHeight = GraphicsEngine::Get().window.height;
     glViewport(0, 0, windowWidth, windowHeight);

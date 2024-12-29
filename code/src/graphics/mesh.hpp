@@ -167,11 +167,22 @@ class Mesh: public std::enable_shared_from_this<Mesh> {
     // normalizeSize should ALWAYS be true unless you're creating a mesh (like the screen quad or skybox mesh) for internal usage
     // static std::shared_ptr<Mesh> FromFile(const std::string& path, const MeshCreateParams& params = MeshCreateParams::Default());
     
+    // Return value for Mesh::MultiFromFile, which lets the function handle formats like FBX which have an object tree with
+        // multiple meshes and materials and what not.
+    struct MeshRet {
+        std::shared_ptr<Mesh> mesh;
+        std::shared_ptr<Material> material; // MAY BE NULLPTR if no material
+        // TODO: shader?
+        float materialZ;
+        glm::vec3 posOffset; // offset from origin in world space, such that scene with many objects may be reassembled
+        glm::quat rotOffset; // like posOffset for rotation; should be in radians.
+    };
+
     // Accepts most files (whatever assimp takes)
     // Creates meshes/materials for whatever the file needs (TODO: cache to avoid duplicate mats/meshes), and then returns those.
     // Each tuple contains a mesh, its material (WARNING: or nullptr if the mesh doesn't have a material), the textureZ, and an offset from the origin (so that a scene with many objects can be reassembled)
     // TODO: offset currently unimplemented bc kinda complicated
-    static std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, glm::vec3>> MultiFromFile(
+    static std::vector<MeshRet> MultiFromFile(
         const std::string& path, const MeshCreateParams& params = MeshCreateParams::Default()
     );
 

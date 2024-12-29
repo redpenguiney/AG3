@@ -10,15 +10,20 @@
 
 //#pragma comment(lib, "assimp-vc143-mtd.lib")
 
+glm::mat4x4 AssimpMatrixToGLM(aiMatrix4x4);
+
 // recursive function used by Mesh::MultiFromFile() to process loaded assimp data
-void ProcessNode(aiNode* node, const aiScene* scene, std::vector<aiMesh*>& meshes) {
+void ProcessNode(aiNode* node, const aiScene* scene, std::vector<aiMesh*>& meshes, std::vector<glm::mat4x4>& transformations, glm::mat4x4 nodeTransformation) {
+    nodeTransformation = nodeTransformation * AssimpMatrixToGLM(node->mTransformation);
+    
     // DebugLogInfo("Node ", node->mName.C_Str(), " has ", node->mNumChildren, "kids (but ",  node->mNumMeshes, " meshes)");
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         meshes.push_back(mesh);
+        transformations.push_back(nodeTransformation);
     }
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
-        ProcessNode(node->mChildren[i], scene, meshes);
+        ProcessNode(node->mChildren[i], scene, meshes, transformations, nodeTransformation);
     }
 }
 
@@ -104,10 +109,12 @@ glm::quat AssimpQuatToGLM(aiQuaternion q) {
 
 // TODO: animation processing especially is probably hecka slow.
 // TODO: i have my doubts on how well different vertex formats are handled
-std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, glm::vec3>> Mesh::MultiFromFile(const std::string& path, const MeshCreateParams& params) {
+std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const MeshCreateParams& params) {
     //static Assimp::Importer importer;
     //const aiScene* scene = importer.ReadFileFromMemory(nullptr, 0, 0, nullptr);
     //const aiScene* scene = importer.ReadFile(path, aiProcess_OptimizeMeshes  | aiProcess_GlobalScale | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
+    //importer.SetPropertyBool(AI_CONFIG_FBX_CONVERT_TO_M, true);
+    //aiSetImportPropertyInteger()
     const aiScene* scene = aiImportFile(path.c_str(), aiProcess_OptimizeMeshes | aiProcess_GlobalScale | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
     if (scene == nullptr || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode || !scene->HasMeshes()) {
         DebugLogError("Mesh::MultiFromFile() failed to load ", path, " because ", aiGetErrorString());
@@ -117,15 +124,18 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
     
     // DebugLogInfo("Scene has ", scene->mNumMeshes, " root ", scene->mRootNode->mNumMeshes, " root kids ", scene->mRootNode->mNumChildren);
 
+    std::vector<glm::mat4x4> assimpMeshTransformations;
     std::vector<aiMesh*> assimpMeshes;
-    ProcessNode(scene->mRootNode, scene, assimpMeshes);
+    ProcessNode(scene->mRootNode, scene, assimpMeshes, assimpMeshTransformations, glm::identity<glm::mat4x4>());
     // for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
     //     assimpMeshes.push_back(scene->mMeshes[i]);
     // }
 
-    std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, glm::vec3>> returnValue;
+    std::vector<MeshRet> returnValue;
 
+    int i = 0;
     for (auto & mesh: assimpMeshes) {
+        glm::mat4x4 transform = assimpMeshTransformations[i++];
         // Assert(mesh->mNumUVComponents == 2);
 
         // bones needs to be multiple of 4 for mesh vertex format (so that meshpools can group up animated meshes efficiently)
@@ -457,10 +467,27 @@ std::vector<std::tuple<std::shared_ptr<Mesh>, std::shared_ptr<Material>, float, 
             (animations.has_value() && animations->size() > 0) ? animations : std::nullopt,
             rootBoneIndex
         ));
+        
         MeshGlobals::Get().LOADED_MESHES[meshId] = meshPtr;
+
+        // split the mesh's transformation matrix into position, scale, rotation, etc.
+        glm::vec3 scale;
+        glm::quat rotation;
+        glm::vec3 translation;
+        glm::vec3 skew;
+        glm::vec4 perspective;
+        glm::decompose(transform, scale, rotation, translation, skew, perspective);
+        translation = glm::vec3(transform * glm::vec4(0, 0, 0, 0));
+        meshPtr->originalSize *= scale;
+        if (glm::epsilonNotEqual(glm::length(skew), 0.0f, 0.0001f)) {
+            DebugLogError("Warning: mesh ", mesh->mName.C_Str(), " at ", path, " has skew of ", skew, ". Skew is not supported.");
+        }
+        if (glm::epsilonNotEqual(glm::length(perspective),1.0f, 0.0001f)) {
+            DebugLogError("Warning: mesh ", mesh->mName.C_Str(), " at ", path, " has perspective transformation of ", perspective, ", which will be ignored. Something is very wrong with your file.");
+        }
             
         //DebugLogInfo("ADDING ", meshPtr);
-        returnValue.push_back(std::make_tuple(meshPtr, matPtr, textureZ, glm::vec3(0, 0, 0)));
+        returnValue.push_back(MeshRet{.mesh = meshPtr, .material = matPtr, .materialZ = textureZ, .posOffset = translation, .rotOffset = rotation});
     }
 
     return returnValue;
