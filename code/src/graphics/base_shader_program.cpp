@@ -209,9 +209,9 @@ void BaseShaderProgram::Uniform(std::string uniformName, unsigned int uval)
 }
 
 void BaseShaderProgram::Use() {
-    if (LOADED_PROGRAM_ID != programId) {
+    if (CURRENTLY_BOUND_PROGRAM_ID != programId) {
         glUseProgram(programId);
-        LOADED_PROGRAM_ID = programId;
+        CURRENTLY_BOUND_PROGRAM_ID = programId;
     }
 
    

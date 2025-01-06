@@ -54,7 +54,9 @@ std::pair<float, std::shared_ptr<Material>> ArialFont(int size)
     auto ttfParams = TextureCreateParams({ TextureSource{"../fonts/arial.ttf"}, }, Texture::FontMap);
     ttfParams.fontHeight = size;
     ttfParams.format = Texture::Grayscale_8Bit;
-    return Material::New(MaterialCreateParams({ ttfParams }, Texture::Texture2D, false));
+    auto b = Material::New(MaterialCreateParams({ ttfParams }, Texture::Texture2D, GraphicsEngine::Get().defaultGuiMaterial->shader, nullptr, false));
+    b.second->ignorePostProc = true;
+    return b;
 }
 
 void MakeFPSTracker()
@@ -62,8 +64,8 @@ void MakeFPSTracker()
     auto font = ArialFont(12);
 
     auto ui = new Gui(true,
-        std::make_optional(font),
-        std::nullopt
+        std::nullopt,
+        std::make_optional(font)
         //Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), 
         //GraphicsEngine::Get().defaultBillboardGuiShaderProgram);
     );
@@ -83,7 +85,7 @@ void MakeFPSTracker()
     ui->UpdateGuiTransform();
 
     GraphicsEngine::Get().preRenderEvent->Connect([ui](double t) {
-        ui->GetTextInfo().text = "frame: " + std::to_string(t * 1000) + "mss";
+        ui->GetTextInfo().text = "frame: " + std::to_string(t * 1000) + "ms";
         ui->UpdateGuiText();
     });
 }
@@ -96,8 +98,11 @@ void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool phy
     for (int x = 0; x < dim.x; x++) {
         for (int y = 0; y < dim.y; y++) {
             for (int z = 0; z < dim.z; z++) {
-                GameobjectCreateParams params = physics ? GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider , ComponentBitIndex::Rigidbody }) : GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
+                GameobjectCreateParams params = physics ? 
+                    GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider , ComponentBitIndex::Rigidbody }) : 
+                    GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
                 params.meshId = m->meshId;
+                Assert(params.materialId == 0);
                 //params.materialId = brickMaterial->id;
                 auto g = GameObject::New(params);
                 g->Get<TransformComponent>()->SetPos(glm::dvec3(start + stride * glm::uvec3(x, y, z)));
@@ -412,6 +417,7 @@ void TestUi()
 
 void TestAnimation()
 {
+    Assert(false); // TODO
     auto [brickTextureZ, brickMaterial] = BrickMaterial();
     auto animShader = ShaderProgram::New("../shaders/world_vertex_animation.glsl", "../shaders/world_fragment.glsl");
     auto stuff = Mesh::MultiFromFile("../models/test_anims.fbx");
@@ -419,7 +425,7 @@ void TestAnimation()
         GameobjectCreateParams params({ComponentBitIndex::Transform, ComponentBitIndex::Animation, ComponentBitIndex::Render});
         params.meshId = ret.mesh->meshId;
         params.materialId = ret.material != nullptr ? ret.material->id : brickMaterial->id;
-        params.shaderId = animShader->shaderProgramId;
+        //params.shaderId = animShader->shaderProgramId;
         auto obj = GameObject::New(params);
         obj->RawGet<RenderComponent>()->SetTextureZ(ret.material != nullptr ? ret.materialZ : brickTextureZ);
         obj->RawGet<TransformComponent>()->SetPos(glm::vec3(5, 3, 5) + ret.posOffset);

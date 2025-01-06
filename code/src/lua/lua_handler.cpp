@@ -294,7 +294,6 @@ LuaHandler::LuaHandler() {
     gameObjectCreateParamsUsertype["physMesh"] = &LuaGameobjectCreateParams::physMesh;
     gameObjectCreateParamsUsertype["meshId"] = &LuaGameobjectCreateParams::meshId;
     gameObjectCreateParamsUsertype["materialId"] = &LuaGameobjectCreateParams::materialId;
-    gameObjectCreateParamsUsertype["shaderId"] = &LuaGameobjectCreateParams::shaderId;
     gameObjectCreateParamsUsertype["sound"] = &LuaGameobjectCreateParams::sound;
 
     auto transformComponentUsertype = LUA_STATE->new_usertype<TransformComponent>("Transform", sol::no_constructor);

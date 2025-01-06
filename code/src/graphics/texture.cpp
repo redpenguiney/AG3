@@ -27,6 +27,9 @@ GLenum TextureBindingLocationFromType(Texture::TextureType type) {
     case Texture::TextureCubemap:
     return GL_TEXTURE_CUBE_MAP;
     break;
+    case Texture::Texture2DFlat:
+    return GL_TEXTURE_2D;
+    break;
     default:
     std::cout << "forgot something\n";
     abort();
@@ -394,6 +397,7 @@ bindingLocation(TextureBindingLocationFromType(textureType)),
 glTextureIndex(textureIndex) 
 {
     Assert(params.textureSources.size() == 0); 
+    //if (framebufferAttachmentType != GL_COLOR_ATTACHMENT0) return;
 
     glGenTextures(1, &glTextureId);
     Use();
@@ -409,9 +413,19 @@ glTextureIndex(textureIndex)
         // allocate storage for texture by passing nullptr as the data to load into the texture
         glTexImage3D(bindingLocation, 0, params.format, width, height, depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         ConfigTexture(params);
-
+        
         // attach the texture to the framebuffer
         glFramebufferTextureLayer(framebuffer.bindingLocation, framebufferAttachmentType, glTextureId, 0, 0);
+        // allocate storage for texture by passing nullptr as the data to load into the texture
+    }
+    else if (bindingLocation == GL_TEXTURE_2D) {
+        //if (framebufferAttachmentType == GL_COLOR_ATTACHMENT0) {
+            glTexImage2D(bindingLocation, 0, params.format, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+            ConfigTexture(params);
+            //DebugLogInfo("ATTACHING ", framebufferAttachmentType, " TO ", framebuffer.glFramebufferId);
+
+            glFramebufferTexture(framebuffer.bindingLocation, framebufferAttachmentType, glTextureId, 0);
+        //}
     }
     else {
         std::cout << " add support first my guy\n";
@@ -421,8 +435,29 @@ glTextureIndex(textureIndex)
     // Framebuffer::Unbind(); // TODO: probably not really needed and might carry high perf cost?
 }
 
+Texture::Texture(Texture&& old) :
+    format(old.format),
+    type(old.type),
+    usage(old.usage),
+    lineSpacing(old.lineSpacing),
+    bindingLocation(old.bindingLocation),
+    glTextureIndex(old.glTextureIndex),
+    glTextureId(old.glTextureId),
+    width(old.width),
+    height(old.height),
+    depth(old.depth),
+    nChannels(old.nChannels),
+    nMipmapLevels(old.nMipmapLevels),
+    fontGlyphs(old.fontGlyphs)
+{
+    old.glTextureId = 0;
+}
+
 Texture::~Texture() {
-    glDeleteTextures(1, &glTextureId);
+    if (glTextureId != 0) { // could be 0 in case of move constructor
+        glDeleteTextures(1, &glTextureId);
+    }
+    
 }
 
 glm::uvec3 Texture::GetSize() {

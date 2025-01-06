@@ -1,7 +1,6 @@
 #include "render_component.hpp"
 
-RenderComponent::RenderComponent(unsigned int mId, unsigned int matId, unsigned int shaderId):
-    shaderProgramId(shaderId),
+RenderComponent::RenderComponent(unsigned int mId, unsigned int matId):
     materialId(matId),
     meshId(mId),
     meshpoolId(-1)
@@ -20,7 +19,7 @@ RenderComponent::RenderComponent(unsigned int mId, unsigned int matId, unsigned 
 
     //DebugLogInfo("Initializing ", this);
 
-    GraphicsEngine::Get().AddObject(shaderId, materialId, meshId, this); 
+    GraphicsEngine::Get().AddObject(materialId, meshId, this); 
 
 };
 
@@ -60,7 +59,7 @@ void RenderComponent::SetInstancedVertexAttribute<glm::mat4x4>(const unsigned in
 
 
 
-RenderComponentNoFO::RenderComponentNoFO(unsigned int meshId, unsigned int materialId, unsigned int shaderId): 
-    RenderComponent(meshId, materialId, shaderId) 
+RenderComponentNoFO::RenderComponentNoFO(unsigned int meshId, unsigned int materialId): 
+    RenderComponent(meshId, materialId) 
 {
 }

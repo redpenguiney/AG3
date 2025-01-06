@@ -40,7 +40,7 @@ void MakeGameMenu() {
     constexpr int TAB_ICON_SPACING = 8;
 
     static std::vector<std::shared_ptr<Gui>> constructionGui;
-    auto constructionFrame = std::make_shared<Gui>(false);
+    auto constructionFrame = std::make_shared<Gui>(false, std::nullopt);
     constructionGui.push_back(constructionFrame);
     
     constructionFrame->scalePos = { 0, 0 };
@@ -62,7 +62,7 @@ void MakeGameMenu() {
     
     int tabIndex = 0;
     for (auto& tabInfo : constructionTabs) {
-        auto tab = std::make_shared<Gui>(true, MenuFont1<10>());
+        auto tab = std::make_shared<Gui>(true, std::nullopt, MenuFont1<10>());
         tab->GetTextInfo().leftMargin = -1000;
         tab->GetTextInfo().rightMargin = 1000;
         tab->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
@@ -94,13 +94,8 @@ void MakeMainMenu() {
     auto& AE = AudioEngine::Get();
     //auto& CR = ComponentRegistry::Get();
 
-    auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
-    ttfParams.fontHeight = 24;
-    ttfParams.format = Texture::Grayscale_8Bit;
-    auto [arialLayer, arialFont] = Material::New(MaterialCreateParams{ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
-
     //// don't take by reference bc vector reallocation invalidates references/reference to temporary
-    auto startGame = std::make_shared<Gui>(true, std::optional(std::make_pair(arialLayer, arialFont)));
+    auto startGame = std::make_shared<Gui>(true, std::nullopt, MenuFont1<24>());
     mainMenuGuis.push_back(startGame);
 
     startGame->rgba = { 0, 0, 1, 1 };

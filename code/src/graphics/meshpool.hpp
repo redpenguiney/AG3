@@ -47,8 +47,7 @@ public:
     ~Meshpool();
 
     // Adds count identical objects to the pool with the given mesh, and returns a DrawHandle for each object.
-    // Material should be NULLPTR if the object has no material.
-    std::vector<DrawHandle> AddObject(const std::shared_ptr<Mesh>&, const std::shared_ptr<Material>&, const std::shared_ptr<ShaderProgram>&, CheckedUint count);
+    std::vector<DrawHandle> AddObject(const std::shared_ptr<Mesh>&, const std::shared_ptr<Material>&, CheckedUint count);
 
     // Frees the given object from the meshpool, so something else can use that space.
     void RemoveObject(const DrawHandle& handle);
@@ -112,12 +111,9 @@ private:
 
     class DrawCommandBuffer {
     public:
-        DrawCommandBuffer(const std::shared_ptr<ShaderProgram>&, const std::shared_ptr<Material>&, BufferedBuffer&&);
+        DrawCommandBuffer(const std::shared_ptr<Material>&, BufferedBuffer&&);
 
-        // may not be nullptr
-        std::shared_ptr<ShaderProgram> shader;
-
-        // may be nullptr
+        // may NOT be nullptr. everything has a material.
         std::shared_ptr<Material> material;
 
         BufferedBuffer buffer;
@@ -212,10 +208,10 @@ private:
     std::vector <std::optional< DrawCommandBuffer >> drawCommands;
     std::vector<CheckedUint> availableDrawCommandBufferIndices;
 
-    // if the shader/mesh combo supports animations, stores the bone transform matrices (and the number of them)
+    // if the mesh/material combo supports animations, stores the bone transform matrices (and the number of them)
     std::optional<BufferedBuffer> bones;
 
-    // if the shader/mesh combo supports animations, stores offsets into the bone buffer for each object
+    // if the mesh/material combo supports animations, stores offsets into the bone buffer for each object
     std::optional<BufferedBuffer> boneOffsetBuffer;
 
     // Expands vertices and indices so that they can contain at minimum meshIndexEnd. 
@@ -228,8 +224,8 @@ private:
         // TODO: is that really the strat?
     void ExpandInstanceCapacity();
 
-    // Returns an index to the DrawCommandBuffer for the requested shader/material combo, creating the buffer if it doesn't already exist.
-    CheckedUint GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material);
+    // Returns an index to the DrawCommandBuffer for the requested material, creating the buffer if it doesn't already exist.
+    CheckedUint GetCommandBuffer(const std::shared_ptr<Material>& material);
 
     friend class Mesh;
 };

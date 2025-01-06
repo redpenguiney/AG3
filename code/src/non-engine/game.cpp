@@ -105,8 +105,9 @@ void GameInit()
         ttfParams.fontHeight = 16;
         ttfParams.format = Texture::Grayscale_8Bit;
         auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
+        arialFont->depthMaskEnabled = false;
 
-        auto debugText = new Gui(true, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
+        auto debugText = new Gui(true, std::nullopt, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
 
         debugText->rgba = { 0, 1, 0, 0 };
         debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER

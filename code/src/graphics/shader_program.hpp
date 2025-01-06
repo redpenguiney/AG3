@@ -15,7 +15,7 @@ class ShaderProgram;
 // Shader program used for rendering, contains (at minimum) a vertex shader and a fragment (basically per pixel) shader.
 class ShaderProgram: public BaseShaderProgram {
     public:
-    const bool ignorePostProc; // if true, stuff with this shader will be rendered after postprocessing (on top of the screen quad)
+    
     //const bool usePerspective; // if true, the uniform mat4 "perspective" in this program's vertex shader will be automatically set to a perspective projection + view matrix.
     //const bool useOrthro; // if true, the uniform mat4 "orthro" in this program's vertex shader will automatically be set to an orthrographic projection matrix.
     const bool useFloatingOrigin; // if true, camera translation will be done in the shader instead of with doubles on the gpu
@@ -29,7 +29,7 @@ class ShaderProgram: public BaseShaderProgram {
     static void SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 cameraProjMatrixNoFloatingOrigin, glm::mat4x4 orthrographicMatrix);
 
     // Returns id of generated program.
-    static std::shared_ptr<ShaderProgram> New(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin = true, const bool useLightClusters = true, const bool ignorePostProc = false);
+    static std::shared_ptr<ShaderProgram> New(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin = true, const bool useLightClusters = true);
 
     // Creates a compute shader for performing arbitrary GPU calculations.
     // Returns id of generated program.
@@ -59,7 +59,7 @@ class ShaderProgram: public BaseShaderProgram {
     Shader fragment; // processes each fragment/pixel
     // TODO: tesselation, geometry shaders
 
-    ShaderProgram(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin, const bool useLightClusters, const bool ignorePostProc);
+    ShaderProgram(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin, const bool useLightClusters);
     //ShaderProgram(const char* computePath);
 
 };

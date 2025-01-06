@@ -7,6 +7,7 @@
 #include <optional>
 #include <process.h>
 #include "shader_program.hpp"
+#include "gengine.hpp"
 
 void Material::Destroy(const unsigned int id) {
     Assert(MeshGlobals::Get().MATERIALS.count(id));
@@ -22,7 +23,7 @@ std::shared_ptr<Material>& Material::Get(unsigned int materialId) {
 std::pair<float, std::shared_ptr<Material>> Material::New(const MaterialCreateParams& params) {
     auto ptr = std::shared_ptr<Material>(new Material(params));
     MeshGlobals::Get().MATERIALS[ptr->id] = ptr;
-    return std::make_pair(0, ptr);
+    return std::make_pair(ptr->baseTextureZ, ptr);
 }
 
 unsigned int Material::Count(Texture::TextureUsage texUsage) const
@@ -46,61 +47,45 @@ const Texture& Material::Get(Texture::TextureUsage texUsage) const
     }
 }
 
-const std::shared_ptr<Material::TextureCollection>& Material::GetTextureCollection() const
-{
-    return textures;
-}
+//const std::shared_ptr<TextureCollection>& Material::GetTextureCollection() const
+//{
+//    return textures;
+//}
 
-std::optional<float> Material::TryAppendLayer(const MaterialCreateParams& params)
-{
-    if (params.depthMask != depthMaskEnabled || materialType != params.type) {
-        return std::nullopt;
-    }
-}
+//std::optional<float> Material::TryAppendLayer(const MaterialCreateParams& params)
+//{
+//    if (params.depthMask != depthMaskEnabled || materialType != params.type) {
+//        return std::nullopt;
+//    }
+//}
 
 Material::Material(const MaterialCreateParams& params):
 id(MeshGlobals::Get().LAST_MATERIAL_ID++),
-materialType(params.type),
+shader(params.shader ? params.shader : GraphicsEngine::Get().defaultMaterial->shader),
 depthMaskEnabled(params.depthMask),
-textures(std::make_shared<TextureCollection>()),
-inputProvider(params.inputProvider)
+textures(params.srcTextures), 
+inputProvider(params.inputProvider),
+depthTestFunc(params.depthTestFunc),
+blendingEnabled(params.blendingEnabled),
+blendingSrcFactor(params.blendingSrcFactor),
+blendingDstFactor(params.blendingDstFactor),
+drawOrder(params.drawOrder)
 {
-    // TODO: there might be legitimate cases where you have a textureless material
+    if (!textures) {
+        auto [a, b] = TextureCollection::FindCollection(params);
+        textures = a;
+        baseTextureZ = b;
+    }
+    // there might be legitimate cases where you have a textureless material
     //Assert(params.textureParams.size() > 0);
 
-    // Just go through textureParams and create each texture they ask for
-    // TODO: lots of sanity checks should be made here on the params for each texture
-    unsigned int i = 0;
-    for (auto & textureToMake: params.textureParams) {
+    for (auto& textureToMake : params.textureParams)
+        Assert(Count(textureToMake.usage) == 1);
 
-        Assert(Count(textureToMake.usage) == 0);
-
-        switch (textureToMake.usage) {
-            case Texture::ColorMap:
-            textures->textures.at(i).emplace(textureToMake, COLORMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
-            break;
-            case Texture::NormalMap:
-            textures->textures.at(i).emplace(textureToMake, NORMALMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
-            break;
-            case Texture::SpecularMap:
-            textures->textures.at(i).emplace(textureToMake, SPECULARMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
-            break;
-            case Texture::DisplacementMap:
-            textures->textures.at(i).emplace(textureToMake, DISPLACEMENTMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
-            break;
-            case Texture::FontMap:
-            textures->textures.at(i).emplace(textureToMake, FONTMAP_TEXTURE_INDEX, params.type); // constructs the texture inside the optional without copying
-            break;
-            default:
-            std::cout << "material constructor: what are you doing???\n";
-            abort();
-            break;
-        }
-
-        i++;
-    }
+    Assert(shader != nullptr);
 }
 
+// TODO: static variables that prevent redundant setting of gl state for stuff like blending and depth test/mask
 void Material::Use(std::shared_ptr<ShaderProgram> currentShader) {
     for (auto& t : textures->textures) {
         if (t.has_value()) {
@@ -111,11 +96,23 @@ void Material::Use(std::shared_ptr<ShaderProgram> currentShader) {
     inputProvider.onBindingFunc(this, currentShader);
 
     glDepthMask(depthMaskEnabled);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc((GLenum)depthTestFunc);
+    if (blendingEnabled) {
+        glEnable(GL_BLEND);
+        //glBlendFunc((GLenum)blendingSrcFactor, (GLenum)blendingDstFactor);
+    }
+    else {
+        glDisable(GL_BLEND);
+    }
 }
 
-// TODO: this is bad.
+// TODO: this is bad. Awful.
 void Material::Unbind() {
     glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glDepthFunc(GL_ALWAYS);
 
     glActiveTexture(GL_TEXTURE0 + COLORMAP_TEXTURE_INDEX);
     glBindTexture(GL_TEXTURE_2D, 0);

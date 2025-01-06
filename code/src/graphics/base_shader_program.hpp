@@ -66,7 +66,7 @@ protected:
 
 private:
 
-    static inline GLuint LOADED_PROGRAM_ID = 0; // id of the currently loaded shader program
+    static inline GLuint CURRENTLY_BOUND_PROGRAM_ID = 0; // id of the currently loaded shader program
     
 
     std::unordered_map<std::string, int> uniform_locations; // used to set uniform variables

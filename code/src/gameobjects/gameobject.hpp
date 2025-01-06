@@ -61,8 +61,7 @@ class ComponentFieldInitializer;
 struct GameobjectCreateParams {
 	std::optional<std::shared_ptr<class PhysicsMesh>> physMesh;
 	unsigned int meshId; // ignore if not rendering
-	unsigned int materialId; // defaults to 0 for no material. ignore if not rendering
-	unsigned int shaderId; // defaults to 0 for default shader. ignore if not rendering
+	unsigned int materialId; // defaults to 0 for default material. ignore if not rendering
 
 	std::optional<std::shared_ptr<Sound>> sound; // for audio player components
 
@@ -70,14 +69,16 @@ struct GameobjectCreateParams {
 		physMesh(std::nullopt),
 		meshId(0),
 		materialId(0),
-		shaderId(0),
 		sound(std::nullopt)
 	{
+
 		// bitset defaults to all false so we good
 		for (auto& i : componentList) {
 			requestedComponents[i] = true;
 		}
 	}
+
+	GameobjectCreateParams(const GameobjectCreateParams&) = default;
 
 	bool HasComponent(ComponentBitIndex::ComponentBitIndex bitIndex) const {
 		return requestedComponents.test(bitIndex);

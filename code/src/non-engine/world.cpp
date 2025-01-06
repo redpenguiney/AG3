@@ -40,7 +40,7 @@ std::shared_ptr<Material>& World::TerrainMaterial()
             p
         },
         .type = Texture::Texture2D,
-        .requireSingular = true
+        .requireUniqueTextureCollection = true
     });
 
     return texture;

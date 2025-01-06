@@ -280,6 +280,7 @@
     <ClCompile Include="..\code\src\graphics\stb_image.cpp" />
     <ClCompile Include="..\code\src\graphics\texture.cpp" />
     <ClCompile Include="..\code\src\graphics\texture_atlas.cpp" />
+    <ClCompile Include="..\code\src\graphics\texture_collection.cpp" />
     <ClCompile Include="..\code\src\graphics\text_mesh.cpp" />
     <ClCompile Include="..\code\src\graphics\tinyobjloader.cpp" />
     <ClCompile Include="..\code\src\graphics\window.cpp" />
@@ -367,6 +368,7 @@
     <ClInclude Include="..\code\src\graphics\shader_program.hpp" />
     <ClInclude Include="..\code\src\graphics\texture.hpp" />
     <ClInclude Include="..\code\src\graphics\texture_atlas.hpp" />
+    <ClInclude Include="..\code\src\graphics\texture_collection.hpp" />
     <ClInclude Include="..\code\src\graphics\window.hpp" />
     <ClInclude Include="..\code\src\lua\lua_component_wrappers.hpp" />
     <ClInclude Include="..\code\src\lua\lua_constructor_wrappers.hpp" />

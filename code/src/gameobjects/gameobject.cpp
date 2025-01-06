@@ -40,6 +40,8 @@ std::shared_ptr<GameObject> GameObject::New(const GameobjectCreateParams& params
 GameObject::GameObject(const GameobjectCreateParams& params):
     GameObject(GetNewGameobjectComponentData(params))
 {
+    int materialId = params.materialId == 0 ? GraphicsEngine::Get().defaultMaterial->id : params.materialId;
+
     // TODO: can the transform comp restriction ever be lifted?
     Assert(params.requestedComponents[ComponentBitIndex::Transform]);
     if (params.requestedComponents[ComponentBitIndex::Transform]) {
@@ -50,7 +52,7 @@ GameObject::GameObject(const GameobjectCreateParams& params):
     Assert((params.requestedComponents[ComponentBitIndex::Render] && params.requestedComponents[ComponentBitIndex::RenderNoFO]) == false);
     if (params.requestedComponents[ComponentBitIndex::Render] || params.requestedComponents[ComponentBitIndex::RenderNoFO]) {
         Assert(Mesh::Get(params.meshId)); // verify that we were given a valid meshId
-        std::construct_at(RawGet<RenderComponent>(), params.meshId, params.materialId, params.shaderId != 0 ? params.shaderId : GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
+        std::construct_at(RawGet<RenderComponent>(), params.meshId, materialId);
     }
     if (params.requestedComponents[ComponentBitIndex::Collider] || params.requestedComponents[ComponentBitIndex::Rigidbody]) {
         std::shared_ptr<PhysicsMesh> physMesh;

@@ -41,10 +41,10 @@ Meshpool::~Meshpool()
 	}
 }
 
-std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, const std::shared_ptr<ShaderProgram>& shader, CheckedUint count)
+std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh>& mesh, const std::shared_ptr<Material>& material, CheckedUint count)
 {
     //DebugLogInfo("Adding count ", count, " for meshid ", mesh->meshId);
-
+    Assert(material != nullptr);
     // find valid slot for mesh
     CheckedUint slot;
     {
@@ -113,7 +113,7 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             ExpandInstanceCapacity();
         }
 
-        auto drawCommandBufferIndex = GetCommandBuffer(shader, material);
+        auto drawCommandBufferIndex = GetCommandBuffer(material);
         DrawCommandBuffer& commandBuffer = drawCommands[drawCommandBufferIndex].value();
 
         // find slot for draw command
@@ -339,35 +339,55 @@ void Meshpool::Draw(bool prePostProc) {
     //double start1 = Time();
     //glPointSize(4.0);
 
-    // We want to sort the draw commands by shader and then by material to reduce bindings which hurt perf.
+    // We want to sort the draw commands by draw order, shader binding, texture binding, and other GL state paramters to reduce GL state changes which seriously hurt performance.
     std::vector<DrawCommandBuffer*> sortedDrawCommands;
     for (auto& maybeBuffer : drawCommands) {
-        if (maybeBuffer.has_value() && maybeBuffer->shader->ignorePostProc != prePostProc) {
+        if (maybeBuffer.has_value() && maybeBuffer->material->ignorePostProc != prePostProc) {
             sortedDrawCommands.push_back(&*maybeBuffer);
         }
     }
     std::sort(sortedDrawCommands.begin(), sortedDrawCommands.end(), [](const DrawCommandBuffer* a, const DrawCommandBuffer* b) {
-        if (a->shader->shaderProgramId == b->shader->shaderProgramId) {
-            if (a->material == nullptr) {
-                return true;
-            }
-            else if (b->material == nullptr) {
-                return false;
-            }
-            return a->material->id > b->material->id;
-        }
+        // sort function returns true if 1st goes BEFORE 2nd, false otherwise
+
+        // handle case of no material for one of them
+        if (a->material == nullptr)
+            return true;
+        if (b->material == nullptr)
+            return false;
+
+        if (a->material == b->material)
+            return false;
+
+        // sorting by draw order is first priority; the user expects this order for their pipeline to work properly.
+        if (a->material->drawOrder != b->material->drawOrder)
+            return a->material->drawOrder < b->material->drawOrder; // TODO: might be backwards lol
+        // if that's not an issue, changing the bound shader program is very expensive
+        else if (a->material->shader->shaderProgramId != b->material->shader->shaderProgramId)
+            return a->material->shader->shaderProgramId < b->material->shader->shaderProgramId;
+        // surprisingly changing depth/blend modes and stuff is pretty bad too because it sometimes involves a different shader program being used internally on the GPU
+        else if (a->material->blendingEnabled != b->material->blendingEnabled)
+            return a->material->blendingEnabled < b->material->blendingEnabled;
+        else if (a->material->blendingSrcFactor != b->material->blendingSrcFactor)
+            return a->material->blendingSrcFactor < b->material->blendingSrcFactor;
+        else if (a->material->blendingDstFactor != b->material->blendingDstFactor)
+            return a->material->blendingDstFactor < b->material->blendingDstFactor;
+        else if (a->material->depthMaskEnabled != b->material->depthMaskEnabled)
+            return a->material->depthMaskEnabled < b->material->depthMaskEnabled;
+        else if (a->material->depthTestFunc != b->material->depthTestFunc)
+            return a->material->depthTestFunc < b->material->depthTestFunc;
+        // given that different materials could have some textures in common but not others, sorting by that would be complicated for meagre gain (TODO i want meagre gain)
         else {
-            return a->shader->shaderProgramId > b->shader->shaderProgramId;
+            return a->material->textures->id < b->material->textures->id;
         }
     });
 
     for (auto& command : sortedDrawCommands) {
         command->buffer.Bind();
-        auto& shader = command->shader;
+        auto& shader = command->material->shader;
         shader->Use();
 
         
-
+        
         shader->Uniform("vertexColorEnabled", format.attributes.color.has_value());
         shader->Uniform("shaderTime", GraphicsEngine::Get().shaderTime); // skybox needs done seperately bruh
 
@@ -382,31 +402,18 @@ void Meshpool::Draw(bool prePostProc) {
         GraphicsEngine::Get().pointLightDataBuffer.BindBase(0);
         GraphicsEngine::Get().spotLightDataBuffer.BindBase(1);
 
+        auto& material = command->material;
+        material->Use(shader);
 
-        if (command->material == nullptr) { // if we aren't using a material
-            Material::Unbind();
+        // if (materialId == 4) {
+        //     std::cout << "BINDING THING WITH FONTMAP.\n";
+        // }
 
-            shader->Uniform("specularMappingEnabled", false);
-            shader->Uniform("fontMappingEnabled", false);
-            shader->Uniform("normalMappingEnabled", false);
-            shader->Uniform("parallaxMappingEnabled", false);
-            shader->Uniform("colorMappingEnabled", false);
-        }
-        else {
-
-            auto& material = command->material;
-            material->Use(shader);
-
-            // if (materialId == 4) {
-            //     std::cout << "BINDING THING WITH FONTMAP.\n";
-            // }
-
-            shader->Uniform("specularMappingEnabled", material->Count(Texture::SpecularMap));
-            shader->Uniform("fontMappingEnabled", material->Count(Texture::FontMap));
-            shader->Uniform("normalMappingEnabled", material->Count(Texture::NormalMap));
-            shader->Uniform("parallaxMappingEnabled", material->Count(Texture::DisplacementMap));
-            shader->Uniform("colorMappingEnabled", material->Count(Texture::ColorMap));
-        }
+        shader->Uniform("specularMappingEnabled", material->Count(Texture::SpecularMap));
+        shader->Uniform("fontMappingEnabled", material->Count(Texture::FontMap));
+        shader->Uniform("normalMappingEnabled", material->Count(Texture::NormalMap));
+        shader->Uniform("parallaxMappingEnabled", material->Count(Texture::DisplacementMap));
+        shader->Uniform("colorMappingEnabled", material->Count(Texture::ColorMap));
 
         glPointSize(3.0);
         
@@ -416,6 +423,11 @@ void Meshpool::Draw(bool prePostProc) {
             cmd.baseInstance += instances.GetOffset() / instanceSize; //command->buffer.GetOffset() / sizeof(IndirectDrawCommand);
             cmd.baseVertex += vertices.GetOffset() / vertexSize;
             //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            //GLenum buffers[]{ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+            //if (prePostProc) {
+                //glDrawBuffers(2, buffers);
+            //}
+            
             glDrawElementsInstancedBaseVertexBaseInstance(format.primitiveType, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
         }
         //if (!prePostProc)
@@ -617,7 +629,6 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
 }
 
 Meshpool::DrawCommandBuffer::DrawCommandBuffer(DrawCommandBuffer&& old) noexcept :
-    shader(old.shader),
     material(old.material),
     buffer(std::move(old.buffer)),
     currentDrawCommandCapacity(old.currentDrawCommandCapacity),
@@ -625,7 +636,6 @@ Meshpool::DrawCommandBuffer::DrawCommandBuffer(DrawCommandBuffer&& old) noexcept
     commandUpdates(old.commandUpdates),
     clientCommands(old.clientCommands)
 {
-    old.shader = nullptr;
     old.material = nullptr;
 }
 
@@ -689,11 +699,11 @@ void Meshpool::ExpandInstanceCapacity()
     
 }
 
-CheckedUint Meshpool::GetCommandBuffer(const std::shared_ptr<ShaderProgram>& shader, const std::shared_ptr<Material>& material)
+CheckedUint Meshpool::GetCommandBuffer(const std::shared_ptr<Material>& material)
 {
     CheckedUint i = 0;
     for (auto& buffer : drawCommands) {
-        if (buffer.has_value() && buffer->shader == shader && buffer->material == material) {
+        if (buffer.has_value() && buffer->material == material) {
             return i;
         }
         i++;
@@ -701,7 +711,7 @@ CheckedUint Meshpool::GetCommandBuffer(const std::shared_ptr<ShaderProgram>& sha
 
     BufferedBuffer b(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0);
     std::optional<DrawCommandBuffer> oB(std::nullopt);
-    oB.emplace(shader, material, std::move(b));
+    oB.emplace(material, std::move(b));
 
     if (availableDrawCommandBufferIndices.size()) {
         CheckedUint index = availableDrawCommandBufferIndices.back();
@@ -715,8 +725,7 @@ CheckedUint Meshpool::GetCommandBuffer(const std::shared_ptr<ShaderProgram>& sha
     }
 }
 
-Meshpool::DrawCommandBuffer::DrawCommandBuffer(const std::shared_ptr<ShaderProgram>& s, const std::shared_ptr<Material>& m, BufferedBuffer&& b):
-    shader(s),
+Meshpool::DrawCommandBuffer::DrawCommandBuffer(const std::shared_ptr<Material>& m, BufferedBuffer&& b):
     material(m),
     buffer(std::move(b))
 {

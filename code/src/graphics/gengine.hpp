@@ -38,6 +38,8 @@ class RenderComponentNoFO;
 // Handles graphics, obviously.
 class GraphicsEngine: public ModuleGraphicsEngineInterface {
 public:
+    Window window = Window(720, 720); // handles windowing, interfaces with GLFW in general
+
     // incremented by one every time RenderScene() is called.
     long long frameId = 0;
 
@@ -57,14 +59,14 @@ public:
     // Can freely change this with no issues.
     std::shared_ptr<ShaderProgram> postProcessingShaderProgram; 
 
-    // Default shader program used for new RenderComponents. You can freely change this with no issues (I think??? TODO what happens).
-    std::shared_ptr<ShaderProgram> defaultShaderProgram;
+    // Default material used for new RenderComponents. Has no textures.
+    const std::shared_ptr<Material> defaultMaterial; 
 
-    // Default shader program used when creating instances of the Gui class. Should be able to freely change this with no issues (TODO verify)
-    std::shared_ptr<ShaderProgram> defaultGuiShaderProgram;
+    // Default material used when creating instances of the Gui conglomerate class. Should be able to freely change this with no issues (TODO verify)
+    std::shared_ptr<Material> defaultGuiMaterial;
 
     // Same as defaultGuiShaderProgram, but for billboard uis. Should be able to freely change this with no issues (TODO verify)
-    std::shared_ptr<ShaderProgram> defaultBillboardGuiShaderProgram;
+    std::shared_ptr<Material> defaultBillboardGuiMaterial;
 
     // draw wireframe instead of triangles for debugging
     void SetWireframeEnabled(bool);
@@ -91,16 +93,14 @@ public:
 
     void SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram>) override;
     
-    void SetDefaultShaderProgram(std::shared_ptr<ShaderProgram>) override;
-    void SetDefaultGuiShaderProgram(std::shared_ptr<ShaderProgram>) override;
-    void SetDefaultBillboardGuiShaderProgram(std::shared_ptr<ShaderProgram>) override;
+    //void SetDefaultShaderProgram(std::shared_ptr<ShaderProgram>) override;
+    void SetDefaultGuiMaterial(std::shared_ptr<Material>) override;
+    void SetDefaultBillboardGuiMaterial(std::shared_ptr<Material>) override;
 
     Window& GetWindow() override;
 
     // Be advised: If you're tryna get camera position/orientation regardless of whether debugfreecam is enabled, use the GetCurrentCamera() method instead.
     Camera camera;
-    
-    Window window = Window(720, 720); // handles windowing, interfaces with GLFW in general
 
     static GraphicsEngine& Get();
 
@@ -205,9 +205,9 @@ private:
 
     // Cache of meshes to add when addCachedMeshes is called. 
     // Used so that instead of adding 1 mesh to a meshpool 1000 times, we just add 1000 instances of a mesh to meshpool once to make creating renderable objects faster.
-    // Keys are meshId, then shader id, then material id.
+    // Keys are meshId, then material id.
     // IMPORTANT TODO: nothing prevents material/shader deletion of the things with these ids.
-    std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::vector<RenderComponent*>>>> renderComponentsToAdd;
+    std::unordered_map<unsigned int, std::unordered_map<unsigned int, std::vector<RenderComponent*>>> renderComponentsToAdd;
 
     // Keeps track of rendercomponents whose instanced vertex attributes (color, textureZ, etc.) need to be updated (since due to multiple buffering it has be updated over multiple frames).
     template <typename AttributeType> 
@@ -325,7 +325,7 @@ private:
     // Does not actually add the object for performance reasons, just puts it on a list of stuff to add when GraphicsEngine::addCachedMeshes is called.
     // Contents of MeshLocation are undefined until addCachedMeshes() is called, except for textureId, shaderProgramId, and initialized.
     // Before addChachedMeshes is called, meshLocation->initialized == false and after == true
-    void AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, RenderComponent* component);
+    void AddObject(unsigned int materialId, unsigned int meshId, RenderComponent* component);
 
     void RemoveObject(RenderComponent* comp);
 };

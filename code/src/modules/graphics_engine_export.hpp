@@ -17,9 +17,9 @@ class ModuleGraphicsEngineInterface {
 
     virtual void SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram>) = 0;
     
-    virtual void SetDefaultShaderProgram(std::shared_ptr<ShaderProgram>) = 0;
-    virtual void SetDefaultGuiShaderProgram(std::shared_ptr<ShaderProgram>) = 0;
-    virtual void SetDefaultBillboardGuiShaderProgram(std::shared_ptr<ShaderProgram>) = 0;
+    //virtual void SetDefaultShaderProgram(std::shared_ptr<ShaderProgram>) = 0;
+    virtual void SetDefaultGuiMaterial(std::shared_ptr<Material>) = 0;
+    virtual void SetDefaultBillboardGuiMaterial(std::shared_ptr<Material>) = 0;
 
     virtual void SetDebugFreecamEnabled(bool) = 0;
     virtual void SetDebugFreecamPitch(double) = 0;

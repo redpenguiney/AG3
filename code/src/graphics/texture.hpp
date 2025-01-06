@@ -44,6 +44,7 @@ class Texture {
         
         Texture2D = 0,
         TextureCubemap = 1, // cubemap is for skybox
+        Texture2DFlat = 2, // TODO, CURRENTLY ONLY FOR FRAMEBUFFERS; just plain 2d texture instead of array texture.
     };
 
     enum TextureFormat {
@@ -104,7 +105,7 @@ class Texture {
     
     Texture(const Texture&) = delete; // destructor deletes the openGL texture, so copying it would be bad since it would be using the same id of the now-deleted openGL texture 
 
-    Texture(Texture&&) = default; // move constructor is allowed
+    Texture(Texture&&); // move constructor is allowed
 
     // Given that the texture is an array texture, will append the image at the given path to the texture array, returning the textureZ coordinate the image can be accessed through.
     float AddLayer();

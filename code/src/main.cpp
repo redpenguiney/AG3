@@ -30,6 +30,7 @@
 #include "modules/module.hpp"
 
 #include "non-engine/game.hpp"
+#include <tests/gameobject_tests.hpp>
 
 //#include "FastNoise/FastNoise.h"
 
@@ -123,6 +124,10 @@ int main(int numArgs, const char *argPtrs[]) {
             GE.SetWireframeEnabled(wf);
         }
     });
+
+    //TestCubeArray({2, 2, 2}, {0, 0, 0}, {2, 2, 2}, false);
+    //TestSpinningSpotlight();
+    //TestSphere(5, 3, -4, false);
 
     while (!GE.ShouldClose()) 
     {

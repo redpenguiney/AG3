@@ -28,8 +28,8 @@ void ShaderProgram::SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 
     }
 }
 
-std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin, const bool useLightClusters, const bool ignorePostProc) {
-    auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexPath, fragmentPath, floatingOrigin, useLightClusters, ignorePostProc));
+std::shared_ptr<ShaderProgram> ShaderProgram::New(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin, const bool useLightClusters) {
+    auto ptr = std::shared_ptr<ShaderProgram>(new ShaderProgram(vertexPath, fragmentPath, floatingOrigin, useLightClusters));
     LOADED_PROGRAMS.emplace(ptr->shaderProgramId, ptr);
     LOADED_SHADER_PROGRAMS.emplace(ptr->shaderProgramId, ptr);
     return ptr;
@@ -60,9 +60,8 @@ ShaderProgram::~ShaderProgram() {
 
 
 
-ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin, const bool useLightClusters, const bool ignorePostProc):
+ShaderProgram::ShaderProgram(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin, const bool useLightClusters):
     BaseShaderProgram(),
-    ignorePostProc(ignorePostProc),
     useFloatingOrigin(floatingOrigin),
     useClusteredLighting(useLightClusters),
     vertex(vertexPath, GL_VERTEX_SHADER),

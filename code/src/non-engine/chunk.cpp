@@ -84,9 +84,9 @@ void TerrainInputProvider(Material* material, std::shared_ptr<ShaderProgram> pro
 	program->Uniform("triplanarCameraPosition", cPos);
 }
 
-unsigned int TerrainShader() {
+std::shared_ptr<ShaderProgram> TerrainShader() {
 	static auto shader = ShaderProgram::New("../shaders/world_triplanar_vertex.glsl", "../shaders/world_triplanar_fragment.glsl");
-	return shader->shaderProgramId;
+	return shader;
 }
 
 unsigned int TerrainMaterial() {
@@ -94,7 +94,8 @@ unsigned int TerrainMaterial() {
 		.textureParams = {
 			TextureCreateParams({TextureSource("../textures/grass.png"),}, Texture::ColorMap)
 		},
-		.requireSingular = true,
+		.shader = TerrainShader(),
+		.requireUniqueTextureCollection = true,
 		.allowAppendaton = false,
 		.inputProvider = ShaderInputProvider(TerrainInputProvider),
 		
@@ -106,7 +107,6 @@ GameobjectCreateParams MakeCGOParams(int meshId) {
 	GameobjectCreateParams p({ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider});
 	p.meshId = meshId;
 	p.materialId = TerrainMaterial();
-	p.shaderId = TerrainShader();
 	return p;
 }
 

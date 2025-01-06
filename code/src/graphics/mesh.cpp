@@ -495,7 +495,7 @@ void Mesh::StopModifying(bool normalizeSize) {
                 renderComponent->drawHandle.drawBufferIndex = -1;
                 renderComponent->drawHandle.instanceSlot = -1;
                 renderComponent->drawHandle.meshIndex = -1;
-                GraphicsEngine::Get().AddObject(renderComponent->shaderProgramId, renderComponent->materialId, meshId, renderComponent);
+                GraphicsEngine::Get().AddObject(renderComponent->materialId, meshId, renderComponent);
             }
         }
     }

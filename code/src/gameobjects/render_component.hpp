@@ -8,12 +8,11 @@
 class RenderComponent: public BaseComponent {
 public:
 
-    const unsigned int shaderProgramId;
     const unsigned int materialId;
     const unsigned int meshId;
 
     RenderComponent(const RenderComponent&) = delete;
-    RenderComponent(unsigned int meshId, unsigned int materialId, unsigned int shaderId = GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
+    RenderComponent(unsigned int meshId, unsigned int materialId);
     ~RenderComponent();
 
     // called to initialize when given to a gameobject
@@ -89,7 +88,7 @@ private:
 class RenderComponentNoFO: public RenderComponent {
 public:
     // idk if we even call this when making one
-    RenderComponentNoFO(unsigned int meshId, unsigned int materialId, unsigned int shaderId = GraphicsEngine::Get().defaultShaderProgram->shaderProgramId);
+    RenderComponentNoFO(unsigned int meshId, unsigned int materialId);
     RenderComponentNoFO(const RenderComponentNoFO&) = delete;
     // TODO: implicit conversion to normal rendercomponent because they do the exact same things?
     

@@ -8,7 +8,7 @@ in vec3 cameraToFragmentInTangentSpace;
 
 #$INCLUDE$ "../shaders/phong_lighting.glsl"
 
-//layout(location = 0) out vec4 Output;
+layout(location = 0) out vec4 Output;
 
 layout(binding=0) uniform sampler2DArray colorMap; // note: this syntax not ok until opengl 4.2
 layout(binding=1) uniform sampler2DArray normalMap; // note: this syntax not ok until opengl 4.2
@@ -78,9 +78,9 @@ void main()
     //vec4 color = tx * vec4(light, 1);
 
     //vec4 color = vec4(light * tx.xyz, 1);
-    gl_FragData[0] = fragmentColor * vec4(light * tx.xyz, 1.0);
+    Output = fragmentColor * vec4(light * tx.xyz, 1.0);
 
-    if (gl_FragData[0].a < 0.1) {
+    if (Output.a < 0.1) {
         discard;
     };
 

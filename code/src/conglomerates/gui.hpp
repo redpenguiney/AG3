@@ -114,7 +114,8 @@ public:
 
     // if haveText == true, then fontMaterial must be a material with a fontmap attached.
     // SHOULD be used with std::make_shared/shared_ptr, but if you don't its fine as long as you don't use SetParent().
-    Gui(bool haveText = false, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial = std::nullopt, std::optional<BillboardGuiInfo> billboardInfo = std::nullopt, std::shared_ptr<ShaderProgram> guiShader = GraphicsEngine::Get().defaultGuiShaderProgram);
+    // guiMaterial will default to the one in GraphicsEngine if nullopt.
+    Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<BillboardGuiInfo> billboardInfo = std::nullopt);
 
     ~Gui();
 

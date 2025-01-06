@@ -63,7 +63,9 @@ spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(SpotLightInfo) * 1000))
 screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false)),
 
 preRenderEvent(Event<float>::New()),
-postRenderEvent(Event<float>::New())
+postRenderEvent(Event<float>::New()),
+
+defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl", true, true) }).second)
 {
     pointLightCount = 0;
     spotLightCount = 0;
@@ -74,12 +76,14 @@ postRenderEvent(Event<float>::New())
 
     
 
-    defaultShaderProgram = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl", true, true, false);
-    defaultGuiShaderProgram = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", false, false, true);
-    defaultBillboardGuiShaderProgram = ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", true, false, true);
+     
+    defaultGuiMaterial = Material::New(MaterialCreateParams{ {}, Texture::Texture2D,  ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", false, false), nullptr, true, true }).second;
+    defaultGuiMaterial->ignorePostProc = true;
+    defaultBillboardGuiMaterial = Material::New(MaterialCreateParams{ {}, Texture::Texture2D,  ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", true, false), nullptr, true, true }).second;
+    defaultBillboardGuiMaterial->ignorePostProc = true;
     skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
-    crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", false, false, true);
+    crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", false, false);
 
     auto skyboxImport = Mesh::MultiFromFile("../models/skybox.obj", MeshCreateParams{.textureZ = -1.0, .opacity = 1, .expectedCount = 1, .normalizeSize = false}).at(0);
     skybox = new RenderableMesh(skyboxImport.mesh);
@@ -96,25 +100,28 @@ postRenderEvent(Event<float>::New())
     // }
     // std::cout << "\n";
 
-    defaultShaderProgram->Uniform("envLightDirection", glm::normalize(-glm::vec3(1, 1, 1)));
-    defaultShaderProgram->Uniform("envLightColor", glm::vec3(1.0, 0.85, 0.7));
-    defaultShaderProgram->Uniform("envLightDiffuse", 0.9f);
-    defaultShaderProgram->Uniform("envLightAmbient", 0.4f);
-    defaultShaderProgram->Uniform("envLightSpecular", 0.0f);
+    defaultMaterial->shader->Uniform("envLightDirection", glm::normalize(-glm::vec3(1, 1, 1)));
+    defaultMaterial->shader->Uniform("envLightColor", glm::vec3(1.0, 0.85, 0.7));
+    defaultMaterial->shader->Uniform("envLightDiffuse", 0.9f);
+    defaultMaterial->shader->Uniform("envLightAmbient", 0.4f);
+    defaultMaterial->shader->Uniform("envLightSpecular", 0.0f);
 
-    auto pair = Material::New({ .textureParams = {TextureCreateParams({TextureSource("../textures/error_texture.bmp")}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D });
-    errorMaterial = pair.second;
-    errorMaterialTextureZ = pair.first;
+    DebugLogInfo("Default material name is ", defaultMaterial->id);
+
+    // must supply our own shader here because material constructor can't fetch default from graphics engine because we're still making the graphics engine!
+    //auto pair = Material::New({ .textureParams = {TextureCreateParams({TextureSource("../textures/error_texture.bmp")}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D, .shader = defaultShaderProgram  });
+    errorMaterial = defaultMaterial; // pair.second;
+    errorMaterialTextureZ = 0.0;  //pair.first;
 
     // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
     glDepthFunc(GL_LEQUAL); 
 
     // tell opengl how to do transparency
     glEnable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD); // this is default
+    //glBlendEquation(GL_FUNC_ADD); // this is default
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_ALPHA_TEST);
-    glAlphaFunc(GL_GREATER, 0.0f);
+    //glEnable(GL_ALPHA_TEST);
+    //glAlphaFunc(GL_GREATER, 0.0f);
 }
 
 GraphicsEngine::~GraphicsEngine() {
@@ -158,16 +165,16 @@ void GraphicsEngine::SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgra
     postProcessingShaderProgram = program;
 }
 
-void GraphicsEngine::SetDefaultShaderProgram(std::shared_ptr<ShaderProgram> program) {
-    defaultShaderProgram = program;
+//void GraphicsEngine::SetDefaultMaterial(std::shared_ptr<Material> mat) {
+//    defaultShaderProgram = mat;
+//}
+
+void GraphicsEngine::SetDefaultGuiMaterial(std::shared_ptr<Material> mat) {
+    defaultGuiMaterial = mat;
 }
 
-void GraphicsEngine::SetDefaultGuiShaderProgram(std::shared_ptr<ShaderProgram> program) {
-    defaultGuiShaderProgram = program;
-}
-
-void GraphicsEngine::SetDefaultBillboardGuiShaderProgram(std::shared_ptr<ShaderProgram> program) {
-    defaultBillboardGuiShaderProgram = program;
+void GraphicsEngine::SetDefaultBillboardGuiMaterial(std::shared_ptr<Material> mat) {
+    defaultBillboardGuiMaterial = mat;
 }
 
 Window& GraphicsEngine::GetWindow() {
@@ -343,7 +350,8 @@ void GraphicsEngine::RenderScene(float dt) {
     // Update shaders with the camera's new rotation/projection
 
     glm::mat4x4 cameraMatrix = GetCurrentCamera().GetCamera();
-    glm::mat4x4 cameraMatrixNoFloatingOrigin = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamCamera.position : (glm::vec3) -GetCurrentCamera().position);
+    //glm::mat4x4 cameraMatrixNoFloatingOrigin = glm::translate(cameraMatrix, (debugFreecamEnabled) ? (glm::vec3) -debugFreecamCamera.position : (glm::vec3) -GetCurrentCamera().position);
+    glm::mat4x4 cameraMatrixNoFloatingOrigin = glm::translate(cameraMatrix, (glm::vec3)-GetCurrentCamera().position);
     glm::mat4x4 projectionMatrix = camera.GetProj((float)window.width/(float)window.height); 
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin, glm::ortho(0.0f, float(window.width), 0.0f, float(window.height), -1.0f, 1.0f));
 
@@ -351,8 +359,12 @@ void GraphicsEngine::RenderScene(float dt) {
     UpdateMainFramebuffer();
     mainFramebuffer->Bind();
     
-     
-    
+    //glDisable(GL_DEPTH_TEST);
+
+    glBlendFunci(0, GL_ONE, GL_ONE);
+    //glBlendFunci(1, GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
+    glBlendFunci(1, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
     glClear(GL_DEPTH_BUFFER_BIT);
     mainFramebuffer->Clear({ { 0, 0, 0, 0 }, { 1, 1, 1, 1 } });
@@ -362,6 +374,9 @@ void GraphicsEngine::RenderScene(float dt) {
 
     // Go back to drawing on the window.
     Framebuffer::Unbind();
+
+    glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -372,7 +387,10 @@ void GraphicsEngine::RenderScene(float dt) {
 
     postProcessingShaderProgram->Use();
     mainFramebuffer->textureAttachments.at(0).Use();
+    mainFramebuffer->textureAttachments.at(1).Use();
     screenQuad.Draw();
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Draw stuff that doesn't do post processing.
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
@@ -515,7 +533,7 @@ void GraphicsEngine::FlipMeshpoolBuffers()
 
 void GraphicsEngine::DrawWorld(bool postProc)
 {
-    glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
+    //glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
 
     if (wireframeDrawing) {
@@ -778,33 +796,27 @@ void GraphicsEngine::AddCachedMeshes() {
             meshpools[poolIndex] = new Meshpool(m->vertexFormat);
         }
       
-        //DebugLogInfo("Adding mesh ", meshId, " to pool ", poolIndex);
-        for (auto& [shaderId, map2] : map) {
-            auto shader = ShaderProgram::Get(shaderId);
 
-            
+        for (auto& [materialId, components] : map) {
+            //DebugLogInfo("UH OH ", components.size());
+            DebugLogInfo("Using material ", materialId);
+            const std::shared_ptr<Material>& material = Material::Get(materialId);
+            auto drawHandles = meshpools[poolIndex]->AddObject(m, material, components.size());
 
-            for (auto& [materialId, components] : map2) {
-                //DebugLogInfo("UH OH ", components.size());
+            for (unsigned int i = 0; i < components.size(); i++) {
+                components[i]->meshpoolId = poolIndex;
+                components[i]->drawHandle = drawHandles.at(i);
+                //DebugLogInfo("Wrote component to cslot ", drawHandles.at(i).drawBufferIndex);
 
-                const std::shared_ptr<Material>& material = materialId == 0 ? nullptr : Material::Get(materialId);
-                auto drawHandles = meshpools[poolIndex]->AddObject(m, material, shader, components.size());
-
-                for (unsigned int i = 0; i < components.size(); i++) {
-                    components[i]->meshpoolId = poolIndex;
-                    components[i]->drawHandle = drawHandles.at(i);
-                    //DebugLogInfo("Wrote component to cslot ", drawHandles.at(i).drawBufferIndex);
-
-                    if (m->dynamic) {
-                        dynamicMeshUsers[meshId].push_back(components[i]);
-                        dynamicMeshLocations[meshId] = std::make_pair(poolIndex, drawHandles.back().meshIndex);
-                    }
-
-                    count++;
+                if (m->dynamic) {
+                    dynamicMeshUsers[meshId].push_back(components[i]);
+                    dynamicMeshLocations[meshId] = std::make_pair(poolIndex, drawHandles.back().meshIndex);
                 }
 
-            } 
-        }
+                count++;
+            }
+
+        } 
         
 
     }
@@ -816,23 +828,23 @@ void GraphicsEngine::AddCachedMeshes() {
     renderComponentsToAdd.clear();
 }
 
-void GraphicsEngine::AddObject(unsigned int shaderId, unsigned int materialId, unsigned int meshId, RenderComponent* component) {
+void GraphicsEngine::AddObject(unsigned int materialId, unsigned int meshId, RenderComponent* component) {
     //static int nAdded = 0;
     //DebugLogInfo("Adding #", ++nAdded);
     Assert(Mesh::IsValidForGameObject(meshId));
-    renderComponentsToAdd[meshId][shaderId][materialId].push_back(component);
+    Material::Get(materialId);
+    renderComponentsToAdd[meshId][materialId].push_back(component);
 }
 
 void GraphicsEngine::RemoveObject(RenderComponent* comp)
 {
     
     // if some pyschopath created a RenderComponent and then instantly deleted it, we need to remove it from renderComponentsToAdd
-    unsigned int shaderId = comp->shaderProgramId, materialId = comp->materialId;
+    unsigned int materialId = comp->materialId;
     if (comp->meshpoolId == -1) {
 
         auto& mvec = renderComponentsToAdd.at(comp->meshId);
-        auto& svec = mvec.at(shaderId);
-        auto& cvec = svec.at(materialId);
+        auto& cvec = mvec.at(materialId);
         for (unsigned int i = 0; i < cvec.size(); i++) {
             if (cvec[i] == comp) {
                 cvec[i] = cvec.back();
@@ -840,12 +852,9 @@ void GraphicsEngine::RemoveObject(RenderComponent* comp)
 
                 // we have to clear the empty bits of the map now if there are any
                 if (cvec.size() == 0) {
-                    svec.erase(materialId);
-                    if (svec.size() == 0) {
-                        mvec.erase(shaderId);
-                        if (mvec.size() == 0) {
-                            renderComponentsToAdd.erase(comp->meshId);
-                        }
+                    mvec.erase(materialId);
+                    if (mvec.size() == 0) {
+                        renderComponentsToAdd.erase(comp->meshId);
                     }
                 }
 

@@ -100,7 +100,7 @@ void Gui::UpdateBillboardGuis(float) {
     }
 }
 
-Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<BillboardGuiInfo> billboardGuiInfo, std::shared_ptr<ShaderProgram> guiShader):
+Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial,  std::optional<BillboardGuiInfo> billboardGuiInfo):
     onMouseEnter(Event<>::New()),
     onMouseExit(Event<>::New()),
     onInputBegin(Event<InputObject>::New()),
@@ -112,9 +112,8 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
 
     mouseHover = false;
 
-    objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : 0);
+    objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : GraphicsEngine::Get().defaultGuiMaterial->id);
     objectParams.meshId = Mesh::Square()->meshId;
-    objectParams.shaderId = guiShader->shaderProgramId;
 
     object = GameObject::New(objectParams);
 
@@ -139,7 +138,6 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
 
         GameobjectCreateParams textObjectParams({ComponentBitIndex::Transform, billboardGuiInfo.has_value() ? ComponentBitIndex::Render : ComponentBitIndex::RenderNoFO });
         textObjectParams.materialId = fontMaterial->second->id;
-        textObjectParams.shaderId = guiShader->shaderProgramId;
         auto textMesh = Mesh::New(TextMeshProvider(MeshCreateParams{ .meshVertexFormat = MeshVertexFormat::DefaultGui() }, fontMaterial->second), true);
         // auto textMesh = Mesh::Square();
 

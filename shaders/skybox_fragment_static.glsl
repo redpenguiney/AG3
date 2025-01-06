@@ -11,7 +11,7 @@ float rand(vec2 co){
 
 void main() {
 	//Output = vec4(vec3(rand(gl_FragCoord.xy/200.0f + shaderTime/500025.0f) * 1.0f), 1.0);
-	gl_FragData[0] = vec4(vec3(rand(gl_FragCoord.xy/175.0f + shaderTime/600025.0f)),
+	Output = vec4(vec3(rand(gl_FragCoord.xy/175.0f + shaderTime/600025.0f)),
 		//rand(gl_FragCoord.xy/250.0f + shaderTime/500025.0f),
 		//rand(gl_FragCoord.xy/200.0f + shaderTime/400025.0f),
 	1.0);

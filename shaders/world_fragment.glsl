@@ -10,7 +10,8 @@ in mat3 TBNmatrix;
 
 #$INCLUDE$ "../shaders/phong_lighting.glsl"
 
-//layout(location = 0) out vec4 Output;
+layout(location = 0) out vec4 Output;
+layout(location = 1) out float OutputAlpha;
 
 layout(binding=0) uniform sampler2DArray colorMap; // note: this syntax not ok until opengl 4.2
 layout(binding=1) uniform sampler2DArray normalMap; // note: this syntax not ok until opengl 4.2
@@ -69,16 +70,21 @@ void main()
         color = fragmentColor;
     }
     color *= tx * vec4(light, 1);
-    gl_FragData[0] = color;
+
+    // used for approximating OIT, see http://casual-effects.blogspot.com/2014/03/weighted-blended-order-independent.html 
+    float asdfgh = min(1.0, max(max(color.r, color.g), color.b) * color.a);
+    float weight = max(asdfgh, color.a) * clamp(0.03 / (1e-5 + pow(gl_FragCoord.z / 200, 4.0)), 1e-2, 3e3);
+    weight = 1.0;
+    Output = vec4(color.rgb * color.a, color.a) * weight;
+    OutputAlpha = color.a;
     //Output = vec4(light, 1.0);
     //Output = vec4(spotLightOffset, 1.0, 1.0, 1.0);
     //Output = vec4(spotLights[0].directionAndOuterAngle.xyz, 1.0);
     //Output = vec4(normalize(fragmentNormal), 1.0);
     //Output = vec4(-envLightDirection, 1.0);
     //Output = vec4(fragmentColor.xyz, 1.0);
-    //gl_FragData[0] = vec4(1.0, 1.0, 1.0, 1.0);
     //Output = vec4(gl_FragCoord.www, 1.0);
     //Output = vec4(dot(normal, envLightDirection));
-
+    //Output = vec4(weight, weight, weight, color.a);
     //gl_FragDepth = 0.5;
 };
