@@ -66,8 +66,9 @@ struct MaterialCreateParams {
     DepthTestMode depthTestFunc = DepthTestMode::LEqual;
 
     bool blendingEnabled = true;
-    BlendFactorMode blendingSrcFactor = BlendFactorMode::SrcAlpha;
-    BlendFactorMode blendingDstFactor = BlendFactorMode::OneMinusSrcAlpha;
+    // must have equal amount of each factor
+    std::vector<BlendFactorMode> blendingSrcFactor = { BlendFactorMode::SrcAlpha };
+    std::vector<BlendFactorMode> blendingDstFactor = { BlendFactorMode::OneMinusSrcAlpha };
 
     int drawOrder = 0;
 };
@@ -104,8 +105,9 @@ public:
 
 
     bool blendingEnabled;
-    BlendFactorMode blendingSrcFactor;
-    BlendFactorMode blendingDstFactor;
+    // blending factors for each render target if multiple
+    std::vector<BlendFactorMode> blendingSrcFactor;
+    std::vector<BlendFactorMode> blendingDstFactor;
 
     // Returns a ptr to the material with the given id.
     static std::shared_ptr<Material>& Get(const unsigned int id);

@@ -71,6 +71,8 @@ blendingSrcFactor(params.blendingSrcFactor),
 blendingDstFactor(params.blendingDstFactor),
 drawOrder(params.drawOrder)
 {
+    Assert(params.blendingSrcFactor.size() == params.blendingDstFactor.size());
+
     if (!textures) {
         auto [a, b] = TextureCollection::FindCollection(params);
         textures = a;
@@ -100,7 +102,8 @@ void Material::Use(std::shared_ptr<ShaderProgram> currentShader) {
     glDepthFunc((GLenum)depthTestFunc);
     if (blendingEnabled) {
         glEnable(GL_BLEND);
-        //glBlendFunc((GLenum)blendingSrcFactor, (GLenum)blendingDstFactor);
+        for (int i = 0; i < blendingSrcFactor.size(); i++)
+            glBlendFunci(i, (GLenum)blendingSrcFactor[i], (GLenum)blendingDstFactor[i]);
     }
     else {
         glDisable(GL_BLEND);
