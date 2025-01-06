@@ -67,6 +67,8 @@ postRenderEvent(Event<float>::New()),
 
 defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment.glsl", true, true) }).second)
 {
+    //defaultMaterial->ignorePostProc = true;
+
     pointLightCount = 0;
     spotLightCount = 0;
 
@@ -77,7 +79,7 @@ defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, Shad
     
 
      
-    defaultGuiMaterial = Material::New(MaterialCreateParams{ {}, Texture::Texture2D,  ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", false, false), nullptr, true, true }).second;
+    defaultGuiMaterial = Material::New(MaterialCreateParams{ .textureParams = {}, .type = Texture::Texture2D, .shader = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", false, false), .depthMask = false}).second;
     defaultGuiMaterial->ignorePostProc = true;
     defaultBillboardGuiMaterial = Material::New(MaterialCreateParams{ {}, Texture::Texture2D,  ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", true, false), nullptr, true, true }).second;
     defaultBillboardGuiMaterial->ignorePostProc = true;
@@ -361,21 +363,22 @@ void GraphicsEngine::RenderScene(float dt) {
     
     //glDisable(GL_DEPTH_TEST);
 
-    glBlendFunci(0, GL_ONE, GL_ONE);
+    //glBlendFunci(0, GL_ONE, GL_ONE);
     //glBlendFunci(1, GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
-    glBlendFunci(1, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFunci(1, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
     glClear(GL_DEPTH_BUFFER_BIT);
     mainFramebuffer->Clear({ { 0, 0, 0, 0 }, { 1, 1, 1, 1 } });
     DrawWorld(true);
 
+
     DrawSkybox(); // Draw skybox afterwards to encourage early z-test
 
     // Go back to drawing on the window.
     Framebuffer::Unbind();
 
-    glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+    //glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
 
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

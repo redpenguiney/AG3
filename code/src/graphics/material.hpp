@@ -103,6 +103,10 @@ public:
     // Doesn't affet whether rendering will WRITE to the depth buffer, however; that's what depthMaskEnabled is about.
     DepthTestMode depthTestFunc;
 
+    // Scissor test
+    bool scissoringEnabled = false;
+    glm::ivec2 scissorCorner1;
+    glm::ivec2 scissorCorner2;
 
     bool blendingEnabled;
     // blending factors for each render target if multiple

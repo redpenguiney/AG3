@@ -18,6 +18,11 @@ struct TileData {
 	float yOffset = 0.0;
 	int id = -1; // value assigned when RegisterTile() is called
 
+	// how hard it is to move on a given portion of terrain; 100 is base value for an easily traversable flat surface.
+	// -1 represents impassable terrain.
+	// Used for pathfinding.
+	int moveCost = 100;
+
 };
 
 // Stores intrinsic properties of a furniture. Furniture is placed on top of tiles and can store metadata unlike tiles.

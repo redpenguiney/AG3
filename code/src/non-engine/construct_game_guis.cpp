@@ -13,19 +13,26 @@ std::pair <float, std::shared_ptr<Material>> MenuFont1() {
 
 void MakeGameMenu() {
     struct Constructible {
-        
+        std::string name;
+        int placementMode = 2; // 0 = point, 1 = line, 2 = area
+        bool snapPlacement = true;
     };
 
     struct ConstructionTab {
-        // std::vector<> constructibles;
+        std::vector<Constructible> items;
         std::string name;
         std::string iconPath;
     };
-
+    
     // construction menu
     std::vector<ConstructionTab> constructionTabs = {
         ConstructionTab {
-            .name = "Structural",
+            .items = {
+                Constructible {
+                    .name = "Clear"
+                }
+            }
+            .name = "Terrain",
         },
         ConstructionTab {
             .name = "Food"
@@ -35,6 +42,7 @@ void MakeGameMenu() {
         }
     };
 
+    
 
     constexpr int TAB_ICON_WIDTH = 48;
     constexpr int TAB_ICON_SPACING = 8;
@@ -75,6 +83,28 @@ void MakeGameMenu() {
         tab->sortValue = tabIndex++;
         tab->SetParent(constructionFrame.get());
         tab->UpdateGuiText();
+
+        tab->onInputBegin->ConnectTemporary([tab, tabInfo](const InputObject& input) {
+            auto buildingsList = std::make_shared<Gui>(false, std::nullopt);
+            constructionGui.push_back(buildingsList);
+
+            buildingsList->scalePos = { 0, 0 };
+            buildingsList->offsetPos = { 8, 8 };
+
+            buildingsList->scaleSize = { 0, 0 };
+            buildingsList->offsetSize = { tabInfo.items.size() * TAB_ICON_WIDTH + (constructionTabs.size() + 1) * TAB_ICON_SPACING, TAB_ICON_WIDTH + 2 * TAB_ICON_SPACING };
+
+            buildingsList->anchorPoint = { -0.5, -0.5 };
+            buildingsList->rgba = { 1.0, 1.0, 1.0, 0.4 };
+            buildingsList->childBehaviour = GuiChildBehaviour::Grid;
+            buildingsList->gridInfo = Gui::GridGuiInfo{
+                .gridOffsetPosition = {TAB_ICON_SPACING + TAB_ICON_WIDTH / 2 - constructionFrame->offsetSize.x / 2, 0},
+                .gridOffsetSize = {TAB_ICON_SPACING, 0},
+                .maxInPixels = false,
+                .fillXFirst = true,
+                .addGuiLengths = true,
+            };
+        });
     }
 
     
