@@ -97,6 +97,14 @@ void Material::Use(std::shared_ptr<ShaderProgram> currentShader) {
 
     inputProvider.onBindingFunc(this, currentShader);
 
+    if (scissoringEnabled) {
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(scissorCorner1.x, scissorCorner1.y, scissorCorner2.x - scissorCorner1.x, scissorCorner2.y - scissorCorner2.x);
+    }
+    else {
+        glDisable(GL_SCISSOR_TEST);
+    }
+
     glDepthMask(depthMaskEnabled);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc((GLenum)depthTestFunc);

@@ -802,7 +802,7 @@ void GraphicsEngine::AddCachedMeshes() {
 
         for (auto& [materialId, components] : map) {
             //DebugLogInfo("UH OH ", components.size());
-            DebugLogInfo("Using material ", materialId);
+            //DebugLogInfo("Using material ", materialId);
             const std::shared_ptr<Material>& material = Material::Get(materialId);
             auto drawHandles = meshpools[poolIndex]->AddObject(m, material, components.size());
 

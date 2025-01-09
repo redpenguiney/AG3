@@ -44,6 +44,8 @@ void Gui::FireInputEvents()
             continue;
         }
 
+        
+
         // determine if mouse is over the gui.
 
         // so that we can treat the gui's rotation as 0 and do a simple AABB-point intersection test, we rotate the cursor position by the inverse of the gui's current rotation.
@@ -57,6 +59,7 @@ void Gui::FireInputEvents()
 
         bool isMouseIntersecting = false;
         if (cursorPos.x > left && cursorPos.x < right && cursorPos.y > bottom && cursorPos.y < top) {
+            DebugLogInfo("Entered a ui ", ui->guiTextInfo.has_value() ? ui->guiTextInfo->text : "Unnamed");
             isMouseIntersecting = true;
         }
 
@@ -64,6 +67,7 @@ void Gui::FireInputEvents()
         if (ui->mouseHover != isMouseIntersecting) { // then the cursor has either moved onto or off of the gui.
             if (isMouseIntersecting) { // then we started being on the ui.
                 ui->onMouseEnter->Fire();
+               
             }
             else { // then we stopped being on the ui.
                 ui->onMouseExit->Fire();
@@ -113,6 +117,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     mouseHover = false;
 
     objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : GraphicsEngine::Get().defaultGuiMaterial->id);
+    materialLayer = guiMaterial.has_value() ? guiMaterial->first : -1;
     objectParams.meshId = Mesh::Square()->meshId;
 
     object = GameObject::New(objectParams);
@@ -218,6 +223,7 @@ Gui::~Gui() {
 }
 
 void Gui::UpdateGuiTransform() {
+
     // std::cout << "Res = " << glm::to_string(realWindowResolution) << ".\n";
 
     glm::vec2 size = GetPixelSize();
@@ -266,6 +272,21 @@ void Gui::UpdateGuiTransform() {
     for (auto& c : children) {
         c->UpdateGuiTransform();
     }
+
+    if (clipTarget.has_value()) {
+        bool clipping = !clipTarget->expired();
+
+        // we do scissor test here too, since this function will be called when the clipTarget (an ancestor) moves / changes size too
+        material->scissoringEnabled = clipping;
+        if (clipping) {
+            auto lockedClipTarget = clipTarget->lock();
+            material->scissorCorner1 = lockedClipTarget->GetPixelPos() - lockedClipTarget->GetPixelSize() / 2;
+            material->scissorCorner2 = lockedClipTarget->GetPixelPos() + lockedClipTarget->GetPixelSize() / 2;
+        }
+        else {
+            clipTarget = std::nullopt;
+        }
+    }
 }
 
 Gui::GuiTextInfo& Gui::GetTextInfo() {
@@ -280,7 +301,7 @@ Gui::BillboardGuiInfo& Gui::GetBillboardInfo() {
 
 void Gui::UpdateGuiGraphics() {
     object->Get<RenderComponent>()->SetColor(rgba);
-    object->Get<RenderComponent>()->SetTextureZ(materialLayer.value_or(-1.0));
+    object->Get<RenderComponent>()->SetTextureZ(materialLayer);
     object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel);
      
     if (guiTextInfo.has_value()) {

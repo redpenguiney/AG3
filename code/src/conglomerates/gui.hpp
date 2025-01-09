@@ -135,6 +135,12 @@ public:
     // lower number = rendered on top
     float zLevel = 0;
 
+    // used for scrolling. If not nullptr, only the part of gui whose area overlaps clipTarget will be rendered. 
+    // of course, it's still up to you to actually move the gui up and down depending on scroll wheel or whatever.
+    // will NOT work if clipTarget is not an ancestor of the gui.
+    std::optional<std::weak_ptr<Gui>> clipTarget;
+
+
     // The point (in object space) that offset + scale pos are setting the position of.
     glm::vec2 anchorPoint;
 
@@ -157,8 +163,8 @@ public:
     } guiScaleMode; // which screen dimensions the scale portion of position/scale uses for each axis.
     
     glm::vec4 rgba; // color and opacity/alpha
-    std::optional<std::shared_ptr<Material>> material;
-    std::optional<unsigned int> materialLayer; 
+    std::shared_ptr<Material> material;
+    unsigned int materialLayer; 
 
     // Call after modifying any position/rotation/scale related variables (including changes to child behaviour and grid size) to actually apply those changes to the gui's transform (and that of its children).
     void UpdateGuiTransform();

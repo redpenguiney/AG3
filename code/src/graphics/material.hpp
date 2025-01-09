@@ -8,6 +8,7 @@
 #include <optional>
 #include "shader_input_provider.hpp"
 #include "texture_collection.hpp"
+#include "glm/vec2.hpp"
 
 class ShaderProgram;
 

@@ -31,7 +31,7 @@ void MakeGameMenu() {
                 Constructible {
                     .name = "Clear"
                 }
-            }
+            },
             .name = "Terrain",
         },
         ConstructionTab {
@@ -48,6 +48,8 @@ void MakeGameMenu() {
     constexpr int TAB_ICON_SPACING = 8;
 
     static std::vector<std::shared_ptr<Gui>> constructionGui;
+    //static std::vector<std::unique_ptr<Event<InputObject>::Connection>> connections;
+
     auto constructionFrame = std::make_shared<Gui>(false, std::nullopt);
     constructionGui.push_back(constructionFrame);
     
@@ -82,9 +84,24 @@ void MakeGameMenu() {
 
         tab->sortValue = tabIndex++;
         tab->SetParent(constructionFrame.get());
-        tab->UpdateGuiText();
 
-        tab->onInputBegin->ConnectTemporary([tab, tabInfo](const InputObject& input) {
+        tab->UpdateGuiText();
+        tab->UpdateGuiGraphics();
+
+        tab->onMouseEnter->Connect([p = tab.get()]() {
+            DebugLogInfo("OO")
+            p->GetTextInfo().rgba = { 1, 1, 0, 1 };
+            p->UpdateGuiGraphics();
+            });
+        tab->onMouseExit->Connect([p = tab.get()]() {
+            p->GetTextInfo().rgba = { 1, 0, 0, 1 };
+            p->UpdateGuiGraphics();
+            });
+
+        /*connections.push_back(std::move(*/tab->onInputBegin->Connect([p = tab.get(), tabInfo, tabIndex](const InputObject& input) {
+            
+            if (input.input != InputObject::LMB) return;
+
             auto buildingsList = std::make_shared<Gui>(false, std::nullopt);
             constructionGui.push_back(buildingsList);
 
@@ -92,18 +109,21 @@ void MakeGameMenu() {
             buildingsList->offsetPos = { 8, 8 };
 
             buildingsList->scaleSize = { 0, 0 };
-            buildingsList->offsetSize = { tabInfo.items.size() * TAB_ICON_WIDTH + (constructionTabs.size() + 1) * TAB_ICON_SPACING, TAB_ICON_WIDTH + 2 * TAB_ICON_SPACING };
+            buildingsList->offsetSize = { 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING + 8, 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING };
 
             buildingsList->anchorPoint = { -0.5, -0.5 };
             buildingsList->rgba = { 1.0, 1.0, 1.0, 0.4 };
             buildingsList->childBehaviour = GuiChildBehaviour::Grid;
             buildingsList->gridInfo = Gui::GridGuiInfo{
-                .gridOffsetPosition = {TAB_ICON_SPACING + TAB_ICON_WIDTH / 2 - constructionFrame->offsetSize.x / 2, 0},
+                //.gridOffsetPosition = {TAB_ICON_SPACING + TAB_ICON_WIDTH / 2 - constructionFrame->offsetSize.x / 2, 0},
                 .gridOffsetSize = {TAB_ICON_SPACING, 0},
                 .maxInPixels = false,
                 .fillXFirst = true,
                 .addGuiLengths = true,
             };
+
+
+            
         });
     }
 

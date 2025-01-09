@@ -375,6 +375,8 @@ void Meshpool::Draw(bool prePostProc) {
             return a->material->depthMaskEnabled < b->material->depthMaskEnabled;
         else if (a->material->depthTestFunc != b->material->depthTestFunc)
             return a->material->depthTestFunc < b->material->depthTestFunc;
+        else if (a->material->scissoringEnabled != b->material->scissoringEnabled)
+            return a->material->scissoringEnabled < b->material->scissoringEnabled;
         // given that different materials could have some textures in common but not others, sorting by that would be complicated for meagre gain (TODO i want meagre gain)
         else {
             return a->material->textures->id < b->material->textures->id;

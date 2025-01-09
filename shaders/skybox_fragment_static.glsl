@@ -15,4 +15,5 @@ void main() {
 		//rand(gl_FragCoord.xy/250.0f + shaderTime/500025.0f),
 		//rand(gl_FragCoord.xy/200.0f + shaderTime/400025.0f),
 	1.0);
+	//Output = vec4(1.0, 1.0, 1.0, 1.0);
 }
