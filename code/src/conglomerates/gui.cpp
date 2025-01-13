@@ -37,6 +37,8 @@ void Gui::UpdateGuiForNewWindowResolution(glm::uvec2 oldSize, glm::uvec2 newSize
 // TODO: O(nGuis) complexity, not huge deal but spatial partioning structure (shudder) might be wise eventually
 void Gui::FireInputEvents()
 {
+
+    //DebugLogInfo("COUNT ", GuiGlobals::Get().listOfGuis.size());
     for (auto& ui : GuiGlobals::Get().listOfGuis) {
 
         // if no one cares whether the mouse is on this gui, don't bother calculating it.
@@ -44,7 +46,6 @@ void Gui::FireInputEvents()
             continue;
         }
 
-        
 
         // determine if mouse is over the gui.
 
@@ -57,9 +58,11 @@ void Gui::FireInputEvents()
         unsigned int bottom = ui->GetPixelPos().y - ui->GetPixelSize().y / 2;
         unsigned int top = ui->GetPixelPos().y + ui->GetPixelSize().y / 2;
 
+        DebugLogInfo("Rel pos ");
+
         bool isMouseIntersecting = false;
         if (cursorPos.x > left && cursorPos.x < right && cursorPos.y > bottom && cursorPos.y < top) {
-            DebugLogInfo("Entered a ui ", ui->guiTextInfo.has_value() ? ui->guiTextInfo->text : "Unnamed");
+            //DebugLogInfo("Entered a ui ", ui->guiTextInfo.has_value() ? ui->guiTextInfo->text : "Unnamed");
             isMouseIntersecting = true;
         }
 
@@ -88,6 +91,8 @@ void Gui::FireInputEvents()
 
         ui->mouseHover = isMouseIntersecting;
     }
+
+    //DebugLogInfo("Checked ", c);
 }
 
 void Gui::Init()

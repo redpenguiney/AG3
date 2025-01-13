@@ -203,6 +203,7 @@ public:
 
     // sets the gui's parent to newParent. May be nullptr.
     // NOT SUPPORTED if the gui is not stored in a shared_ptr.
+    // The parent will store a shared_ptr to this gui, so its lifetime will be guaranteed to be at least as long as the parent's lifetime.
     void SetParent(Gui* newParent);
 
     // will return nullptr if no parent
