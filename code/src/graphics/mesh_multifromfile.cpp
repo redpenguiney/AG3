@@ -117,6 +117,7 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
     //aiSetImportPropertyInteger()
     const aiScene* scene = aiImportFile(path.c_str(), aiProcess_OptimizeMeshes | aiProcess_GlobalScale | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
     if (scene == nullptr || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode || !scene->HasMeshes()) {
+        aiReleaseImport(scene);
         DebugLogError("Mesh::MultiFromFile() failed to load ", path, " because ", aiGetErrorString());
         abort();
     }
@@ -486,9 +487,13 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
             DebugLogError("Warning: mesh ", mesh->mName.C_Str(), " at ", path, " has perspective transformation of ", perspective, ", which will be ignored. Something is very wrong with your file.");
         }
             
+        
+
         //DebugLogInfo("ADDING ", meshPtr);
         returnValue.push_back(MeshRet{.mesh = meshPtr, .material = matPtr, .materialZ = textureZ, .posOffset = translation, .rotOffset = rotation});
     }
+
+    aiReleaseImport(scene);
 
     return returnValue;
 }

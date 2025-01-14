@@ -538,8 +538,6 @@ void Meshpool::FlipBuffers()
 
 void Meshpool::ExpandVertexCapacity()
 {
-    //DebugLogInfo("Expanding vertex capacity from ", currentVertexCapacity, " for ", this);
-
     // determine new vertex capacity
     if (currentVertexCapacity == 0) {
         currentVertexCapacity = 1;

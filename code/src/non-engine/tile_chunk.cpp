@@ -128,6 +128,7 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 {
 	
 	MakeMesh(centerPos, stride, radius);
+	//DebugLogInfo("Mesh ", mesh->vertices.size());
 
 	//TestSphere(pos.x, 0, pos.y, false);
 	//mesh = CubeMesh();

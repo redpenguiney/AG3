@@ -50,22 +50,28 @@ void Gui::FireInputEvents()
         // determine if mouse is over the gui.
 
         // so that we can treat the gui's rotation as 0 and do a simple AABB-point intersection test, we rotate the cursor position by the inverse of the gui's current rotation.
-        glm::vec2 relCursorPos = ui->GetPixelPos() - glm::vec2(GraphicsEngine::Get().GetWindow().MOUSE_POS);
-        glm::uvec2 cursorPos = glm::vec2(ui->GetPixelPos()) + glm::vec2(glm::quat(ui->rotation, glm::vec3(0, 0, 1)) * glm::vec3(relCursorPos, 0.0f));
+        // Note that we invert mouse position; window treats (0, 0) as top left but gui positioning treats it as bottom left.
+        glm::vec2 cursorPos = (glm::vec2(GraphicsEngine::Get().GetWindow().MOUSE_POS));
+        cursorPos.y = GraphicsEngine::Get().GetWindow().width - cursorPos.y;
+        glm::vec2 relCursorPos = ui->GetPixelPos() - cursorPos;
+        relCursorPos = glm::vec2(glm::quat(ui->rotation, glm::vec3(0, 0, 1)) * glm::vec3(relCursorPos, 0.0f));
 
-        unsigned int left = ui->GetPixelPos().x - ui->GetPixelSize().x / 2;
-        unsigned int right = ui->GetPixelPos().x + ui->GetPixelSize().x / 2;
-        unsigned int bottom = ui->GetPixelPos().y - ui->GetPixelSize().y / 2;
-        unsigned int top = ui->GetPixelPos().y + ui->GetPixelSize().y / 2;
+        int left = - ui->GetPixelSize().x / 2;
+        int right = ui->GetPixelSize().x / 2;
+        int bottom = - ui->GetPixelSize().y / 2;
+        int top = ui->GetPixelSize().y / 2;
 
         DebugLogInfo("Rel pos ");
 
         bool isMouseIntersecting = false;
-        if (cursorPos.x > left && cursorPos.x < right && cursorPos.y > bottom && cursorPos.y < top) {
+        if (relCursorPos.x > left && relCursorPos.x < right && relCursorPos.y > bottom && relCursorPos.y < top) {
             //DebugLogInfo("Entered a ui ", ui->guiTextInfo.has_value() ? ui->guiTextInfo->text : "Unnamed");
             isMouseIntersecting = true;
         }
 
+        //if (ui->guiTextInfo.has_value() && ui->guiTextInfo->text == "Food") {
+        //    //DebugLogInfo("BE ADVISED: ", cursorPos.y, " ", top, " ", bottom)
+        //}
 
         if (ui->mouseHover != isMouseIntersecting) { // then the cursor has either moved onto or off of the gui.
             if (isMouseIntersecting) { // then we started being on the ui.

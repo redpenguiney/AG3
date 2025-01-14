@@ -94,7 +94,7 @@ void MakeGameMenu() {
             p->UpdateGuiGraphics();
             });
         tab->onMouseExit->Connect([p = tab.get()]() {
-            p->GetTextInfo().rgba = { 1, 0, 0, 1 };
+            p->GetTextInfo().rgba = { 0, 0, 1, 1 };
             p->UpdateGuiGraphics();
             });
 

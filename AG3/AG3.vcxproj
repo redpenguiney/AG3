@@ -242,6 +242,7 @@
     <ClCompile Include="..\code\src\audio\sound.cpp" />
     <ClCompile Include="..\code\src\conglomerates\gui.cpp" />
     <ClCompile Include="..\code\src\conglomerates\tilemap.cpp" />
+    <ClCompile Include="..\code\src\debug\leak_finder.cpp" />
     <ClCompile Include="..\code\src\debug\log.cpp" />
     <ClCompile Include="..\code\src\events\base_event.cpp" />
     <ClCompile Include="..\code\src\events\event.cpp" />
