@@ -337,7 +337,7 @@ Mesh::~Mesh() {
     /*if (GraphicsEngine::Get().dynamicMeshLocations.count(meshId)) {
         GraphicsEngine::Get().dynamicMeshLocations.erase(meshId);
     }*/
-    //DebugLogInfo("Deleting mesh with id ", meshId);
+    //DebugLogInfo("Deleting mesh with id ", meshId, " of kilobytes ", vertices.size() / 256);
 }
 
 Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshCreateParams& params, bool dynamic, bool fromText, std::optional<std::vector<Bone>> bonez, std::optional<std::vector<Animation>> anims, unsigned int rootBoneIndex):

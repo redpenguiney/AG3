@@ -151,7 +151,7 @@ World::World() {
         // update those chunks
 
 
-        // update entitise
+        // update entities
         Entity::UpdateAll(dt);
     });
 
@@ -224,6 +224,7 @@ int AddAtlasRegion(int x, int y) {
 TerrainChunk::TerrainChunk(glm::ivec2 position)
 {
     static noise::module::Perlin perlinNoiseGenerator;
+    //static noise::module::Perlin 
     //perlinNoiseGenerator.SetSeed(1);
     //perlinNoiseGenerator.SetFrequency(16);
     //perlinNoiseGenerator.SetOctaveCount(3);
@@ -233,7 +234,7 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
         int localZ = 0;
         for (int worldZ = position.y - 8; worldZ < position.y + 8; worldZ++) {
             float height = perlinNoiseGenerator.GetValue(worldX/16.f, worldZ/16.f, 0);
-
+            float tree = perlinNoiseGenerator.GetValue(worldX / 16.0f, worldZ / 16.0f, 0);
             
 
             //DebugLogInfo("Hiehgt ", height);
@@ -241,14 +242,16 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
             tiles[localX][localZ].furniture = -1;
             if (height > 0) {
                 tiles[localX][localZ].floor = World::TERRAIN_IDS().GRASS;
+
+                if (tree > 0.0) {
+                    tiles[localX][localZ].furniture = World::TERRAIN_IDS().TREE;
+                }
             }
             else {
                 tiles[localX][localZ].floor = World::TERRAIN_IDS().ROCK;
             }
 
-            if (height > 0.9) {
-                tiles[localX][localZ].furniture = World::TERRAIN_IDS().TREE;
-            }
+           
 
             localZ++;
         }
@@ -256,9 +259,9 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
     }
 }
 
-void P(std::string name, glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
+void P(std::vector<Mesh::MeshRet> vec, glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
     auto d = GameobjectCreateParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform });
-    auto vec = Mesh::MultiFromFile(name);
+    
     constexpr double SCL_FACTOR = 0.1;
     int i = 0;
     for (auto& ret : vec) {
@@ -309,7 +312,8 @@ World::TerrainIds::TerrainIds()
     TREE = RegisterFurnitureData({
         .displayName = "Anomalous Tree",
         .gameobjectMaker = [](glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
-            P("../models/tree.fbx", pos, objects);
+            static auto vec = Mesh::MultiFromFile("../models/tree.fbx");
+            P(vec, pos, objects);
         },
     });
 }
