@@ -129,53 +129,56 @@ World::World() {
     //    }
     //});
 
-    prePhysicsConnection = PhysicsEngine::Get().prePhysicsEvent->ConnectTemporary([this](float dt) {
+    //prePhysicsConnection = PhysicsEngine::Get().prePhysicsEvent->ConnectTemporary([this](float dt) {
 
-        Assert(Loaded() != nullptr);
-       
+    //    Assert(Loaded() != nullptr);
+    //   
 
-        // determine which chunks must be updated
-        auto activeChunkLocations = GetLoadedChunks(); // in world space, in tiles
+    //    // determine which chunks must be updated
+    //    auto activeChunkLocations = GetLoadedChunks(); // in world space, in tiles
 
-        for (auto& loader : Loaded()->chunkLoaders) {
-            Assert(loader.radius % 16 == 0);
-            Assert((loader.centerPosition.x - 8) % 16 == 0);
-            Assert((loader.centerPosition.y - 8) % 16 == 0);
-            for (int x = loader.centerPosition.x - loader.radius; x <= loader.centerPosition.x + loader.radius; x++) {
-                for (int y = loader.centerPosition.y - loader.radius; y <= loader.centerPosition.y + loader.radius; y++) {
-                    activeChunkLocations.insert({ x, y });
-                }
-            }
-        }
+    //    for (auto& loader : Loaded()->chunkLoaders) {
+    //        Assert(loader.radius % 16 == 0);
+    //        Assert((loader.centerPosition.x - 8) % 16 == 0);
+    //        Assert((loader.centerPosition.y - 8) % 16 == 0);
+    //        for (int x = loader.centerPosition.x - loader.radius; x <= loader.centerPosition.x + loader.radius; x++) {
+    //            for (int y = loader.centerPosition.y - loader.radius; y <= loader.centerPosition.y + loader.radius; y++) {
+    //                activeChunkLocations.insert({ x, y });
+    //            }
+    //        }
+    //    }
 
-        // update those chunks
+    //    // update those chunks
 
 
-        // update entities
-        Entity::UpdateAll(dt);
-    });
+    //    // update entities
+    //    Entity::UpdateAll(dt);
+    //});
 
     //static std::shared_ptr<GameObject> testCorner = nullptr;
 
     preRenderConnection = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([this](float dt) {
-        Assert(Loaded() != nullptr);
+        //Assert(Loaded() != nullptr);
+
+        return;
 
         auto activeChunkLocations = GetLoadedChunks(); // in world space, in tiles
 
-        // determine which chunks must be rendered
+        //// determine which chunks must be rendered
         auto& cam = GraphicsEngine::Get().GetMainCamera();
         glm::vec3 topLeft = -cam.ProjectToWorld(glm::vec2(0, 0), glm::ivec2(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height));
         
-        
+        //DebugLogInfo(topLeft);
+            
         topLeft *= cam.position.y / topLeft.y;
 
-        /*auto params = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
-        params.meshId = CubeMesh()->meshId;
-        if (testCorner) testCorner->Destroy();
-        testCorner = GameObject::New(params);
-        testCorner->RawGet<TransformComponent>()->SetPos((glm::dvec3(topLeft) + cam.position) * glm::dvec3(1, 0, 1));
-        testCorner->RawGet<RenderComponent>()->SetColor(glm::vec4(1, 1, 1, 1));
-        testCorner->RawGet<RenderComponent>()->SetTextureZ(-1);*/
+        ///*auto params = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
+        //params.meshId = CubeMesh()->meshId;
+        //if (testCorner) testCorner->Destroy();
+        //testCorner = GameObject::New(params);
+        //testCorner->RawGet<TransformComponent>()->SetPos((glm::dvec3(topLeft) + cam.position) * glm::dvec3(1, 0, 1));
+        //testCorner->RawGet<RenderComponent>()->SetColor(glm::vec4(1, 1, 1, 1));
+        //testCorner->RawGet<RenderComponent>()->SetTextureZ(-1);*/
 
         glm::vec3 bottomRight = -topLeft;
         glm::ivec3 roundedTopLeft = glm::floorMultiple(glm::dvec3(topLeft) + cam.position, glm::dvec3(16.0f));
@@ -186,9 +189,9 @@ World::World() {
             for (int y = roundedTopLeft.z - 8; y <= roundedBottomRight.z + 8; y += 16) {
                 if (!activeChunkLocations.contains({ x, y })) continue;
                 if (!renderChunks.count({ x, y })) {
-                    renderChunks[glm::ivec2(x, y)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(x, y), 1, 8, TerrainMaterial(), TerrainAtlas()));
+                    //renderChunks[glm::ivec2(x, y)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(x, y), 1, 8, TerrainMaterial(), TerrainAtlas()));
                 }
-                renderChunks[{x, y}]->dead = false;
+                //renderChunks[{x, y}]->dead = false;
             }
         }
 

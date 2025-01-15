@@ -52,5 +52,5 @@ void main()
     //FragColor = vec4(vec3(depthValue), 1.0);
     FragColor = vec4(texture(screenTextureColor, (TexCoords.st), 0).xyz, 1.0);
     //FragColor = vec4(texture(screenTextureAlpha, (TexCoords.st), 0).rrr, 1.0);
-    
+    //FragColor = vec4(1.0, 1.0, 0.0, 1.0);   
 }

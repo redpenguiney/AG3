@@ -40,7 +40,7 @@ void GameInit()
     //auto& CR = ComponentRegistry::Get();
 
     MakeMainMenu();
-    MakeFPSTracker();
+    //MakeFPSTracker();
 
     //TestGrassFloor();
     //TestCubeArray({ 2, 2, 2 }, {4, 4, 4}, {2, 2, 2}, true);

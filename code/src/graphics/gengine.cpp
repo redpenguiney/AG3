@@ -370,7 +370,7 @@ void GraphicsEngine::RenderScene(float dt) {
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
     glClear(GL_DEPTH_BUFFER_BIT);
     mainFramebuffer->Clear({ { 0, 0, 0, 0 }, { 1, 1, 1, 1 } });
-    DrawWorld(true);
+    //DrawWorld(true);
 
 
     DrawSkybox(); // Draw skybox afterwards to encourage early z-test
@@ -398,7 +398,7 @@ void GraphicsEngine::RenderScene(float dt) {
     // Draw stuff that doesn't do post processing.
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
     glClear( GL_DEPTH_BUFFER_BIT);
-    DrawWorld(false);
+    //DrawWorld(false);
 
     // Debugging stuff
     // TODO: actual settings to toggle debug stuff
@@ -410,7 +410,7 @@ void GraphicsEngine::RenderScene(float dt) {
     glFlush(); // Tell OpenGL we're done drawing.
 
     postRenderEvent->Fire(dt);
-    //BaseEvent::FlushEventQueue();
+    //BaseEvent::FlushEvevntQueue();
 }
 
 void GraphicsEngine::DrawSkybox() {
