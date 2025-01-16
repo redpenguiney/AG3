@@ -47,9 +47,9 @@ public:
     float shaderTime = 0;
 
     // the shader used to render the skybox. Can freely change this with no issues.
-    std::shared_ptr<ShaderProgram> skyboxShaderProgram;
+    //std::shared_ptr<ShaderProgram> skyboxShaderProgram;
 
-    // skybox material. Must be a cubemap.
+    // skybox material. Must be a cubemap. Can freely change this with no issues.
     std::shared_ptr<Material> skyboxMaterial;
 
     // Which layer of the skyboxMaterial we should actually be using.
@@ -88,7 +88,7 @@ public:
     double debugFreecamPitch = 0; // in degrees, don't get tripped up when you do lookvector which wants radians
     double debugFreecamYaw = 0;
 
-    void SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram>) override;
+    //void SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram>) override;
     void SetSkyboxMaterial(std::shared_ptr<Material>) override;
 
     void SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram>) override;

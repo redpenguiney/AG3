@@ -12,7 +12,7 @@ class ModuleGraphicsEngineInterface {
 
     static ModuleGraphicsEngineInterface* Get();
 
-    virtual void SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram>) = 0;
+    //virtual void SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram>) = 0;
     virtual void SetSkyboxMaterial(std::shared_ptr<Material>) = 0;
 
     virtual void SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram>) = 0;

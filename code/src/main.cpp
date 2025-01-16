@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <thread>
 
 #include <GLM/gtx/string_cast.hpp>
 
@@ -90,7 +91,12 @@ int main(int numArgs, const char *argPtrs[]) {
     Gui::Init();
 
     DebugLogInfo("Calling GameInit().");
-    GameInit();
+    //GameInit();
+    GE.SetDebugFreecamEnabled(true);
+    TestGrassFloor();
+    TestStationaryPointlight();
+    GE.skyboxMaterial->shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl");
+
 
     DebugLogInfo("Starting main loop.");
 
@@ -105,7 +111,7 @@ int main(int numArgs, const char *argPtrs[]) {
     double physicsLag = 0.0; // how many seconds behind the simulation is. Before rendering, we check if lag is > SIMULATION_TIMESTEP in ms and if so, simulate stuff.
 
     // TODO: find a way to move pausing out of main.cpp
-    bool physicsPaused = true;
+    bool physicsPaused = false;
     bool wf = false;
 
     GE.window.inputDown->Connect([&physicsPaused, &wf, &GE](InputObject input) {
@@ -126,11 +132,27 @@ int main(int numArgs, const char *argPtrs[]) {
     });
 
     //TestCubeArray({2, 2, 2}, {0, 0, 0}, {2, 2, 2}, false);
-    //TestSpinningSpotlight();
+    TestSpinningSpotlight();
     //TestSphere(5, 3, -4, false);
+
+    //auto m = CubeMesh();
+
+    //GameobjectCreateParams params({ ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Spotlight, ComponentBitIndex::Collider });
+    //params.meshId = m->meshId;
+    //params.materialId = 0;
+    //auto coolLight = GameObject::New(params);
+    //coolLight->Get<RenderComponent>()->SetTextureZ(-1);
+    //coolLight->Get<TransformComponent>()->SetPos({ 30, 5, 0 });
+    //coolLight->Get<SpotLightComponent>()->SetRange(100);
+    //coolLight->Get<SpotLightComponent>()->SetColor({ 1, 1, 1 });
+    //coolLight->Get<RenderComponent>()->SetColor({ 0, 1, 0.5, 1 });
 
     while (!GE.ShouldClose()) 
     {
+        std::this_thread::sleep_for(4ms);
+
+        //coolLight->Get<TransformComponent>()->SetPos({ cos(Time()) * 10, 5.0, sin(Time()) * 10 });
+        //coolLight->Get<TransformComponent>()->SetRot(glm::quatLookAt(glm::vec3(cos(Time()), 0.0, sin(Time())), glm::vec3(0, 1, 0)));
        
         double currentTime = Time();
         double elapsedTime = currentTime - previousTime;
@@ -201,7 +223,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
     DebugLogInfo("Closing game.");
     auto gtstartclosetime = Time();
-    GameClose();
+    //GameClose();
     LogElapsed(gtstartclosetime, "\nClosing game elapsed ");
 
     timeAtWhichExitProcessStarted = Time();

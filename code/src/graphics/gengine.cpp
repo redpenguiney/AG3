@@ -83,13 +83,13 @@ defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, Shad
     defaultGuiMaterial->ignorePostProc = true;
     defaultBillboardGuiMaterial = Material::New(MaterialCreateParams{ {}, Texture::Texture2D,  ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", true, false), nullptr, true, true }).second;
     defaultBillboardGuiMaterial->ignorePostProc = true;
-    skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
+    //skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
     crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", false, false);
 
     auto skyboxImport = Mesh::MultiFromFile("../models/skybox.obj", MeshCreateParams{.textureZ = -1.0, .opacity = 1, .expectedCount = 1, .normalizeSize = false}).at(0);
     skybox = new RenderableMesh(skyboxImport.mesh);
-    skyboxMaterial = skyboxImport.material; // ok if this is nullptr
+    skyboxMaterial = skyboxImport.material ? skyboxImport.material : Material::New(MaterialCreateParams {.shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl")}).second;
     skyboxMaterialLayer = skyboxImport.materialZ;
     // std::cout << "SKYBOX has indices: ";
     // for (auto & v: skybox_boxmesh->indices) {
@@ -155,9 +155,9 @@ Camera& GraphicsEngine::GetMainCamera() {
     return camera;
 }
 
-void GraphicsEngine::SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram> program) {
-    skyboxShaderProgram = program;
-}
+//void GraphicsEngine::SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram> program) {
+//    skyboxShaderProgram = program;
+//}
 
 void GraphicsEngine::SetSkyboxMaterial(std::shared_ptr<Material> material) {
     skyboxMaterial = material;
@@ -370,7 +370,7 @@ void GraphicsEngine::RenderScene(float dt) {
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
     glClear(GL_DEPTH_BUFFER_BIT);
     mainFramebuffer->Clear({ { 0, 0, 0, 0 }, { 1, 1, 1, 1 } });
-    //DrawWorld(true);
+    DrawWorld(true);
 
 
     DrawSkybox(); // Draw skybox afterwards to encourage early z-test
@@ -398,7 +398,7 @@ void GraphicsEngine::RenderScene(float dt) {
     // Draw stuff that doesn't do post processing.
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
     glClear( GL_DEPTH_BUFFER_BIT);
-    //DrawWorld(false);
+    DrawWorld(false);
 
     // Debugging stuff
     // TODO: actual settings to toggle debug stuff
@@ -414,14 +414,14 @@ void GraphicsEngine::RenderScene(float dt) {
 }
 
 void GraphicsEngine::DrawSkybox() {
-    if (skyboxShaderProgram == nullptr || skyboxMaterial == nullptr) {return;} // make sure there is a skybox
+    //if (skyboxShaderProgram == nullptr || skyboxMaterial == nullptr) {return;} // make sure there is a skybox
     glDisable(GL_CULL_FACE);
 
-    skyboxShaderProgram->Uniform("shaderTime", GraphicsEngine::Get().shaderTime);
+    skyboxMaterial->shader->Uniform("shaderTime", GraphicsEngine::Get().shaderTime);
 
     // glDisable(GL_DEPTH_TEST);
-    skyboxShaderProgram->Use();
-    skyboxMaterial->Use(skyboxShaderProgram);
+    //skyboxShaderProgram->Use();
+    skyboxMaterial->Use();
     skybox->Draw();
     
     glClear(GL_DEPTH_BUFFER_BIT); // make sure skybox isn't drawn over everything else

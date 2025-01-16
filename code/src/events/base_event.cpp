@@ -4,7 +4,7 @@
 
 
 void BaseEvent::FlushEventQueue() {
-
+	//return;
 	// we have to copy the queue because Flush() can result in the destruction of an event thus invalidating the iterator if we held onto the reference
 	//auto q = EventQueue();
 	auto& q = EventQueue();

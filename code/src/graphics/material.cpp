@@ -88,14 +88,14 @@ drawOrder(params.drawOrder)
 }
 
 // TODO: static variables that prevent redundant setting of gl state for stuff like blending and depth test/mask
-void Material::Use(std::shared_ptr<ShaderProgram> currentShader) {
+void Material::Use() {
     for (auto& t : textures->textures) {
         if (t.has_value()) {
             t->Use();
         }
     }
 
-    inputProvider.onBindingFunc(this, currentShader);
+    inputProvider.onBindingFunc(this, shader);
 
     if (scissoringEnabled) {
         glEnable(GL_SCISSOR_TEST);

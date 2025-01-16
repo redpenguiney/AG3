@@ -405,7 +405,7 @@ void Meshpool::Draw(bool prePostProc) {
         GraphicsEngine::Get().spotLightDataBuffer.BindBase(1);
 
         auto& material = command->material;
-        material->Use(shader);
+        material->Use();
 
         // if (materialId == 4) {
         //     std::cout << "BINDING THING WITH FONTMAP.\n";

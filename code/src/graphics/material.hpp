@@ -121,8 +121,7 @@ public:
     static void Destroy(const unsigned int id);
 
     // makes all things be drawn with these textures (until Use()/Unbind() is called on another material)
-    // Needs shader so it can pass uniforms/etc. to it via its inputProvider.
-    void Use(std::shared_ptr<ShaderProgram> currentShader);
+    void Use();
 
     // makes all things not be drawn with any material (until Use() is called on a material)
     static void Unbind();

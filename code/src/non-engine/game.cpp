@@ -46,7 +46,7 @@ void GameInit()
     //TestCubeArray({ 2, 2, 2 }, {4, 4, 4}, {2, 2, 2}, true);
     //PE.SetCollisionLayers(0, 0, false);
 
-    GE.SetSkyboxShaderProgram(ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl"));
+    GE.skyboxMaterial->shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl");
 
     //World::Generate();
 
