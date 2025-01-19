@@ -184,7 +184,7 @@ void MakeMainMenu() {
             //TestCubeArray(1, 2, 1, false);
             DebugLogInfo("STARTING GAME");
             //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
-            //World::Generate();
+            World::Generate();
             MakeGameMenu();
 
             //Creature::New(CubeMesh(), Body::Humanoid());

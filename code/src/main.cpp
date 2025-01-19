@@ -91,11 +91,11 @@ int main(int numArgs, const char *argPtrs[]) {
     Gui::Init();
 
     DebugLogInfo("Calling GameInit().");
-    //GameInit();
-    GE.SetDebugFreecamEnabled(true);
-    TestGrassFloor();
-    TestStationaryPointlight();
-    GE.skyboxMaterial->shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl");
+    GameInit();
+    //GE.SetDebugFreecamEnabled(true);
+    //TestGrassFloor();
+    //TestStationaryPointlight();
+    //GE.skyboxMaterial->shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl");
 
 
     DebugLogInfo("Starting main loop.");
@@ -132,7 +132,7 @@ int main(int numArgs, const char *argPtrs[]) {
     });
 
     //TestCubeArray({2, 2, 2}, {0, 0, 0}, {2, 2, 2}, false);
-    TestSpinningSpotlight();
+    //TestSpinningSpotlight();
     //TestSphere(5, 3, -4, false);
 
     //auto m = CubeMesh();
@@ -149,7 +149,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
     while (!GE.ShouldClose()) 
     {
-        std::this_thread::sleep_for(4ms);
+        //std::this_thread::sleep_for(5ms);
 
         //coolLight->Get<TransformComponent>()->SetPos({ cos(Time()) * 10, 5.0, sin(Time()) * 10 });
         //coolLight->Get<TransformComponent>()->SetRot(glm::quatLookAt(glm::vec3(cos(Time()), 0.0, sin(Time())), glm::vec3(0, 1, 0)));
@@ -223,7 +223,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
     DebugLogInfo("Closing game.");
     auto gtstartclosetime = Time();
-    //GameClose();
+    GameClose();
     LogElapsed(gtstartclosetime, "\nClosing game elapsed ");
 
     timeAtWhichExitProcessStarted = Time();

@@ -5,6 +5,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+void ErrorCallback(int errorCode, const char* errorMessage) {
+    DebugLogError("GLFW error ", errorCode, ": ", errorMessage);
+}
+
 Window::Window(int widthh, int heightt):
     inputDown(Event<InputObject>::New()),
     inputUp(Event<InputObject>::New()),
@@ -21,6 +25,7 @@ Window::Window(int widthh, int heightt):
         abort();
     }
 
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE); // disbable double buffering; TODO THIS SHOULD NOT BE NECCESSARY
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE); // Tell GLFW we are going to be running opengl in debug mode, which lets us use GL_DEBUG_OUTPUT to get error messages easily
     glfwWindow = glfwCreateWindow(width, height, "AG3", nullptr, nullptr);
     if (!glfwWindow) {
@@ -34,6 +39,7 @@ Window::Window(int widthh, int heightt):
     glfwSetScrollCallback(glfwWindow, ScrollCallback);
     glfwSetMouseButtonCallback(glfwWindow, MouseButtonCallback);
     glfwSetFramebufferSizeCallback(glfwWindow, ResizeCallback);
+    glfwSetErrorCallback(ErrorCallback);
     glfwSwapInterval(1); // do vsync
     
     GLenum glewSuccess = glewInit();
@@ -106,6 +112,7 @@ void Window::Update() {
 }
 
 void Window::FlipBuffers() {
+    //glfwSwapInterval(1);
     glfwSwapBuffers(glfwWindow);
 }
 

@@ -110,7 +110,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 				const auto& furnitureData = GetFurnitureData(tile.furniture);
 				
 				if (furnitureData.gameobjectMaker.has_value()) {
-					(*furnitureData.gameobjectMaker)({ i, j }, objects);
+					(*furnitureData.gameobjectMaker)({ i + centerPos.x, j + centerPos.y }, objects);
 				}
 			}
 

@@ -40,13 +40,14 @@ void GameInit()
     //auto& CR = ComponentRegistry::Get();
 
     MakeMainMenu();
-    //MakeFPSTracker();
+    MakeFPSTracker();
 
     //TestGrassFloor();
     //TestCubeArray({ 2, 2, 2 }, {4, 4, 4}, {2, 2, 2}, true);
     //PE.SetCollisionLayers(0, 0, false);
 
     GE.skyboxMaterial->shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl");
+    //return;
 
     //World::Generate();
 
@@ -154,7 +155,7 @@ void GameInit()
     
     //GE.defaultShaderProgram->Uniform("envLightDiffuse", 0.0f);
 
-    auto skyboxFaces = std::vector<TextureSource>(
+    /*auto skyboxFaces = std::vector<TextureSource>(
         {
             TextureSource("../textures/sky/right.png"),
             TextureSource("../textures/sky/left.png"),
@@ -165,9 +166,9 @@ void GameInit()
         });
     {
         auto [index, sky_m_ptr] = Material::New(MaterialCreateParams{ .textureParams = { TextureCreateParams {skyboxFaces, Texture::ColorMap} }, .type = Texture::TextureCubemap });
-        GE.skyboxMaterial = sky_m_ptr;
+        GE.skyboxMaterial = sky_m_ptr; WON'T WORK W/O SHADER SET
         GE.skyboxMaterialLayer = index;
-    }
+    }*/
 
     GE.window.inputDown->Connect([](InputObject input) {
         if (input.input == InputObject::F) {
