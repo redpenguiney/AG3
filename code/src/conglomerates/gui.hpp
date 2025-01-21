@@ -98,6 +98,8 @@ public:
         glm::vec2 gridScaleSize; // spacing between anchor points of each child in terms of object's parent (child's grandparent)
         glm::vec2 gridOffsetSize; // spacing between anchor points of each child in pixels
 
+        int semiAxisFillDir = -1; // -1 if rows go down and columns go left, 1 for the opposite behaviour
+
         // Determines when to wrap grid around based on maximum amount of objects in the grid on the fill axis. 
         // If maxInPixels == true, it will compare total size of objects in pixels along fill axis to this value.
         int maxInFillDirection = 16384;

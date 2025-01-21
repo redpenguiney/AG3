@@ -41,6 +41,7 @@ GameObject::GameObject(const GameobjectCreateParams& params):
     GameObject(GetNewGameobjectComponentData(params))
 {
     int materialId = params.materialId == 0 ? GraphicsEngine::Get().defaultMaterial->id : params.materialId;
+    Assert(materialId != 0);
 
     // TODO: can the transform comp restriction ever be lifted?
     Assert(params.requestedComponents[ComponentBitIndex::Transform]);

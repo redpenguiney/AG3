@@ -6,6 +6,7 @@ RenderComponent::RenderComponent(unsigned int mId, unsigned int matId):
     meshpoolId(-1)
 {
     //Assert(live);
+    Assert(materialId != 0);
     Assert(meshId != 0);
 
     // color = glm::vec4(1, 1, 1, 1);

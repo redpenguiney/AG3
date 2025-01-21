@@ -30,6 +30,15 @@ void MakeGameMenu() {
             .items = {
                 Constructible {
                     .name = "Clear"
+                },
+        Constructible {
+                    .name = "e"
+                },
+        Constructible {
+                    .name = "Claear"
+                },
+        Constructible {
+                    .name = "t"
                 }
             },
             .name = "Terrain",
@@ -121,17 +130,19 @@ void MakeGameMenu() {
                 buildingsList->offsetPos = { 8, 8 + p->GetPixelSize().y/2 + p->GetPixelPos().y + TAB_ICON_SPACING};
 
                 buildingsList->scaleSize = { 0, 0 };
-                buildingsList->offsetSize = { 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING + 8, 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING };
+                buildingsList->offsetSize = { 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING, 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING };
 
                 buildingsList->anchorPoint = { -0.5, -0.5 };
                 buildingsList->rgba = { 1.0, 1.0, 1.0, 0.4 };
                 buildingsList->childBehaviour = GuiChildBehaviour::Grid;
                 buildingsList->gridInfo = Gui::GridGuiInfo{
-                    .gridOffsetPosition = { -buildingsList->GetPixelSize().x / 2,  buildingsList->GetPixelSize().y / 2},
-                    .gridOffsetSize = {TAB_ICON_SPACING, 0},
+                    .gridOffsetPosition = { -buildingsList->GetPixelSize().x / 2 + TAB_ICON_SPACING,  buildingsList->GetPixelSize().y / 2 - TAB_ICON_SPACING},
+                    .gridOffsetSize = {TAB_ICON_SPACING, -TAB_ICON_SPACING},
+                    .maxInFillDirection = 2,//(int)buildingsList->GetPixelSize().x,
                     .maxInPixels = false,
                     .fillXFirst = true,
                     .addGuiLengths = true,
+                    
                 };
 
                 

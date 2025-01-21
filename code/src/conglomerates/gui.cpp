@@ -435,10 +435,13 @@ const std::vector<std::shared_ptr<Gui>>& Gui::GetChildren()
 
 void Gui::SortChildren()
 {
+    Assert(gridInfo.semiAxisFillDir == 1 || gridInfo.semiAxisFillDir == -1);
+
     std::stable_sort(children.begin(), children.end(), [](const std::shared_ptr<Gui>& a, const std::shared_ptr<Gui>& b) { return a->sortValue < b->sortValue; });
 
     int fillAxis = gridInfo.fillXFirst ? 0 : 1;
     int currentFillLen = 0;
+    int currentFillHeight = 0; // 
     glm::vec2 currentPos = gridInfo.gridOffsetPosition + gridInfo.gridScalePosition * GetPixelSize();
     glm::vec2 stride = gridInfo.gridOffsetSize + gridInfo.gridScaleSize * GetParentContainerScale();
     for (auto& ui : children) {
@@ -447,10 +450,12 @@ void Gui::SortChildren()
         currentPos[fillAxis] += stride[fillAxis];
         if (gridInfo.addGuiLengths)
             currentPos[fillAxis] += ui->GetPixelSize()[fillAxis];
+            currentFillHeight = std::max(currentFillHeight, (int)ui->GetPixelSize()[1 - fillAxis]);
         if (currentFillLen > gridInfo.maxInFillDirection) {
             currentFillLen = 0;
             currentPos[fillAxis] = gridInfo.gridOffsetPosition[fillAxis] + gridInfo.gridScalePosition[fillAxis] * GetPixelSize()[fillAxis];
-            currentPos[1 - fillAxis] += stride[1 - fillAxis];
+            currentPos[1 - fillAxis] += stride[1 - fillAxis] + gridInfo.semiAxisFillDir * currentFillHeight;
+            currentFillHeight = 0;
         }
     }
 }
