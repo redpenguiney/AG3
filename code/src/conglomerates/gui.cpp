@@ -35,6 +35,7 @@ void Gui::UpdateGuiForNewWindowResolution(glm::uvec2 oldSize, glm::uvec2 newSize
 }
 
 // TODO: O(nGuis) complexity, not huge deal but spatial partioning structure (shudder) might be wise eventually
+#pragma warning(disable : 4244)
 void Gui::FireInputEvents()
 {
 
@@ -52,7 +53,7 @@ void Gui::FireInputEvents()
         // so that we can treat the gui's rotation as 0 and do a simple AABB-point intersection test, we rotate the cursor position by the inverse of the gui's current rotation.
         // Note that we invert mouse position; window treats (0, 0) as top left but gui positioning treats it as bottom left.
         glm::vec2 cursorPos = (glm::vec2(GraphicsEngine::Get().GetWindow().MOUSE_POS));
-        cursorPos.y = GraphicsEngine::Get().GetWindow().width - cursorPos.y;
+        cursorPos.y = GraphicsEngine::Get().GetWindow().height - cursorPos.y;
         glm::vec2 relCursorPos = ui->GetPixelPos() - cursorPos;
         relCursorPos = glm::vec2(glm::quat(ui->rotation, glm::vec3(0, 0, 1)) * glm::vec3(relCursorPos, 0.0f));
 
@@ -61,7 +62,7 @@ void Gui::FireInputEvents()
         int bottom = - ui->GetPixelSize().y / 2;
         int top = ui->GetPixelSize().y / 2;
 
-        DebugLogInfo("Rel pos ");
+        //DebugLogInfo("Rel pos ");
 
         bool isMouseIntersecting = false;
         if (relCursorPos.x > left && relCursorPos.x < right && relCursorPos.y > bottom && relCursorPos.y < top) {
@@ -69,8 +70,8 @@ void Gui::FireInputEvents()
             isMouseIntersecting = true;
         }
 
-        //if (ui->guiTextInfo.has_value() && ui->guiTextInfo->text == "Food") {
-        //    //DebugLogInfo("BE ADVISED: ", cursorPos.y, " ", top, " ", bottom)
+        //if (ui->guiTextInfo.has_value()) {
+            //DebugLogInfo("BE ADVISED: ", cursorPos.y, " ", top, " ", bottom)
         //}
 
         if (ui->mouseHover != isMouseIntersecting) { // then the cursor has either moved onto or off of the gui.
@@ -115,6 +116,7 @@ void Gui::UpdateBillboardGuis(float) {
     }
 }
 
+#pragma warning(disable : 26829)
 Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial,  std::optional<BillboardGuiInfo> billboardGuiInfo):
     onMouseEnter(Event<>::New()),
     onMouseExit(Event<>::New()),

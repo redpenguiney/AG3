@@ -48,6 +48,8 @@ void MakeGameMenu() {
     constexpr int TAB_ICON_SPACING = 8;
 
     static std::vector<std::shared_ptr<Gui>> constructionGui;
+    static int currentConstructionTabIndex = -1;
+    static std::unique_ptr<Gui> currentConstructionTab = nullptr;
     //static std::vector<std::unique_ptr<Event<InputObject>::Connection>> connections;
 
     auto constructionFrame = std::make_shared<Gui>(false, std::nullopt);
@@ -89,38 +91,87 @@ void MakeGameMenu() {
         tab->UpdateGuiGraphics();
 
         tab->onMouseEnter->Connect([p = tab.get()]() {
-            DebugLogInfo("OO")
             p->GetTextInfo().rgba = { 1, 1, 0, 1 };
             p->UpdateGuiGraphics();
+            GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemSelectionCursor);
             });
         tab->onMouseExit->Connect([p = tab.get()]() {
             p->GetTextInfo().rgba = { 0, 0, 1, 1 };
             p->UpdateGuiGraphics();
+            GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor);
             });
 
-        /*connections.push_back(std::move(*/tab->onInputBegin->Connect([p = tab.get(), tabInfo, tabIndex](const InputObject& input) {
+        tab->onInputBegin->Connect([p = tab.get(), tabInfo, tabIndex](const InputObject& input) {
             
             if (input.input != InputObject::LMB) return;
 
-            auto buildingsList = std::make_shared<Gui>(false, std::nullopt);
-            constructionGui.push_back(buildingsList);
+            if (currentConstructionTabIndex == tabIndex) {
+                currentConstructionTabIndex = -1;
+                currentConstructionTab = nullptr;
+                return;
+            }
+            else {
+                if (currentConstructionTab) {
+                    currentConstructionTab = nullptr;
+                }
 
-            buildingsList->scalePos = { 0, 0 };
-            buildingsList->offsetPos = { 8, 8 };
+                auto buildingsList = std::make_unique<Gui>(false, std::nullopt);
 
-            buildingsList->scaleSize = { 0, 0 };
-            buildingsList->offsetSize = { 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING + 8, 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING };
+                buildingsList->scalePos = { 0, 0 };
+                buildingsList->offsetPos = { 8, 8 + p->GetPixelSize().y/2 + p->GetPixelPos().y + TAB_ICON_SPACING};
 
-            buildingsList->anchorPoint = { -0.5, -0.5 };
-            buildingsList->rgba = { 1.0, 1.0, 1.0, 0.4 };
-            buildingsList->childBehaviour = GuiChildBehaviour::Grid;
-            buildingsList->gridInfo = Gui::GridGuiInfo{
-                //.gridOffsetPosition = {TAB_ICON_SPACING + TAB_ICON_WIDTH / 2 - constructionFrame->offsetSize.x / 2, 0},
-                .gridOffsetSize = {TAB_ICON_SPACING, 0},
-                .maxInPixels = false,
-                .fillXFirst = true,
-                .addGuiLengths = true,
-            };
+                buildingsList->scaleSize = { 0, 0 };
+                buildingsList->offsetSize = { 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING + 8, 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING };
+
+                buildingsList->anchorPoint = { -0.5, -0.5 };
+                buildingsList->rgba = { 1.0, 1.0, 1.0, 0.4 };
+                buildingsList->childBehaviour = GuiChildBehaviour::Grid;
+                buildingsList->gridInfo = Gui::GridGuiInfo{
+                    .gridOffsetPosition = { -buildingsList->GetPixelSize().x / 2,  buildingsList->GetPixelSize().y / 2},
+                    .gridOffsetSize = {TAB_ICON_SPACING, 0},
+                    .maxInPixels = false,
+                    .fillXFirst = true,
+                    .addGuiLengths = true,
+                };
+
+                
+
+                int itemI = 0;
+                for (auto& item : tabInfo.items) {
+                    auto construction = std::make_shared<Gui>(true, std::nullopt, MenuFont1<10>());
+
+                    construction->scalePos = { 0, 0 };
+                    //construction->offsetPos = { 8, 8 + p->GetPixelSize().y / 2 + p->GetPixelPos().y + TAB_ICON_SPACING };
+
+                    construction->scaleSize = { 0, 0 };
+                    construction->offsetSize = { TAB_ICON_WIDTH, TAB_ICON_WIDTH };
+                    construction->anchorPoint = { -0.5, 0.5 };
+
+                    construction->GetTextInfo().leftMargin = -1000;
+                    construction->GetTextInfo().rightMargin = 1000;
+                    construction->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+                    construction->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
+                    construction->GetTextInfo().text = item.name;
+                    construction->rgba = { 0.4, 0.4, 0.4, 1.0 };
+                    construction->GetTextInfo().rgba = {1.0, 1.0, 1.0, 1.0};
+
+                    construction->SetParent(buildingsList.get());
+
+                    construction->UpdateGuiGraphics();
+                }
+
+                buildingsList->SortChildren();
+                buildingsList->UpdateGuiTransform();
+                buildingsList->UpdateGuiGraphics();
+
+                std::swap(buildingsList, currentConstructionTab);
+                currentConstructionTabIndex = tabIndex;
+            }
+
+            //auto buildingsList = std::make_shared<Gui>(false, std::nullopt);
+            //constructionGui.push_back(buildingsList);
+
+            
 
 
             
@@ -165,10 +216,12 @@ void MakeMainMenu() {
     startGame->onMouseEnter->Connect([p = startGame.get()]() {
         p->GetTextInfo().rgba = { 1, 1, 0, 1 };
         p->UpdateGuiGraphics();
+        GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemSelectionCursor);
         });
     startGame->onMouseExit->Connect([p = startGame.get()]() {
         p->GetTextInfo().rgba = { 1, 0, 0, 1 };
         p->UpdateGuiGraphics();
+        GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor);
         });
     startGame->onInputEnd->Connect([](InputObject input) {
 
@@ -186,7 +239,7 @@ void MakeMainMenu() {
             //Chunk::LoadWorld(GraphicsEngine::Get().camera.position, 512);
             World::Generate();
             MakeGameMenu();
-
+            GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor); // TODO: this pattern is dumb and WILL  cause (minor) bugs
             //Creature::New(CubeMesh(), Body::Humanoid());
         }
         });

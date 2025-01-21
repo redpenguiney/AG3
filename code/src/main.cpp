@@ -212,6 +212,9 @@ int main(int numArgs, const char *argPtrs[]) {
         // could/should we do something to try and do physics or something while GPU working? or are we already? 
         // printf("Flipping buffers.\n");
         GE.window.FlipBuffers();
+        if (!GE.window.vsync || !GE.window.doubleBuf) {
+            while (Time() - currentTime < 1.0/60.0) {}
+        }
 
         BaseEvent::FlushEventQueue();
         LUA.PostRenderCallbacks();

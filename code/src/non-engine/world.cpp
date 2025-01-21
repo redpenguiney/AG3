@@ -225,7 +225,7 @@ int AddAtlasRegion(int x, int y) {
 TerrainChunk::TerrainChunk(glm::ivec2 position)
 {
     static noise::module::Perlin perlinNoiseGenerator;
-    //static noise::module::Perlin 
+    static noise::module::Perlin treeNoiseGenerator;
     //perlinNoiseGenerator.SetSeed(1);
     //perlinNoiseGenerator.SetFrequency(16);
     //perlinNoiseGenerator.SetOctaveCount(3);
@@ -235,7 +235,7 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
         int localZ = 0;
         for (int worldZ = position.y - 8; worldZ < position.y + 8; worldZ++) {
             float height = perlinNoiseGenerator.GetValue(worldX/16.f, worldZ/16.f, 0);
-            float tree = perlinNoiseGenerator.GetValue(worldX / 16.0f, worldZ / 16.0f, 0);
+            float tree = treeNoiseGenerator.GetValue(worldX * 1.5f, worldZ * 1.5f, 0);
             
 
             //DebugLogInfo("Hiehgt ", height);
@@ -244,7 +244,7 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
             if (height > 0) {
                 tiles[localX][localZ].floor = World::TERRAIN_IDS().GRASS;
 
-                if (tree > 0.0) {
+                if (tree > 0.5) {
                     tiles[localX][localZ].furniture = World::TERRAIN_IDS().TREE;
                 }
             }

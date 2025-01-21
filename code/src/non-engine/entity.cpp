@@ -31,7 +31,7 @@ void Entity::UpdateAll(float dt) {
 		}
 	}
 
-	DebugLogInfo("Updating ", Entities().size());
+	//DebugLogInfo("Updating ", Entities().size());
 
 	for (auto& entity : Entities()) {
 		if (entity->IsActive()) {

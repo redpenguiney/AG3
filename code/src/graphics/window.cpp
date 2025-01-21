@@ -25,7 +25,7 @@ Window::Window(int widthh, int heightt):
         abort();
     }
 
-    glfwWindowHint(GLFW_DOUBLEBUFFER, GL_FALSE); // disbable double buffering; TODO THIS SHOULD NOT BE NECCESSARY
+    glfwWindowHint(GLFW_DOUBLEBUFFER, doubleBuf ? GL_TRUE : GL_FALSE); // disbable double buffering; TODO THIS SHOULD NOT BE NECCESSARY
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE); // Tell GLFW we are going to be running opengl in debug mode, which lets us use GL_DEBUG_OUTPUT to get error messages easily
     glfwWindow = glfwCreateWindow(width, height, "AG3", nullptr, nullptr);
     if (!glfwWindow) {
@@ -40,7 +40,8 @@ Window::Window(int widthh, int heightt):
     glfwSetMouseButtonCallback(glfwWindow, MouseButtonCallback);
     glfwSetFramebufferSizeCallback(glfwWindow, ResizeCallback);
     glfwSetErrorCallback(ErrorCallback);
-    glfwSwapInterval(1); // do vsync
+
+    glfwSwapInterval(vsync ? 1 : 0); // do vsync
     
     GLenum glewSuccess = glewInit();
     if (glewSuccess != GLEW_OK) {
@@ -58,6 +59,14 @@ Window::Window(int widthh, int heightt):
 
     // tell glfw we care about capslock and numpad
     glfwSetInputMode(glfwWindow, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
+
+    // grab system-provided cursors
+    systemPointerCursor = std::move(Cursor(GLFW_ARROW_CURSOR));
+    systemTextEntryCursor = Cursor(GLFW_IBEAM_CURSOR);
+    systemCrosshairCursor = Cursor(GLFW_CROSSHAIR_CURSOR);
+    systemSelectionCursor = Cursor(GLFW_HAND_CURSOR);
+    systemHorizontalResizingCursor = Cursor(GLFW_HRESIZE_CURSOR);
+    systemVerticalResizingCursor = Cursor(GLFW_VRESIZE_CURSOR);
 
     DebugLogInfo("Window creation successful.");
 
@@ -113,7 +122,11 @@ void Window::Update() {
 
 void Window::FlipBuffers() {
     //glfwSwapInterval(1);
-    glfwSwapBuffers(glfwWindow);
+    if (vsync)
+        glfwSwapBuffers(glfwWindow);
+    else {
+        glFinish();
+    }
 }
 
 // returns true if the user is trying to close the application, or if Window::Close() was explicitly called (like by a quit game button)
@@ -241,6 +254,14 @@ InputObject::InputType glfwKeyToInputType(int key) {
         DebugLogError("Unrecognized key ", key, " (GLFW recognizes it, but we don't.).");
         return InputObject::Unknown;
     }
+}
+
+void Window::UseCursor(const Cursor& cursor)
+{
+    Assert(cursor.cursor != nullptr);
+    if (currentCursor == &cursor) return;
+    currentCursor = &cursor;
+    glfwSetCursor(glfwWindow, cursor.cursor);
 }
 
 // GLFW calls these functions automatically when glfwPollEvents() is called.

@@ -4,6 +4,7 @@
 #include "GLM/vec2.hpp"
 #include <unordered_set>
 #include "events/event.hpp"
+#include "cursor.hpp"
 
 // Object representing any kind of input.
 class InputObject {
@@ -103,6 +104,8 @@ class Window {
     public:
     unsigned int width = 0;
     unsigned int height = 0;
+    const bool doubleBuf = false; 
+    const bool vsync = true; // value ignored if !doubleBuf
     
     std::shared_ptr<Event<InputObject>> inputDown;
     std::shared_ptr<Event<InputObject>> inputUp;
@@ -118,6 +121,7 @@ class Window {
     std::shared_ptr<Event<glm::uvec2, glm::uvec2>> onWindowResize;
 
     Window() = delete; 
+    Window(const Window&) = delete;
 
     Window(int widthh, int heightt);
     ~Window();
@@ -166,7 +170,20 @@ class Window {
     glm::dvec2 MOUSE_POS = {0, 0};
     glm::dvec2 MOUSE_DELTA = {0, 0}; // how much mouse has moved since last frame
 
-    private:
+    void UseCursor(const Cursor& cursor);
+
+    // System provided cursors for your use. You can change these if you REALLY want to without any issues but that'd be dumb so don't.
+    Cursor systemPointerCursor;
+    Cursor systemTextEntryCursor;
+    Cursor systemCrosshairCursor;
+    Cursor systemSelectionCursor;
+    Cursor systemHorizontalResizingCursor;
+    Cursor systemVerticalResizingCursor;
+
+private:
+    // NO GUARANTEES that this pointer is valid, do not access through. Only here to avoid redundant GLFW calls to set the current cursor.
+    const Cursor* currentCursor = nullptr;
+
     bool mouseLocked = false;
 
     GLFWwindow* glfwWindow;
