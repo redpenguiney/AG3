@@ -78,6 +78,7 @@ struct MaterialCreateParams {
 // On the GPU, each object has a materialId that it uses to get color, normal, etc. textures.
 // On the CPU, meshpools are sorted by their material to minimize texture bindings.
 // Note: pretty much all members should be const for appendation support
+// Remember to update Clone() when adding members!
 class Material {
 public:
     enum MaterialTextureIndex {
@@ -116,6 +117,9 @@ public:
 
     // Returns a ptr to the material with the given id.
     static std::shared_ptr<Material>& Get(const unsigned int id);
+
+    // Returns shallow copy of the material; all members equal except for the id.
+    static std::shared_ptr<Material> Copy(const std::shared_ptr<Material>&);
 
     // TODO: figure out what happens when you call this while the texture is being used.
     static void Destroy(const unsigned int id);
@@ -167,6 +171,7 @@ private:
 
     // private constructor to enforce usage of factory method
     Material(const MaterialCreateParams& params);
+    Material(const Material& original);
 
     friend class Meshpool;
 

@@ -62,7 +62,7 @@ public:
     // Default material used for new RenderComponents. Has no textures.
     const std::shared_ptr<Material> defaultMaterial; 
 
-    // Default material used when creating instances of the Gui conglomerate class. Should be able to freely change this with no issues (TODO verify)
+    // Default material which Gui makes a copy of when creating instances of the Gui conglomerate class. Should be able to freely change this with no issues (TODO verify)
     std::shared_ptr<Material> defaultGuiMaterial;
 
     // Same as defaultGuiShaderProgram, but for billboard uis. Should be able to freely change this with no issues (TODO verify)

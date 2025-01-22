@@ -117,20 +117,26 @@ void Gui::UpdateBillboardGuis(float) {
 }
 
 #pragma warning(disable : 26829)
-Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial,  std::optional<BillboardGuiInfo> billboardGuiInfo):
+Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial,  std::optional<BillboardGuiInfo> billboardGuiInfo, bool clippingEnabled):
+    material(clippingEnabled ? Material::Copy(guiMaterial.has_value() ? guiMaterial->second : GraphicsEngine::Get().defaultGuiMaterial) : guiMaterial.has_value() ? guiMaterial->second : GraphicsEngine::Get().defaultGuiMaterial),
+    ownsMaterial(clippingEnabled),
     onMouseEnter(Event<>::New()),
     onMouseExit(Event<>::New()),
     onInputBegin(Event<InputObject>::New()),
     onInputEnd(Event<InputObject>::New())
+
 {
+   
     //DebugLogInfo("Generated gui ", this);
     
     GameobjectCreateParams objectParams({ComponentBitIndex::Transform, billboardGuiInfo.has_value() ? ComponentBitIndex::Render : ComponentBitIndex::RenderNoFO});
 
     mouseHover = false;
 
-    objectParams.materialId = (guiMaterial.has_value() ? guiMaterial->second->id : GraphicsEngine::Get().defaultGuiMaterial->id);
+    
+    objectParams.materialId = material->id;
     materialLayer = guiMaterial.has_value() ? guiMaterial->first : -1;
+    
     objectParams.meshId = Mesh::Square()->meshId;
 
     object = GameObject::New(objectParams);
@@ -196,6 +202,10 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
 }
 
 Gui::~Gui() {
+
+    // avoid leaking copied material on gui destruction
+    if (ownsMaterial) Material::Destroy(material->id);
+
     Orphan();
 
     for (auto& child: children) { // orphan children
@@ -286,20 +296,7 @@ void Gui::UpdateGuiTransform() {
         c->UpdateGuiTransform();
     }
 
-    if (clipTarget.has_value()) {
-        bool clipping = !clipTarget->expired();
-
-        // we do scissor test here too, since this function will be called when the clipTarget (an ancestor) moves / changes size too
-        material->scissoringEnabled = clipping;
-        if (clipping) {
-            auto lockedClipTarget = clipTarget->lock();
-            material->scissorCorner1 = lockedClipTarget->GetPixelPos() - lockedClipTarget->GetPixelSize() / 2;
-            material->scissorCorner2 = lockedClipTarget->GetPixelPos() + lockedClipTarget->GetPixelSize() / 2;
-        }
-        else {
-            clipTarget = std::nullopt;
-        }
-    }
+    UpdateScissorTest();
 }
 
 Gui::GuiTextInfo& Gui::GetTextInfo() {
@@ -321,6 +318,26 @@ void Gui::UpdateGuiGraphics() {
         guiTextInfo->object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, float(zLevel - 0.01));
         guiTextInfo->object->Get<RenderComponent>()->SetColor(guiTextInfo->rgba);
         guiTextInfo->object->Get<RenderComponent>()->SetTextureZ(guiTextInfo->fontMaterialLayer);
+    }
+}
+
+void Gui::UpdateScissorTest()
+{
+    if (clipTarget.has_value()) {
+        Assert(ownsMaterial);
+        bool clipping = !clipTarget->expired();
+
+        // we do scissor test here too, since this function will be called when the clipTarget (an ancestor) moves / changes size too
+        material->scissoringEnabled = clipping;
+        if (clipping) {
+            auto lockedClipTarget = clipTarget->lock();
+            auto s = lockedClipTarget->GetPixelSize() / 2;
+            material->scissorCorner1 = lockedClipTarget->GetPixelPos() + glm::vec2(-s.x, s.y);
+            material->scissorCorner2 = lockedClipTarget->GetPixelPos() + glm::vec2(s.x, -s.y);
+        }
+        else {
+            clipTarget = std::nullopt;
+        }
     }
 }
 

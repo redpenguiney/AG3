@@ -115,15 +115,18 @@ public:
     std::shared_ptr<GameObject> object;
 
     // if haveText == true, then fontMaterial must be a material with a fontmap attached.
-    // SHOULD be used with std::make_shared/shared_ptr, but if you don't its fine as long as you don't use SetParent().
-    // guiMaterial will default to the one in GraphicsEngine if nullopt.
-    Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<BillboardGuiInfo> billboardInfo = std::nullopt);
+    // generally should be used with std::make_shared/shared_ptr, but most features will function even if you don't.
+    // guiMaterial will default to the default gui material specified in GraphicsEngine if nullopt. 
+    // if clippingEnabled, then clipTarget may be used and Gui::material will be set to a copy of guiMaterial (or the default material).
+    Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<BillboardGuiInfo> billboardInfo = std::nullopt, bool clippingEnabled = false);
 
     ~Gui();
 
     // don't copy or move ples
     Gui(const Gui&) = delete;
     Gui(const Gui&&) = delete;
+
+    const bool ownsMaterial; // True if supports clipping, indicates the gui has it own material
 
     GuiTextInfo& GetTextInfo();
     BillboardGuiInfo& GetBillboardInfo();
@@ -140,6 +143,7 @@ public:
     // used for scrolling. If not nullptr, only the part of gui whose area overlaps clipTarget will be rendered. 
     // of course, it's still up to you to actually move the gui up and down depending on scroll wheel or whatever.
     // will NOT work if clipTarget is not an ancestor of the gui.
+    // WARNING: for this to work properly, this gui should be the ONLY object using this material (the default behaviour when you don't supply a material will accomplish this).
     std::optional<std::weak_ptr<Gui>> clipTarget;
 
 
@@ -165,7 +169,7 @@ public:
     } guiScaleMode; // which screen dimensions the scale portion of position/scale uses for each axis.
     
     glm::vec4 rgba; // color and opacity/alpha
-    std::shared_ptr<Material> material;
+    const std::shared_ptr<Material> material;
     unsigned int materialLayer; 
 
     // Call after modifying any position/rotation/scale related variables (including changes to child behaviour and grid size) to actually apply those changes to the gui's transform (and that of its children).
@@ -176,6 +180,8 @@ public:
 
     // Call after modifying any graphics related (not text-related and not pos/rot/scl) variables to actually apply those changes to the gui's appearance.
     void UpdateGuiGraphics();
+
+    void UpdateScissorTest();
 
     // get size of the gui in pixels
     glm::vec2 GetPixelSize();

@@ -58,7 +58,7 @@ void MakeGameMenu() {
 
     static std::vector<std::shared_ptr<Gui>> constructionGui;
     static int currentConstructionTabIndex = -1;
-    static std::unique_ptr<Gui> currentConstructionTab = nullptr;
+    static std::shared_ptr<Gui> currentConstructionTab = nullptr;
     //static std::vector<std::unique_ptr<Event<InputObject>::Connection>> connections;
 
     auto constructionFrame = std::make_shared<Gui>(false, std::nullopt);
@@ -124,7 +124,7 @@ void MakeGameMenu() {
                     currentConstructionTab = nullptr;
                 }
 
-                auto buildingsList = std::make_unique<Gui>(false, std::nullopt);
+                auto buildingsList = std::make_shared<Gui>(false, std::nullopt);
 
                 buildingsList->scalePos = { 0, 0 };
                 buildingsList->offsetPos = { 8, 8 + p->GetPixelSize().y/2 + p->GetPixelPos().y + TAB_ICON_SPACING};
@@ -149,7 +149,7 @@ void MakeGameMenu() {
 
                 int itemI = 0;
                 for (auto& item : tabInfo.items) {
-                    auto construction = std::make_shared<Gui>(true, std::nullopt, MenuFont1<10>());
+                    auto construction = std::make_shared<Gui>(true, std::nullopt, MenuFont1<10>(), std::nullopt, true);
 
                     construction->scalePos = { 0, 0 };
                     //construction->offsetPos = { 8, 8 + p->GetPixelSize().y / 2 + p->GetPixelPos().y + TAB_ICON_SPACING };
@@ -165,7 +165,7 @@ void MakeGameMenu() {
                     construction->GetTextInfo().text = item.name;
                     construction->rgba = { 0.4, 0.4, 0.4, 1.0 };
                     construction->GetTextInfo().rgba = {1.0, 1.0, 1.0, 1.0};
-
+                    construction->clipTarget = buildingsList;
                     construction->SetParent(buildingsList.get());
 
                     construction->UpdateGuiGraphics();

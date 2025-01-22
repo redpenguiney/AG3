@@ -1,5 +1,6 @@
 #include "cursor.hpp"
 #include <debug/assert.hpp>
+#include "window.hpp"
 
 Cursor::Cursor(GLenum systemCursorType) {
 	cursor = glfwCreateStandardCursor(systemCursorType); // standard cursor creation shold NOT fail.
@@ -25,6 +26,7 @@ Cursor::Cursor() {
 }
 
 Cursor::~Cursor() noexcept {
+	if (!Window::GLFW_INIT) return; // can't/needn't destroy glfw stuff if glfw was already terminated
 	if (cursor != nullptr)
 		glfwDestroyCursor(cursor);
 }

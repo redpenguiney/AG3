@@ -101,7 +101,9 @@ struct std::hash<InputObject> {
 };
 
 class Window {
-    public:
+public:
+    static inline bool GLFW_INIT = false; // Indicates whether GLFW is currently initialized.
+
     unsigned int width = 0;
     unsigned int height = 0;
     const bool doubleBuf = false; 

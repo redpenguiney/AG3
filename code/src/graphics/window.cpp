@@ -7,6 +7,7 @@
 
 void ErrorCallback(int errorCode, const char* errorMessage) {
     DebugLogError("GLFW error ", errorCode, ": ", errorMessage);
+    Assert(false);
 }
 
 Window::Window(int widthh, int heightt):
@@ -24,6 +25,7 @@ Window::Window(int widthh, int heightt):
         std::printf("Failure to initialize GLFW. Aborting.\n");
         abort();
     }
+    GLFW_INIT = true;
 
     glfwWindowHint(GLFW_DOUBLEBUFFER, doubleBuf ? GL_TRUE : GL_FALSE); // disbable double buffering; TODO THIS SHOULD NOT BE NECCESSARY
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE); // Tell GLFW we are going to be running opengl in debug mode, which lets us use GL_DEBUG_OUTPUT to get error messages easily
@@ -61,7 +63,7 @@ Window::Window(int widthh, int heightt):
     glfwSetInputMode(glfwWindow, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
 
     // grab system-provided cursors
-    systemPointerCursor = std::move(Cursor(GLFW_ARROW_CURSOR));
+    systemPointerCursor = Cursor(GLFW_ARROW_CURSOR);
     systemTextEntryCursor = Cursor(GLFW_IBEAM_CURSOR);
     systemCrosshairCursor = Cursor(GLFW_CROSSHAIR_CURSOR);
     systemSelectionCursor = Cursor(GLFW_HAND_CURSOR);
@@ -75,10 +77,14 @@ Window::Window(int widthh, int heightt):
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // make sure it actually prints out the errors on the thread that created the error so you actually get a useful stack trace
     glDebugMessageCallback(MessageCallback, 0);
+
+
 };
 
 Window::~Window() {
+
     glfwTerminate();
+    GLFW_INIT = false;
 }
 
 bool Window::IsMouseLocked() const {

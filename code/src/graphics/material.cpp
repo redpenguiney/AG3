@@ -9,6 +9,28 @@
 #include "shader_program.hpp"
 #include "gengine.hpp"
 
+std::shared_ptr<Material> Material::Copy(const std::shared_ptr<Material>& original)
+{
+    auto ptr = std::shared_ptr<Material>(new Material(*original));
+    MeshGlobals::Get().MATERIALS[ptr->id] = ptr;
+    return ptr;
+}
+
+Material::Material(const Material& original):
+    id(MeshGlobals::Get().LAST_MATERIAL_ID++),
+    shader(original.shader),
+    depthMaskEnabled(original.depthMaskEnabled),
+    textures(original.textures),
+    inputProvider(original.inputProvider),
+    depthTestFunc(original.depthTestFunc),
+    blendingEnabled(original.blendingEnabled),
+    blendingSrcFactor(original.blendingSrcFactor),
+    blendingDstFactor(original.blendingDstFactor),
+    drawOrder(original.drawOrder)
+{
+
+}
+
 void Material::Destroy(const unsigned int id) {
     Assert(MeshGlobals::Get().MATERIALS.count(id));
     MeshGlobals::Get().MATERIALS.erase(id);
@@ -99,7 +121,7 @@ void Material::Use() {
 
     if (scissoringEnabled) {
         glEnable(GL_SCISSOR_TEST);
-        glScissor(scissorCorner1.x, scissorCorner1.y, scissorCorner2.x - scissorCorner1.x, scissorCorner2.y - scissorCorner2.x);
+        glScissor(std::max(0, scissorCorner1.x), std::max(scissorCorner1.y, 0), std::max(0, scissorCorner2.x - scissorCorner1.x), std::max(0, scissorCorner2.y - scissorCorner2.x));
     }
     else {
         glDisable(GL_SCISSOR_TEST);
