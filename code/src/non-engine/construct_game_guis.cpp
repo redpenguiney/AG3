@@ -169,6 +169,7 @@ void MakeGameMenu() {
                     construction->SetParent(buildingsList.get());
 
                     construction->UpdateGuiGraphics();
+                    construction->UpdateGuiText();
                 }
 
                 buildingsList->SortChildren();
