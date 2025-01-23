@@ -120,8 +120,8 @@ void Material::Use() {
     inputProvider.onBindingFunc(this, shader);
 
     if (scissoringEnabled) {
-        //glEnable(GL_SCISSOR_TEST);
-        //glScissor(std::min(scissorCorner2.x, scissorCorner1.x), std::min(scissorCorner1.y, scissorCorner2.y), std::abs(scissorCorner2.x - scissorCorner1.x), std::abs(scissorCorner2.y - scissorCorner2.x));
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(std::min(scissorCorner2.x, scissorCorner1.x), std::min(scissorCorner1.y, scissorCorner2.y), std::abs(scissorCorner2.x - scissorCorner1.x), std::abs(scissorCorner2.y - scissorCorner2.x));
     }
     else {
         glDisable(GL_SCISSOR_TEST);

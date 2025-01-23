@@ -32,7 +32,7 @@ void MakeGameMenu() {
                     .name = "Clear"
                 },
         Constructible {
-                    .name = "e"
+                    .name = "Deforest"
                 },
         Constructible {
                     .name = "Claear"
@@ -42,6 +42,14 @@ void MakeGameMenu() {
                 }
             },
             .name = "Terrain",
+        },
+        ConstructionTab {
+            .items = {
+                Constructible {
+                    .name ="Wood wall"
+                }
+            },
+            .name = "Base",
         },
         ConstructionTab {
             .name = "Food"
