@@ -332,8 +332,8 @@ void Gui::UpdateScissorTest()
         if (clipping) {
             auto lockedClipTarget = clipTarget->lock();
             auto s = lockedClipTarget->GetPixelSize() / 2;
-            material->scissorCorner1 = lockedClipTarget->GetPixelPos() + glm::vec2(-s.x, s.y);
-            material->scissorCorner2 = lockedClipTarget->GetPixelPos() + glm::vec2(s.x, -s.y);
+            material->scissorCorner1 = lockedClipTarget->GetPixelPos() + glm::vec2(-s.x, -s.y);
+            material->scissorCorner2 = lockedClipTarget->GetPixelPos() + glm::vec2(s.x, s.y);
         }
         else {
             clipTarget = std::nullopt;
