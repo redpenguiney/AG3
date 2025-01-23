@@ -1,0 +1,16 @@
+
+#nodeType nodeName(nodeNameIn1, nodeNameIn2, 41.0)
+
+VERSION(1)
+SHADER(VERTEX)
+
+uniform_mat4 perspective()
+attrib0_vec3 vertex_pos()
+attrib6_mat4 model_matrix()
+
+make_vec4 vertex_pos4(vertex_pos, 1.0)
+multiply worldSpace(model_matrix, vertex_pos4)
+multiply screenSpace(perspective, worldSpace)
+
+out_vec4 gl_position(screenSpace)
+out_vec3 world_pos(vertex_pos)

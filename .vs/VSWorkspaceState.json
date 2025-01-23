@@ -1,7 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\shaders"
   ],
-  "SelectedNode": "\\AG3.sln",
+  "SelectedNode": "\\shaders\\world_vertex.glsl",
   "PreviewInSolutionExplorer": false
 }
