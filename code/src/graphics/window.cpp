@@ -328,7 +328,18 @@ void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int
 
 void Window::ScrollCallback(GLFWwindow* window, double deltaScrollX, double deltaScrollY)
 {
+    bool shift = GraphicsEngine::Get().window.PRESSED_KEYS.contains(InputObject::Shift);
+    bool alt = GraphicsEngine::Get().window.PRESSED_KEYS.contains(InputObject::Alt);
+    bool ctrl = GraphicsEngine::Get().window.PRESSED_KEYS.contains(InputObject::Ctrl);
+
+    auto input = InputObject{
+        .input = InputObject::Scroll, .direction = {deltaScrollX, deltaScrollY}, .capitalized = false, .altDown = alt, .ctrlDown = ctrl, .shiftDown = shift
+    };
+
     GraphicsEngine::Get().window.onScroll->Fire(deltaScrollX, deltaScrollY);
+    GraphicsEngine::Get().window.inputDown->Fire(input);
+    GraphicsEngine::Get().window.PRESS_BEGAN_KEYS.insert(input);
+    GraphicsEngine::Get().window.PRESS_ENDED_KEYS.insert(input);
 }
 
 void Window::ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindowHeight) { // called on window resize
@@ -339,6 +350,7 @@ void Window::ResizeCallback(GLFWwindow* window, int newWindowWidth, int newWindo
         glm::uvec2 oldWidth(GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height);
         GraphicsEngine::Get().window.width = newWindowWidth;
         GraphicsEngine::Get().window.height = newWindowHeight;
+
         Assert(newWindowWidth != 0);
 
         GraphicsEngine::Get().window.onWindowResize->Fire(oldWidth, glm::uvec2(newWindowWidth, newWindowHeight));

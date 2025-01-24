@@ -69,8 +69,7 @@ class InputObject {
         MB7,
         MB8,
 
-        ScrollUp,
-        ScrollDown,
+        Scroll, // Note that capitalized is always false for Scroll events due to glfw/laziness limitations.
 
         LeftArrow,
         RightArrow,
@@ -82,7 +81,9 @@ class InputObject {
 
     InputType input;
 
-    bool capitalized; // if it's a letter, whether it's capitalized, accounting for both shift and capslock
+    glm::vec2 direction = { 0, 0 }; // has magnitude, used for scrolling/joysticks if i ever support them (i won't)/etc.
+
+    bool capitalized; // if it's a letter, whether it's capitalized, accounting for both shift and capslock. Always false if input == Scroll, sorry. (TODO fix)
     bool altDown;
     bool ctrlDown;
     bool shiftDown;
@@ -91,6 +92,7 @@ class InputObject {
 };
 
 // hash inputobject so it can go in unordered map
+// TODO: add direction member to hash function
 template <>
 struct std::hash<InputObject> {
     std::size_t operator()(const InputObject& io) const noexcept {

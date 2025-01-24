@@ -179,7 +179,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
             .verticalAlignment = VerticalAlignMode::Top,
             .text = "Text",
             .object = GameObject::New(textObjectParams),
-            .fontMaterial = fontMaterial->second,
+            .fontMaterial = clippingEnabled ? Material::Copy(fontMaterial->second) : fontMaterial->second,
             .fontMaterialLayer = fontMaterial->first
         });
 
@@ -204,7 +204,12 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
 Gui::~Gui() {
 
     // avoid leaking copied material on gui destruction
-    if (ownsMaterial) Material::Destroy(material->id);
+    if (ownsMaterial) {
+        Material::Destroy(material->id);
+        if (guiTextInfo) {
+            Material::Destroy(guiTextInfo->fontMaterial->id);
+        }
+    }
 
     Orphan();
 
@@ -329,11 +334,20 @@ void Gui::UpdateScissorTest()
 
         // we do scissor test here too, since this function will be called when the clipTarget (an ancestor) moves / changes size too
         material->scissoringEnabled = clipping;
+        if (guiTextInfo) {
+            guiTextInfo->fontMaterial->scissoringEnabled = true;
+        }
+
         if (clipping) {
             auto lockedClipTarget = clipTarget->lock();
             auto s = lockedClipTarget->GetPixelSize() / 2;
             material->scissorCorner1 = lockedClipTarget->GetPixelPos() + glm::vec2(s.x, -s.y);
             material->scissorCorner2 = lockedClipTarget->GetPixelPos() + glm::vec2(-s.x, s.y);
+
+            if (guiTextInfo) {
+                guiTextInfo->fontMaterial->scissorCorner1 = lockedClipTarget->GetPixelPos() + glm::vec2(s.x, -s.y);
+                guiTextInfo->fontMaterial->scissorCorner2 = lockedClipTarget->GetPixelPos() + glm::vec2(-s.x, s.y);
+            }
         }
         else {
             clipTarget = std::nullopt;

@@ -56,6 +56,8 @@ std::pair<float, std::shared_ptr<Material>> ArialFont(int size)
     ttfParams.format = Texture::Grayscale_8Bit;
     auto b = Material::New(MaterialCreateParams({ ttfParams }, Texture::Texture2D, GraphicsEngine::Get().defaultGuiMaterial->shader, nullptr, false));
     b.second->ignorePostProc = true;
+    b.second->depthMaskEnabled = false;
+    b.second->depthTestFunc = DepthTestMode::Disabled;
     return b;
 }
 

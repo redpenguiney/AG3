@@ -11,6 +11,8 @@ std::pair <float, std::shared_ptr<Material>> MenuFont1() {
     return font;
 }
 
+int buildUiScrollAmt = 0;
+
 void MakeGameMenu() {
     struct Constructible {
         std::string name;
@@ -117,6 +119,7 @@ void MakeGameMenu() {
 
         tab->onInputBegin->Connect([p = tab.get(), tabInfo, tabIndex](const InputObject& input) {
             
+
             if (input.input != InputObject::LMB) return;
 
             if (currentConstructionTabIndex == tabIndex) {
@@ -131,6 +134,8 @@ void MakeGameMenu() {
 
                 auto buildingsList = std::make_shared<Gui>(false, std::nullopt);
 
+                buildUiScrollAmt = 0;
+
                 buildingsList->scalePos = { 0, 0 };
                 buildingsList->offsetPos = { 8, 8 + p->GetPixelSize().y/2 + p->GetPixelPos().y + TAB_ICON_SPACING};
 
@@ -141,18 +146,27 @@ void MakeGameMenu() {
 
                 buildingsList->anchorPoint = { -0.5, -0.5 };
                 buildingsList->rgba = { 1.0, 1.0, 1.0, 0.4 };
-                buildingsList->childBehaviour = GuiChildBehaviour::Grid;
-                buildingsList->gridInfo = Gui::GridGuiInfo{
-                    .gridOffsetPosition = { -buildingsList->GetPixelSize().x / 2 + TAB_ICON_SPACING,  buildingsList->GetPixelSize().y / 2 - TAB_ICON_SPACING},
+                
+
+                // To have scrolling, we clip all construction options against the rendered frame, but parent those options to an invisible gui we move up and down.
+                auto contents = std::make_shared<Gui>(false, std::nullopt);  
+                contents->rgba = { 0, 0, 0, 0 }; // TODO: might be good to just have an option to make the gui not have a rendercomponent at all
+                contents->SetParent(buildingsList.get());
+                contents->scaleSize = buildingsList->scaleSize;
+                contents->offsetSize = buildingsList->offsetSize;
+                contents->childBehaviour = GuiChildBehaviour::Grid;
+                contents->gridInfo = Gui::GridGuiInfo{
+                    .gridOffsetPosition = { -contents->GetPixelSize().x / 2 + TAB_ICON_SPACING,  contents->GetPixelSize().y / 2 - TAB_ICON_SPACING},
                     .gridOffsetSize = {TAB_ICON_SPACING, -TAB_ICON_SPACING},
                     .maxInFillDirection = 2,//(int)buildingsList->GetPixelSize().x,
                     .maxInPixels = false,
                     .fillXFirst = true,
                     .addGuiLengths = true,
-                    
+
                 };
 
-                
+                //contents->UpdateGuiTransform();
+                contents->UpdateGuiGraphics();
 
                 int itemI = 0;
                 for (auto& item : tabInfo.items) {
@@ -175,15 +189,26 @@ void MakeGameMenu() {
                     construction->rgba = { 0.4, 0.4, 0.4, 1.0 };
                     construction->GetTextInfo().rgba = {1.0, 1.0, 1.0, 1.0};
                     construction->clipTarget = buildingsList;
-                    construction->SetParent(buildingsList.get());
+                    construction->SetParent(contents.get());
 
                     construction->UpdateGuiGraphics();
                     construction->UpdateGuiText();
+
+
                 }
 
-                buildingsList->SortChildren();
+                contents->SortChildren();
                 buildingsList->UpdateGuiTransform();
                 buildingsList->UpdateGuiGraphics();
+
+                buildingsList->onInputBegin->Connect([p2 = contents.get()](InputObject input) {
+                    if (input.input == InputObject::Scroll) {
+                        DebugLogInfo("Up");
+                        buildUiScrollAmt = std::min(input.direction.y * 5 + buildUiScrollAmt, 0.0f);
+                        p2->offsetPos.y = buildUiScrollAmt;
+                        p2->UpdateGuiTransform();
+                    }
+                    });
 
                 std::swap(buildingsList, currentConstructionTab);
                 currentConstructionTabIndex = tabIndex;
