@@ -29,24 +29,19 @@ void MakeGameMenu() {
         ConstructionTab {
             .items = {
                 Constructible {
-                    .name = "Clear"
+                    .name = "Clear",
                 },
         Constructible {
-                    .name = "Deforest"
+                    .name = "Deforest",
                 },
-        Constructible {
-                    .name = "Claear"
-                },
-        Constructible {
-                    .name = "t"
-                }
             },
             .name = "Terrain",
         },
         ConstructionTab {
             .items = {
                 Constructible {
-                    .name ="Wood wall"
+                    .name ="Wood wall",
+                    .placementMode = 1
                 }
             },
             .name = "Base",
@@ -77,6 +72,7 @@ void MakeGameMenu() {
 
     constructionFrame->scaleSize = { 0, 0 };
     constructionFrame->offsetSize = { constructionTabs.size() * TAB_ICON_WIDTH + (constructionTabs.size() + 1) * TAB_ICON_SPACING, TAB_ICON_WIDTH + 2 * TAB_ICON_SPACING };
+    constructionFrame->zLevel = -0.01;
 
     constructionFrame->anchorPoint = { -0.5, -0.5 };
     constructionFrame->rgba = { 1.0, 1.0, 1.0, 0.4 };
@@ -100,6 +96,7 @@ void MakeGameMenu() {
 
         tab->scaleSize = { 0, 0 };
         tab->offsetSize = { TAB_ICON_WIDTH, TAB_ICON_WIDTH };
+        tab->zLevel = -0.02;
 
         tab->sortValue = tabIndex++;
         tab->SetParent(constructionFrame.get());
@@ -140,6 +137,8 @@ void MakeGameMenu() {
                 buildingsList->scaleSize = { 0, 0 };
                 buildingsList->offsetSize = { 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING, 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING };
 
+                buildingsList->zLevel = -0.03;
+
                 buildingsList->anchorPoint = { -0.5, -0.5 };
                 buildingsList->rgba = { 1.0, 1.0, 1.0, 0.4 };
                 buildingsList->childBehaviour = GuiChildBehaviour::Grid;
@@ -165,6 +164,8 @@ void MakeGameMenu() {
                     construction->scaleSize = { 0, 0 };
                     construction->offsetSize = { TAB_ICON_WIDTH, TAB_ICON_WIDTH };
                     construction->anchorPoint = { -0.5, 0.5 };
+
+                    construction->zLevel = -0.04;
 
                     construction->GetTextInfo().leftMargin = -1000;
                     construction->GetTextInfo().rightMargin = 1000;

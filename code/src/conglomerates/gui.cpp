@@ -288,7 +288,7 @@ void Gui::UpdateGuiTransform() {
 
     if (guiTextInfo.has_value()) {
          //guiTextInfo->object->Get<TransformComponent>().SetPos({50.0, 59.0, 0.0});
-        guiTextInfo->object->Get<TransformComponent>()->SetPos(realPosition + glm::vec3(0, 0.0, 0.1));
+        guiTextInfo->object->Get<TransformComponent>()->SetPos(realPosition - glm::vec3(0, 0.0, 0.001));
         guiTextInfo->object->Get<TransformComponent>()->SetRot(textRot);
     }
 
@@ -332,8 +332,8 @@ void Gui::UpdateScissorTest()
         if (clipping) {
             auto lockedClipTarget = clipTarget->lock();
             auto s = lockedClipTarget->GetPixelSize() / 2;
-            material->scissorCorner1 = lockedClipTarget->GetPixelPos() + glm::vec2(-s.x, -s.y);
-            material->scissorCorner2 = lockedClipTarget->GetPixelPos() + glm::vec2(s.x, s.y);
+            material->scissorCorner1 = lockedClipTarget->GetPixelPos() + glm::vec2(s.x, -s.y);
+            material->scissorCorner2 = lockedClipTarget->GetPixelPos() + glm::vec2(-s.x, s.y);
         }
         else {
             clipTarget = std::nullopt;

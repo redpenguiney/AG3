@@ -368,6 +368,7 @@ void GraphicsEngine::RenderScene(float dt) {
     //glBlendFunci(1, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
+    glDisable(GL_SCISSOR_TEST);
     glClear(GL_DEPTH_BUFFER_BIT);
     mainFramebuffer->Clear({ { 0, 0, 0, 0 }, { 1, 1, 1, 1 } });
     DrawWorld(true);
@@ -381,6 +382,7 @@ void GraphicsEngine::RenderScene(float dt) {
     //glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
 
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
+    glDisable(GL_SCISSOR_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glDisable(GL_DEPTH_TEST);
@@ -397,7 +399,9 @@ void GraphicsEngine::RenderScene(float dt) {
 
     // Draw stuff that doesn't do post processing.
     glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
+    glDisable(GL_SCISSOR_TEST);
     glClear( GL_DEPTH_BUFFER_BIT);
+    
     DrawWorld(false);
 
     // Debugging stuff

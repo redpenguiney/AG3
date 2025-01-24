@@ -137,7 +137,7 @@ public:
     // around center of the gui
     float rotation = 0;
 
-    // lower number = rendered on top
+    // lower number = rendered on top. MUST BE IN RANGE (-1, 1). (TODO thats kinda mid)
     float zLevel = 0;
 
     // used for scrolling. If not nullptr, only the part of gui whose area overlaps clipTarget will be rendered. 

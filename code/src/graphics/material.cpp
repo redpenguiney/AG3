@@ -26,7 +26,13 @@ Material::Material(const Material& original):
     blendingEnabled(original.blendingEnabled),
     blendingSrcFactor(original.blendingSrcFactor),
     blendingDstFactor(original.blendingDstFactor),
-    drawOrder(original.drawOrder)
+    drawOrder(original.drawOrder),
+    scissoringEnabled(original.scissoringEnabled),
+    scissorCorner1(original.scissorCorner1),
+    scissorCorner2(original.scissorCorner2),
+    ignorePostProc(original.ignorePostProc),
+    baseTextureZ(original.baseTextureZ)
+
 {
 
 }
@@ -91,7 +97,10 @@ depthTestFunc(params.depthTestFunc),
 blendingEnabled(params.blendingEnabled),
 blendingSrcFactor(params.blendingSrcFactor),
 blendingDstFactor(params.blendingDstFactor),
-drawOrder(params.drawOrder)
+drawOrder(params.drawOrder),
+scissoringEnabled(false),
+scissorCorner1(),
+scissorCorner2()
 {
     Assert(params.blendingSrcFactor.size() == params.blendingDstFactor.size());
 
