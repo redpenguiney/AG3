@@ -48,13 +48,13 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 
 			const auto& tile = tiles[i * (width + 2) + j];
 
-			Assert(tile.floor != -2);
+			Assert(tile[TileLayer::Floor] != -2);
 
-			if (tile.floor == -1) {
+			if (tile[TileLayer::Floor] == -1) {
 				continue;
 			}
 
-			const auto& floorData = GetTileData(tile.floor);
+			const auto& floorData = GetTileData(tile[TileLayer::Floor]);
 
 			if (floorData.gameobject.has_value()) {
 				objects.push_back(GameObject::New(floorData.gameobject.value()));

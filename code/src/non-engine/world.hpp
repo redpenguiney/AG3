@@ -11,13 +11,24 @@
 
 class Entity;
 
-struct TerrainTile {
-	enum class TileLayer {
-		Floor, // a tile, either solid or liquid, potentially with a roof. 
-		Furniture, // either a wall or something like a tree
-		NumTileLayers // the number of tile layers
-	};
+struct ComputePathParams {
 
+};
+
+struct Path {
+	// move in straight line between waypoints
+	std::vector<glm::ivec2> wayPoints;
+};
+
+enum class TileLayer {
+	Floor, // a tile, either solid or liquid, potentially with a roof. 
+	Furniture, // either a wall or something like a tree
+	NumTileLayers // the number of tile layers
+};
+
+
+struct TerrainTile {
+	
 	std::array<int, static_cast<size_t>(TileLayer::NumTileLayers)> layers;
 
 };
@@ -95,6 +106,9 @@ public:
 
 	// unloads the currently loaded world. (does nothing if no loaded world)
 	static void Unload();
+
+	
+	Path ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params);
 
 	TerrainTile GetTile(int x, int z);
 

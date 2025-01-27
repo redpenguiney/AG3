@@ -6,6 +6,7 @@
 #include <noise/noise.h>
 #include "entity.hpp"
 #include <physics/pengine.hpp>
+#include <queue>
 
 World::TerrainIds& World::TERRAIN_IDS()
 {
@@ -55,6 +56,15 @@ void World::Generate()
 void World::Unload() {
     Loaded() = nullptr;
     
+}
+
+Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params)
+{
+    Path path;
+
+    std::priority_queue<glm::ivec2> queue;
+
+    return path;
 }
 
 TerrainTile World::GetTile(int x, int z)
