@@ -160,9 +160,11 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     if (haveText) {
         Assert(fontMaterial.has_value() && fontMaterial->second->Count(Texture::FontMap));
 
+        auto fMat = clippingEnabled ? Material::Copy(fontMaterial->second) : fontMaterial->second;
+
         GameobjectCreateParams textObjectParams({ComponentBitIndex::Transform, billboardGuiInfo.has_value() ? ComponentBitIndex::Render : ComponentBitIndex::RenderNoFO });
-        textObjectParams.materialId = fontMaterial->second->id;
-        auto textMesh = Mesh::New(TextMeshProvider(MeshCreateParams{ .meshVertexFormat = MeshVertexFormat::DefaultGui() }, fontMaterial->second), true);
+        textObjectParams.materialId = fMat->id;
+        auto textMesh = Mesh::New(TextMeshProvider(MeshCreateParams{ .meshVertexFormat = MeshVertexFormat::DefaultGui() }, fMat), true);
         // auto textMesh = Mesh::Square();
 
         textObjectParams.meshId = textMesh->meshId;
@@ -179,7 +181,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
             .verticalAlignment = VerticalAlignMode::Top,
             .text = "Text",
             .object = GameObject::New(textObjectParams),
-            .fontMaterial = clippingEnabled ? Material::Copy(fontMaterial->second) : fontMaterial->second,
+            .fontMaterial = fMat,
             .fontMaterialLayer = fontMaterial->first
         });
 
@@ -335,7 +337,7 @@ void Gui::UpdateScissorTest()
         // we do scissor test here too, since this function will be called when the clipTarget (an ancestor) moves / changes size too
         material->scissoringEnabled = clipping;
         if (guiTextInfo) {
-            guiTextInfo->fontMaterial->scissoringEnabled = true;
+            guiTextInfo->fontMaterial->scissoringEnabled = clipping;
         }
 
         if (clipping) {

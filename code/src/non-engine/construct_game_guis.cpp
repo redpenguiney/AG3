@@ -4,6 +4,7 @@
 #include "tests/gameobject_tests.hpp"
 #include "world.hpp"
 #include "creature.hpp"
+#include "conglomerates/input_stack.hpp"
 
 template <int fontSize>
 std::pair <float, std::shared_ptr<Material>> MenuFont1() {
@@ -12,19 +13,24 @@ std::pair <float, std::shared_ptr<Material>> MenuFont1() {
 }
 
 int buildUiScrollAmt = 0;
+InputStack::StackId guiScrollId = nullptr;
+
+
+struct Constructible {
+    std::string name;
+    int placementMode = 2; // 0 = point, 1 = line, 2 = area
+    bool snapPlacement = true;
+};
+
+struct ConstructionTab {
+    std::vector<Constructible> items;
+    std::string name;
+    std::string iconPath;
+};
+
+Constructible* currentSelectedConstructible = nullptr;
 
 void MakeGameMenu() {
-    struct Constructible {
-        std::string name;
-        int placementMode = 2; // 0 = point, 1 = line, 2 = area
-        bool snapPlacement = true;
-    };
-
-    struct ConstructionTab {
-        std::vector<Constructible> items;
-        std::string name;
-        std::string iconPath;
-    };
     
     // construction menu
     std::vector<ConstructionTab> constructionTabs = {
@@ -42,7 +48,7 @@ void MakeGameMenu() {
         ConstructionTab {
             .items = {
                 Constructible {
-                    .name ="Wood wall",
+                    .name = "Wood wall",
                     .placementMode = 1
                 }
             },
@@ -55,8 +61,6 @@ void MakeGameMenu() {
             .name = "Military"
         }
     };
-
-    
 
     constexpr int TAB_ICON_WIDTH = 48;
     constexpr int TAB_ICON_SPACING = 8;
@@ -117,7 +121,7 @@ void MakeGameMenu() {
             GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor);
             });
 
-        tab->onInputBegin->Connect([p = tab.get(), tabInfo, tabIndex](const InputObject& input) {
+        tab->onInputBegin->Connect([p = tab.get(), tabInfo, tabIndex](const InputObject& input) mutable {
             
 
             if (input.input != InputObject::LMB) return;
@@ -191,6 +195,31 @@ void MakeGameMenu() {
                     construction->clipTarget = buildingsList;
                     construction->SetParent(contents.get());
 
+                    construction->onMouseEnter->Connect([p = construction.get()]() {
+                        p->rgba = { 0.3, 0.3, 0.3, 1.0 };
+                        p->UpdateGuiGraphics();
+                        GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemSelectionCursor);
+                    });
+                    construction->onMouseExit->Connect([p = construction.get()]() {
+                        p->rgba = { 0.4, 0.4, 0.4, 1.0 };
+                        p->UpdateGuiGraphics();
+                        GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor);
+                    });
+
+                    construction->onInputBegin->Connect([item](InputObject input) mutable {
+                        if (input.input == InputObject::LMB) {
+                            if (currentSelectedConstructible) {
+                                if (&item == currentSelectedConstructible) {
+                                    currentSelectedConstructible = nullptr;
+                                    return;
+                                }
+                                currentSelectedConstructible = nullptr;
+                            }
+
+                            currentSelectedConstructible = &item;
+                        }
+                    });
+
                     construction->UpdateGuiGraphics();
                     construction->UpdateGuiText();
 
@@ -201,14 +230,38 @@ void MakeGameMenu() {
                 buildingsList->UpdateGuiTransform();
                 buildingsList->UpdateGuiGraphics();
 
-                buildingsList->onInputBegin->Connect([p2 = contents.get()](InputObject input) {
+                /*buildingsList->onInputBegin->Connect([p2 = contents.get()](InputObject input) {
                     if (input.input == InputObject::Scroll) {
-                        DebugLogInfo("Up");
-                        buildUiScrollAmt = std::min(input.direction.y * 5 + buildUiScrollAmt, 0.0f);
+                        buildUiScrollAmt = std::min(input.direction.y * 15 + buildUiScrollAmt, 0.0f);
                         p2->offsetPos.y = buildUiScrollAmt;
                         p2->UpdateGuiTransform();
                     }
+                    });*/
+
+                buildingsList->onMouseEnter->Connect([p2 = contents.get()]() {
+                    if (guiScrollId) {
+                        DebugLogError("UH IS THIS A PROBLEM??!?!");
+                        InputStack::Get().PopBegin(InputObject::Scroll, guiScrollId);
+                        guiScrollId = nullptr;
+                    }
+                    guiScrollId = InputStack::Get().PushBegin(InputObject::Scroll, [p2](InputObject input) {
+                        if (input.input == InputObject::Scroll) {
+                            buildUiScrollAmt = std::min(input.direction.y * 15 + buildUiScrollAmt, 0.0f);
+                            p2->offsetPos.y = buildUiScrollAmt;
+                            p2->UpdateGuiTransform();
+                        }
                     });
+                });
+
+                buildingsList->onMouseExit->Connect([]() {
+                    if (!guiScrollId) {
+                        DebugLogError("WHY NO ID?!?!");
+                    }
+                    else {
+                        InputStack::Get().PopBegin(InputObject::Scroll, guiScrollId);
+                        guiScrollId = nullptr;
+                    }
+                });
 
                 std::swap(buildingsList, currentConstructionTab);
                 currentConstructionTabIndex = tabIndex;

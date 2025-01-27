@@ -1,7 +1,7 @@
 #include "input_stack.hpp"
 #include "graphics/gengine.hpp"
 
-const InputStack& InputStack::Get()
+InputStack& InputStack::Get()
 {
 	static InputStack i;
 	return i;
@@ -26,6 +26,7 @@ void InputStack::PopBegin(InputObject::InputType input, StackId id)
 			beginStack[input].erase(it);
 			return;
 		}
+	Assert(false); // INVALID STACK ID
 }
 
 void InputStack::PopEnd(InputObject::InputType input, StackId id)
@@ -35,13 +36,16 @@ void InputStack::PopEnd(InputObject::InputType input, StackId id)
 			endStack[input].erase(it);
 			return;
 		}
+	Assert(false); // INVALID STACK ID
 }
 
 InputStack::InputStack() {
 	windowInputBeginConnection = GraphicsEngine::Get().window.inputDown->ConnectTemporary([this](InputObject i) {
+		if (!beginStack[i.input].empty())
 			beginStack[i.input].back()(i);
-		});
+	});
 	windowInputEndConnection = GraphicsEngine::Get().window.inputUp->ConnectTemporary([this](InputObject i) {
+		if (!endStack[i.input].empty())
 			endStack[i.input].back()(i);
-		});
+	});
 }

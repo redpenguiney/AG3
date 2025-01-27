@@ -11,7 +11,7 @@ public:
 	using InputCallback = std::function<void(InputObject) >;
 	using StackId = void*;
 
-	const InputStack& Get();
+	static InputStack& Get();
 
 	// returned StackId is used to remove the input when you're done.
 	StackId PushBegin(InputObject::InputType, InputCallback);
@@ -29,5 +29,6 @@ private:
 	std::unique_ptr<Event<InputObject>::Connection> windowInputEndConnection;
 
 	InputStack();
+	InputStack(const InputStack&) = delete;
 };
 

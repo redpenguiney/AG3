@@ -18,6 +18,7 @@
 #include "creature.hpp"
 
 #include "construct_game_guis.hpp"
+#include "conglomerates/input_stack.hpp"
 
 //#include "noise/noise.h"
 
@@ -56,7 +57,10 @@ void GameInit()
     GE.camera.position = glm::vec3(0, 1, 0);
     //
 
-    GE.window.onScroll->Connect([](double x, double y) {
+    InputStack::Get().PushBegin(InputObject::Scroll, [](InputObject inputObject) {
+        double x = inputObject.direction.x;
+        double y = inputObject.direction.y;
+
         auto& GE = GraphicsEngine::Get();
 
         if (y != 0) {
@@ -68,8 +72,10 @@ void GameInit()
             //GE.camera.position.x += x;
             //GE.camera.position.z += y;
         //}
-        
+
     });
+
+    //GE.window.onScroll->Connect();
 
     GE.window.postInputProccessing->Connect([]() {
         if (GraphicsEngine::Get().debugFreecamEnabled) { return; }

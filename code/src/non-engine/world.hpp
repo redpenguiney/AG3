@@ -12,8 +12,14 @@
 class Entity;
 
 struct TerrainTile {
-	int floor; // a tile, either solid or liquid, potentially with a roof. 
-	int furniture; // either a wall or something like a tree
+	enum class TileLayer {
+		Floor, // a tile, either solid or liquid, potentially with a roof. 
+		Furniture, // either a wall or something like a tree
+		NumTileLayers // the number of tile layers
+	};
+
+	std::array<int, static_cast<size_t>(TileLayer::NumTileLayers)> layers;
+
 };
 
 struct TerrainChunk {

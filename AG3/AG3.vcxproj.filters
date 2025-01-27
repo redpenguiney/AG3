@@ -279,6 +279,9 @@
     <ClCompile Include="..\code\src\conglomerates\input_stack.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\code\src\non-engine\ai\tasks_impl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\code\src\events\base_event.hpp">
@@ -558,6 +561,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\code\src\conglomerates\input_stack.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\code\src\non-engine\ai\tasks_impl.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
