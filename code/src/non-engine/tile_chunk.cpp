@@ -31,7 +31,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 	int width = radius * 2;
 
 	// +2s for edges
-	std::vector<TerrainTile> tiles((width + 2) * (width + 2), TerrainTile(-2, -2));
+	std::vector<TerrainTile> tiles((width + 2) * (width + 2), TerrainTile {.layers = {2, -2}});
 	auto& world = World::Loaded();
 
 	// TODO: not best way to fill up tiles, repeatedly has to fetch same chunk
@@ -48,13 +48,13 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 
 			const auto& tile = tiles[i * (width + 2) + j];
 
-			Assert(tile[TileLayer::Floor] != -2);
+			Assert(tile.layers[TileLayer::Floor] != -2);
 
-			if (tile[TileLayer::Floor] == -1) {
+			if (tile.layers[TileLayer::Floor] == -1) {
 				continue;
 			}
 
-			const auto& floorData = GetTileData(tile[TileLayer::Floor]);
+			const auto& floorData = GetTileData(tile.layers[TileLayer::Floor]);
 
 			if (floorData.gameobject.has_value()) {
 				objects.push_back(GameObject::New(floorData.gameobject.value()));
@@ -106,8 +106,8 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 				}
 			}
 
-			if (tile.furniture != -1) {
-				const auto& furnitureData = GetFurnitureData(tile.furniture);
+			if (tile.layers[TileLayer::Furniture] != -1) {
+				const auto& furnitureData = GetFurnitureData(tile.layers[TileLayer::Furniture]);
 				
 				if (furnitureData.gameobjectMaker.has_value()) {
 					(*furnitureData.gameobjectMaker)({ i + centerPos.x, j + centerPos.y }, objects);

@@ -20,7 +20,7 @@ struct Path {
 	std::vector<glm::ivec2> wayPoints;
 };
 
-enum class TileLayer {
+enum TileLayer: int {
 	Floor, // a tile, either solid or liquid, potentially with a roof. 
 	Furniture, // either a wall or something like a tree
 	NumTileLayers // the number of tile layers
@@ -28,9 +28,7 @@ enum class TileLayer {
 
 
 struct TerrainTile {
-	
-	std::array<int, static_cast<size_t>(TileLayer::NumTileLayers)> layers;
-
+	std::array<int, static_cast<size_t>(TileLayer::NumTileLayers)> layers = { 0 };
 };
 
 struct TerrainChunk {
@@ -38,6 +36,7 @@ struct TerrainChunk {
 	//TerrainChunk(std::array<std::array<TerrainTile, 16>, 16> tiles);
 
 	std::array<std::array<TerrainTile, 16>, 16> tiles;
+	bool pathfindingDirty;
 	//std::vector<std::unique_ptr<Entity>> entities;
 
 	// TODO
@@ -113,7 +112,7 @@ public:
 	TerrainTile GetTile(int x, int z);
 
 	// returns the chunk that the given coordinates lie inside
-	TerrainChunk& GetChunk(int x, int z); 
+	const TerrainChunk& GetChunk(int x, int z); 
 
 	~World();
 

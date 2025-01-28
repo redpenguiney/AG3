@@ -73,7 +73,7 @@ TerrainTile World::GetTile(int x, int z)
     return GetChunk(x, z).tiles[pos.x][pos.y];
 }
 
-TerrainChunk& World::GetChunk(int x, int z)
+const TerrainChunk& World::GetChunk(int x, int z)
 {
     //DebugLogInfo("Chunk ")
     glm::ivec2 pos(x, z);
@@ -250,16 +250,16 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
 
             //DebugLogInfo("Hiehgt ", height);
 
-            tiles[localX][localZ].furniture = -1;
+            tiles[localX][localZ].layers[TileLayer::Furniture] = -1;
             if (height > 0) {
-                tiles[localX][localZ].floor = World::TERRAIN_IDS().GRASS;
+                tiles[localX][localZ].layers[TileLayer::Floor] = World::TERRAIN_IDS().GRASS;
 
                 if (tree > 0.5) {
-                    tiles[localX][localZ].furniture = World::TERRAIN_IDS().TREE;
+                    tiles[localX][localZ].layers[TileLayer::Furniture] = World::TERRAIN_IDS().TREE;
                 }
             }
             else {
-                tiles[localX][localZ].floor = World::TERRAIN_IDS().ROCK;
+                tiles[localX][localZ].layers[TileLayer::Floor] = World::TERRAIN_IDS().ROCK;
             }
 
            

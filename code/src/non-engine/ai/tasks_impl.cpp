@@ -10,6 +10,16 @@ ChangeTileTask::ChangeTileTask(glm::ivec2 tilePos, const ChangeTileTaskInfo& inf
 
 }
 
+bool ChangeTileTask::Progress(Humanoid& executor, float dt)
+{
+	// Is humanoid within range?
+	glm::ivec2 hPos = executor.gameObject->RawGet<TransformComponent>()->Position();
+	if (std::abs(hPos.x - pos.x) + std::abs(hPos.y - pos.y) > 1) { // then no; have them pathfind over
+
+		return false;
+	}
+}
+
 int ChangeTileTask::EvaluateTaskUtility(const Humanoid& potentialExecutor)
 {
 	return BASE_TASK_PRIORITY + TaskDistanceUtilityPenalty(pos, potentialExecutor.gameObject->RawGet<TransformComponent>()->Position());

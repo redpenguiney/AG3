@@ -3,7 +3,7 @@
 #include <non-engine/world.hpp>
 
 struct ChangeTileTaskInfo {
-	TerrainTile::TileLayer layer; // which layer of the tile is being changed
+	TileLayer layer; // which layer of the tile is being changed
 	int newType; // id of what the tile will be changed into
 
 	float baseTimeToComplete; // note that various modifiers will affect the actual time to completion

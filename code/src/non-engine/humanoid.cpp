@@ -38,7 +38,7 @@ void Humanoid::Think(float dt)
 	// if not, determine work group and pick a task
 	auto& group = schedule->Evalute(*this);
 
-	int bestTaskUtility = currentTaskIndex == -1 ? -1 : scheduler.tasks[currentTaskIndex]->EvaluteTaskUtility(*this);
+	int bestTaskUtility = currentTaskIndex == -1 ? -1 : scheduler.tasks[currentTaskIndex]->EvaluateTaskUtility(*this);
 	int bestTaskIndex = currentTaskIndex;
 	int oldTaskIndex = currentTaskIndex;
 
@@ -47,7 +47,7 @@ void Humanoid::Think(float dt)
 		currentTaskIndex++;
 		if (currentTaskIndex > (scheduler.tasks.size()))
 			currentTaskIndex = 0;
-		int utility = scheduler.tasks[currentTaskIndex]->EvaluteTaskUtility(*this);
+		int utility = scheduler.tasks[currentTaskIndex]->EvaluateTaskUtility(*this);
 		if (utility > bestTaskUtility) {
 			bestTaskUtility = utility;
 			bestTaskIndex = currentTaskIndex;
@@ -63,7 +63,7 @@ void Humanoid::Think(float dt)
 	else {
 		currentTaskIndex = bestTaskIndex;
 		auto& task = *scheduler.tasks[bestTaskIndex];
-		if (task.Progress(*this)) // then we finished the task (or it's no longer valid)
+		if (task.Progress(*this, dt)) // then we finished the task (or it's no longer valid)
 			currentTaskIndex = -1; 
 	}
 }
