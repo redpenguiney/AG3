@@ -60,9 +60,12 @@ void World::Unload() {
 
 Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params)
 {
+    // A* pathfinding based on https://en.wikipedia.org/wiki/A*_search_algorithm 
+
     Path path;
 
-    std::priority_queue<glm::ivec2> queue;
+    // Potential places to check next
+    std::priority_queue<glm::ivec2> openSet;
 
     return path;
 }
@@ -268,6 +271,12 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
         }
         localX++;
     }
+}
+
+const std::vector<TerrainChunk::NavmeshNode>& TerrainChunk::GetNavmesh()
+{
+    if (navmesh.has_value()) return navmesh.value();
+
 }
 
 void P(std::vector<Mesh::MeshRet> vec, glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {

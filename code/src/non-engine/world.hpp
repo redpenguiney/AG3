@@ -16,7 +16,8 @@ struct ComputePathParams {
 };
 
 struct Path {
-	// move in straight line between waypoints
+	// move in straight line between waypoints.
+	// empty in event of pathfinding failure
 	std::vector<glm::ivec2> wayPoints;
 };
 
@@ -32,15 +33,29 @@ struct TerrainTile {
 };
 
 struct TerrainChunk {
+public:
 	TerrainChunk(glm::ivec2 position);
 	//TerrainChunk(std::array<std::array<TerrainTile, 16>, 16> tiles);
 
 	std::array<std::array<TerrainTile, 16>, 16> tiles;
+
+	// if true, the terrain chunk was modified this frame and paths routing through it must be recomputed. Reset to false after every time entity::UpdateAll() runs.
 	bool pathfindingDirty;
 	//std::vector<std::unique_ptr<Entity>> entities;
 
 	// TODO
 	//bool modified = false; // if 
+
+	struct NavmeshNode {
+		glm::ivec2 pos;
+		std::array<int, 2> neighborIndices; // 2nd index may be -1 (for lines)
+		std::array<int, 2> neighborTraversalCosts; // cost to move from this node to its neighbor at the same index
+	};
+
+	const std::vector<NavmeshNode>& GetNavmesh();
+
+private:
+	std::optional <std::vector<NavmeshNode>> navmesh;
 };
 
 struct ClimateTile {
@@ -106,7 +121,6 @@ public:
 	// unloads the currently loaded world. (does nothing if no loaded world)
 	static void Unload();
 
-	
 	Path ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params);
 
 	TerrainTile GetTile(int x, int z);
