@@ -275,8 +275,11 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
 
 const std::vector<TerrainChunk::NavmeshNode>& TerrainChunk::GetNavmesh()
 {
-    if (navmesh.has_value()) return navmesh.value();
+    if (!navmesh.has_value()) {
 
+    }
+
+    return navmesh.value();
 }
 
 void P(std::vector<Mesh::MeshRet> vec, glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
