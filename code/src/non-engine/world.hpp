@@ -8,6 +8,7 @@
 #include "tile_chunk.hpp"
 #include "utility/hash_glm.hpp"
 #include <unordered_set>
+#include <optional>
 
 class Entity;
 

@@ -61,13 +61,37 @@ void World::Unload() {
 Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params)
 {
     // A* pathfinding based on https://en.wikipedia.org/wiki/A*_search_algorithm 
+    // However, since the map is effectively infinite we simulataneously pathfind from the origin to the goal and vice versa, using the distance between the two heads as the heuristic.
 
-    Path path;
+    Path forward;
+    //Path backward;
+    std::unordered_map<glm::ivec2, float> nodeCosts; // key is node pos, value is cost of best currently known path to node (at index) from origin
+    nodeCosts[origin] = 0; // free to go to origin since you started there
 
-    // Potential places to check next
-    std::priority_queue<glm::ivec2> openSet;
+    std::unordered_map<glm::ivec2, glm::ivec2> cameFrom;
 
-    return path;
+    // Potential places to check next. Sorted from greatest to lowest heuristic value.
+    std::vector<glm::ivec2> openSet;
+    
+    auto heuristic = [&goal](glm::ivec2 node) {
+        return glm::length(goal - node);
+    };
+    
+    auto addNodeNeighborsToQueue = [&](glm::ivec2 node) mutable {
+        for (int x = -1; x < 2; x++) {
+            for (int z = -1; z < 2; z++) {
+                auto cost = nodeCosts[node] + heuristic(node + glm::ivec2(x, z));
+                if (nodeCosts.contains(glm::ivec2(x, z))) continue;
+                nodeCosts[node + glm::ivec2(x, z)] = cost
+                cameFrom[node + glm::ivec2(x, z)] = node;
+            }
+        }
+    };
+
+
+    Path combined = forward;
+    //combined.wayPoints.insert(forward.wayPoints.end(), backward.wayPoints.rbegin(), backward.wayPoints.rend());
+    return combined;
 }
 
 TerrainTile World::GetTile(int x, int z)
@@ -275,9 +299,9 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
 
 const std::vector<TerrainChunk::NavmeshNode>& TerrainChunk::GetNavmesh()
 {
-    if (!navmesh.has_value()) {
+    //if (!navmesh.has_value()) {
 
-    }
+    //}
 
     return navmesh.value();
 }
