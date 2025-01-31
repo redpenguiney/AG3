@@ -63,35 +63,98 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
     // A* pathfinding based on https://en.wikipedia.org/wiki/A*_search_algorithm 
     // However, since the map is effectively infinite we simulataneously pathfind from the origin to the goal and vice versa, using the distance between the two heads as the heuristic.
 
-    Path forward;
+    //Path forward;
     //Path backward;
     std::unordered_map<glm::ivec2, float> nodeCosts; // key is node pos, value is cost of best currently known path to node (at index) from origin
+    //std::unordered_map < glm::ivec2, float > nodeToGoalCosts; // key is node pos, value is cost of best known path from origin to goal that goes through that node
     nodeCosts[origin] = 0; // free to go to origin since you started there
 
     std::unordered_map<glm::ivec2, glm::ivec2> cameFrom;
 
-    // Potential places to check next. Sorted from greatest to lowest heuristic value.
+    // Potential places to check next. Sorted from greatest to lowest of nodeCosts[node] + heuristic[node].
     std::vector<glm::ivec2> openSet;
     
     auto heuristic = [&goal](glm::ivec2 node) {
-        return glm::length(goal - node);
+        // bruh glm::length doesn't work for integral types
+        return std::sqrtf((goal.x - node.x) * (goal.x - node.x) + (goal.y - node.y) * (goal.y - node.y));
     };
     
     auto addNodeNeighborsToQueue = [&](glm::ivec2 node) mutable {
-        for (int x = -1; x < 2; x++) {
-            for (int z = -1; z < 2; z++) {
-                auto cost = nodeCosts[node] + heuristic(node + glm::ivec2(x, z));
-                if (nodeCosts.contains(glm::ivec2(x, z))) continue;
-                nodeCosts[node + glm::ivec2(x, z)] = cost
-                cameFrom[node + glm::ivec2(x, z)] = node;
+        constexpr std::array<glm::ivec2, 4> neighbors = { glm::ivec2 {-1, 0}, { 1, 0}, {0, 1}, {0, -1} };
+        for (const auto& neighborOffset : neighbors) {
+            auto neighbor = node + neighborOffset;
+            auto moveCost = GetTileData(GetTile(node.x, node.y).layers[TileLayer::Floor]).moveCost;
+            if (moveCost < 0) continue;
+            auto cost = nodeCosts[node] + moveCost;
+            if (!nodeCosts.contains(neighbor) || cost < nodeCosts[neighbor]) { // then we found a better way to get to this node
+
+                nodeCosts[neighbor] = cost;
+                cameFrom[neighbor] = node;
+
+                // TODO: better time-complexity way to keep openSet sorted???
+                // if this neighbor is in openSet, remove it because its cost changed and we gotta reinsert it in the right place.
+                auto it = std::find(openSet.begin(), openSet.end(), neighbor);
+                if (it != openSet.end())
+                    openSet.erase(it);
+
+                // regardless of whether it was in the set previously, we now need to insert it at the right place.
+                auto costToEnd = cost + heuristic(neighbor);
+                if (openSet.size() == 0) {
+                    openSet.push_back(neighbor);
+                }
+                else {
+                    for (auto it = openSet.begin(); it != openSet.end(); it++) {
+                        if (nodeCosts[*it] + heuristic(*it) <= costToEnd) {
+                            openSet.insert(it, neighbor);
+                            break;
+                        }
+                    }
+                    //ojokpenSet.push_back(neighbor);
+                }      
             }
+            
         }
     };
 
 
-    Path combined = forward;
+    openSet.push_back(origin);
+    nodeCosts[origin] = 0;
+
+    constexpr int MAX_CHECKS = 100;
+    int i = 0;
+    while (i++ < MAX_CHECKS && openSet.size() > 0) {
+        auto node = openSet.back();
+        DebugLogInfo("Trying ", node, " set is ", openSet.size());
+        openSet.pop_back();
+
+        if (node == goal) {
+            // WE WIN
+            Path p;
+            glm::ivec2 current = goal;
+            while (true) {
+                p.wayPoints.push_back(current);
+                if (cameFrom.contains(current)) {
+                    current = cameFrom[current];
+                }
+                else {
+                    break;
+                }
+            }
+            std::reverse(p.wayPoints.begin(), p.wayPoints.end());
+            Assert(p.wayPoints[0] == origin);
+            return p;
+        }
+
+        addNodeNeighborsToQueue(node);
+    }
+
+    DebugLogInfo("Failed with ", i, " iterations");
+
+    // return empty path if we ran out of iterations or we confirmed that no valid path exists.
+    return Path();
+    //Path combined = forward;
     //combined.wayPoints.insert(forward.wayPoints.end(), backward.wayPoints.rbegin(), backward.wayPoints.rend());
-    return combined;
+    //return combined;
 }
 
 TerrainTile World::GetTile(int x, int z)
@@ -249,6 +312,14 @@ World::World() {
             
         }
     });
+
+    auto path = ComputePath({ 25, 25 }, { 28, 28 }, ComputePathParams());
+    DebugPlacePointOnPosition(glm::dvec3(25, 3.0, 25));
+    DebugPlacePointOnPosition(glm::dvec3(28, 3.0, 28));
+    DebugLogInfo("path ", path.wayPoints.size());
+    for (auto& waypoint : path.wayPoints) {
+        DebugPlacePointOnPosition(glm::dvec3(waypoint.x, 3.0, waypoint.y));
+    }
 }
 
 int AddAtlasRegion(int x, int y) {

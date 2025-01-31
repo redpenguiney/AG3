@@ -24,3 +24,7 @@ int ChangeTileTask::EvaluateTaskUtility(const Humanoid& potentialExecutor)
 {
 	return BASE_TASK_PRIORITY + TaskDistanceUtilityPenalty(pos, potentialExecutor.gameObject->RawGet<TransformComponent>()->Position());
 }
+
+void ChangeTileTask::Interrupt() {
+	 // trivial
+}
