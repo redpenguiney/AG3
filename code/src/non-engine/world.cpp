@@ -338,5 +338,6 @@ World::TerrainIds::TerrainIds()
             static auto vec = Mesh::MultiFromFile("../models/tree.fbx");
             P(vec, pos, objects);
         },
+        .moveCostModifier = -1
     });
 }

@@ -30,6 +30,8 @@ struct FurnitureData {
 	std::string displayName = "Unknown furniture";
 	std::optional<std::function<void(glm::ivec2, std::vector<std::shared_ptr<GameObject>>&)>> gameobjectMaker = std::nullopt; // If non-existent, furniture will be invisible.
 
+	int moveCostModifier = 0; // Added to the coinciding tile's move cost. If -1, the tile will be made impassable regardless of the tile's move cost.
+
 	int id = -1; // value assigned when RegisterTile() is called
 };
 
