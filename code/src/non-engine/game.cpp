@@ -107,7 +107,7 @@ void GameInit()
         GE.camera.position.z += dz * panSpeed;
     });
 
-    /* {
+     {
         auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
         ttfParams.fontHeight = 16;
         ttfParams.format = Texture::Grayscale_8Bit;
@@ -116,7 +116,7 @@ void GameInit()
 
         auto debugText = new Gui(true, std::nullopt, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
 
-        debugText->rgba = { 0, 1, 0, 1 };
+        debugText->rgba = { 0, 0, 0, 0};
         debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
 
         debugText->scalePos = { 0, 1 };
@@ -134,12 +134,12 @@ void GameInit()
         debugText->UpdateGuiTransform();
         debugText->UpdateGuiText();
 
-        GE.preRenderEvent->Connect([&GE, debugText](float dt) {
-
-            debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
-            debugText->UpdateGuiText();
-        });
-    }*/
+        //GE.preRenderEvent->Connect([&GE, debugText](float dt) {
+            ////DebugLogInfo("e");
+            //debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
+            //debugText->UpdateGuiText();
+        //});
+    }
 
     GE.preRenderEvent->Connect([](float dt) {
         if (!inMainMenu) {
