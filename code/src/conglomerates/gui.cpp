@@ -269,9 +269,9 @@ void Gui::UpdateGuiTransform() {
 
     glm::vec3 realPosition(centerPosition.x, centerPosition.y, zLevel);
 
-    // if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
-    //     realPosition = billboardInfo->followObject.lock()->Get<TransformComponent>().Position();
-    // }
+     //if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
+         //realPosition = billboardInfo->followObject.lock()->Get<TransformComponent>()->Position();
+     //}
 
     object->Get<TransformComponent>()->SetPos(realPosition);
     // object->Get<TransformComponent>().SetPos({0.0, 5.0, 0.0});
@@ -369,7 +369,7 @@ void Gui::UpdateGuiText() {
 
     // convert margins into weird unit i made the actual function take
     float absoluteLeftMargin = guiTextInfo->leftMargin - GetPixelSize().x/2.0f;
-    float absoluteRightMargin = GetPixelSize().x/2.0f - guiTextInfo->rightMargin;
+    float absoluteRightMargin = GetPixelSize().x/2.0f + guiTextInfo->rightMargin;
 
     Assert(absoluteLeftMargin < absoluteRightMargin);
 
@@ -429,10 +429,12 @@ glm::vec2 Gui::GetPixelPos()
     glm::vec2 size = GetPixelSize();
 
     glm::vec2 modifiedScalePos = scalePos;
-    if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr?
+    if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr? Also should we just assert that object isn't expired?
         glm::vec3 projected = GraphicsEngine::Get().GetCurrentCamera().ProjectToScreen(billboardInfo->followObject.lock()->Get<TransformComponent>()->Position(), GraphicsEngine::Get().window.Aspect());
         modifiedScalePos += glm::vec2(projected);
+        
         if (projected.z < 0 || projected.z > 1) { modifiedScalePos.x += 10000; }
+        //else DebugLogInfo("Proj ", projected);
     }
 
     glm::vec2 anchorPointPosition;
@@ -450,6 +452,7 @@ glm::vec2 Gui::GetPixelPos()
     }
    
     glm::vec2 centerPosition = anchorPointPosition - (anchorPoint * size);
+
     // std::cout << "Center pos is " << glm::to_string(centerPosition) << ".\n";
     // std::cout << "Size is " << glm::to_string(size) << ".\n";
 

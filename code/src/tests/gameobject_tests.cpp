@@ -417,6 +417,40 @@ void TestUi()
     ui2->UpdateGuiTransform();
 }
 
+void TestBillboardUi(glm::dvec3 pos, std::string text)
+{
+   static  auto [arialLayer, arialFont] = ArialFont();
+
+    auto go = GameObject::New(GameobjectCreateParams({ ComponentBitIndex::Transform }));
+    go->RawGet<TransformComponent>()->SetPos(pos);
+
+    auto billboardMat = Material::Copy(arialFont);
+    billboardMat->shader = GraphicsEngine::Get().defaultBillboardGuiMaterial->shader;
+
+    auto ui = new Gui(
+        true,
+        std::nullopt,
+        std::make_pair(arialLayer, billboardMat),
+        Gui::BillboardGuiInfo {.scaleWithDistance = true, .rotation = std::nullopt, .followObject = go }     
+    );
+    ui->rgba = { 1, 0.5, 0, 0.5 };
+    ui->scaleSize = { 0, 0 };
+    ui->offsetSize = { 32, 32 };
+    ui->anchorPoint = {0.0, 0.0};
+    ui->offsetPos = { 0, 0 };
+    ui->scalePos = { 0, 0 };
+    //ui->zLevel = -0.99;
+    
+    ui->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
+    ui->GetTextInfo().leftMargin = -1000;
+    ui->GetTextInfo().rightMargin = 1000;
+    ui->GetTextInfo().text = text;
+    
+    ui->UpdateGuiText();
+    ui->UpdateGuiTransform();
+    ui->UpdateGuiGraphics();
+}
+
 void TestAnimation()
 {
     Assert(false); // TODO

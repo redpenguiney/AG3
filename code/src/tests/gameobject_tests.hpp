@@ -2,6 +2,7 @@
 #include <memory>
 #include <tuple>
 #include <glm/vec3.hpp>
+#include <string>
 
 class Mesh;
 class Material;
@@ -26,6 +27,8 @@ void TestStationaryPointlight();
 
 // leaks memory
 void TestUi();
+// leaks memory
+void TestBillboardUi(glm::dvec3 pos, std::string text);
 
 void TestAnimation();
 

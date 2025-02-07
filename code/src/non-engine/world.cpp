@@ -76,17 +76,17 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
     
     auto heuristic = [&goal](glm::ivec2 node) {
         // bruh glm::length doesn't work for integral types
-        return std::sqrtf((goal.x - node.x) * (goal.x - node.x) + (goal.y - node.y) * (goal.y - node.y));
+        return 100 * std::sqrtf((goal.x - node.x) * (goal.x - node.x) + (goal.y - node.y) * (goal.y - node.y));
     };
     
     auto addNodeNeighborsToQueue = [&](glm::ivec2 node) mutable {
         constexpr std::array<glm::ivec2, 4> neighbors = { glm::ivec2 {-1, 0}, { 1, 0}, {0, 1}, {0, -1} };
         for (const auto& neighborOffset : neighbors) {
             auto neighbor = node + neighborOffset;
-            auto tileMoveCost = GetTileData(GetTile(node.x, node.y).layers[TileLayer::Floor]).moveCost;
-            auto furniture = GetTile(node.x, node.y).layers[TileLayer::Furniture];
+            auto tileMoveCost = GetTileData(GetTile(neighbor.x, neighbor.y).layers[TileLayer::Floor]).moveCost;
+            auto furniture = GetTile(neighbor.x, neighbor.y).layers[TileLayer::Furniture];
             auto furnitureMoveCost = furniture < 0 ? 0 : GetFurnitureData(furniture).moveCostModifier;
-            if (tileMoveCost < 0 || furnitureMoveCost < 0) { DebugPlacePointOnPosition(glm::dvec3(node.x - 0.5, 3.0, node.y - 0.5), { 1, 0, 0, 1 }); continue; }
+            if (tileMoveCost < 0 || furnitureMoveCost < 0) { DebugPlacePointOnPosition(glm::dvec3(neighbor.x - 0.5, 3.0, neighbor.y - 0.5), { 1, 0, 0, 1 }); continue; }
             auto cost = nodeCosts[node] + tileMoveCost + furnitureMoveCost;
             if (!nodeCosts.contains(neighbor) || cost < nodeCosts[neighbor]) { // then we found a better way to get to this node
 
@@ -102,17 +102,18 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
                 // regardless of whether it was in the set previously, we now need to insert it at the right place.
                 //auto costToEnd = cost + heuristic(neighbor);
                 //if (openSet.size() == 0) {
-                    openSet.push_back(neighbor);
-                    DebugPlacePointOnPosition(glm::dvec3(node.x - 0.5, 3.0, node.y - 0.5), {1, 0, 1, 1});
+                //    openSet.push_back(neighbor);
+                //    DebugPlacePointOnPosition(glm::dvec3(node.x - 0.5, 3.0, node.y - 0.5), {1, 0, 1, 1});
+                    TestBillboardUi(glm::dvec3(node.x - 0.5, 3.0, node.y - 0.5), std::to_string((int)(cost + heuristic(node))));
                 //}
                 //else {
-                    //for (auto it = openSet.begin(); it != openSet.end(); it++) {
-                        //if (nodeCosts[*it] + heuristic(*it) <= costToEnd) {
-                            //openSet.insert(it, neighbor);
-                            //break;
-                        //}
-                    //}
-                    //openSet.push_back(neighbor);
+                //    for (auto it = openSet.begin(); it != openSet.end(); it++) {
+                //        if (nodeCosts[*it] + heuristic(*it) <= costToEnd) {
+                //            openSet.insert(it, neighbor);
+                //            break;
+                //        }
+                //    }
+                    openSet.push_back(neighbor);
                 //}      
             }
             
@@ -331,8 +332,8 @@ World::World() {
         }
     });
 
-    auto path = ComputePath({ 24, 24 }, { 29, 28 }, ComputePathParams());
-    DebugPlacePointOnPosition(glm::dvec3(24 - 0.5, 3.0, 24 - 0.5));
+    auto path = ComputePath({ 18, 24 }, { 29, 28 }, ComputePathParams());
+    DebugPlacePointOnPosition(glm::dvec3(18 - 0.5, 3.0, 24 - 0.5));
     DebugPlacePointOnPosition(glm::dvec3(29 - 0.5, 3.0, 28 - 0.5));
     DebugLogInfo("path ", path.wayPoints.size());
     for (auto& waypoint : path.wayPoints) {

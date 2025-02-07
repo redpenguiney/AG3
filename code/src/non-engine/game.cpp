@@ -108,13 +108,13 @@ void GameInit()
     });
 
      {
-        auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
+    /*    auto ttfParams = TextureCreateParams({ TextureSource("../fonts/arial.ttf"), }, Texture::FontMap);
         ttfParams.fontHeight = 16;
         ttfParams.format = Texture::Grayscale_8Bit;
         auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
-        arialFont->depthMaskEnabled = false;
+        arialFont->depthMaskEnabled = false; why doesn't this one work??? */ 
 
-        auto debugText = new Gui(true, std::nullopt, std::optional(std::make_pair(arialLayer, arialFont))); // idc if leaked
+        auto debugText = new Gui(true, std::nullopt, std::optional(/*std::make_pair(arialLayer, arialFont)*/ ArialFont(12))); // idc if leaked
 
         debugText->rgba = { 0, 0, 0, 0};
         debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
@@ -130,15 +130,18 @@ void GameInit()
         debugText->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
         debugText->GetTextInfo().verticalAlignment = VerticalAlignMode::Center;
 
+        debugText->GetTextInfo().bottomMargin = 0;
+        debugText->GetTextInfo().topMargin = 0;
+
         debugText->UpdateGuiGraphics();
         debugText->UpdateGuiTransform();
         debugText->UpdateGuiText();
 
-        //GE.preRenderEvent->Connect([&GE, debugText](float dt) {
-            ////DebugLogInfo("e");
-            //debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
-            //debugText->UpdateGuiText();
-        //});
+        GE.preRenderEvent->Connect([&GE, debugText](float dt) {
+            //DebugLogInfo("e");
+            debugText->GetTextInfo().text = glm::to_string(GE.GetCurrentCamera().position);
+            debugText->UpdateGuiText();
+        });
     }
 
     GE.preRenderEvent->Connect([](float dt) {
