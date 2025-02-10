@@ -82,9 +82,9 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 						//DebugLogInfo("Writing position ", i + x, " ", j + z);
 
 						// positions
-						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x - 1;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x - 1.5f;
 						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 1] = floorData.yOffset;
-						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = j + z - 1;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = j + z - 1.5f;
 
 						// UVs
 						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = hUvs[x];
@@ -110,7 +110,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 				const auto& furnitureData = GetFurnitureData(tile.layers[TileLayer::Furniture]);
 				
 				if (furnitureData.gameobjectMaker.has_value()) {
-					(*furnitureData.gameobjectMaker)({ i + centerPos.x, j + centerPos.y }, objects);
+					(*furnitureData.gameobjectMaker)({ i + centerPos.x - radius - 1, j + centerPos.y - radius - 1}, objects);
 				}
 			}
 
@@ -138,7 +138,7 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 	params.materialId = material ? material->id: 0;
 	params.meshId = mesh->meshId;
 	mainObject = GameObject::New(params);
-	mainObject->RawGet<TransformComponent>()->SetPos(glm::dvec3(centerPos.x, 0, centerPos.y));
+	mainObject->RawGet<TransformComponent>()->SetPos(glm::dvec3(centerPos.x - radius, 0, centerPos.y - radius));
 	//mainObject->RawGet<TransformComponent>()->SetScl(glm::dvec3(radius * 2.0));
 }
 

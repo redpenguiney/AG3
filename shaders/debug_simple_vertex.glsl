@@ -2,8 +2,7 @@
 
 layout(location=0) in vec3 vertexPos;
 layout(location=1) in vec4 vertexColor;
-layout(location=2) in mat4 modelMatrix;
-// locations 2-5 are part of model
+layout(location=6) in mat4 modelMatrix;
 
 out vec4 fragmentColor;
 

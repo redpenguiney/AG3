@@ -54,6 +54,7 @@ std::pair<float, std::shared_ptr<Material>> ArialFont(int size)
     auto ttfParams = TextureCreateParams({ TextureSource{"../fonts/arial.ttf"}, }, Texture::FontMap);
     ttfParams.fontHeight = size;
     ttfParams.format = Texture::Grayscale_8Bit;
+    //ttfParams.mipmapBehaviour = Texture::NoMipmaps;
     auto b = Material::New(MaterialCreateParams({ ttfParams }, Texture::Texture2D, GraphicsEngine::Get().defaultGuiMaterial->shader, nullptr, false));
     b.second->ignorePostProc = true;
     b.second->depthMaskEnabled = false;
@@ -435,7 +436,7 @@ void TestBillboardUi(glm::dvec3 pos, std::string text)
     );
     ui->rgba = { 1, 0.5, 0, 0.5 };
     ui->scaleSize = { 0, 0 };
-    ui->offsetSize = { 32, 32 };
+    ui->offsetSize = { 128, 32 };
     ui->anchorPoint = {0.0, 0.0};
     ui->offsetPos = { 0, 0 };
     ui->scalePos = { 0, 0 };

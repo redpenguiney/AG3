@@ -13,7 +13,7 @@
 class Entity;
 
 struct ComputePathParams {
-
+	int maxIterations = 10000;
 };
 
 struct Path {

@@ -7,6 +7,8 @@ class Creature: public Entity {
 public:
 	Body body;
 	
+	// in tiles/second
+	double GetMoveSpeed();
 
 	// affects combat ability
 	Attribute reactionTime;
@@ -24,4 +26,7 @@ protected:
 
 	// Makes the creature update its AI and do stuff and all that.
 	virtual void Think(float dt) override;
+
+private:
+	glm::ivec2 currentGoal; // where creature is currently tryna pathfind to
 };

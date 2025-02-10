@@ -93,7 +93,7 @@ void MakeGameMenu() {
     
     int tabIndex = 0;
     for (auto& tabInfo : constructionTabs) {
-        auto tab = std::make_shared<Gui>(true, std::nullopt, MenuFont1<10>());
+        auto tab = std::make_shared<Gui>(true, std::nullopt, MenuFont1<12>());
         tab->GetTextInfo().leftMargin = -1000;
         tab->GetTextInfo().rightMargin = 1000;
         tab->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
@@ -174,7 +174,7 @@ void MakeGameMenu() {
 
                 int itemI = 0;
                 for (auto& item : tabInfo.items) {
-                    auto construction = std::make_shared<Gui>(true, std::nullopt, MenuFont1<10>(), std::nullopt, true);
+                    auto construction = std::make_shared<Gui>(true, std::nullopt, MenuFont1<12>(), std::nullopt, true);
 
                     construction->scalePos = { 0, 0 };
                     //construction->offsetPos = { 8, 8 + p->GetPixelSize().y / 2 + p->GetPixelPos().y + TAB_ICON_SPACING };
@@ -328,6 +328,8 @@ void MakeMainMenu() {
             inMainMenu = false;
             auto& duh = mainMenuGuis;
 
+            TestBillboardUi({ -13, 2.0, 10 }, "bob");
+
             mainMenuGuis.clear();
             //TestVoxelTerrain();
             //TestSphere(4, 4, 4, false);
@@ -339,7 +341,9 @@ void MakeMainMenu() {
             World::Generate();
             MakeGameMenu();
             GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor); // TODO: this pattern is dumb and WILL  cause (minor) bugs
-            //Creature::New(CubeMesh(), Body::Humanoid());
+            auto cre = Creature::New(CubeMesh(), Body::Humanoid());
+            cre->gameObject->RawGet<TransformComponent>()->SetPos({ -13, 1.0, 10 });
+            cre->MoveTo({ -13, -13 });
         }
         });
 

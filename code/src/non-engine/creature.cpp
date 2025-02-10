@@ -1,5 +1,6 @@
 #include "creature.hpp"
 #include "graphics/mesh.hpp"
+#include "world.hpp"
 
 GameobjectCreateParams creatureParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody, /*ComponentBitIndex::Animation*/});
 
@@ -7,6 +8,11 @@ GameobjectCreateParams GetCreatureCreateParams(unsigned int mId) {
 	auto & p = creatureParams;
 	p.meshId = mId;
 	return p;
+}
+
+double Creature::GetMoveSpeed()
+{
+	return 1.0;
 }
 
 std::shared_ptr<Creature> Creature::New(const std::shared_ptr<Mesh>& mesh, const Body& b)
@@ -21,6 +27,11 @@ Creature::~Creature()
 {
 }
 
+void Creature::MoveTo(glm::ivec2 worldPos)
+{
+	currentGoal = worldPos;
+}
+
 
 
 Creature::Creature(const std::shared_ptr<Mesh>& mesh, const Body& b) :
@@ -28,12 +39,26 @@ Creature::Creature(const std::shared_ptr<Mesh>& mesh, const Body& b) :
 	body(b)
 	//gameObject(GameObject::New(GetCreatureCreateParams(mesh->meshId)))
 {
-
+	currentGoal = Pos();
 }
 
 void Creature::Think(float dt) {
 	body.Update(dt);
 
-	auto transform = gameObject->RawGet<TransformComponent>();
-	transform->SetPos(transform->Position() + glm::dvec3(0, 0, dt * 0.01));
+	if (currentGoal != Pos()) {
+		// TODO: DON'T PATHFIND EVERY FRAME LOL
+		const auto path = World::Loaded()->ComputePath(Pos(), currentGoal, ComputePathParams());
+		DebugLogInfo("Nodes ", path.wayPoints.size());
+		if (path.wayPoints.size() < 2) return;
+		auto nextPos = glm::dvec3(path.wayPoints[1].x, gameObject->RawGet<TransformComponent>()->Position().y, path.wayPoints[1].y);
+		auto moveDir = glm::dvec3(nextPos.x, gameObject->RawGet<TransformComponent>()->Position().y, nextPos.y) - gameObject->RawGet<TransformComponent>()->Position();
+		auto speed = GetMoveSpeed(); // TODO: CONSIDER TILE MOVEMENT PENALTIES
+		if (glm::length2(moveDir) < speed * speed) {
+			gameObject->RawGet<TransformComponent>()->SetPos(nextPos);
+		}
+		else {
+			gameObject->RawGet<TransformComponent>()->SetPos(gameObject->RawGet<TransformComponent>()->Position() + moveDir * speed * (double)dt);
+		}
+	}
+	
 }

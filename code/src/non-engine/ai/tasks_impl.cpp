@@ -15,7 +15,7 @@ bool ChangeTileTask::Progress(Humanoid& executor, float dt)
 	// Is humanoid within range?
 	glm::ivec2 hPos = executor.gameObject->RawGet<TransformComponent>()->Position();
 	if (std::abs(hPos.x - pos.x) + std::abs(hPos.y - pos.y) > 1) { // then no; have them pathfind over
-
+		executor.MoveTo(hPos);
 		return false;
 	}
 }

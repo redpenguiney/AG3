@@ -20,6 +20,9 @@ public:
 
 	std::shared_ptr<GameObject> gameObject;
 
+	// returns position of tile that gameObject is centered upon.
+	glm::ivec2 Pos() const;
+
 	virtual ~Entity(); // virtual destructor required to ensure correct deletion by shared_ptr of subclasses
 
 	// Loads and unloads entities based on whether they're within the bounds of a loaded chunk, then calls Think() on all the active entities

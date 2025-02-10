@@ -1,6 +1,12 @@
 #include "entity.hpp"
 #include "world.hpp"
 
+glm::ivec2 Entity::Pos() const
+{
+	const auto p = gameObject->RawGet<TransformComponent>()->Position();
+	return { std::round(p.x), std::round(p.y) };
+}
+
 Entity::~Entity() {
 	GameObjectsToEntities().erase(gameObject.get());
 
@@ -15,7 +21,7 @@ void Entity::UpdateAll(float dt) {
 	entityLayerSet[ENTITY_COLLISION_LAYER] = true;
 
 	for (auto& loader : World::Loaded()->chunkLoaders) {
-		AABB loaderBounds(glm::dvec3(loader.centerPosition - loader.radius, -16384.0), glm::dvec3(loader.centerPosition + loader.radius, 16384.0));
+		AABB loaderBounds(glm::dvec3(loader.centerPosition.x - loader.radius, -16384.0, loader.centerPosition.y - loader.radius), glm::dvec3(loader.centerPosition.x + loader.radius, 16384.0, loader.centerPosition.y + loader.radius));
 
 		auto entityObjects = SAS.Query(loaderBounds, entityLayerSet);
 		for (auto& obj : entityObjects) {

@@ -100,75 +100,65 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::d
     return collidingComponents;
 }
 
-void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances, unsigned int depth) {
+void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances, const Mesh& mesh, unsigned int depth) {
     if (node.children != nullptr) {
         for (auto & child: *node.children) {
             if (child != nullptr) {
-                DebugVisualizeAddVertexAttributes(*child, instancedVertexAttributes, numInstances, depth + 1);
+                DebugVisualizeAddVertexAttributes(*child, instancedVertexAttributes, numInstances, mesh, depth + 1);
             }
         }
     }
     
     for (auto & object: node.objects) {
+        instancedVertexAttributes.resize(instancedVertexAttributes.size() + mesh.vertexFormat.GetInstancedVertexSize()/sizeof(GLfloat));
+        auto oldPtr = instancedVertexAttributes.data() + instancedVertexAttributes.size() - mesh.vertexFormat.GetInstancedVertexSize() / sizeof(GLfloat); // gotta set it afterwards bc resizing changes ptr
+
         glm::vec3 position = object->aabb.Center();
         glm::mat4x4 model = glm::scale(glm::translate(glm::identity<glm::mat4x4>(), position), glm::vec3(object->aabb.max - object->aabb.min)) ;
-        instancedVertexAttributes.resize(instancedVertexAttributes.size() + 16);
-        memcpy(instancedVertexAttributes.data() + instancedVertexAttributes.size() - 16, &model, sizeof(glm::mat4x4));
+        
+        memcpy(oldPtr + mesh.vertexFormat.attributes.modelMatrix->offset/sizeof(GLfloat), &model, sizeof(glm::mat4x4));
         if (depth == 0) {
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
+            constexpr glm::vec4 color = { 1, 1, 1, 1 };
+            memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &color, sizeof(glm::vec4));
         }
         else if (depth == 1) {
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(0);
-            instancedVertexAttributes.push_back(0);
-            instancedVertexAttributes.push_back(1);
+            constexpr glm::vec4 color = { 1, 0, 0, 1 };
+            memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &color, sizeof(glm::vec4));
         }
         else if (depth == 2) {
-            instancedVertexAttributes.push_back(0);
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
+            constexpr glm::vec4 color = { 0, 1, 1, 1 };
+            memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &color, sizeof(glm::vec4));
         }
         else {
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(0);
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
+            constexpr glm::vec4 color = { 1, 0, 1, 1 };
+            memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &color, sizeof(glm::vec4));
         }
         numInstances++;
     }
 
     //if (&node != &root) {
+        instancedVertexAttributes.resize(instancedVertexAttributes.size() + mesh.vertexFormat.GetInstancedVertexSize() / sizeof(GLfloat));
+        auto oldPtr = instancedVertexAttributes.data() + instancedVertexAttributes.size() - mesh.vertexFormat.GetInstancedVertexSize() / sizeof(GLfloat); // gotta set it afterwards bc resizing changes ptr;
+
         glm::vec3 position = node.aabb.Center();
         glm::mat4x4 model = glm::scale(glm::translate(glm::identity<glm::mat4x4>(), position), glm::vec3(node.aabb.max - node.aabb.min)) ;
-        instancedVertexAttributes.resize(instancedVertexAttributes.size() + 16);
-        memcpy(instancedVertexAttributes.data() + instancedVertexAttributes.size() - 16, &model, sizeof(glm::mat4x4));
+
+        memcpy(oldPtr + mesh.vertexFormat.attributes.modelMatrix->offset / sizeof(GLfloat), &model, sizeof(glm::mat4x4));
         if (depth == 0) {
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
+            constexpr glm::vec4 color = { 1, 1, 1, 1 };
+            memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &color, sizeof(glm::vec4));
         }
         else if (depth == 1) {
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(0);
-            instancedVertexAttributes.push_back(0);
-            instancedVertexAttributes.push_back(1);
+            constexpr glm::vec4 color = { 1, 0, 0, 1 };
+            memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &color, sizeof(glm::vec4));
         }
         else if (depth == 2) {
-            instancedVertexAttributes.push_back(0);
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
+            constexpr glm::vec4 color = { 0, 1, 1, 1 };
+            memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &color, sizeof(glm::vec4));
         }
         else {
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(0);
-            instancedVertexAttributes.push_back(1);
-            instancedVertexAttributes.push_back(1);
+            constexpr glm::vec4 color = { 1, 0, 1, 1 };
+            memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &color, sizeof(glm::vec4));
         }
         
         numInstances++;
@@ -177,7 +167,8 @@ void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode con
     
 
 void SpatialAccelerationStructure::DebugVisualize() {
-    auto & crummyDebugShader = GraphicsEngine::Get().crummyDebugShader;
+    static auto crummyDebugShader = ShaderProgram::New("../shaders/debug_simple_vertex.glsl", "../shaders/debug_simple_fragment.glsl", false, false);
+
     crummyDebugShader->Use();
 
     const auto m = Mesh::MultiFromFile("../models/rainbowcube.obj", MeshCreateParams()).back().mesh;
@@ -187,7 +178,7 @@ void SpatialAccelerationStructure::DebugVisualize() {
     
     std::vector<float> instancedVertexAttributes; // per object data. format is 4x4 model mat, rgba, 4x4 model mat, rgba...
     unsigned int numInstances = 0; // number of wireframes we're drawing
-    DebugVisualizeAddVertexAttributes(root, instancedVertexAttributes, numInstances);
+    DebugVisualizeAddVertexAttributes(root, instancedVertexAttributes, numInstances, *m);
 
     GLuint vao, vbo, ibo, ivbo;
     glGenVertexArrays(1, &vao);

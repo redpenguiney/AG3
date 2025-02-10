@@ -62,7 +62,7 @@ class SpatialAccelerationStructure { // (SAS)
     private:
 
     // Helper function for DebugVisualize(), disregard.
-    void DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances, unsigned int depth=0);
+    void DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances, const Mesh& mesh, unsigned int depth=0);
 
     // recursive helper functions for Query(), ignore (member func because SasNode is private)
     void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider, CollisionLayerSet layers);

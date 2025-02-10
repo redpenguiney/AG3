@@ -118,7 +118,7 @@ void Gui::UpdateBillboardGuis(float) {
 
 #pragma warning(disable : 26829)
 Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial,  std::optional<BillboardGuiInfo> billboardGuiInfo, bool clippingEnabled):
-    material(clippingEnabled ? Material::Copy(guiMaterial.has_value() ? guiMaterial->second : GraphicsEngine::Get().defaultGuiMaterial) : guiMaterial.has_value() ? guiMaterial->second : GraphicsEngine::Get().defaultGuiMaterial),
+    material(clippingEnabled ? Material::Copy(guiMaterial.has_value() ? guiMaterial->second : (billboardGuiInfo.has_value() ? GraphicsEngine::Get().defaultBillboardGuiMaterial : GraphicsEngine::Get().defaultGuiMaterial)) : guiMaterial.has_value() ? guiMaterial->second : (billboardGuiInfo.has_value() ? GraphicsEngine::Get().defaultBillboardGuiMaterial : GraphicsEngine::Get().defaultGuiMaterial)),
     ownsMaterial(clippingEnabled),
     onMouseEnter(Event<>::New()),
     onMouseExit(Event<>::New()),
@@ -129,7 +129,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
    
     //DebugLogInfo("Generated gui ", this);
     
-    GameobjectCreateParams objectParams({ComponentBitIndex::Transform, billboardGuiInfo.has_value() ? ComponentBitIndex::Render : ComponentBitIndex::RenderNoFO});
+    GameobjectCreateParams objectParams({ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO});
 
     mouseHover = false;
 
@@ -162,7 +162,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
 
         auto fMat = clippingEnabled ? Material::Copy(fontMaterial->second) : fontMaterial->second;
 
-        GameobjectCreateParams textObjectParams({ComponentBitIndex::Transform, billboardGuiInfo.has_value() ? ComponentBitIndex::Render : ComponentBitIndex::RenderNoFO });
+        GameobjectCreateParams textObjectParams({ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO });
         textObjectParams.materialId = fMat->id;
         auto textMesh = Mesh::New(TextMeshProvider(MeshCreateParams{ .meshVertexFormat = MeshVertexFormat::DefaultGui() }, fMat), true);
         // auto textMesh = Mesh::Square();
@@ -299,6 +299,12 @@ void Gui::UpdateGuiTransform() {
         guiTextInfo->object->Get<TransformComponent>()->SetRot(textRot);
     }
 
+    if (billboardInfo.has_value()) {
+        object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel);
+        if (guiTextInfo.has_value())
+            guiTextInfo->object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, float(zLevel - 0.001));
+    }
+
     for (auto& c : children) {
         c->UpdateGuiTransform();
     }
@@ -319,10 +325,10 @@ Gui::BillboardGuiInfo& Gui::GetBillboardInfo() {
 void Gui::UpdateGuiGraphics() {
     object->Get<RenderComponent>()->SetColor(rgba);
     object->Get<RenderComponent>()->SetTextureZ(materialLayer);
-    object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, zLevel);
+    
      
     if (guiTextInfo.has_value()) {
-        guiTextInfo->object->Get<RenderComponent>()->SetInstancedVertexAttribute(MeshVertexFormat::ARBITRARY_ATTRIBUTE_1_NAME, float(zLevel - 0.01));
+        
         guiTextInfo->object->Get<RenderComponent>()->SetColor(guiTextInfo->rgba);
         guiTextInfo->object->Get<RenderComponent>()->SetTextureZ(guiTextInfo->fontMaterialLayer);
     }
@@ -432,7 +438,6 @@ glm::vec2 Gui::GetPixelPos()
     if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr? Also should we just assert that object isn't expired?
         glm::vec3 projected = GraphicsEngine::Get().GetCurrentCamera().ProjectToScreen(billboardInfo->followObject.lock()->Get<TransformComponent>()->Position(), GraphicsEngine::Get().window.Aspect());
         modifiedScalePos += glm::vec2(projected);
-        
         if (projected.z < 0 || projected.z > 1) { modifiedScalePos.x += 10000; }
         //else DebugLogInfo("Proj ", projected);
     }
