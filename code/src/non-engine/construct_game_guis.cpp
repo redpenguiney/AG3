@@ -328,7 +328,7 @@ void MakeMainMenu() {
             inMainMenu = false;
             auto& duh = mainMenuGuis;
 
-            TestBillboardUi({ -13, 2.0, 10 }, "bob");
+            TestBillboardUi({ -13, 2.0, -13 }, "bob");
 
             mainMenuGuis.clear();
             //TestVoxelTerrain();

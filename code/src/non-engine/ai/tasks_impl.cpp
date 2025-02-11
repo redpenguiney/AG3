@@ -18,6 +18,9 @@ bool ChangeTileTask::Progress(Humanoid& executor, float dt)
 		executor.MoveTo(hPos);
 		return false;
 	}
+	else if () {
+
+	}
 }
 
 int ChangeTileTask::EvaluateTaskUtility(const Humanoid& potentialExecutor)

@@ -12,7 +12,7 @@ GameobjectCreateParams GetCreatureCreateParams(unsigned int mId) {
 
 double Creature::GetMoveSpeed()
 {
-	return 1.0;
+	return 0.2;
 }
 
 std::shared_ptr<Creature> Creature::New(const std::shared_ptr<Mesh>& mesh, const Body& b)
@@ -48,16 +48,18 @@ void Creature::Think(float dt) {
 	if (currentGoal != Pos()) {
 		// TODO: DON'T PATHFIND EVERY FRAME LOL
 		const auto path = World::Loaded()->ComputePath(Pos(), currentGoal, ComputePathParams());
-		DebugLogInfo("Nodes ", path.wayPoints.size());
+		//DebugLogInfo("Nodes ", path.wayPoints.size());
 		if (path.wayPoints.size() < 2) return;
 		auto nextPos = glm::dvec3(path.wayPoints[1].x, gameObject->RawGet<TransformComponent>()->Position().y, path.wayPoints[1].y);
-		auto moveDir = glm::dvec3(nextPos.x, gameObject->RawGet<TransformComponent>()->Position().y, nextPos.y) - gameObject->RawGet<TransformComponent>()->Position();
+		DebugLogInfo("Next ", nextPos);
+		//Assert(path.wayPoints[1] != Pos());
+		auto moveDir = nextPos - gameObject->RawGet<TransformComponent>()->Position();
 		auto speed = GetMoveSpeed(); // TODO: CONSIDER TILE MOVEMENT PENALTIES
 		if (glm::length2(moveDir) < speed * speed) {
 			gameObject->RawGet<TransformComponent>()->SetPos(nextPos);
 		}
 		else {
-			gameObject->RawGet<TransformComponent>()->SetPos(gameObject->RawGet<TransformComponent>()->Position() + moveDir * speed * (double)dt);
+			gameObject->RawGet<TransformComponent>()->SetPos(gameObject->RawGet<TransformComponent>()->Position() + glm::normalize(moveDir) * speed * (double)dt);
 		}
 	}
 	

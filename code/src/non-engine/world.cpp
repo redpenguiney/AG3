@@ -164,6 +164,7 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
             }
             std::reverse(p.wayPoints.begin(), p.wayPoints.end());
             Assert(p.wayPoints[0] == origin);
+            Assert(p.wayPoints.back() == goal);
 
             //for (auto& node : p.wayPoints) {
             //    //TestBillboardUi(glm::dvec3(node.x - 0.5, 3.0, node.y - 0.5), std::to_string((int)(nodeCosts[node])) + std::string(" ") + std::to_string(node.x - 0.5) + std::string(", ") + std::to_string(node.y - 0.5));

@@ -61,7 +61,7 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& 
     std::vector<ColliderComponent*> collidingComponents;
     for (auto & node: collidingNodes) {
         for (auto & obj: node->objects) {
-            if (layers[obj->layer] && obj->aabb.TestIntersection(collider)) {
+            if (layers[obj->layer] == true && obj->aabb.TestIntersection(collider)) {
                 collidingComponents.push_back(obj);
             }
         }
