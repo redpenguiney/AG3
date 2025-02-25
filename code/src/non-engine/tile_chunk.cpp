@@ -138,6 +138,7 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 	params.materialId = material ? material->id: 0;
 	params.meshId = mesh->meshId;
 	mainObject = GameObject::New(params);
+	mainObject->RawGet<ColliderComponent>()->SetCollisionLayer(COLLISION_LAYER);
 	mainObject->RawGet<TransformComponent>()->SetPos(glm::dvec3(centerPos.x - radius, 0, centerPos.y - radius));
 	//mainObject->RawGet<TransformComponent>()->SetScl(glm::dvec3(radius * 2.0));
 }

@@ -22,7 +22,8 @@ void Entity::UpdateAll(float dt) {
 
 	for (auto& loader : World::Loaded()->chunkLoaders) {
 		Assert(loader.radius > 0);
-		AABB loaderBounds(glm::dvec3(loader.centerPosition.x - loader.radius, -16384.0, loader.centerPosition.y - loader.radius), glm::dvec3(loader.centerPosition.x + loader.radius, 16384.0, loader.centerPosition.y + loader.radius));
+		// +/- 8 to reach chunk boundaries instead of chunk centres
+		AABB loaderBounds(glm::dvec3(loader.centerPosition.x - loader.radius - 8, -16384.0, loader.centerPosition.y - loader.radius), glm::dvec3(loader.centerPosition.x + loader.radius, 16384.0, loader.centerPosition.y + loader.radius + 8));
 
 		auto entityObjects = SAS.Query(loaderBounds, entityLayerSet);
 		for (auto& obj : entityObjects) {

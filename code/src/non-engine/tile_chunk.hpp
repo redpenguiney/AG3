@@ -10,6 +10,8 @@ class Material;
 
 class RenderChunk {
 public:
+	static const inline int COLLISION_LAYER = 3;
+
 	RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std::shared_ptr<Material>& material, const std::shared_ptr<TextureAtlas>& atlas);
 
 	RenderChunk(const RenderChunk&) = delete;

@@ -9,21 +9,27 @@
 class InputStack {
 public:
 	using InputCallback = std::function<void(InputObject) >;
-	using StackId = void*;
 
 	static InputStack& Get();
 
-	// returned StackId is used to remove the input when you're done.
-	StackId PushBegin(InputObject::InputType, InputCallback);
-	// returned StackId is used to remove the input when you're done.
-	StackId PushEnd(InputObject::InputType, InputCallback);
+	// Call PopBegin() with the same name to unbind. If an action with the same name is already on the stack, it silently removes it before pushing the new callback to the top of the stack.
+	void PushBegin(InputObject::InputType, int name, InputCallback);
+	// Call PopEnd() with the same name to unbind. If an action with the same name is already on the stack, it silently removes it before pushing the new callback to the top of the stack.
+	void PushEnd(InputObject::InputType, int name, InputCallback);
 	
-	void PopBegin(InputObject::InputType, StackId);
-	void PopEnd(InputObject::InputType, StackId);
+	// Does nothing if name not in stack.
+	void PopBegin(InputObject::InputType, int name);
+	// Does nothing if name not in stack.
+	void PopEnd(InputObject::InputType, int name);
 
 private:
-	std::unordered_map<InputObject::InputType, std::list<InputCallback>> beginStack;
-	std::unordered_map<InputObject::InputType, std::list<InputCallback>> endStack;
+	struct Binding {
+		int name;
+		InputCallback callback;
+	};
+
+	std::unordered_map<InputObject::InputType, std::list<Binding>> beginStack;
+	std::unordered_map<InputObject::InputType, std::list<Binding>> endStack;
 
 	std::unique_ptr<Event<InputObject>::Connection> windowInputBeginConnection;
 	std::unique_ptr<Event<InputObject>::Connection> windowInputEndConnection;

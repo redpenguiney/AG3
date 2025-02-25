@@ -18,8 +18,13 @@ bool ChangeTileTask::Progress(Humanoid& executor, float dt)
 		executor.MoveTo(hPos);
 		return false;
 	}
-	else if () {
-
+	else {
+		float WORK_SPEED = 1.0f; // TODO
+		progress += dt * WORK_SPEED;
+		if (progress >= info.baseTimeToComplete)
+			return true; // we finished
+		else
+			return false; // we're not done
 	}
 }
 

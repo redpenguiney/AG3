@@ -7,45 +7,57 @@ InputStack& InputStack::Get()
 	return i;
 }
 
-InputStack::StackId InputStack::PushBegin(InputObject::InputType input, InputCallback callback)
+void InputStack::PushBegin(InputObject::InputType input, int name, InputCallback callback)
 {
-	auto& ref = beginStack[input].emplace_back(callback);
-	return &ref;
+	for (auto it = beginStack[input].begin(); it != beginStack[input].end(); it++) {
+		if (it->name == name) {
+			beginStack[input].erase(it);
+			break;
+		}
+	}
+
+	auto& ref = beginStack[input].emplace_back(name, callback);
 }
 
-InputStack::StackId InputStack::PushEnd(InputObject::InputType input, InputCallback callback)
+void InputStack::PushEnd(InputObject::InputType input, int name, InputCallback callback)
 {
-	auto& ref = endStack[input].emplace_back(callback);
-	return &ref;
+	for (auto it = endStack[input].begin(); it != endStack[input].end(); it++) {
+		if (it->name == name) {
+			endStack[input].erase(it);
+			break;
+		}
+	}
+
+	auto& ref = endStack[input].emplace_back(name, callback);
 }
 
-void InputStack::PopBegin(InputObject::InputType input, StackId id)
+void InputStack::PopBegin(InputObject::InputType input, int name)
 {
 	for (auto it = beginStack[input].begin(); it != beginStack[input].end(); it++)
-		if (&*it == id) {
+		if (it->name == name) {
 			beginStack[input].erase(it);
 			return;
 		}
-	Assert(false); // INVALID STACK ID
+	//Assert(false); // INVALID NAME
 }
 
-void InputStack::PopEnd(InputObject::InputType input, StackId id)
+void InputStack::PopEnd(InputObject::InputType input, int name)
 {
 	for (auto it = endStack[input].begin(); it != endStack[input].end(); it++)
-		if (&*it == id) {
+		if (it->name == name) {
 			endStack[input].erase(it);
 			return;
 		}
-	Assert(false); // INVALID STACK ID
+	//Assert(false); // INVALID NAME
 }
 
 InputStack::InputStack() {
 	windowInputBeginConnection = GraphicsEngine::Get().window.inputDown->ConnectTemporary([this](InputObject i) {
 		if (!beginStack[i.input].empty())
-			beginStack[i.input].back()(i);
+			beginStack[i.input].back().callback(i);
 	});
 	windowInputEndConnection = GraphicsEngine::Get().window.inputUp->ConnectTemporary([this](InputObject i) {
 		if (!endStack[i.input].empty())
-			endStack[i.input].back()(i);
+			endStack[i.input].back().callback(i);
 	});
 }

@@ -5,6 +5,7 @@
 #include "world.hpp"
 #include "creature.hpp"
 #include "conglomerates/input_stack.hpp"
+#include <physics/raycast.hpp>
 
 template <int fontSize>
 std::pair <float, std::shared_ptr<Material>> MenuFont1() {
@@ -13,22 +14,147 @@ std::pair <float, std::shared_ptr<Material>> MenuFont1() {
 }
 
 int buildUiScrollAmt = 0;
-InputStack::StackId guiScrollId = nullptr;
+constexpr int GUI_SCROLL_NAME = 100;
+constexpr int GuiLMBName = 104;
+constexpr int PlaceLMBName = 1200;
+int hover = 0;
 
-
-struct Constructible {
-    std::string name;
-    int placementMode = 2; // 0 = point, 1 = line, 2 = area
-    bool snapPlacement = true;
-};
+struct Constructible;
 
 struct ConstructionTab {
     std::vector<Constructible> items;
     std::string name;
     std::string iconPath;
+
+    //ConstructionTab(const ConstructionTab&) = delete;
 };
 
 Constructible* currentSelectedConstructible = nullptr;
+std::shared_ptr<GameObject> currentConstructibleGhost = nullptr;
+std::optional<glm::vec2> currentBuildingP1 = std::nullopt; 
+
+// just a simple raycast
+std::optional<glm::vec2> GetCursorTilePos(bool snapToGrid) {
+
+    // find where person clicked by raycasting in screen direction
+    CollisionLayerSet layers = 0;
+    layers[RenderChunk::COLLISION_LAYER] = true;
+    auto result = Raycast(
+        GraphicsEngine::Get().GetCurrentCamera().position,
+        GraphicsEngine::Get().GetCurrentCamera().ProjectToWorld(GraphicsEngine::Get().window.MOUSE_POS, { GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height }),
+        layers
+    );
+
+    if (result.hitObject) {
+        if (snapToGrid) { // we don't care about y coordinate in this case
+            result.hitPoint -= result.hitNormal * 0.5; // offset point in normal direction so that if they click on the side of a wall it picks the wall
+            result.hitPoint.x = std::round(result.hitPoint.x);
+            result.hitPoint.z = std::round(result.hitPoint.z);
+        }
+        return result.hitPoint;
+    }
+    else {
+        return std::nullopt;
+    }
+}
+
+// Not neccesary actual buildings, could be various orders, just anything a player would need to select a position for
+struct Constructible {
+    std::string name;
+    int placementMode = 2; // 0 = point, 1 = line, 2 = area
+    bool snapPlacement = true;
+
+    // function called when user tries to place a constructible on the given position.  (in charge of deciding whether that's okay and stuff)
+    // For placementMode == 0, the two positions are equivalent and the position the player selected.
+    // For placementMode == 1 or 2, the two positions describe a line or rectange the player selected.
+    // Positions are not rounded even if snapPlacement == true.
+    // trivial default function.
+    std::function<void(glm::vec2, glm::vec2)> apply = [](glm::vec2, glm::vec2) {};
+
+    // called every frame for cuurentSelectedConstructible.
+    std::function<void()> applyGraphic = [this]() {
+        if (!currentConstructibleGhost) {
+            auto params = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
+            params.meshId = CubeMesh()->meshId;
+            currentConstructibleGhost = GameObject::New(params);
+        }
+
+        auto maybePos = GetCursorTilePos(snapPlacement);
+        if (!maybePos.has_value()) return;
+        auto transform = currentConstructibleGhost->RawGet<TransformComponent>();
+        transform->SetPos(glm::dvec3(maybePos->x, transform->Scale().y / 2, maybePos->y));
+    };
+};
+
+void ClearCurrentConstructionGhost()
+{
+    if (currentConstructibleGhost) {
+        currentConstructibleGhost->Destroy();
+        currentConstructibleGhost = nullptr;
+    }
+}
+
+void GhostBuildOnLMBDown(InputObject input) {
+    if (hover != 0) return;
+    if (GraphicsEngine::Get().debugFreecamEnabled) return;
+    if (input.input != InputObject::LMB) return;
+    if (!currentConstructibleGhost) return;
+
+    if (currentSelectedConstructible->placementMode == 0) {
+        // place the thing
+        auto pos = GetCursorTilePos(false);
+        if (pos.has_value())
+            currentSelectedConstructible->apply(*pos, *pos);
+    }
+    else {
+        currentBuildingP1 = GetCursorTilePos(false);
+    }
+    
+}
+
+
+
+std::optional<glm::vec2> GetLinearPlacementPos2(glm::vec2 p1, bool snapToGrid) {
+    auto p2 = GetCursorTilePos(false);
+    if (!p2.has_value()) return std::nullopt;
+
+    // snap p2 to be on an axis-aligned line with p1 
+    if (std::abs(p2->x - currentBuildingP1->x) > std::abs(p2->y - currentBuildingP1->y)) {
+        p2->y = currentBuildingP1->y;
+    }
+    else {
+        p2->x = currentBuildingP1->x;
+    }
+    if (currentSelectedConstructible->snapPlacement) {
+        p2->x = std::round(p2->x);
+        p2->y = std::round(p2->y);
+    }
+
+    return p2;
+}
+
+void GhostBuildOnLMBUp(InputObject input) {
+    if (hover != 0) return;
+    if (GraphicsEngine::Get().debugFreecamEnabled) return;
+    if (input.input != InputObject::LMB) return;
+    if (!currentConstructibleGhost) return;
+
+    if (currentSelectedConstructible->placementMode == 1) {
+        auto p2 = GetCursorTilePos(false);
+
+        if (currentBuildingP1.has_value() && p2.has_value()) {
+            if (currentSelectedConstructible->placementMode == 1) {
+                currentSelectedConstructible->apply(*currentBuildingP1, *p2);
+            }
+            else {
+                currentSelectedConstructible->apply(*currentBuildingP1, *p2);
+            }
+        }
+
+        currentBuildingP1 = std::nullopt;
+        //ClearCurrentConstructionGhost();
+    }
+}
 
 void MakeGameMenu() {
     
@@ -41,6 +167,7 @@ void MakeGameMenu() {
                 },
         Constructible {
                     .name = "Deforest",
+                    
                 },
             },
             .name = "Terrain",
@@ -111,17 +238,19 @@ void MakeGameMenu() {
         tab->UpdateGuiGraphics();
 
         tab->onMouseEnter->Connect([p = tab.get()]() {
+            hover++;
             p->GetTextInfo().rgba = { 1, 1, 0, 1 };
             p->UpdateGuiGraphics();
             GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemSelectionCursor);
             });
         tab->onMouseExit->Connect([p = tab.get()]() {
+            hover--;
             p->GetTextInfo().rgba = { 0, 0, 1, 1 };
             p->UpdateGuiGraphics();
             GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor);
             });
 
-        tab->onInputBegin->Connect([p = tab.get(), tabInfo, tabIndex](const InputObject& input) mutable {
+        tab->onInputBegin->Connect([p = tab.get(), &tabInfo, tabIndex](const InputObject& input) mutable {
             
 
             if (input.input != InputObject::LMB) return;
@@ -196,27 +325,36 @@ void MakeGameMenu() {
                     construction->SetParent(contents.get());
 
                     construction->onMouseEnter->Connect([p = construction.get()]() {
+                        hover++;
                         p->rgba = { 0.3, 0.3, 0.3, 1.0 };
                         p->UpdateGuiGraphics();
                         GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemSelectionCursor);
                     });
                     construction->onMouseExit->Connect([p = construction.get()]() {
+                        hover--;
                         p->rgba = { 0.4, 0.4, 0.4, 1.0 };
                         p->UpdateGuiGraphics();
                         GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor);
                     });
 
-                    construction->onInputBegin->Connect([item](InputObject input) mutable {
+                    construction->onInputBegin->Connect([&item](InputObject input) mutable {
                         if (input.input == InputObject::LMB) {
                             if (currentSelectedConstructible) {
                                 if (&item == currentSelectedConstructible) {
                                     currentSelectedConstructible = nullptr;
+                                    ClearCurrentConstructionGhost();
+                                    InputStack::Get().PopBegin(InputObject::LMB, PlaceLMBName);
+                                    InputStack::Get().PopEnd(InputObject::LMB, PlaceLMBName);
                                     return;
                                 }
                                 currentSelectedConstructible = nullptr;
                             }
 
+                            ClearCurrentConstructionGhost();
+
                             currentSelectedConstructible = &item;
+                            InputStack::Get().PushBegin(InputObject::LMB, PlaceLMBName, GhostBuildOnLMBDown);
+                            InputStack::Get().PushEnd(InputObject::LMB, PlaceLMBName, GhostBuildOnLMBUp);
                         }
                     });
 
@@ -239,12 +377,10 @@ void MakeGameMenu() {
                     });*/
 
                 buildingsList->onMouseEnter->Connect([p2 = contents.get()]() {
-                    if (guiScrollId) {
-                        DebugLogError("UH IS THIS A PROBLEM??!?!");
-                        InputStack::Get().PopBegin(InputObject::Scroll, guiScrollId);
-                        guiScrollId = nullptr;
-                    }
-                    guiScrollId = InputStack::Get().PushBegin(InputObject::Scroll, [p2](InputObject input) {
+                    hover++;
+                    InputStack::Get().PopBegin(InputObject::Scroll, GUI_SCROLL_NAME);
+
+                    InputStack::Get().PushBegin(InputObject::Scroll, GUI_SCROLL_NAME, [p2](InputObject input) {
                         if (input.input == InputObject::Scroll) {
                             buildUiScrollAmt = std::min(input.direction.y * 15 + buildUiScrollAmt, 0.0f);
                             p2->offsetPos.y = buildUiScrollAmt;
@@ -254,13 +390,8 @@ void MakeGameMenu() {
                 });
 
                 buildingsList->onMouseExit->Connect([]() {
-                    if (!guiScrollId) {
-                        DebugLogError("WHY NO ID?!?!");
-                    }
-                    else {
-                        InputStack::Get().PopBegin(InputObject::Scroll, guiScrollId);
-                        guiScrollId = nullptr;
-                    }
+                    hover--;
+                    InputStack::Get().PopBegin(InputObject::Scroll, GUI_SCROLL_NAME);
                 });
 
                 std::swap(buildingsList, currentConstructionTab);
@@ -283,6 +414,20 @@ void MakeGameMenu() {
 
     constructionFrame->UpdateGuiGraphics();
     constructionFrame->UpdateGuiTransform();
+
+
+
+    // building placement
+    GraphicsEngine::Get().preRenderEvent->Connect([](float dt) {
+        if (currentSelectedConstructible && hover == 0) {
+            currentSelectedConstructible->applyGraphic();
+        }
+    });
+}
+
+void CleanupMenu()
+{
+    ClearCurrentConstructionGhost();
 }
 
 void MakeMainMenu() {

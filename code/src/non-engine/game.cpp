@@ -30,7 +30,7 @@
 
 
 
-
+constexpr int WORLD_ZOOM_NAME = 2000;
 
 void GameInit()
 {
@@ -57,7 +57,7 @@ void GameInit()
     GE.camera.position = glm::vec3(0, 1, 0);
     //
 
-    InputStack::Get().PushBegin(InputObject::Scroll, [](InputObject inputObject) {
+    InputStack::Get().PushBegin(InputObject::Scroll, WORLD_ZOOM_NAME, [](InputObject inputObject) {
         double x = inputObject.direction.x;
         double y = inputObject.direction.y;
 
@@ -308,6 +308,7 @@ void GameInit()
 }
 
 void GameClose() {
+    CleanupMenu();
     World::Unload();
 }
 
