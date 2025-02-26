@@ -39,9 +39,10 @@ std::optional<glm::vec2> GetCursorTilePos(bool snapToGrid) {
     // find where person clicked by raycasting in screen direction
     CollisionLayerSet layers = 0;
     layers[RenderChunk::COLLISION_LAYER] = true;
+    auto dir = GraphicsEngine::Get().GetCurrentCamera().ProjectToWorld(GraphicsEngine::Get().window.MOUSE_POS, { GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height });
     auto result = Raycast(
         GraphicsEngine::Get().GetCurrentCamera().position,
-        GraphicsEngine::Get().GetCurrentCamera().ProjectToWorld(GraphicsEngine::Get().window.MOUSE_POS, { GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height }),
+        dir,
         layers
     );
 
@@ -51,9 +52,10 @@ std::optional<glm::vec2> GetCursorTilePos(bool snapToGrid) {
             result.hitPoint.x = std::round(result.hitPoint.x);
             result.hitPoint.z = std::round(result.hitPoint.z);
         }
-        return result.hitPoint;
+        return std::optional<glm::vec2>({ result.hitPoint.x, result.hitPoint.z });
     }
     else {
+        DebugLogInfo("MISS");
         return std::nullopt;
     }
 }
@@ -159,7 +161,7 @@ void GhostBuildOnLMBUp(InputObject input) {
 void MakeGameMenu() {
     
     // construction menu
-    std::vector<ConstructionTab> constructionTabs = {
+    static std::vector<ConstructionTab> constructionTabs = {
         ConstructionTab {
             .items = {
                 Constructible {
@@ -250,7 +252,7 @@ void MakeGameMenu() {
             GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor);
             });
 
-        tab->onInputBegin->Connect([p = tab.get(), &tabInfo, tabIndex](const InputObject& input) mutable {
+        tab->onInputBegin->Connect([p = tab.get(), tabInfo = &tabInfo, tabIndex](const InputObject& input) mutable {
             
 
             if (input.input != InputObject::LMB) return;
@@ -302,7 +304,7 @@ void MakeGameMenu() {
                 contents->UpdateGuiGraphics();
 
                 int itemI = 0;
-                for (auto& item : tabInfo.items) {
+                for (auto& item : tabInfo->items) {
                     auto construction = std::make_shared<Gui>(true, std::nullopt, MenuFont1<12>(), std::nullopt, true);
 
                     construction->scalePos = { 0, 0 };
@@ -337,10 +339,10 @@ void MakeGameMenu() {
                         GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor);
                     });
 
-                    construction->onInputBegin->Connect([&item](InputObject input) mutable {
+                    construction->onInputBegin->Connect([item = &item](InputObject input) mutable {
                         if (input.input == InputObject::LMB) {
                             if (currentSelectedConstructible) {
-                                if (&item == currentSelectedConstructible) {
+                                if (item == currentSelectedConstructible) {
                                     currentSelectedConstructible = nullptr;
                                     ClearCurrentConstructionGhost();
                                     InputStack::Get().PopBegin(InputObject::LMB, PlaceLMBName);
@@ -352,7 +354,7 @@ void MakeGameMenu() {
 
                             ClearCurrentConstructionGhost();
 
-                            currentSelectedConstructible = &item;
+                            currentSelectedConstructible = item;
                             InputStack::Get().PushBegin(InputObject::LMB, PlaceLMBName, GhostBuildOnLMBDown);
                             InputStack::Get().PushEnd(InputObject::LMB, PlaceLMBName, GhostBuildOnLMBUp);
                         }

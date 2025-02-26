@@ -51,7 +51,7 @@ void Creature::Think(float dt) {
 		//DebugLogInfo("Nodes ", path.wayPoints.size());
 		if (path.wayPoints.size() < 2) return;
 		auto nextPos = glm::dvec3(path.wayPoints[1].x, gameObject->RawGet<TransformComponent>()->Position().y, path.wayPoints[1].y);
-		DebugLogInfo("Next ", nextPos);
+		//DebugLogInfo("Next ", nextPos);
 		//Assert(path.wayPoints[1] != Pos());
 		auto moveDir = nextPos - gameObject->RawGet<TransformComponent>()->Position();
 		auto speed = GetMoveSpeed(); // TODO: CONSIDER TILE MOVEMENT PENALTIES
