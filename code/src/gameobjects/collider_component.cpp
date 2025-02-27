@@ -8,6 +8,8 @@ ColliderComponent::ColliderComponent(GameObject* gameobj, std::shared_ptr<Physic
     gameobject(gameobj),
     physicsMesh(physMesh)
 {
+    assert(gameobject);
+
     aabbType = AABBBoundingCube;
     node = nullptr;
     

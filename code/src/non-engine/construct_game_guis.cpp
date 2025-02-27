@@ -40,6 +40,8 @@ std::optional<glm::vec2> GetCursorTilePos(bool snapToGrid) {
     CollisionLayerSet layers = 0;
     layers[RenderChunk::COLLISION_LAYER] = true;
     auto dir = GraphicsEngine::Get().GetCurrentCamera().ProjectToWorld(GraphicsEngine::Get().window.MOUSE_POS, { GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height });
+    //assert(glm::length2(dir) < 1.01 && glm::length2(dir) > 0.99);
+    DebugLogInfo("DIR ", glm::length(dir));
     auto result = Raycast(
         GraphicsEngine::Get().GetCurrentCamera().position,
         dir,
@@ -163,38 +165,38 @@ void GhostBuildOnLMBUp(InputObject input) {
     }
 }
 
+// construction menu
+static std::vector<ConstructionTab> constructionTabs = {
+    ConstructionTab {
+        .items = {
+            Constructible {
+                .name = "Clear",
+            },
+    Constructible {
+                .name = "Deforest",
+
+            },
+        },
+        .name = "Terrain",
+    },
+    ConstructionTab {
+        .items = {
+            Constructible {
+                .name = "Wood wall",
+                .placementMode = 1
+            }
+        },
+        .name = "Base",
+    },
+    ConstructionTab {
+        .name = "Food"
+    },
+    ConstructionTab {
+        .name = "Military"
+    }
+};
+
 void MakeGameMenu() {
-    
-    // construction menu
-    static std::vector<ConstructionTab> constructionTabs = {
-        ConstructionTab {
-            .items = {
-                Constructible {
-                    .name = "Clear",
-                },
-        Constructible {
-                    .name = "Deforest",
-                    
-                },
-            },
-            .name = "Terrain",
-        },
-        ConstructionTab {
-            .items = {
-                Constructible {
-                    .name = "Wood wall",
-                    .placementMode = 1
-                }
-            },
-            .name = "Base",
-        },
-        ConstructionTab {
-            .name = "Food"
-        },
-        ConstructionTab {
-            .name = "Military"
-        }
-    };
 
     constexpr int TAB_ICON_WIDTH = 48;
     constexpr int TAB_ICON_SPACING = 8;

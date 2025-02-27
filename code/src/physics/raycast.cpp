@@ -48,12 +48,14 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction, CollisionLayerSet
                 
                 // TODO rework physics_mesh.cpp so that triangles have clockwise winding; in the meantime we have to check normals because sometimes they backwards
                 // TODO i thought i already did?
-                if (glm::dot(normal, trianglePoints[0] - obj->Get<TransformComponent>()->Position()) < 0) {
-                    normal *= -1;
-                }
+                
+                // making normals always face away from the center of the mesh is an awful idea, what was I on?
+                //if (glm::dot(normal, trianglePoints[0] - obj->Get<TransformComponent>()->Position()) < 0) { 
+                    //normal *= -1;
+                //}
 
-                // backface culling so that we hit the right triangle
-                if (glm::dot(normal, direction) < 0) { // works according to https://en.wikipedia.org/wiki/Back-face_culling
+                // backface culling so that we hit the right triangle (TODO: NEED CLOCKWISE WINDING FIRST)
+                //if (glm::dot(normal, direction) < 0) { // works according to https://en.wikipedia.org/wiki/Back-face_culling
                     //std::cout << "Passed backface culling.\n";
                     // std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f, the normal is %f %f %f\n.", trianglePoints[0][0], trianglePoints[0][1], trianglePoints[0][2], trianglePoints[1][0], trianglePoints[1][1], trianglePoints[1][2], trianglePoints[2][0], trianglePoints[2][1], trianglePoints[2][2], normal.x, normal.y, normal.z);
                     glm::dvec3 intersectionPoint;
@@ -64,7 +66,7 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction, CollisionLayerSet
                         hitTriangles.push_back({.hitPoint = intersectionPoint, .hitNormal = normal, .hitObject = obj});
                         goto foundTriangle;
                     }
-                }
+                //}
                 
             }
 
