@@ -81,10 +81,15 @@ struct Constructible {
             currentConstructibleGhost = GameObject::New(params);
         }
 
-        auto maybePos = GetCursorTilePos(snapPlacement);
-        if (!maybePos.has_value()) return;
         auto transform = currentConstructibleGhost->RawGet<TransformComponent>();
-        transform->SetPos(glm::dvec3(maybePos->x, transform->Scale().y / 2, maybePos->y));
+        auto maybePos = GetCursorTilePos(snapPlacement);
+        if (maybePos.has_value()) {
+            transform->SetPos(glm::dvec3(maybePos->x, transform->Scale().y / 2, maybePos->y));
+        }
+        else {
+            transform->SetPos({-1000000, -100000, -100000}); // mwahahahaha
+        }
+        
     };
 };
 

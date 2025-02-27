@@ -110,7 +110,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 				const auto& furnitureData = GetFurnitureData(tile.layers[TileLayer::Furniture]);
 				
 				if (furnitureData.gameobjectMaker.has_value()) {
-					(*furnitureData.gameobjectMaker)({ i + centerPos.x - radius - 1, j + centerPos.y - radius - 1}, objects);
+					(*furnitureData.gameobjectMaker)({ i + centerPos.x - radius + 0.5, j + centerPos.y - radius - 0.5}, objects);
 				}
 			}
 
@@ -139,7 +139,7 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 	params.meshId = mesh->meshId;
 	mainObject = GameObject::New(params);
 	mainObject->RawGet<ColliderComponent>()->SetCollisionLayer(COLLISION_LAYER);
-	mainObject->RawGet<TransformComponent>()->SetPos(glm::dvec3(centerPos.x, 0, centerPos.y));
+	mainObject->RawGet<TransformComponent>()->SetPos(glm::dvec3(centerPos.x + 0.5, 0, centerPos.y + 0.5));
 	mainObject->RawGet<TransformComponent>()->SetScl(mesh->originalSize);
 }
 
