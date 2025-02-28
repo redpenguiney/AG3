@@ -62,6 +62,14 @@ std::optional<glm::vec2> GetCursorTilePos(bool snapToGrid) {
     }
 }
 
+struct SetTileApplicatorParams {
+
+};
+
+std::function<void(glm::vec2, glm::vec2)> MakeConstructibleSetTileApplicator(const SetTileApplicatorParams& params) {
+
+}
+
 // Not neccesary actual buildings, could be various orders, just anything a player would need to select a position for
 struct Constructible {
     std::string name;
