@@ -7,7 +7,7 @@ class Schedule;
 // An intelligent creature with a human body.
 class Humanoid: public Creature {
 public:
-	std::shared_ptr<Humanoid> New();
+	static std::shared_ptr<Humanoid> New();
 	virtual ~Humanoid();
 
 	// (charisma), determines effectiveness of conversation

@@ -16,7 +16,7 @@ const std::shared_ptr<Schedule>& Humanoid::GetSchedule()
 Humanoid::Humanoid(std::shared_ptr<Mesh> mesh):
 	Creature(mesh, Body::Humanoid())
 {
-
+	gameObject->name = "Humanoid";
 }
 
 std::shared_ptr<Humanoid> Humanoid::New()
@@ -36,7 +36,7 @@ void Humanoid::Think(float dt)
 
 
 	// if not, determine work group and pick a task
-	auto& group = schedule->Evalute(*this);
+	const WorkBlock& block = schedule ? schedule->Evalute(*this) : Schedule::PERMISSIVE_BLOCK;
 
 	int bestTaskUtility = currentTaskIndex == -1 ? -1 : scheduler.tasks[currentTaskIndex]->EvaluateTaskUtility(*this);
 	int bestTaskIndex = currentTaskIndex;

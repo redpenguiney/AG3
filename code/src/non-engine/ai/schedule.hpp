@@ -22,13 +22,15 @@ public:
 	
 
 	// if this returns true, then the work block should be executed.
-	bool Evaluate(const WorkGroupConditionEvaluationArgs&);
+	bool Evaluate(const WorkGroupConditionEvaluationArgs&) const;
 
 	// for each vector of functions, if all of them return true it passes.
 		// basically the inner vectors are joined by ANDs and the outer vectors by ORs
 	std::vector<std::vector<std::function<bool(const WorkGroupConditionEvaluationArgs&)>>> conditions;
 
 	AllowedWork allowedWork;
+
+	
 };
 
 // A set of work blocks comprising a schedule.
@@ -38,11 +40,20 @@ public:
 // Use by shared_ptr.
 class Schedule {
 public:
+	// Permissive work block allowed all tasks
+	const static inline WorkBlock PERMISSIVE_BLOCK = WorkBlock{
+		.conditions = {},
+		.allowedWork = AllowedWork {
+			.allowedWorkGroups = true,
+			.allowLeisure = true
+}
+	};
+
 	static std::shared_ptr<Schedule> New();
 
 	// Returns what work block the npc should consider when deciding what to do.	
 		
-	const WorkBlock& Evalute(const Humanoid&);
+	const WorkBlock& Evalute(const Humanoid&) const;
 
 	// Modifying this vector may invalidate the reference returned by Evaluate, but other than that, this may be modified as you please.
 	std::vector<WorkBlock> workBlocks;

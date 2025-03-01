@@ -6,6 +6,9 @@
 #include "creature.hpp"
 #include "conglomerates/input_stack.hpp"
 #include <physics/raycast.hpp>
+#include "ai/tasks.hpp"
+#include "ai/tasks_impl.hpp"
+#include "humanoid.hpp"
 
 template <int fontSize>
 std::pair <float, std::shared_ptr<Material>> MenuFont1() {
@@ -63,11 +66,39 @@ std::optional<glm::vec2> GetCursorTilePos(bool snapToGrid) {
 }
 
 struct SetTileApplicatorParams {
-
+    ChangeTileTaskInfo info;
 };
 
 std::function<void(glm::vec2, glm::vec2)> MakeConstructibleSetTileApplicator(const SetTileApplicatorParams& params) {
+    return [params](glm::vec2 p1, glm::vec2 p2) {
+        p1.x = std::round(p1.x);
+        p1.y = std::round(p1.y);
+        p2.x = std::round(p2.x);
+        p2.y = std::round(p2.y);
 
+        if (p1.x > p2.x) {
+            std::swap(p1.x, p2.x);
+        }
+        if (p1.y > p2.y) {
+            std::swap(p1.y, p2.y);
+        }
+
+        for (int x = p1.x; x <= p2.x; x++) {
+            for (int y = p1.y; y <= p2.y; y++) {
+                if (World::Loaded()->GetTile(x, y).layers[params.info.layer] == params.info.newType) continue;
+
+                if (TaskScheduler::Get().availableTaskIndices.empty()) {
+                    TaskScheduler::Get().tasks.emplace_back(std::make_unique<ChangeTileTask>(glm::ivec2(x, y), params.info));
+                }
+                else {
+                    int i = TaskScheduler::Get().availableTaskIndices.back();
+                    TaskScheduler::Get().availableTaskIndices.pop_back();
+                    TaskScheduler::Get().tasks[i] = std::make_unique<ChangeTileTask>(glm::ivec2(x, y), params.info);
+                }
+
+            }
+        }  
+    };
 }
 
 // Not neccesary actual buildings, could be various orders, just anything a player would need to select a position for
@@ -173,38 +204,47 @@ void GhostBuildOnLMBUp(InputObject input) {
     }
 }
 
-// construction menu
-static std::vector<ConstructionTab> constructionTabs = {
-    ConstructionTab {
-        .items = {
-            Constructible {
-                .name = "Clear",
-            },
-    Constructible {
-                .name = "Deforest",
-
-            },
-        },
-        .name = "Terrain",
-    },
-    ConstructionTab {
-        .items = {
-            Constructible {
-                .name = "Wood wall",
-                .placementMode = 1
-            }
-        },
-        .name = "Base",
-    },
-    ConstructionTab {
-        .name = "Food"
-    },
-    ConstructionTab {
-        .name = "Military"
-    }
-};
 
 void MakeGameMenu() {
+
+    // construction menu
+    static std::vector<ConstructionTab> constructionTabs = {
+        ConstructionTab {
+            .items = {
+                Constructible {
+                    .name = "Clear",
+                    .placementMode = 2,
+                    
+                },
+        Constructible {
+                    .name = "Deforest",
+
+                },
+            },
+            .name = "Terrain",
+        },
+        ConstructionTab {
+            .items = {
+                Constructible {
+                    .name = "Wood wall",
+                    .placementMode = 1,
+                    .apply = MakeConstructibleSetTileApplicator(SetTileApplicatorParams {.info = ChangeTileTaskInfo {
+                            .layer = TileLayer::Furniture,
+                            .newType = World::TERRAIN_IDS().TREE,
+                            .baseTimeToComplete = 1.0
+                    }}),
+                }
+            },
+            .name = "Base",
+        },
+        ConstructionTab {
+            .name = "Food"
+        },
+        ConstructionTab {
+            .name = "Military"
+        }
+    };
+
 
     constexpr int TAB_ICON_WIDTH = 48;
     constexpr int TAB_ICON_SPACING = 8;
@@ -503,9 +543,9 @@ void MakeMainMenu() {
             World::Generate();
             MakeGameMenu();
             GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor); // TODO: this pattern is dumb and WILL  cause (minor) bugs
-            auto cre = Creature::New(CubeMesh(), Body::Humanoid());
+            auto cre = Humanoid::New();
             cre->gameObject->RawGet<TransformComponent>()->SetPos({ -13, 1.0, 10 });
-            cre->MoveTo({ -13, -13 });
+            //cre->MoveTo({ -13, -13 });
         }
         });
 

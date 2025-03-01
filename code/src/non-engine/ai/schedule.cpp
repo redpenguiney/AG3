@@ -1,6 +1,6 @@
 #include "schedule.hpp"
 
-bool WorkBlock::Evaluate(const WorkGroupConditionEvaluationArgs& args)
+bool WorkBlock::Evaluate(const WorkGroupConditionEvaluationArgs& args) const
 {
 	for (auto& vec : conditions) {
 		for (auto& c : vec) {
@@ -14,7 +14,7 @@ bool WorkBlock::Evaluate(const WorkGroupConditionEvaluationArgs& args)
 	return false;
 }
 
-const WorkBlock& Schedule::Evalute(const Humanoid& humanoid)
+const WorkBlock& Schedule::Evalute(const Humanoid& humanoid) const
 {
 	WorkGroupConditionEvaluationArgs args{
 		.humanoid = &humanoid

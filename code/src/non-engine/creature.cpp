@@ -12,7 +12,7 @@ GameobjectCreateParams GetCreatureCreateParams(unsigned int mId) {
 
 double Creature::GetMoveSpeed()
 {
-	return 0.2;
+	return 1.0;
 }
 
 std::shared_ptr<Creature> Creature::New(const std::shared_ptr<Mesh>& mesh, const Body& b)
