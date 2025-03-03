@@ -32,6 +32,8 @@ struct ConstructionTab {
     //ConstructionTab(const ConstructionTab&) = delete;
 };
 
+
+
 Constructible* currentSelectedConstructible = nullptr;
 std::shared_ptr<GameObject> currentConstructibleGhost = nullptr;
 std::optional<glm::vec2> currentBuildingP1 = std::nullopt; 
@@ -44,7 +46,7 @@ std::optional<glm::vec2> GetCursorTilePos(bool snapToGrid) {
     layers[RenderChunk::COLLISION_LAYER] = true;
     auto dir = GraphicsEngine::Get().GetCurrentCamera().ProjectToWorld(GraphicsEngine::Get().window.MOUSE_POS, { GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height });
     //assert(glm::length2(dir) < 1.01 && glm::length2(dir) > 0.99);
-    DebugLogInfo("DIR ", glm::length(dir));
+    //DebugLogInfo("DIR ", glm::length(dir));
     auto result = Raycast(
         GraphicsEngine::Get().GetCurrentCamera().position,
         dir,
@@ -60,7 +62,7 @@ std::optional<glm::vec2> GetCursorTilePos(bool snapToGrid) {
         return std::optional<glm::vec2>({ result.hitPoint.x, result.hitPoint.z });
     }
     else {
-        DebugLogInfo("MISS");
+        //DebugLogInfo("MISS");
         return std::nullopt;
     }
 }
@@ -115,7 +117,7 @@ struct Constructible {
     std::function<void(glm::vec2, glm::vec2)> apply = [](glm::vec2, glm::vec2) {};
 
     // called every frame for cuurentSelectedConstructible.
-    std::function<void()> applyGraphic = [this]() {
+    std::function<void(Constructible&)> applyGraphic = [](Constructible& c) {
         if (!currentConstructibleGhost) {
             auto params = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
             params.meshId = CubeMesh()->meshId;
@@ -123,7 +125,7 @@ struct Constructible {
         }
 
         auto transform = currentConstructibleGhost->RawGet<TransformComponent>();
-        auto maybePos = GetCursorTilePos(snapPlacement);
+        auto maybePos = GetCursorTilePos(c.snapPlacement);
         if (maybePos.has_value()) {
             transform->SetPos(glm::dvec3(maybePos->x, transform->Scale().y / 2, maybePos->y));
         }
@@ -204,9 +206,7 @@ void GhostBuildOnLMBUp(InputObject input) {
     }
 }
 
-
-void MakeGameMenu() {
-
+std::vector<ConstructionTab>& GetConstructionTabs() {
     // construction menu
     static std::vector<ConstructionTab> constructionTabs = {
         ConstructionTab {
@@ -214,7 +214,7 @@ void MakeGameMenu() {
                 Constructible {
                     .name = "Clear",
                     .placementMode = 2,
-                    
+
                 },
         Constructible {
                     .name = "Deforest",
@@ -244,7 +244,13 @@ void MakeGameMenu() {
             .name = "Military"
         }
     };
+    return constructionTabs;
+}
 
+void MakeGameMenu() {
+
+    
+    auto& constructionTabs = GetConstructionTabs();
 
     constexpr int TAB_ICON_WIDTH = 48;
     constexpr int TAB_ICON_SPACING = 8;
@@ -315,11 +321,15 @@ void MakeGameMenu() {
             if (currentConstructionTabIndex == tabIndex) {
                 currentConstructionTabIndex = -1;
                 currentConstructionTab = nullptr;
+                currentSelectedConstructible = nullptr;
+                ClearCurrentConstructionGhost();
                 return;
             }
             else {
                 if (currentConstructionTab) {
                     currentConstructionTab = nullptr;
+                    currentSelectedConstructible = nullptr;
+                    ClearCurrentConstructionGhost();
                 }
 
                 auto buildingsList = std::make_shared<Gui>(false, std::nullopt);
@@ -477,7 +487,7 @@ void MakeGameMenu() {
     // building placement
     GraphicsEngine::Get().preRenderEvent->Connect([](float dt) {
         if (currentSelectedConstructible && hover == 0) {
-            currentSelectedConstructible->applyGraphic();
+            currentSelectedConstructible->applyGraphic(*currentSelectedConstructible);
         }
     });
 }
@@ -543,6 +553,7 @@ void MakeMainMenu() {
             World::Generate();
             MakeGameMenu();
             GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor); // TODO: this pattern is dumb and WILL  cause (minor) bugs
+            //auto cre = Creature::New(CubeMesh(), Body::Humanoid());
             auto cre = Humanoid::New();
             cre->gameObject->RawGet<TransformComponent>()->SetPos({ -13, 1.0, 10 });
             //cre->MoveTo({ -13, -13 });

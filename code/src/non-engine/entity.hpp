@@ -61,6 +61,8 @@ protected:
 	static std::unordered_map<GameObject*, std::shared_ptr<Entity>>& GameObjectsToEntities();
 
 private:
+	Entity(const Entity&) = delete;
+
 	double sleepTime = -1; // -1 if the object is active, otherwise the simulation time in seconds that the object became inactive at (relative to game start)	
 
 	bool stillActive = false;

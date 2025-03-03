@@ -21,7 +21,10 @@ Humanoid::Humanoid(std::shared_ptr<Mesh> mesh):
 
 std::shared_ptr<Humanoid> Humanoid::New()
 {
-	return std::shared_ptr<Humanoid>(new Humanoid(CubeMesh())); // TODO: make_shared?
+	auto ptr = std::shared_ptr<Humanoid>(new Humanoid(CubeMesh())); // TODO: make_shared?
+	GameObjectsToEntities()[ptr->gameObject.get()] = ptr;
+	Entities().push_back(ptr);
+	return ptr; 
 }
 
 Humanoid::~Humanoid()
@@ -43,14 +46,16 @@ void Humanoid::Think(float dt)
 	int oldTaskIndex = currentTaskIndex;
 
 	int i = 0; // works if -1
-	while (i++ < TASKS_PER_FRAME) {
-		currentTaskIndex++;
-		if (currentTaskIndex > (scheduler.tasks.size()))
-			currentTaskIndex = 0;
-		int utility = scheduler.tasks[currentTaskIndex]->EvaluateTaskUtility(*this);
-		if (utility > bestTaskUtility) {
-			bestTaskUtility = utility;
-			bestTaskIndex = currentTaskIndex;
+	if (!scheduler.tasks.empty()) {
+		while (i++ < TASKS_PER_FRAME) {
+			currentTaskIndex++;
+			if (currentTaskIndex >= (scheduler.tasks.size()))
+				currentTaskIndex = 0;
+			int utility = scheduler.tasks[currentTaskIndex]->EvaluateTaskUtility(*this);
+			if (utility > bestTaskUtility) {
+				bestTaskUtility = utility;
+				bestTaskIndex = currentTaskIndex;
+			}
 		}
 	}
 
@@ -66,6 +71,8 @@ void Humanoid::Think(float dt)
 		if (task.Progress(*this, dt)) // then we finished the task (or it's no longer valid)
 			currentTaskIndex = -1; 
 	}
+
+	Creature::Think(dt);
 }
 
 //int Humanoid::EvaluteTaskUtility(int taskIndex)

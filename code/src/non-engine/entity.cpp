@@ -8,7 +8,8 @@ glm::ivec2 Entity::Pos() const
 }
 
 Entity::~Entity() {
-	GameObjectsToEntities().erase(gameObject.get());
+	// there's no way an entity could be destroyed if it had a shared_ptr in here
+	//GameObjectsToEntities().erase(gameObject.get());
 
 	gameObject->Destroy();
 }
