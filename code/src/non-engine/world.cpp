@@ -63,23 +63,33 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
     // A* pathfinding based on https://en.wikipedia.org/wiki/A*_search_algorithm 
     // However, since the map is effectively infinite we simulataneously pathfind from the origin to the goal and vice versa, using the distance between the two heads as the heuristic.
 
-    //Path forward;
-    //Path backward;
-    std::unordered_map<glm::ivec2, float> nodeCosts; // key is node pos, value is cost of best currently known path to node (at index) from origin
-    //std::unordered_map < glm::ivec2, float > nodeToGoalCosts; // key is node pos, value is cost of best known path from origin to goal that goes through that node
-    nodeCosts[origin] = 0; // free to go to origin since you started there
+    struct PathfindingContext {
+        std::unordered_map<glm::ivec2, float> nodeCosts; // key is node pos, value is cost of best currently known path to node (at index) from origin
+        //std::unordered_map < glm::ivec2, float > nodeToGoalCosts; // key is node pos, value is cost of best known path from origin to goal that goes through that node
 
-    std::unordered_map<glm::ivec2, glm::ivec2> cameFrom;
+        std::unordered_map<glm::ivec2, glm::ivec2> cameFrom;
 
-    // Potential places to check next. Sorted from greatest to lowest of nodeCosts[node] + heuristic[node].
-    std::vector<glm::ivec2> openSet;
+        // Potential places to check next. Sorted from greatest to lowest of nodeCosts[node] + heuristic[node].
+        std::vector<glm::ivec2> openSet;
+
+        glm::ivec2 goal;
+    };
+
+    PathfindingContext forward;
+    forward.nodeCosts[origin] = 0; // free to go to origin since you started there
+    forward.openSet.push_back(origin);
+    forward.goal = goal;
+    PathfindingContext backward;
+    backward.nodeCosts[goal] = 0;
+    backward.openSet.push_back(goal);
+    backward.goal = origin;
     
-    auto heuristic = [&goal](glm::ivec2 node) {
+    auto heuristic = [](glm::ivec2 node, glm::ivec2 goal) {
         // bruh glm::length doesn't work for integral types
         return 100 * std::sqrtf((goal.x - node.x) * (goal.x - node.x) + (goal.y - node.y) * (goal.y - node.y));
     };
     
-    auto addNodeNeighborsToQueue = [&](glm::ivec2 node) mutable {
+    auto AddNodeNeighborsToQueue = [this, &heuristic](PathfindingContext& context, PathfindingContext& otherContext, glm::ivec2 node) mutable {
         constexpr std::array<glm::ivec2, 4> neighbors = { glm::ivec2 {-1, 0}, { 1, 0}, {0, 1}, {0, -1} };
         for (const auto& neighborOffset : neighbors) {
             auto neighbor = node + neighborOffset;
@@ -88,33 +98,33 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
             auto furnitureMoveCost = furniture < 0 ? 0 : GetFurnitureData(furniture).moveCostModifier;
             if (tileMoveCost < 0 || furnitureMoveCost < 0) { /*DebugPlacePointOnPosition(glm::dvec3(neighbor.x + 0.5, 3.0, neighbor.y + 0.5), { 1, 0, 0, 1 })*/; continue; }
             //DebugPlacePointOnPosition(glm::dvec3(neighbor.x + 0.5, 3.0, neighbor.y + 0.5), { 1, 1, 1, 0.5 });
-            auto cost = nodeCosts[node] + tileMoveCost + furnitureMoveCost;
-            if (!nodeCosts.contains(neighbor) || cost < nodeCosts[neighbor]) { // then we found a better way to get to this node
+            auto cost = context.nodeCosts[node] + tileMoveCost + furnitureMoveCost;
+            if (!context.nodeCosts.contains(neighbor) || cost < context.nodeCosts[neighbor]) { // then we found a better way to get to this node
 
-                nodeCosts[neighbor] = cost;
-                cameFrom[neighbor] = node;
+                context.nodeCosts[neighbor] = cost;
+                context.cameFrom[neighbor] = node;
 
                 // TODO: better time-complexity way to keep openSet sorted???
                 // if this neighbor is in openSet, remove it because its cost changed and we gotta reinsert it in the right place.
-                auto it = std::find(openSet.begin(), openSet.end(), neighbor);
-                if (it != openSet.end())
-                    openSet.erase(it);
+                auto it = std::find(context.openSet.begin(), context.openSet.end(), neighbor);
+                if (it != context.openSet.end())
+                    context.openSet.erase(it);
 
                 // regardless of whether it was in the set previously, we now need to insert it at the right place.
-                auto costToEnd = cost + heuristic(neighbor);
-                if (openSet.size() == 0) {
-                    openSet.push_back(neighbor);
+                auto costToEnd = cost + heuristic(neighbor, context.goal);
+                if (context.openSet.size() == 0) {
+                    context.openSet.push_back(neighbor);
                     //DebugPlacePointOnPosition(glm::dvec3(node.x + 0.5, 3.0, node.y + 0.5), {1, 0, 1, 1});
                     //TestBillboardUi(glm::dvec3(node.x - 0.5, 3.0, node.y - 0.5), std::to_string((int)(cost)));
                 }
                 else {
-                    for (auto it = openSet.begin(); it != openSet.end(); it++) {
-                        if (nodeCosts[*it] + heuristic(*it) <= costToEnd) {
-                            openSet.insert(it, neighbor);
+                    for (auto it = context.openSet.begin(); it != context.openSet.end(); it++) {
+                        if (context.nodeCosts[*it] + heuristic(*it, context.goal) <= costToEnd) {
+                            context.openSet.insert(it, neighbor);
                             goto done;
                         }
                     }
-                    openSet.push_back(neighbor);
+                    context.openSet.push_back(neighbor);
                     done:;
                 }      
             }
@@ -122,17 +132,12 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
         }
     };
 
+    auto StepPath = [&AddNodeNeighborsToQueue](PathfindingContext& context, PathfindingContext& otherContext) -> bool {
+        auto node = context.openSet.back();
 
-    openSet.push_back(origin);
-    nodeCosts[origin] = 0;
+        context.openSet.pop_back();
 
-    int i = 0;
-    while (i++ < params.maxIterations && openSet.size() > 0) {
-        auto node = openSet.back();
-        
-        openSet.pop_back();
-
-        
+        otherContext.goal = node;
         /*int c = std::numeric_limits<int>::max();
         auto bestit = openSet.begin();
         for (auto it = openSet.begin(); it != openSet.end(); it++) {
@@ -146,37 +151,61 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
         openSet.erase(bestit);*/
 
         //DebugLogInfo("Trying ", node, " set is ", openSet.size());
-        
 
 
-        if (node == goal) {
+
+        if (node == context.goal) {
             // WE WIN
+            return true;
+
+            
+            //Assert(p.wayPoints[0] == origin);
+            //Assert(p.wayPoints.back() == goal);
+
+            //for (auto& node : p.wayPoints) {
+            //    //TestBillboardUi(glm::dvec3(node.x - 0.5, 3.0, node.y - 0.5), std::to_string((int)(nodeCosts[node])) + std::string(" ") + std::to_string(node.x - 0.5) + std::string(", ") + std::to_string(node.y - 0.5));
+            //    TestBillboardUi(glm::dvec3(node.x + 0.5, 3.0, node.y + 0.5), GetTileData(GetTile(node.x, node.y).layers[TileLayer::Floor]).displayName);
+            //}
+        }
+
+        AddNodeNeighborsToQueue(context, otherContext, node);
+        return false;
+    };
+
+    int i = 0;
+    while (i++ < params.maxIterations && forward.openSet.size() > 0 && backward.openSet.size() > 0) {
+        if (StepPath(forward, backward) || StepPath(backward, forward)) {
+            assert(forward.goal == backward.goal);
+
             Path p;
-            glm::ivec2 current = goal;
+
+            // add the forward half
+            glm::ivec2 current = forward.goal;
             while (true) {
                 p.wayPoints.push_back(current);
-                if (cameFrom.contains(current)) {
-                    current = cameFrom[current];
+                if (forward.cameFrom.contains(current)) {
+                    current = forward.cameFrom[current];
                 }
                 else {
                     break;
                 }
             }
             std::reverse(p.wayPoints.begin(), p.wayPoints.end());
-            Assert(p.wayPoints[0] == origin);
-            Assert(p.wayPoints.back() == goal);
 
-            //for (auto& node : p.wayPoints) {
-            //    //TestBillboardUi(glm::dvec3(node.x - 0.5, 3.0, node.y - 0.5), std::to_string((int)(nodeCosts[node])) + std::string(" ") + std::to_string(node.x - 0.5) + std::string(", ") + std::to_string(node.y - 0.5));
-            //    TestBillboardUi(glm::dvec3(node.x + 0.5, 3.0, node.y + 0.5), GetTileData(GetTile(node.x, node.y).layers[TileLayer::Floor]).displayName);
-            //}
-
-            
+            // add the backward half
+            current = forward.goal;
+            while (true) {
+                if (backward.cameFrom.contains(current)) {
+                    current = backward.cameFrom[current];
+                    p.wayPoints.push_back(current);
+                }
+                else {
+                    break;
+                }
+            }
 
             return p;
         }
-
-        addNodeNeighborsToQueue(node);
     }
 
     DebugLogInfo("Failed with ", i, " iterations");

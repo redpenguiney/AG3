@@ -1,6 +1,7 @@
 #include "creature.hpp"
 #include "graphics/mesh.hpp"
 #include "world.hpp"
+#include <gameobjects/lifetime.hpp>
 
 GameobjectCreateParams creatureParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody, /*ComponentBitIndex::Animation*/});
 
@@ -31,6 +32,9 @@ Creature::~Creature()
 void Creature::MoveTo(glm::ivec2 worldPos)
 {
 	currentGoal = worldPos;
+	auto g = DebugPlacePointOnPosition({ worldPos.x, 2, worldPos.y });
+	g->Destroy();
+	NewObjectLifetime(g, 0.1);
 }
 
 
@@ -47,11 +51,15 @@ void Creature::Think(float dt) {
 	body.Update(dt);
 
 	if (currentGoal != Pos()) {
-		// TODO: DON'T PATHFIND EVERY FRAME LOL
-		const auto path = World::Loaded()->ComputePath(Pos(), currentGoal, ComputePathParams());
+		// validate current path (TODO: what if a better path appears?)
+		if (!currentPath.has_value() || currentPath->wayPoints.empty() || currentPath->wayPoints.back() != Pos()) {
+			currentPath = std::make_optional(World::Loaded()->ComputePath(Pos(), currentGoal, ComputePathParams()));
+			currentPathWaypointIndex = 0;
+		}
 		//DebugLogInfo("Nodes ", path.wayPoints.size());
-		if (path.wayPoints.size() < 2) return;
-		auto nextPos = glm::dvec3(path.wayPoints[1].x, gameObject->RawGet<TransformComponent>()->Position().y, path.wayPoints[1].y);
+		if (currentPath->wayPoints.size() < 2) return;
+		auto nextPos = glm::dvec3(currentPath->wayPoints[currentPathWaypointIndex].x, gameObject->RawGet<TransformComponent>()->Position().y, currentPath->wayPoints[currentPathWaypointIndex].y);
+		currentPathWaypointIndex++;
 		//DebugLogInfo("Next ", nextPos);
 		//Assert(path.wayPoints[1] != Pos());
 		auto moveDir = nextPos - gameObject->RawGet<TransformComponent>()->Position();
@@ -63,5 +71,6 @@ void Creature::Think(float dt) {
 			gameObject->RawGet<TransformComponent>()->SetPos(gameObject->RawGet<TransformComponent>()->Position() + glm::normalize(moveDir) * speed * (double)dt);
 		}
 	}
-	
+	else
+		currentPath = std::nullopt;
 }

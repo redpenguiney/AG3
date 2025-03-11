@@ -1,10 +1,21 @@
 #include "gameobject.hpp"
 #include <memory>
 
-// gives the given object the given amount of time to live before they are destroyed.
-// at the beginning of this frame objects that this function has been called on will be checked to see if they need to be destroyed.
-// if the gameobject is destroyed before its time runs out, that's fine.
-void NewObjectLifetime(std::shared_ptr<GameObject>& object, double secondsToLive);
-
-// Destroys objects that NewObjectLifetime() was called on, if it's their time.
-void UpdateLifetimes();
+// holds onto to the given shared_ptr until secondsToLive runs out, meaning it will destroyed after the given time interval if no other references to the object exist
+template <typename T>
+void NewObjectLifetime(std::shared_ptr<T>& object, double secondsToLive) {
+	struct Lifetime {
+		double timeLeft;
+		std::unique_ptr<Event<float>::Connection> connection;
+		std::shared_ptr<T> object;
+	};
+	std::shared_ptr<Lifetime> lifetime = std::make_shared<Lifetime>(secondsToLive, nullptr, object);
+	auto c = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([lifetime](float dt) {
+		lifetime->timeLeft -= dt;
+		if (lifetime->timeLeft <= 0) {
+			lifetime->object = nullptr;
+			//lifetime->connection = nullptr;
+		}
+	});
+	lifetime->connection = std::move(c);
+}

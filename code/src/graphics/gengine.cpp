@@ -128,7 +128,6 @@ defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, Shad
 
 GraphicsEngine::~GraphicsEngine() {
 
-
     for (auto & pool : meshpools) {
         delete pool;
     }

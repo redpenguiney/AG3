@@ -205,8 +205,6 @@ int main(int numArgs, const char *argPtrs[]) {
 
         GE.RenderScene(elapsedTime);
 
-        UpdateLifetimes();
-
         // TODO: unsure about placement of flip buffers? 
         // i think this yields until GPU done drawing and image on screen
         // could/should we do something to try and do physics or something while GPU working? or are we already? 

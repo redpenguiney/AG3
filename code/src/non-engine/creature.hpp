@@ -1,6 +1,7 @@
 #pragma once
 #include "health.hpp"
 #include "entity.hpp"
+#include "world.hpp"
 
 // Anything that needs AI should inherit from this class.
 class Creature: public Entity {
@@ -28,5 +29,7 @@ protected:
 	virtual void Think(float dt) override;
 
 private:
+	std::optional<Path> currentPath = std::nullopt;
 	glm::ivec2 currentGoal; // where creature is currently tryna pathfind to
+	int currentPathWaypointIndex;
 };

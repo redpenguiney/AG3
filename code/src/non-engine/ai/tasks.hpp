@@ -19,6 +19,8 @@ public:
 	Task() = default;
 	Task(const Task&) = delete;
 
+	virtual ~Task() = default;
+
 	// returns true if finished (successfully or not). May call Interrupt()
 	virtual bool Progress(Humanoid& executor, float dt) = 0;
 

@@ -14,7 +14,7 @@ glm::dvec3 LookVector(double pitch, double yaw) {
     );
 }
 
-void DebugPlacePointOnPosition(glm::dvec3 position, glm::vec4 color) {
+std::shared_ptr<GameObject> DebugPlacePointOnPosition(glm::dvec3 position, glm::vec4 color) {
     // TODO: cache filename so stuff like this isn't so bad
     static auto m = Mesh::MultiFromFile("../models/rainbowcube.obj", MeshCreateParams{.expectedCount = 16384}).back().mesh;
     GameobjectCreateParams params({ComponentBitIndex::Transform, ComponentBitIndex::Render});
@@ -24,6 +24,7 @@ void DebugPlacePointOnPosition(glm::dvec3 position, glm::vec4 color) {
     g->RawGet<TransformComponent>()->SetScl({0.1, 0.1, 0.1});
     g->RawGet<RenderComponent>()->SetColor(color);
     g->RawGet<RenderComponent>()->SetTextureZ(-1);
+    return g;
 }
 
 double Time() {
