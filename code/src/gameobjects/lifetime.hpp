@@ -18,4 +18,5 @@ void NewObjectLifetime(std::shared_ptr<T>& object, double secondsToLive) {
 		}
 	});
 	lifetime->connection = std::move(c);
+	//std::cout << "";
 }
