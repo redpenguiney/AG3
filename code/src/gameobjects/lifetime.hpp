@@ -14,7 +14,7 @@ void NewObjectLifetime(std::shared_ptr<T>& object, double secondsToLive) {
 		lifetime->timeLeft -= dt;
 		if (lifetime->timeLeft <= 0) {
 			lifetime->object = nullptr;
-			//lifetime->connection = nullptr;
+			lifetime->connection = nullptr;
 		}
 	});
 	lifetime->connection = std::move(c);

@@ -33,8 +33,8 @@ void Creature::MoveTo(glm::ivec2 worldPos)
 {
 	currentGoal = worldPos;
 	auto g = DebugPlacePointOnPosition({ worldPos.x, 2, worldPos.y });
-	g->Destroy();
-	NewObjectLifetime(g, 0.1);
+	//g->Destroy();
+	//NewObjectLifetime(g, 0.1);
 }
 
 
