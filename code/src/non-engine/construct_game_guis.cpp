@@ -19,7 +19,8 @@ std::pair <float, std::shared_ptr<Material>> MenuFont1() {
 int buildUiScrollAmt = 0;
 constexpr int GUI_SCROLL_NAME = 100;
 constexpr int GuiLMBName = 104;
-constexpr int PlaceLMBName = 1200;
+constexpr int PlaceLMBDownName = 1200;
+constexpr int PlaceLMBUpName = 1201;
 int hover = 0;
 
 struct Constructible;
@@ -73,6 +74,8 @@ struct SetTileApplicatorParams {
 
 std::function<void(glm::vec2, glm::vec2)> MakeConstructibleSetTileApplicator(const SetTileApplicatorParams& params) {
     return [params](glm::vec2 p1, glm::vec2 p2) {
+        DebugLogInfo("Considering task creation");
+
         p1.x = std::round(p1.x);
         p1.y = std::round(p1.y);
         p2.x = std::round(p2.x);
@@ -158,6 +161,7 @@ void GhostBuildOnLMBDown(InputObject input) {
     }
     else {
         currentBuildingP1 = GetCursorTilePos(false);
+        DebugLogInfo("wROTE p1");
     }
     
 }
@@ -184,6 +188,7 @@ std::optional<glm::vec2> GetLinearPlacementPos2(glm::vec2 p1, bool snapToGrid) {
 }
 
 void GhostBuildOnLMBUp(InputObject input) {
+    DebugLogInfo("LMBUP ", currentBuildingP1.has_value());
     if (hover != 0) return;
     if (GraphicsEngine::Get().debugFreecamEnabled) return;
     if (input.input != InputObject::LMB) return;
@@ -410,8 +415,8 @@ void MakeGameMenu() {
                                 if (item == currentSelectedConstructible) {
                                     currentSelectedConstructible = nullptr;
                                     ClearCurrentConstructionGhost();
-                                    InputStack::Get().PopBegin(InputObject::LMB, PlaceLMBName);
-                                    InputStack::Get().PopEnd(InputObject::LMB, PlaceLMBName);
+                                    InputStack::Get().PopBegin(InputObject::LMB, PlaceLMBDownName);
+                                    InputStack::Get().PopEnd(InputObject::LMB, PlaceLMBUpName);
                                     return;
                                 }
                                 currentSelectedConstructible = nullptr;
@@ -420,8 +425,8 @@ void MakeGameMenu() {
                             ClearCurrentConstructionGhost();
 
                             currentSelectedConstructible = item;
-                            InputStack::Get().PushBegin(InputObject::LMB, PlaceLMBName, GhostBuildOnLMBDown);
-                            InputStack::Get().PushEnd(InputObject::LMB, PlaceLMBName, GhostBuildOnLMBUp);
+                            InputStack::Get().PushBegin(InputObject::LMB, PlaceLMBDownName, GhostBuildOnLMBDown);
+                            InputStack::Get().PushEnd(InputObject::LMB, PlaceLMBUpName, GhostBuildOnLMBUp);
                         }
                     });
 

@@ -63,7 +63,7 @@ void Humanoid::Think(float dt)
 		scheduler.tasks[oldTaskIndex]->Interrupt();
 
 	if (bestTaskUtility == -1) { // then no task was found
-		DebugLogError("Failed to find a task for humanoid.");
+		//DebugLogError("Failed to find a task for humanoid.");
 	}
 	else {
 		currentTaskIndex = bestTaskIndex;

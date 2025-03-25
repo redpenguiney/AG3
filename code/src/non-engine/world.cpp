@@ -208,7 +208,7 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
         }
     }
 
-    DebugLogInfo("Failed with ", i, " iterations");
+    //DebugLogInfo("Failed with ", i, " iterations");
 
     // return empty path if we ran out of iterations or we confirmed that no valid path exists.
     return Path();
