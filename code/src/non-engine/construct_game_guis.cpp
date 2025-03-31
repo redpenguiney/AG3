@@ -148,7 +148,9 @@ void ClearCurrentConstructionGhost()
 }
 
 void GhostBuildOnLMBDown(InputObject input) {
+
     if (hover != 0) return;
+    DebugLogInfo("LMBISDOWN");
     if (GraphicsEngine::Get().debugFreecamEnabled) return;
     if (input.input != InputObject::LMB) return;
     if (!currentConstructibleGhost) return;
@@ -188,8 +190,8 @@ std::optional<glm::vec2> GetLinearPlacementPos2(glm::vec2 p1, bool snapToGrid) {
 }
 
 void GhostBuildOnLMBUp(InputObject input) {
-    DebugLogInfo("LMBUP ", currentBuildingP1.has_value());
     if (hover != 0) return;
+    DebugLogInfo("LMBUP ", currentBuildingP1.has_value());
     if (GraphicsEngine::Get().debugFreecamEnabled) return;
     if (input.input != InputObject::LMB) return;
     if (!currentConstructibleGhost) return;
@@ -232,7 +234,7 @@ std::vector<ConstructionTab>& GetConstructionTabs() {
             .items = {
                 Constructible {
                     .name = "Wood wall",
-                    .placementMode = 1,
+                    .placementMode = 0,
                     .apply = MakeConstructibleSetTileApplicator(SetTileApplicatorParams {.info = ChangeTileTaskInfo {
                             .layer = TileLayer::Furniture,
                             .newType = World::TERRAIN_IDS().TREE,

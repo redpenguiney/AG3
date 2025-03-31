@@ -307,8 +307,8 @@ void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent&
 
 void PhysicsEngine::Step(const double timestep) {
 
-    prePhysicsEvent->Fire(timestep);
-    BaseEvent::FlushEventQueue(); // we want prePhysicsEvent to be fired NOW, not later, so if they make objects or whatever it they simulate their physics this frame.
+    //prePhysicsEvent->Fire(timestep);
+    //BaseEvent::FlushEventQueue(); // we want prePhysicsEvent to be fired NOW, not later, so if they make objects or whatever it they simulate their physics this frame.
 
     // iterate through all sets of rigidBodyComponent + transformComponent
     // first pass, apply gravity, convert applied force to velocity, apply drag, and move everything by its velocity
@@ -380,5 +380,5 @@ void PhysicsEngine::Step(const double timestep) {
         comp->SetPos(comp->Position() + offset);
     }
 
-    postPhysicsEvent->Fire(timestep);
+    //postPhysicsEvent->Fire(timestep);
 }

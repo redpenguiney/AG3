@@ -70,6 +70,7 @@ void Humanoid::Think(float dt)
 		auto& task = *scheduler.tasks[bestTaskIndex];
 		if (task.Progress(*this, dt)) // then we finished the task (or it's no longer valid)
 			currentTaskIndex = -1; 
+		//DebugLogInfo("PRogress task");
 	}
 
 	Creature::Think(dt);

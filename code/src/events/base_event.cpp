@@ -4,30 +4,37 @@
 
 
 void BaseEvent::FlushEventQueue() {
-	//return;
-	// we have to copy the queue because Flush() can result in the destruction of an event thus invalidating the iterator if we held onto the reference
-	//auto q = EventQueue();
-	auto& q = EventQueue();
+	//auto& events = EventList();
 
-	for (unsigned int i = 0; i < q.size(); i++) { 
-		auto& event = q[i];
-		if (event.expired()) {
-			q[i] = q.back();
-			q.pop_back();
-			i--;
-		}
-		else {
-			//DebugLogInfo("Flushing ", even);
-			event.lock()->Flush();
-		}
-		
+	////
+	//for (unsigned int i = 0; i < events.size(); i++) { 
+	//	auto& event = events[i];
+	//	if (event.expired()) {
+	//		events[i] = events.back();
+	//		events.pop_back();
+	//		i--;
+	//	}
+	//}
+	auto &q = EventInvocationQueue();
+	DebugLogInfo("Handling ", q.size());
+	if (q.size() > 1) {
+		std::cout << "";
 	}
+	for (auto& invoc : q) {
+		invoc->RunConnections();
+	}
+	EventInvocationQueue().clear();
 }
 
-std::vector<std::weak_ptr<BaseEvent>>& BaseEvent::EventQueue()
+//std::vector<std::weak_ptr<BaseEvent>>& BaseEvent::EventList()
+//{
+//	static std::vector<std::weak_ptr<BaseEvent >> events;
+//	return events;
+//}
+std::vector<std::unique_ptr<BaseEvent::BaseEventInvocation>>& BaseEvent::EventInvocationQueue()
 {
-	static std::vector<std::weak_ptr<BaseEvent >> eventQueue;
-	return eventQueue;
+	static std::vector<std::unique_ptr<BaseEventInvocation>> invocations;
+	return invocations;
 }
 ;
 

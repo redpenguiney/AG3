@@ -76,11 +76,11 @@ void Gui::FireInputEvents()
 
         if (ui->mouseHover != isMouseIntersecting) { // then the cursor has either moved onto or off of the gui.
             if (isMouseIntersecting) { // then we started being on the ui.
-                ui->onMouseEnter->Fire();
+                ui->onMouseEnter->Fire(); DebugLogInfo("NOW");
                
             }
             else { // then we stopped being on the ui.
-                ui->onMouseExit->Fire();
+                ui->onMouseExit->Fire(); DebugLogInfo("NOW2");
             }
         }
 

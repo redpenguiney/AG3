@@ -4,16 +4,22 @@
 
 // Abstract event class. See Event for actual info.
 class BaseEvent: public std::enable_shared_from_this<BaseEvent> {
-
-
 protected:
+	class BaseEventInvocation {
+	public:
+		virtual void RunConnections() = 0;
+		virtual ~BaseEventInvocation() = default;
+	};
+
 	// Internal helper for FlushEventQueue()
-	virtual void Flush() = 0;
+	//virtual void Flush() = 0;
 
 	BaseEvent();
 	virtual ~BaseEvent();
 
-	static std::vector<std::weak_ptr<BaseEvent>>& EventQueue();
+	//static std::vector<std::weak_ptr<BaseEvent>>& EventList();
+	static std::vector<std::unique_ptr<BaseEventInvocation>>& EventInvocationQueue();
+	
 
 	//bool inQueue = false;
 public:
