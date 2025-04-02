@@ -16,10 +16,10 @@ void BaseEvent::FlushEventQueue() {
 	//	}
 	//}
 	auto &q = EventInvocationQueue();
-	DebugLogInfo("Handling ", q.size());
-	if (q.size() > 1) {
-		std::cout << "";
-	}
+	//DebugLogInfo("Handling ", q.size());
+	//if (q.size() > 1) {
+		//std::cout << "";
+	//}
 	for (auto& invoc : q) {
 		invoc->RunConnections();
 	}

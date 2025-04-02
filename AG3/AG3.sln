@@ -5,6 +5,8 @@ VisualStudioVersion = 17.11.35219.272
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AG3", "AG3.vcxproj", "{E0588BFE-718E-448C-AF53-2615647914D8}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TG3", "..\TG3\TG3.vcxproj", "{B93C374B-B82F-4782-B538-0653F679C711}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -27,6 +29,18 @@ Global
 		{E0588BFE-718E-448C-AF53-2615647914D8}.Release|x64.Build.0 = Release|x64
 		{E0588BFE-718E-448C-AF53-2615647914D8}.Release|x86.ActiveCfg = Release|Win32
 		{E0588BFE-718E-448C-AF53-2615647914D8}.Release|x86.Build.0 = Release|Win32
+		{B93C374B-B82F-4782-B538-0653F679C711}.Debug|x64.ActiveCfg = Debug|x64
+		{B93C374B-B82F-4782-B538-0653F679C711}.Debug|x64.Build.0 = Debug|x64
+		{B93C374B-B82F-4782-B538-0653F679C711}.Debug|x86.ActiveCfg = Debug|Win32
+		{B93C374B-B82F-4782-B538-0653F679C711}.Debug|x86.Build.0 = Debug|Win32
+		{B93C374B-B82F-4782-B538-0653F679C711}.MegaFast|x64.ActiveCfg = Debug|x64
+		{B93C374B-B82F-4782-B538-0653F679C711}.MegaFast|x64.Build.0 = Debug|x64
+		{B93C374B-B82F-4782-B538-0653F679C711}.MegaFast|x86.ActiveCfg = Debug|Win32
+		{B93C374B-B82F-4782-B538-0653F679C711}.MegaFast|x86.Build.0 = Debug|Win32
+		{B93C374B-B82F-4782-B538-0653F679C711}.Release|x64.ActiveCfg = Release|x64
+		{B93C374B-B82F-4782-B538-0653F679C711}.Release|x64.Build.0 = Release|x64
+		{B93C374B-B82F-4782-B538-0653F679C711}.Release|x86.ActiveCfg = Release|Win32
+		{B93C374B-B82F-4782-B538-0653F679C711}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
