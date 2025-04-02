@@ -43,7 +43,7 @@ public:
 	using ConnectableFunction = std::function<void(eventArgs...)>;
 
 private:
-	class EventInvocation : BaseEventInvocation {
+	class EventInvocation : public BaseEventInvocation {
 	public:
 		ConnectableFunctionArgs invocationArgs;
 		std::weak_ptr<Event> event;

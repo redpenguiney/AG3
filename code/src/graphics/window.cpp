@@ -313,12 +313,12 @@ void Window::MouseButtonCallback(GLFWwindow* window, int button, int action, int
         if (action == GLFW_RELEASE) {
             GraphicsEngine::Get().window.PRESS_ENDED_KEYS.insert(input);
             GraphicsEngine::Get().window.PRESSED_KEYS.erase(input.input);
-            GraphicsEngine::Get().window.inputDown->Fire(input);
+            GraphicsEngine::Get().window.inputUp->Fire(input);
         }
         else if (action == GLFW_PRESS) {
             GraphicsEngine::Get().window.PRESS_BEGAN_KEYS.insert(input);
             GraphicsEngine::Get().window.PRESSED_KEYS.insert(input.input);
-            GraphicsEngine::Get().window.inputUp->Fire(input);
+            GraphicsEngine::Get().window.inputDown->Fire(input);
         }
     }
     

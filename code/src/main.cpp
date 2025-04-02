@@ -11,6 +11,8 @@
 
 #include <GLM/gtx/string_cast.hpp>
 
+#include "events/base_event.hpp"
+
 #include "graphics/gengine.hpp"
 #include "graphics/mesh.hpp"
 #include "graphics/shader_program.hpp"

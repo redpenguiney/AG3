@@ -1,9 +1,14 @@
 #include "base_event.hpp"
 #include <debug/log.hpp>
+#include <debug/assert.hpp>
 
+int depthShouldBe = 0;
 
+void BaseEvent::FlushEventQueue(int depth) {
+	Assert(depth >= depthShouldBe); // checks if this function was called by a function connected to an event (would recurse infinitely, bad)
+	Assert(depth <= 8192); // We don't let events fire more events endlessly.
+	depthShouldBe++;
 
-void BaseEvent::FlushEventQueue() {
 	//auto& events = EventList();
 
 	////
@@ -15,15 +20,25 @@ void BaseEvent::FlushEventQueue() {
 	//		i--;
 	//	}
 	//}
-	auto &q = EventInvocationQueue();
+	auto& q = EventInvocationQueue();
 	//DebugLogInfo("Handling ", q.size());
 	//if (q.size() > 1) {
 		//std::cout << "";
 	//}
+	auto priorSize = q.size();
 	for (auto& invoc : q) {
 		invoc->RunConnections();
 	}
-	EventInvocationQueue().clear();
+	//q.clear();
+	q.erase(q.begin(), q.begin() + priorSize); // we can't just clear the queue since invoking events could fire more events.
+	// If the fired events we just handled fired more events, we should handle those immediately.
+	if (!q.empty()) {
+		FlushEventQueue(depth + 1);
+
+	}
+	else {
+		depthShouldBe = 0;
+	}
 }
 
 //std::vector<std::weak_ptr<BaseEvent>>& BaseEvent::EventList()

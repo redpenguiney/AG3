@@ -24,8 +24,9 @@ protected:
 	//bool inQueue = false;
 public:
 
-	// Calls all the functions connected to the events in the queue and empties the queue.
-	static void FlushEventQueue();
+	// Calls all the functions connected to the events in the queue and empties the queue. Disregard depth, implementation detail for recursion.
+	// Do NOT call within an event handler
+	static void FlushEventQueue(int depth = 0);
 
 private:
 	friend class std::shared_ptr<BaseEvent>;

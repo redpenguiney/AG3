@@ -94,15 +94,17 @@ std::function<void(glm::vec2, glm::vec2)> MakeConstructibleSetTileApplicator(con
 
                 if (TaskScheduler::Get().availableTaskIndices.empty()) {
                     TaskScheduler::Get().tasks.emplace_back(std::make_unique<ChangeTileTask>(glm::ivec2(x, y), params.info));
+                    DebugLogInfo("madetask");
                 }
                 else {
                     int i = TaskScheduler::Get().availableTaskIndices.back();
                     TaskScheduler::Get().availableTaskIndices.pop_back();
                     TaskScheduler::Get().tasks[i] = std::make_unique<ChangeTileTask>(glm::ivec2(x, y), params.info);
+                    DebugLogInfo("madetask");
                 }
 
             }
-        }  
+        }
     };
 }
 
@@ -133,10 +135,10 @@ struct Constructible {
             transform->SetPos(glm::dvec3(maybePos->x, transform->Scale().y / 2, maybePos->y));
         }
         else {
-            transform->SetPos({-1000000, -100000, -100000}); // mwahahahaha
+            transform->SetPos({ -1000000, -100000, -100000 }); // mwahahahaha
         }
-        
-    };
+
+        };
 };
 
 void ClearCurrentConstructionGhost()
@@ -157,15 +159,16 @@ void GhostBuildOnLMBDown(InputObject input) {
 
     if (currentSelectedConstructible->placementMode == 0) {
         // place the thing
-        auto pos = GetCursorTilePos(false);
-        if (pos.has_value())
-            currentSelectedConstructible->apply(*pos, *pos);
+        //auto pos = GetCursorTilePos(false);
+        //if (pos.has_value())
+            //currentSelectedConstructible->apply(*pos, *pos);
+        return;
     }
     else {
         currentBuildingP1 = GetCursorTilePos(false);
         DebugLogInfo("wROTE p1");
     }
-    
+
 }
 
 
@@ -196,7 +199,16 @@ void GhostBuildOnLMBUp(InputObject input) {
     if (input.input != InputObject::LMB) return;
     if (!currentConstructibleGhost) return;
 
-    if (currentSelectedConstructible->placementMode == 1) {
+    if (currentSelectedConstructible->placementMode == 0) {
+        auto p1 = GetCursorTilePos(false);
+
+        if (p1.has_value()) {
+            DebugPlacePointOnPosition(glm::dvec3(p1->x, 3, p1->y));
+
+            currentSelectedConstructible->apply(*p1, *p1);
+        }
+    }
+    else {
         auto p2 = GetCursorTilePos(false);
 
         if (currentBuildingP1.has_value() && p2.has_value()) {
