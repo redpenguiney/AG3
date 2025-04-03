@@ -7,6 +7,12 @@ glm::ivec2 Entity::Pos() const
 	return { std::round(p.x), std::round(p.z) };
 }
 
+glm::dvec2 Entity::ExactPos() const
+{
+	const auto p = gameObject->RawGet<TransformComponent>()->Position();
+	return { p.x, p.z };
+}
+
 Entity::~Entity() {
 	// there's no way an entity could be destroyed if it had a shared_ptr in here
 	//GameObjectsToEntities().erase(gameObject.get());

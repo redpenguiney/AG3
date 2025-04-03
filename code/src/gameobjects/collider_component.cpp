@@ -8,7 +8,7 @@ ColliderComponent::ColliderComponent(GameObject* gameobj, std::shared_ptr<Physic
     gameobject(gameobj),
     physicsMesh(physMesh)
 {
-    assert(gameobject);
+    Assert(gameobject);
 
     aabbType = AABBBoundingCube;
     node = nullptr;
@@ -35,6 +35,7 @@ ColliderComponent::~ColliderComponent() {
 }
 
 std::shared_ptr<GameObject>& ColliderComponent::GetGameObject() {
+    Assert(GameObject::GAMEOBJECTS().contains(gameobject));
     return GameObject::GAMEOBJECTS()[gameobject];
 }
 

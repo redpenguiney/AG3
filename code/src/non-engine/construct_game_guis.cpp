@@ -74,7 +74,7 @@ struct SetTileApplicatorParams {
 
 std::function<void(glm::vec2, glm::vec2)> MakeConstructibleSetTileApplicator(const SetTileApplicatorParams& params) {
     return [params](glm::vec2 p1, glm::vec2 p2) {
-        DebugLogInfo("Considering task creation");
+       
 
         p1.x = std::round(p1.x);
         p1.y = std::round(p1.y);
@@ -87,6 +87,8 @@ std::function<void(glm::vec2, glm::vec2)> MakeConstructibleSetTileApplicator(con
         if (p1.y > p2.y) {
             std::swap(p1.y, p2.y);
         }
+
+        //DebugLogInfo("Considering task creation at ", p1);
 
         for (int x = p1.x; x <= p2.x; x++) {
             for (int y = p1.y; y <= p2.y; y++) {
@@ -152,7 +154,7 @@ void ClearCurrentConstructionGhost()
 void GhostBuildOnLMBDown(InputObject input) {
 
     if (hover != 0) return;
-    DebugLogInfo("LMBISDOWN");
+    //DebugLogInfo("LMBISDOWN");
     if (GraphicsEngine::Get().debugFreecamEnabled) return;
     if (input.input != InputObject::LMB) return;
     if (!currentConstructibleGhost) return;
@@ -166,7 +168,7 @@ void GhostBuildOnLMBDown(InputObject input) {
     }
     else {
         currentBuildingP1 = GetCursorTilePos(false);
-        DebugLogInfo("wROTE p1");
+        //DebugLogInfo("wROTE p1");
     }
 
 }
@@ -194,7 +196,7 @@ std::optional<glm::vec2> GetLinearPlacementPos2(glm::vec2 p1, bool snapToGrid) {
 
 void GhostBuildOnLMBUp(InputObject input) {
     if (hover != 0) return;
-    DebugLogInfo("LMBUP ", currentBuildingP1.has_value());
+    //DebugLogInfo("LMBUP ", currentBuildingP1.has_value());
     if (GraphicsEngine::Get().debugFreecamEnabled) return;
     if (input.input != InputObject::LMB) return;
     if (!currentConstructibleGhost) return;
@@ -203,7 +205,7 @@ void GhostBuildOnLMBUp(InputObject input) {
         auto p1 = GetCursorTilePos(false);
 
         if (p1.has_value()) {
-            DebugPlacePointOnPosition(glm::dvec3(p1->x, 3, p1->y));
+            //DebugPlacePointOnPosition(glm::dvec3(p1->x, 3, p1->y));
 
             currentSelectedConstructible->apply(*p1, *p1);
         }

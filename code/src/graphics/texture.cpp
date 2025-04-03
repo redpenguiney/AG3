@@ -70,7 +70,7 @@ lineSpacing(params.fontHeight), // TODO: get line spacing from face->height inst
 bindingLocation(TextureBindingLocationFromType(textureType)),
 glTextureIndex(textureIndex)
 {
-    DebugLogInfo("Writing new texture.");
+    //DebugLogInfo("Writing new texture.");
 
     // skyboxes need 6 textures, everything else obviously only needs 1
     if (textureType == Texture::TextureCubemap) {
