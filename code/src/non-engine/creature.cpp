@@ -65,10 +65,11 @@ void Creature::Think(float dt) {
 		}
 		if (currentPathWaypointIndex >= currentPath->wayPoints.size()) {
 			currentPath = std::nullopt;
-			return;
+			return;w
 		}
 		auto nextPos = currentPath->wayPoints[currentPathWaypointIndex]; //glm::dvec3(currentPath->wayPoints[currentPathWaypointIndex].x, gameObject->RawGet<TransformComponent>()->Position().y, currentPath->wayPoints[currentPathWaypointIndex].y);
-		
+		DebugPlacePointOnPosition(glm::dvec3(currentPath->wayPoints[currentPathWaypointIndex].x, gameObject->RawGet<TransformComponent>()->Position().y, currentPath->wayPoints[currentPathWaypointIndex].y));
+
 		//DebugLogInfo("Next ", nextPos);
 		//Assert(path.wayPoints[1] != Pos());
 		glm::dvec3 moveDir = glm::dvec3(nextPos.x, gameObject->RawGet<TransformComponent>()->Position().y, nextPos.y) - gameObject->RawGet<TransformComponent>()->Position();
