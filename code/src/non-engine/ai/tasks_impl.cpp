@@ -24,6 +24,7 @@ bool ChangeTileTask::Progress(Humanoid& executor, float dt)
 	else {
 		float WORK_SPEED = 1.0f; // TODO
 		progress += dt * WORK_SPEED;
+		DebugLogInfo("WORK");
 		if (progress >= info.baseTimeToComplete)
 			return true; // we finished
 		else

@@ -96,7 +96,7 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
             auto tileMoveCost = GetTileData(GetTile(neighbor.x, neighbor.y).layers[TileLayer::Floor]).moveCost;
             auto furniture = GetTile(neighbor.x, neighbor.y).layers[TileLayer::Furniture];
             auto furnitureMoveCost = furniture < 0 ? 0 : GetFurnitureData(furniture).moveCostModifier;
-            if (tileMoveCost < 0 || furnitureMoveCost < 0) { /*DebugPlacePointOnPosition(glm::dvec3(neighbor.x + 0.5, 3.0, neighbor.y + 0.5), { 1, 0, 0, 1 })*/; continue; }
+            if (tileMoveCost < 0 || furnitureMoveCost < 0) { DebugPlacePointOnPosition(glm::dvec3(neighbor.x + 0.0, 3.0, neighbor.y + 0.0), { 1, 0, 0, 1 }); continue; }
             //DebugPlacePointOnPosition(glm::dvec3(neighbor.x + 0.5, 3.0, neighbor.y + 0.5), { 1, 1, 1, 0.5 });
             auto cost = context.nodeCosts[node] + tileMoveCost + furnitureMoveCost;
             if (!context.nodeCosts.contains(neighbor) || cost < context.nodeCosts[neighbor]) { // then we found a better way to get to this node
