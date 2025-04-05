@@ -575,8 +575,9 @@ void MakeMainMenu() {
             MakeGameMenu();
             GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor); // TODO: this pattern is dumb and WILL  cause (minor) bugs
             //auto cre = Creature::New(CubeMesh(), Body::Humanoid());
-            auto cre = Humanoid::New();
-            cre->gameObject->RawGet<TransformComponent>()->SetPos({ -13, 1.0, 10 });
+            //auto cre = Humanoid::New();
+            World::Loaded()->ComputePath({ -13, 10 }, { -13, -13 }, ComputePathParams());
+            //cre->gameObject->RawGet<TransformComponent>()->SetPos({ -13, 1.0, 10 });
             //cre->MoveTo({ -13, -13 });
         }
         });
