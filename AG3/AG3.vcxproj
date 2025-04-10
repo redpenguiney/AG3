@@ -301,6 +301,7 @@
     <ClCompile Include="..\code\src\network\client.cpp" />
     <ClCompile Include="..\code\src\network\network.cpp" />
     <ClCompile Include="..\code\src\network\protocol.cpp" />
+    <ClCompile Include="..\code\src\non-engine\ai\pathfinding.cpp" />
     <ClCompile Include="..\code\src\non-engine\ai\tasks_impl.cpp" />
     <ClCompile Include="..\code\src\non-engine\ai\team.cpp" />
     <ClCompile Include="..\code\src\non-engine\ai\schedule.cpp" />

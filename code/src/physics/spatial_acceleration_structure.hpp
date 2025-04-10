@@ -47,7 +47,7 @@ class SpatialAccelerationStructure { // (SAS)
 
     // Returns the set of colliders whose AABBs intersect the given AABB (assuming the colliders are in the SAS, which they should be).
     // Will only return colliders with one of the given layers.
-    std::vector<ColliderComponent*> Query(const AABB& collider, CollisionLayerSet layers);
+    std::vector<ColliderComponent*> Query(const AABB& collider, CollisionLayerSet layers = ALL_COLLISION_LAYERS);
 
     // Returns the set of colliders whose AABBs intersect the given ray (assuming the colliders are in the SAS, which they should be).
     // Will only return colliders with one of the given layers.

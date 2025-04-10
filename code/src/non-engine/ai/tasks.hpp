@@ -21,10 +21,10 @@ public:
 
 	virtual ~Task() = default;
 
-	// returns true if finished (successfully or not). May call Interrupt()
+	// returns true if finished (successfully or not, either way the task is no longer valid and should be destroyed). May call Interrupt()
 	virtual bool Progress(Humanoid& executor, float dt) = 0;
 
-	// call when task is gracelessly cut short because NPC needs to do something else now.
+	// call when task is gracelessly cut short because NPC needs to do something else now. Task should be returned to the TaskScheduler if you're calling this directly (since the task isn't done).
 	virtual void Interrupt() = 0;
 
 	// Returns integer representing the priority of the task.
@@ -59,7 +59,8 @@ public:
 	// vector indices not stable
 	std::array<WorkGroup, NUM_WORK_GROUPS> taskInfos;
 
-	// indices are stable, some values are nullptr
+	// indices are stable, some values are nullptr.
+	// An npc that wants to work on a task will steal the pointer to that task, and either destroy it themselves if they finish it or return it if they don't.
 	std::vector<std::unique_ptr<Task>> tasks;
 	std::vector<unsigned int> availableTaskIndices;
 };

@@ -26,9 +26,10 @@ protected:
 
 private:
 	// It would be too expensive to evaluate the best task for every single humanoid every frame;
-		// instead, each humanoid just evaluates a handful of options and the one they're currently doing every frame and picks the best one
-	// -1 if the NPC is doing literally nothing.
+		// instead, each humanoid just evaluates a handful of options and the one they're currently doing every frame and picks the best one.
+		// this index keeps track of where they are in iterating through all tasks. (not the index of currentTask; currentTask isn't even in the task array if it's in here)
 	int currentTaskIndex = -1;
+	std::unique_ptr<Task> currentTask;
 
 	std::shared_ptr<Schedule> schedule;
 

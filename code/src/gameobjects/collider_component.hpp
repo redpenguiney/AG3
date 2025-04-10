@@ -46,8 +46,8 @@ class ColliderComponent: public BaseComponent {
 
     //TransformComponent* transform;
 
-    // returns gameobject this collider belongs to; TODO does this really need to be shared_ptr
-    std::shared_ptr<GameObject>& GetGameObject();
+    // returns gameobject this collider belongs to; TODO does this really need to be shared_ptr? They could always call shared_from_this on their own
+    std::shared_ptr<GameObject> GetGameObject();
 
     // pointer to accurate collider for object
     const std::shared_ptr<PhysicsMesh> physicsMesh;

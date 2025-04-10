@@ -41,16 +41,18 @@ void Humanoid::Think(float dt)
 	// if not, determine work group and pick a task
 	const WorkBlock& block = schedule ? schedule->Evalute(*this) : Schedule::PERMISSIVE_BLOCK;
 
-	int bestTaskUtility = currentTaskIndex == -1 ? -1 : scheduler.tasks[currentTaskIndex]->EvaluateTaskUtility(*this);
-	int bestTaskIndex = currentTaskIndex;
-	int oldTaskIndex = currentTaskIndex;
+	int bestTaskUtility = currentTask ? currentTask->EvaluateTaskUtility(*this) : -1;
+	int bestTaskIndex = currentTask ? -1 : currentTaskIndex;
+	int oldTaskIndex = bestTaskIndex;
 
 	int i = 0; // works if -1
+	int num = std::max(TASKS_PER_FRAME, (int)scheduler.tasks.size());
 	if (!scheduler.tasks.empty()) {
-		while (i++ < TASKS_PER_FRAME) {
+		while (i++ < num) {
 			currentTaskIndex++;
 			if (currentTaskIndex >= (scheduler.tasks.size()))
 				currentTaskIndex = 0;
+			if (scheduler.tasks[currentTaskIndex] == nullptr) continue;
 			int utility = scheduler.tasks[currentTaskIndex]->EvaluateTaskUtility(*this);
 			if (utility > bestTaskUtility) {
 				bestTaskUtility = utility;
@@ -59,19 +61,34 @@ void Humanoid::Think(float dt)
 		}
 	}
 
-	if (oldTaskIndex != -1 && oldTaskIndex != bestTaskIndex)
-		scheduler.tasks[oldTaskIndex]->Interrupt();
-
-	if (bestTaskUtility == -1) { // then no task was found
-		//DebugLogError("Failed to find a task for humanoid.");
+	if (currentTask && oldTaskIndex != bestTaskIndex) {
+		currentTask->Interrupt();
+		DebugLogInfo("Interrupted ", currentTask.get());
+		if (scheduler.availableTaskIndices.empty()) {
+			scheduler.tasks.push_back(std::move(currentTask));
+		}
+		else {
+			scheduler.tasks[scheduler.availableTaskIndices.back()] = std::move(currentTask);
+			scheduler.availableTaskIndices.pop_back();
+		}
 	}
-	else {
-		currentTaskIndex = bestTaskIndex;
-		auto& task = *scheduler.tasks[bestTaskIndex];
-		if (task.Progress(*this, dt)) // then we finished the task (or it's no longer valid)
-			currentTaskIndex = -1; 
+	
+	if (!currentTask) 
+		if (bestTaskUtility == -1) { // then no task was found
+			//DebugLogError("Failed to find a task for humanoid.");
+		}
+		else {
+			
+			currentTask = std::move(scheduler.tasks[bestTaskIndex]);
+			DebugLogInfo("Commencing new task ", currentTask.get());
+		}
+	
+	if (currentTask)
+		if (currentTask->Progress(*this, dt)) { // then we finished the task (or it's no longer valid)
+			currentTask = nullptr; // destroy the task since it's done or invalid
+			DebugLogInfo("WE're DONE HERE");
+		}
 		//DebugLogInfo("PRogress task");
-	}
 
 	Creature::Think(dt);
 }

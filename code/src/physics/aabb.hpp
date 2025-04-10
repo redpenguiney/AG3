@@ -9,6 +9,7 @@ using CollisionLayer = uint16_t;
 inline constexpr CollisionLayer MAX_COLLISION_LAYERS = 32;
 
 using CollisionLayerSet = std::bitset<MAX_COLLISION_LAYERS>;
+static const inline CollisionLayerSet ALL_COLLISION_LAYERS = CollisionLayerSet().set();
 
 // For the broadphase of collisions, we use AABBs since it is easier/cheaper to determine when they are colliding
 struct AABB {

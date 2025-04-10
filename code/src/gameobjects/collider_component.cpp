@@ -31,12 +31,13 @@ ColliderComponent::ColliderComponent(GameObject* gameobj, std::shared_ptr<Physic
 //}
 
 ColliderComponent::~ColliderComponent() {
-
+    RemoveFromSas(); // TODO: confusion: even without this line Query() doesn't pick up these components???
 }
 
-std::shared_ptr<GameObject>& ColliderComponent::GetGameObject() {
-    Assert(GameObject::GAMEOBJECTS().contains(gameobject));
-    return GameObject::GAMEOBJECTS()[gameobject];
+std::shared_ptr<GameObject> ColliderComponent::GetGameObject() {
+    //Assert(GameObject::GAMEOBJECTS().contains(gameobject));
+    
+    return gameobject->shared_from_this();
 }
 
 // bool ColliderComponent::IsCollidingWith(const ColliderComponent& other) const {

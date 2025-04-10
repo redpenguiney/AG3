@@ -13,7 +13,7 @@ ChangeTileTask::ChangeTileTask(glm::ivec2 tilePos, const ChangeTileTaskInfo& inf
 bool ChangeTileTask::Progress(Humanoid& executor, float dt)
 {
 	//DebugLogInfo("Progressing task, executor at ", executor.gameObject->RawGet<TransformComponent>()->Position());
-
+	DebugLogInfo("Progressiopn");
 
 	// Is humanoid within range?
 	glm::ivec2 hPos = executor.Pos();
@@ -24,9 +24,12 @@ bool ChangeTileTask::Progress(Humanoid& executor, float dt)
 	else {
 		float WORK_SPEED = 1.0f; // TODO
 		progress += dt * WORK_SPEED;
-		DebugLogInfo("WORK");
-		if (progress >= info.baseTimeToComplete)
+		//DebugLogInfo("WORK ", progress);
+		if (progress >= info.baseTimeToComplete) {
+			
+
 			return true; // we finished
+		}
 		else
 			return false; // we're not done
 	}

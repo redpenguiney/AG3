@@ -394,12 +394,13 @@ void SpatialAccelerationStructure::AddCollider(ColliderComponent* collider, cons
 }
 
 void ColliderComponent::RemoveFromSas() {
-   
+    //DebugLogInfo("REMOVING");
     bool layerExists = false; // we need to see if this is the only object with the given layer in this node 
     // remove object from node
     for (unsigned int i = 0; i < node->objects.size(); i++) { // todo: could maybe optimize this loop?
         if (node->objects[i] == this) {
             node->objects.erase(node->objects.begin() + i);
+            i--;
         }
         else if (layer == node->objects[i]->layer) {
             layerExists == true;
@@ -463,7 +464,7 @@ void SpatialAccelerationStructure::UpdateCollider(ColliderComponent& collider, c
         auto childNode = SasInsertHeuristic(*newNodeForCollider, newAabb, collider.layer);
         //std::cout << "\tchild is " << childNode << "\n.";
         // TODO: we might need to grow this 
-        if (childNode == nullptr) { // then we're at a leaf node, add the collider to it
+        if (childNode == nullptr || childNode == newNodeForCollider) { // then we're at a leaf node, add the collider to it
             collider.node = newNodeForCollider;
 
             break;
@@ -537,7 +538,7 @@ void SpatialAccelerationStructure::UpdateColliderLayer(ColliderComponent& collid
     bool layerExists = false; // we need to see if this was the only object with the given layer in this node, and if so we need to remove that layer from the node itself (and possibly its parents too)
     for (unsigned int i = 0; i < collider.node->objects.size(); i++) { // todo: could maybe optimize this loop?
         if (oldLayer == collider.node->objects[i]->layer) {
-            layerExists == true;
+            layerExists = true;
         }
     }
 

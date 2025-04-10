@@ -96,13 +96,13 @@ std::function<void(glm::vec2, glm::vec2)> MakeConstructibleSetTileApplicator(con
 
                 if (TaskScheduler::Get().availableTaskIndices.empty()) {
                     TaskScheduler::Get().tasks.emplace_back(std::make_unique<ChangeTileTask>(glm::ivec2(x, y), params.info));
-                    DebugLogInfo("madetask");
+                    //DebugLogInfo("madetask");
                 }
                 else {
                     int i = TaskScheduler::Get().availableTaskIndices.back();
                     TaskScheduler::Get().availableTaskIndices.pop_back();
                     TaskScheduler::Get().tasks[i] = std::make_unique<ChangeTileTask>(glm::ivec2(x, y), params.info);
-                    DebugLogInfo("madetask");
+                    //DebugLogInfo("madetask");
                 }
 
             }
@@ -561,7 +561,7 @@ void MakeMainMenu() {
             inMainMenu = false;
             auto& duh = mainMenuGuis;
 
-            TestBillboardUi({ -13, 2.0, -13 }, "bob");
+            //TestBillboardUi({ -13, 2.0, -13 }, "bob");
 
             mainMenuGuis.clear();
             //TestVoxelTerrain();
@@ -575,9 +575,9 @@ void MakeMainMenu() {
             MakeGameMenu();
             GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor); // TODO: this pattern is dumb and WILL  cause (minor) bugs
             //auto cre = Creature::New(CubeMesh(), Body::Humanoid());
-            //auto cre = Humanoid::New();
-            World::Loaded()->ComputePath({ -13, 10 }, { -13, -13 }, ComputePathParams());
-            //cre->gameObject->RawGet<TransformComponent>()->SetPos({ -13, 1.0, 10 });
+            auto cre = Humanoid::New();
+            //World::Loaded()->ComputePath({ -13, 10 }, { -13, -13 }, ComputePathParams());
+            cre->gameObject->RawGet<TransformComponent>()->SetPos({ -13, 1.0, 10 });
             //cre->MoveTo({ -13, -13 });
         }
         });

@@ -122,7 +122,7 @@ public:
 	// unloads the currently loaded world. (does nothing if no loaded world)
 	static void Unload();
 
-	Path ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params);
+    Path ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params);
 
 	TerrainTile GetTile(int x, int z);
 
