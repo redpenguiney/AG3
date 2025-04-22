@@ -17,6 +17,8 @@ struct IndirectDrawCommand {
     //firstIndex(0),
     //baseVertex(0),
     //baseInstance(0) {}
+
+    std::string ToString() const;
 };
 
 struct IndirectDrawCommandUpdate {

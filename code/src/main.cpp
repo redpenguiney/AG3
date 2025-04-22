@@ -9,6 +9,7 @@
 #include <vector>
 #include <thread>
 
+
 #include <GLM/gtx/string_cast.hpp>
 
 #include "events/base_event.hpp"
@@ -34,6 +35,7 @@
 
 #include "non-engine/game.hpp"
 #include <tests/gameobject_tests.hpp>
+#include "tests/graphics_test.hpp"
 
 //#include "FastNoise/FastNoise.h"
 
@@ -93,7 +95,8 @@ int main(int numArgs, const char *argPtrs[]) {
     Gui::Init();
 
     DebugLogInfo("Calling GameInit().");
-    GameInit();
+    //GameInit();
+    TestGraphics();
     //GE.SetDebugFreecamEnabled(true);
     //TestGrassFloor();
     //TestStationaryPointlight();
@@ -226,7 +229,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
     DebugLogInfo("Closing game.");
     auto gtstartclosetime = Time();
-    GameClose();
+    //GameClose();
     LogElapsed(gtstartclosetime, "\nClosing game elapsed ");
 
     timeAtWhichExitProcessStarted = Time();

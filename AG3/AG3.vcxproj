@@ -273,6 +273,7 @@
     <ClInclude Include="..\code\src\gameobjects\component_field_initializer.hpp" />
     <ClInclude Include="..\code\src\graphics\cursor.hpp" />
     <ClInclude Include="..\code\src\graphics\indirect_draw_command.hpp" />
+    <ClCompile Include="..\code\src\graphics\indirect_draw_command.cpp" />
     <ClCompile Include="..\code\src\graphics\material.cpp" />
     <ClCompile Include="..\code\src\graphics\mesh.cpp" />
     <ClCompile Include="..\code\src\graphics\meshpool.cpp" />
@@ -327,6 +328,7 @@
     <ClCompile Include="..\code\src\physics\raycast.cpp" />
     <ClCompile Include="..\code\src\physics\spatial_acceleration_structure.cpp" />
     <ClCompile Include="..\code\src\tests\gameobject_tests.cpp" />
+    <ClCompile Include="..\code\src\tests\graphics_test.cpp" />
     <ClCompile Include="..\code\src\utility\let_me_hash_a_tuple.cpp" />
     <ClCompile Include="..\code\src\utility\tree.cpp" />
     <ClCompile Include="..\code\src\utility\uint.cpp" />
@@ -417,6 +419,7 @@
     <ClInclude Include="..\code\src\physics\spatial_acceleration_structure.hpp" />
     <ClInclude Include="..\code\src\saving\loader.hpp" />
     <ClInclude Include="..\code\src\tests\gameobject_tests.hpp" />
+    <ClInclude Include="..\code\src\tests\graphics_test.hpp" />
     <ClInclude Include="..\code\src\utility\hash_glm.hpp" />
     <ClInclude Include="..\code\src\utility\let_me_hash_a_tuple.hpp" />
     <ClInclude Include="..\code\src\utility\tree.hpp" />

@@ -7,6 +7,20 @@
 
 #include "noise/noise.h"
 
+void TestSkybox() {
+    auto params = MaterialCreateParams{
+
+        .textureParams = {
+            TextureCreateParams({TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}}, Texture::ColorMap),
+    },
+    .type = Texture::TextureType::TextureCubemap,
+    .shader = GraphicsEngine::Get().skyboxMaterial->shader,
+
+    };
+    GraphicsEngine::Get().skyboxMaterial = Material::New(params).second;
+    //GraphicsEngine::Get().skyboxMaterial->textures = TextureCollection::FindCollection(params).first;
+}
+
 std::shared_ptr<Mesh> CubeMesh() {
     auto makeMparams = MeshCreateParams{ .textureZ = -1.0, .opacity = 1, .expectedCount = 16384 };
     

@@ -9,6 +9,8 @@
 #include "../debug/assert.hpp"
 #include "gengine.hpp"
 
+#define MESHPOOL_LOGGING
+
 Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
     format(meshVertexFormat),
 
@@ -31,7 +33,9 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
     meshIndexEnd(0),
     instanceEnd(0)
 {
-
+#ifdef MESHPOOL_LOGGING 
+    DebugLogInfo("Meshpool created"); 
+#endif
 }
 
 Meshpool::~Meshpool()
@@ -129,6 +133,10 @@ std::vector<Meshpool::DrawHandle> Meshpool::AddObject(const std::shared_ptr<Mesh
             .baseVertex = static_cast<int>(slot),
             .baseInstance = firstInstance
         };
+
+#ifdef MESHPOOL_LOGGING
+        DebugLogInfo("Wrote command ", command.ToString(), " at index ", drawCommandIndex);
+#endif
 
         if (mesh->dynamic) {
             commandBuffer.dynamicMeshCommandLocations[mesh->meshId].push_back(drawCommandIndex);
@@ -537,6 +545,8 @@ void Meshpool::FlipBuffers()
 
 void Meshpool::ExpandVertexCapacity()
 {
+
+
     // determine new vertex capacity
     if (currentVertexCapacity == 0) {
         currentVertexCapacity = 1;
@@ -560,6 +570,10 @@ void Meshpool::ExpandVertexCapacity()
     vertices.Bind();
     format.SetNonInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
     
+#ifdef MESHPOOL_LOGGING 
+    DebugLogInfo("EVC", vaoId);
+#endif
+
     // because we just recreated the vao, we have to rebind the instanced attributes too 
     // but when we're initializing, we don't want to do this because calling ExpandInstanced() in initializiation will and we don't have an instanced vertex buffer yet
     if (instances.bufferId != 0) {
@@ -598,7 +612,9 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
         currentDrawCommandCapacity *= 2;
     }
 
-    
+#ifdef MESHPOOL_LOGGING 
+    DebugLogInfo("EDCC from ", oldCapacity, " to ", currentDrawCommandCapacity);
+#endif
     
 
     // expand draw command buffer
@@ -614,6 +630,9 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
     if (INSTANCED_VERTEX_BUFFERING_FACTOR > 1) { // TODO: wrong condition?
         CheckedUint commandSlot = 0;
         for (auto& command : clientCommands) {
+#ifdef MESHPOOL_LOGGING
+            DebugLogInfo("\tcmd: ", command.ToString());
+#endif
             if (command.instanceCount == 0) { continue; }
             commandUpdates.emplace_back(IndirectDrawCommandUpdate{
                 .updatesLeft = INSTANCED_VERTEX_BUFFERING_FACTOR,
@@ -675,14 +694,19 @@ void Meshpool::ExpandInstanceCapacity()
     glBindVertexArray(vaoId);
     format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
 
+#ifdef MESHPOOL_LOGGING 
+    DebugLogInfo("EIC ", vaoId);
+#endif
+
     //DebugLogInfo("Updating instance capacity.");
 
     // Tragically, for every indirect draw command we have to update the 2nd and 3rd buffers' baseInstance since it was offset to correct for the OLD instance buffer's size.
     if (INSTANCED_VERTEX_BUFFERING_FACTOR > 1) {
         for (auto& b : drawCommands) {
             if (!b.has_value()) { continue; }
-            //DebugLogInfo("Updating ", b->clientCommands.size(), " for instance buffer resize");
-
+#ifdef MESHPOOL_LOGGING
+            DebugLogInfo("Updating ", b->clientCommands.size(), " for instance buffer resize");
+#endif
             CheckedUint commandSlot = 0;
             for (auto& command : b->clientCommands) {
                 if (command.instanceCount == 0) { continue; }

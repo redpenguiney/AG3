@@ -1,5 +1,1 @@
-﻿LINK : warning LNK4300: ignoring '/INCREMENTAL' because input module contains ASAN metadata
-     Creating library C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\AG3\x64\Debug\TG3.lib and object C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\AG3\x64\Debug\TG3.exp
-  TG3.vcxproj -> C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\AG3\x64\Debug\TG3.dll
-  'pwsh.exe' is not recognized as an internal or external command,
-  operable program or batch file.
+﻿
