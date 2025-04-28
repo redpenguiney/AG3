@@ -129,6 +129,8 @@ struct Constructible {
             auto params = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
             params.meshId = CubeMesh()->meshId;
             currentConstructibleGhost = GameObject::New(params);
+            currentConstructibleGhost->RawGet<RenderComponent>()->SetColor({ 1, 1, 1, 0.5 });
+            currentConstructibleGhost->RawGet<RenderComponent>()->SetTextureZ(-1);
         }
 
         auto transform = currentConstructibleGhost->RawGet<TransformComponent>();

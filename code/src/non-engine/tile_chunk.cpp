@@ -146,8 +146,11 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 RenderChunk::~RenderChunk() {
 	//DebugLogInfo("Destroyed at ", pos);
 
-	mainObject->Destroy();
-	mainObject = nullptr;
+	//if (mainObject) {
+		mainObject->Destroy();
+		mainObject = nullptr;
+	//}
+	
 	for (auto& o : objects) {
 		o->Destroy();
 	}

@@ -9,7 +9,7 @@
 #include "../debug/assert.hpp"
 #include "gengine.hpp"
 
-#define MESHPOOL_LOGGING
+//#define MESHPOOL_LOGGING
 
 Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
     format(meshVertexFormat),

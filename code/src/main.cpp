@@ -95,8 +95,8 @@ int main(int numArgs, const char *argPtrs[]) {
     Gui::Init();
 
     DebugLogInfo("Calling GameInit().");
-    //GameInit();
-    TestGraphics();
+    GameInit();
+    //TestGraphics();
     //GE.SetDebugFreecamEnabled(true);
     //TestGrassFloor();
     //TestStationaryPointlight();
@@ -229,7 +229,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
     DebugLogInfo("Closing game.");
     auto gtstartclosetime = Time();
-    //GameClose();
+    GameClose();
     LogElapsed(gtstartclosetime, "\nClosing game elapsed ");
 
     timeAtWhichExitProcessStarted = Time();
