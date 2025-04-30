@@ -81,6 +81,10 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::d
     std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
     AddIntersectingLeafNodes(&root, collidingNodes, origin, inverse_direction, layers);
 
+    if (collidingNodes.empty()) {
+        DebugLogInfo("uh oh");
+    }
+
     // test the aabbs of the objects inside each node and if so add them to the vector
     std::vector<ColliderComponent*> collidingComponents;
     //std::cout << "For raycast, testing " << collidingNodes.size() << " nodes.\n";
@@ -418,13 +422,18 @@ void ColliderComponent::RemoveFromSas() {
     bool layerExists = false; // we need to see if this is the only object with the given layer in this node 
     // remove object from node
     for (unsigned int i = 0; i < node->objects.size(); i++) { // todo: could maybe optimize this loop?
+        //DebugLogInfo("layer ", layer, " vs ", node->objects[i]->layer, " (", i, ")", " comp = ", layer == node->objects[i]->layer);
         if (node->objects[i] == this) {
             node->objects.erase(node->objects.begin() + i);
             i--;
         }
         else if (layer == node->objects[i]->layer) {
-            layerExists == true;
+            //DebugLogInfo("YO");
+            layerExists = true;
         }
+        //else {
+            //Assert(layer != node->objects[i]->layer);
+        //}
     }
 
     if (!layerExists) {

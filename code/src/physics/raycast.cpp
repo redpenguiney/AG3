@@ -24,9 +24,9 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction, CollisionLayerSet
     //std::printf("muy guy %f %f %f\n", direction.x, direction.y, direction.z);
     
     //DebugLogInfo("Maybe hitting ", possible_colliding.size());
-    if (possible_colliding.empty()) {
-        DebugLogInfo("muy guy ", direction);
-    }
+    //if (possible_colliding.empty()) {
+        //DebugLogInfo("muy guy ", direction);
+    //}
 
     // for every convex piece of every object's mesh, there are two hit triangles, and one of them is discarded through backface culling.
     // we'll then look thru the hit triangles/their objects to figure out which one the ray hit first.
