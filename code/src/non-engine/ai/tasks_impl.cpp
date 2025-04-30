@@ -13,17 +13,19 @@ ChangeTileTask::ChangeTileTask(glm::ivec2 tilePos, const ChangeTileTaskInfo& inf
 bool ChangeTileTask::Progress(Humanoid& executor, float dt)
 {
 	//DebugLogInfo("Progressing task, executor at ", executor.gameObject->RawGet<TransformComponent>()->Position());
-	DebugLogInfo("Progressiopn");
+	
 
 	// Is humanoid within range?
 	glm::ivec2 hPos = executor.Pos();
 	if (std::abs(hPos.x - pos.x) + std::abs(hPos.y - pos.y) > 1) { // then no; have them pathfind over
 		executor.MoveTo(pos);
+		//DebugLogInfo("move ", this);
 		return false;
 	}
 	else {
 		float WORK_SPEED = 1.0f; // TODO
 		progress += dt * WORK_SPEED;
+		//DebugLogInfo("work ", this);
 		//DebugLogInfo("WORK ", progress);
 		if (progress >= info.baseTimeToComplete) {
 			

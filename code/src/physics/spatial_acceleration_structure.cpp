@@ -83,9 +83,7 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::d
 
     // test the aabbs of the objects inside each node and if so add them to the vector
     std::vector<ColliderComponent*> collidingComponents;
-    //std::cout << "For raycast, testing " << collidingNodes.size() << " nodes.\n";
     for (auto & node: collidingNodes) {
-        //std::cout << "\twithin this node testing " << node->objects.size() << " collider AABBs.\n";
         for (auto & obj: node->objects) {
             if (layers[obj->layer] && obj->aabb.TestIntersection(origin, inverse_direction)) {
                 collidingComponents.push_back(obj);
@@ -93,7 +91,6 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::d
         }
         if (node->objects.size() > NODE_SPLIT_THRESHOLD) {
             node->Split();
-            //std::cout << "WE GOTTA SPLIT\n";
         }
     }
 
@@ -115,9 +112,27 @@ void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode con
 
         glm::vec3 position = object->aabb.Center();
         glm::mat4x4 model = glm::scale(glm::translate(glm::identity<glm::mat4x4>(), position), glm::vec3(object->aabb.max - object->aabb.min)) ;
-        
+        glm::vec4 colors[MAX_COLLISION_LAYERS] = {
+            {1, 1, 1, 1},
+            { 1, 0, 0, 1 },
+            { 1, 1, 0, 1 },
+            { 1, 0, 1, 1 },
+            { 0, 1, 1, 1 },
+            { 0, 0, 1, 1 },
+            { 0, 0, 0, 1 },
+            { 0, 1, 0, 1 },
+            { 0.5, 0.5, 0.5, 1 },
+            { 1, 0.5, 0.5, 1 },
+            { 1, 1, 0.5, 1 },
+            { 1, 0.5, 1, 1 },
+            { 0.5, 1, 1, 1 },
+            { 0.5, 0.5, 1, 1 },
+            { 0.5, 0.5, 0.5, 1 },
+            { 0.5, 1, 0.5, 1 },
+        };
+        memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &colors[object->layer], sizeof(glm::vec4));
         memcpy(oldPtr + mesh.vertexFormat.attributes.modelMatrix->offset/sizeof(GLfloat), &model, sizeof(glm::mat4x4));
-        if (depth == 0) {
+       /* if (depth == 0) {
             constexpr glm::vec4 color = { 1, 1, 1, 1 };
             memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &color, sizeof(glm::vec4));
         }
@@ -132,7 +147,7 @@ void SpatialAccelerationStructure::DebugVisualizeAddVertexAttributes(SasNode con
         else {
             constexpr glm::vec4 color = { 1, 0, 1, 1 };
             memcpy(oldPtr + mesh.vertexFormat.attributes.color->offset / sizeof(GLfloat), &color, sizeof(glm::vec4));
-        }
+        }*/
         numInstances++;
     }
 
@@ -207,6 +222,8 @@ void SpatialAccelerationStructure::DebugVisualize() {
 
     
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glViewport(0, 0, GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height);
+    glDisable(GL_SCISSOR_TEST);
     glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr, numInstances);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -398,13 +415,18 @@ void ColliderComponent::RemoveFromSas() {
     bool layerExists = false; // we need to see if this is the only object with the given layer in this node 
     // remove object from node
     for (unsigned int i = 0; i < node->objects.size(); i++) { // todo: could maybe optimize this loop?
+        //DebugLogInfo("layer ", layer, " vs ", node->objects[i]->layer, " (", i, ")", " comp = ", layer == node->objects[i]->layer);
         if (node->objects[i] == this) {
             node->objects.erase(node->objects.begin() + i);
             i--;
         }
         else if (layer == node->objects[i]->layer) {
-            layerExists == true;
+            //DebugLogInfo("YO");
+            layerExists = true;
         }
+        //else {
+            //Assert(layer != node->objects[i]->layer);
+        //}
     }
 
     if (!layerExists) {
