@@ -81,15 +81,9 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::d
     std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
     AddIntersectingLeafNodes(&root, collidingNodes, origin, inverse_direction, layers);
 
-    if (collidingNodes.empty()) {
-        DebugLogInfo("uh oh");
-    }
-
     // test the aabbs of the objects inside each node and if so add them to the vector
     std::vector<ColliderComponent*> collidingComponents;
-    //std::cout << "For raycast, testing " << collidingNodes.size() << " nodes.\n";
     for (auto & node: collidingNodes) {
-        //std::cout << "\twithin this node testing " << node->objects.size() << " collider AABBs.\n";
         for (auto & obj: node->objects) {
             if (layers[obj->layer] && obj->aabb.TestIntersection(origin, inverse_direction)) {
                 collidingComponents.push_back(obj);
@@ -97,7 +91,6 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::d
         }
         if (node->objects.size() > NODE_SPLIT_THRESHOLD) {
             node->Split();
-            //std::cout << "WE GOTTA SPLIT\n";
         }
     }
 

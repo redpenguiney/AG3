@@ -46,7 +46,7 @@ void Humanoid::Think(float dt)
 	int oldTaskIndex = bestTaskIndex;
 
 	int i = 0; // works if -1
-	int num = std::max(TASKS_PER_FRAME, (int)scheduler.tasks.size());
+	int num = std::min(TASKS_PER_FRAME, (int)scheduler.tasks.size());
 	if (!scheduler.tasks.empty()) {
 		while (i++ < num) {
 			currentTaskIndex++;
@@ -78,7 +78,6 @@ void Humanoid::Think(float dt)
 			//DebugLogError("Failed to find a task for humanoid.");
 		}
 		else {
-			
 			currentTask = std::move(scheduler.tasks[bestTaskIndex]);
 			DebugLogInfo("Commencing new task ", currentTask.get());
 		}
