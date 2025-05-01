@@ -42,6 +42,7 @@ void Humanoid::Think(float dt)
 	const WorkBlock& block = schedule ? schedule->Evalute(*this) : Schedule::PERMISSIVE_BLOCK;
 
 	int bestTaskUtility = currentTask ? currentTask->EvaluateTaskUtility(*this) : -1;
+	int oldP = bestTaskUtility;
 	int bestTaskIndex = currentTask ? -1 : currentTaskIndex;
 	int oldTaskIndex = bestTaskIndex;
 
@@ -57,6 +58,7 @@ void Humanoid::Think(float dt)
 			if (utility > bestTaskUtility) {
 				bestTaskUtility = utility;
 				bestTaskIndex = currentTaskIndex;
+				DebugLogInfo("Better P found");
 			}
 		}
 	}
