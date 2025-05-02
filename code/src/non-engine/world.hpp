@@ -92,14 +92,27 @@ struct ChunkLoader {
 	glm::ivec2 centerPosition; // in tiles, but must be a chunk position
 };
 
+// Used to prevent accidental mixups of floor/furniture/etc. ids
+template <int layer>
+class TileId {
+private:
+	int val;
+public:
+	TileId(int v = -1): val(v) {}
+	explicit operator int() const { return val; }
+};
+
+using FloorId = TileId<TileLayer::Floor>;
+using FurnitureId = TileId<TileLayer::Furniture>;
+
 class World {
 public:
 	struct TerrainIds {
 		// Tile ids; always have defined value.
-		int DIRT, ROCK, GRASS, SNOW, MISSING;
+		FloorId DIRT, ROCK, GRASS, SNOW, MISSING;
 
 		// Furniture ids; always have defined value.
-		int TREE;
+		FurnitureId TREE, WOOD_WALL;
 
 		TerrainIds();
 	};
@@ -125,6 +138,7 @@ public:
     Path ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params);
 
 	TerrainTile GetTile(int x, int z);
+	void SetTile(int x, int z, TileLayer layer, int tile);
 
 	// returns the chunk that the given coordinates lie inside
 	const TerrainChunk& GetChunk(int x, int z); 
@@ -132,6 +146,13 @@ public:
 	~World();
 
 private:
+
+	// private bc modifications aren't auto carried over to rendering/etc.
+	TerrainChunk& GetChunkMut(int x, int z);
+
+	// private bc modifications aren't auto carried over to rendering/etc.
+	TerrainTile& GetTileMut(int x, int z);
+
 	std::unique_ptr<Event<float>::Connection> preRenderConnection = nullptr;
 	std::unique_ptr<Event<float>::Connection> prePhysicsConnection = nullptr;
 

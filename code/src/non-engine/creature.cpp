@@ -31,8 +31,9 @@ Creature::~Creature()
 
 void Creature::MoveTo(glm::ivec2 worldPos)
 {
+	StopMoving();
 	currentGoal = worldPos;
-	auto g = DebugPlacePointOnPosition({ worldPos.x, 2, worldPos.y });
+	//auto g = DebugPlacePointOnPosition({ worldPos.x, 2, worldPos.y });
 	//g->Destroy();
 	//NewObjectLifetime(g, 0.1);
 }
@@ -40,6 +41,7 @@ void Creature::MoveTo(glm::ivec2 worldPos)
 void Creature::StopMoving() {
 	currentGoal = Pos();
 	currentPath = std::nullopt;
+	currentPathWaypointIndex = -1;
 }
 
 
@@ -73,7 +75,7 @@ void Creature::Think(float dt) {
 			return;
 		}
 		auto nextPos = currentPath->wayPoints[currentPathWaypointIndex]; //glm::dvec3(currentPath->wayPoints[currentPathWaypointIndex].x, gameObject->RawGet<TransformComponent>()->Position().y, currentPath->wayPoints[currentPathWaypointIndex].y);
-		DebugPlacePointOnPosition(glm::dvec3(currentPath->wayPoints[currentPathWaypointIndex].x, gameObject->RawGet<TransformComponent>()->Position().y, currentPath->wayPoints[currentPathWaypointIndex].y));
+		//DebugPlacePointOnPosition(glm::dvec3(currentPath->wayPoints[currentPathWaypointIndex].x, gameObject->RawGet<TransformComponent>()->Position().y, currentPath->wayPoints[currentPathWaypointIndex].y));
 
 		//DebugLogInfo("Next ", nextPos);
 		//Assert(path.wayPoints[1] != Pos());

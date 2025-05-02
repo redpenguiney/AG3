@@ -58,21 +58,32 @@ void World::Unload() {
     
 }
 
-
-
-TerrainTile World::GetTile(int x, int z)
-{
+TerrainTile& World::GetTileMut(int x, int z) {
     glm::ivec2 pos = glm::ivec2(x, z) - glm::floorMultiple(glm::ivec2(x, z) + 8, glm::ivec2(16)) + 8;
 
     //assert(pos.x >= 0 && pos.y >= 0 && pos.x < 16 && pos.y < 16);
 
     //if (GetChunk(x, z).tiles[pos.x][pos.y].layers[TileLayer::Floor] == World::TERRAIN_IDS().ROCK)
         //DebugPlacePointOnPosition(glm::dvec3(x, 4, z), { 0, 1, 0.5, 1 });
-    return GetChunk(x, z).tiles[pos.x][pos.y];
+    return GetChunkMut(x, z).tiles[pos.x][pos.y];
 }
 
-const TerrainChunk& World::GetChunk(int x, int z)
+TerrainTile World::GetTile(int x, int z)
 {
+    return GetTileMut(x, z);
+}
+
+void World::SetTile(int x, int z, TileLayer layer, int tile) {
+    auto chunkPos = glm::floorMultiple(glm::ivec2(x, z) + 8, glm::ivec2(16)) + 8;
+    glm::ivec2 pos = glm::ivec2(x, z) - glm::floorMultiple(glm::ivec2(x, z) + 8, glm::ivec2(16)) + 8;
+    auto& chunk = GetChunkMut(x, z);
+    chunk.tiles[pos.x][pos.y].layers[layer] = tile;
+    chunk.pathfindingDirty = true;
+    if (renderChunks.contains(chunkPos))
+        renderChunks[chunkPos]->dirty = true;
+}
+
+TerrainChunk& World::GetChunkMut(int x, int z) {
     //DebugLogInfo("Chunk ")
     glm::ivec2 pos(x, z);
     pos = glm::floorMultiple(pos + 8, glm::ivec2(16)) + 8;
@@ -85,6 +96,10 @@ const TerrainChunk& World::GetChunk(int x, int z)
     }
 
     return *chunk;
+}
+
+const TerrainChunk& World::GetChunk(int x, int z) {
+    return GetChunkMut(x, z);
 }
 
 World::~World() {
@@ -194,7 +209,7 @@ World::World() {
         for (int x = roundedTopLeft.x - 8; x <= roundedBottomRight.x + 8; x += 16) {
             for (int y = roundedTopLeft.z - 8; y <= roundedBottomRight.z + 8; y += 16) {
                 if (!activeChunkLocations.contains({ x, y })) continue;
-                if (!renderChunks.count({ x, y })) {
+                if (!renderChunks.count({ x, y }) || renderChunks[{x, y}]->dirty) {
                     renderChunks[glm::ivec2(x, y)] = std::unique_ptr<RenderChunk>(new RenderChunk(glm::ivec2(x, y), 1, 8, TerrainMaterial(), TerrainAtlas()));
                 }
                 renderChunks[{x, y}]->dead = false;
@@ -264,15 +279,15 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
 
             tiles[localX][localZ].layers[TileLayer::Furniture] = -1;
             if (height > 0) {
-                tiles[localX][localZ].layers[TileLayer::Floor] = World::TERRAIN_IDS().GRASS;
+                tiles[localX][localZ].layers[TileLayer::Floor] = (int)World::TERRAIN_IDS().GRASS;
 
                 if (tree > 0.5) {
-                    tiles[localX][localZ].layers[TileLayer::Furniture] = World::TERRAIN_IDS().TREE;
+                    tiles[localX][localZ].layers[TileLayer::Furniture] = (int)World::TERRAIN_IDS().TREE;
                     //DebugPlacePointOnPosition(glm::dvec3(position.x + localX, 4, position.y + localZ), { 0, 1, 0.5, 1 });
                 }
             }
             else {
-                tiles[localX][localZ].layers[TileLayer::Floor] = World::TERRAIN_IDS().ROCK;
+                tiles[localX][localZ].layers[TileLayer::Floor] = (int)World::TERRAIN_IDS().ROCK;
                 //DebugPlacePointOnPosition(glm::dvec3(position.x + localX, 1.5, position.y + localZ), { 1, 0.7, 0, 1 });
             }
 
@@ -291,36 +306,6 @@ const std::vector<TerrainChunk::NavmeshNode>& TerrainChunk::GetNavmesh()
     //}
 
     return navmesh.value();
-}
-
-void P(std::vector<Mesh::MeshRet> vec, glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
-    auto d = GameobjectCreateParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform });
-    
-    constexpr double SCL_FACTOR = 0.1;
-    int i = 0;
-    for (auto& ret : vec) {
-        d.meshId = ret.mesh->meshId;
-        objects.push_back(GameObject::New(d));
-
-        objects.back()->RawGet<TransformComponent>()->SetPos(glm::dvec3(ret.posOffset) * SCL_FACTOR + glm::dvec3((double)pos.x, SCL_FACTOR * ret.mesh->originalSize.y / 2.0, (double)pos.y));
-        objects.back()->RawGet<TransformComponent>()->SetRot(glm::quat(ret.rotOffset));
-        objects.back()->RawGet<TransformComponent>()->SetScl(SCL_FACTOR * ret.mesh->originalSize);
-
-        RenderComponent* render = objects.back()->MaybeRawGet<RenderComponent>();
-        if (render) {
-            render->SetTextureZ(-1);
-            if (i == 0) {
-                render->SetColor({ 0.5, 0.5, 0, 1 });
-            }
-            else {
-                render->SetColor({ 0, 1, 0, 0.5 });
-            }
-            
-        }
-        i++;
-    }
-    
-   
 }
 
 World::TerrainIds::TerrainIds()
@@ -346,10 +331,49 @@ World::TerrainIds::TerrainIds()
     });
 
     TREE = RegisterFurnitureData({
-        .displayName = "Anomalous Tree",
+        .displayName = "Anomalous tree",
         .gameobjectMaker = [](glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
             static auto vec = Mesh::MultiFromFile("../models/tree.fbx");
-            P(vec, pos, objects);
+            auto d = GameobjectCreateParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform });
+
+            constexpr double SCL_FACTOR = 0.1;
+            int i = 0;
+            for (auto& ret : vec) {
+                d.meshId = ret.mesh->meshId;
+                objects.push_back(GameObject::New(d));
+
+                objects.back()->RawGet<TransformComponent>()->SetPos(glm::dvec3(ret.posOffset) * SCL_FACTOR + glm::dvec3((double)pos.x, SCL_FACTOR * ret.mesh->originalSize.y / 2.0, (double)pos.y));
+                objects.back()->RawGet<TransformComponent>()->SetRot(glm::quat(ret.rotOffset));
+                objects.back()->RawGet<TransformComponent>()->SetScl(SCL_FACTOR * ret.mesh->originalSize);
+
+                RenderComponent* render = objects.back()->MaybeRawGet<RenderComponent>();
+                if (render) {
+                    render->SetTextureZ(-1);
+                    if (i == 0) {
+                        render->SetColor({ 0.5, 0.5, 0, 1 });
+                    }
+                    else {
+                        render->SetColor({ 0, 1, 0, 0.5 });
+                    }
+
+
+                }
+                i++;
+            }
+        },
+        .moveCostModifier = -1
+    });
+
+    WOOD_WALL = RegisterFurnitureData({
+        .displayName = "Wooden wall",
+        .gameobjectMaker = [](glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
+            auto d = GameobjectCreateParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform });
+            d.meshId = CubeMesh()->meshId;
+            objects.push_back(GameObject::New(d));
+
+            objects.back()->RawGet<TransformComponent>()->SetPos({ pos.x, 0.5, pos.y });
+            objects.back()->RawGet<RenderComponent>()->SetTextureZ(-1);
+            objects.back()->RawGet<RenderComponent>()->SetColor({ 0.5, 0.3, 0.1, 1.0 });
         },
         .moveCostModifier = -1
     });

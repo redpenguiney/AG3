@@ -23,7 +23,6 @@ bool ChangeTileTask::Progress(Humanoid& executor, float dt)
 	glm::ivec2 hPos = executor.Pos();
 	if (std::abs(hPos.x - pos.x) + std::abs(hPos.y - pos.y) > 1) { // then no; have them pathfind over
 		executor.MoveTo(pos);
-		//DebugLogInfo("move ", this);
 		progressBar = nullptr;
 		return false;
 	}
@@ -39,6 +38,7 @@ bool ChangeTileTask::Progress(Humanoid& executor, float dt)
 
 		if (progress >= info.baseTimeToComplete) {
 			
+			World::Loaded()->SetTile(pos.x, pos.y, info.layer, info.newType);
 
 			return true; // we finished
 		}

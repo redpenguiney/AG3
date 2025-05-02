@@ -253,7 +253,7 @@ std::vector<ConstructionTab>& GetConstructionTabs() {
                     .placementMode = 0,
                     .apply = MakeConstructibleSetTileApplicator(SetTileApplicatorParams {.info = ChangeTileTaskInfo {
                             .layer = TileLayer::Furniture,
-                            .newType = World::TERRAIN_IDS().TREE,
+                            .newType = (int)World::TERRAIN_IDS().WOOD_WALL,
                             .baseTimeToComplete = 1.0
                     }}),
                 }

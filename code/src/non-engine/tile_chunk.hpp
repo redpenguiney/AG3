@@ -19,6 +19,8 @@ public:
 	~RenderChunk();
 
 	bool dead = false;
+	bool dirty = false; // true if renderchunk has been modified and its mesh must be redone
+
 private:
 	const glm::ivec2 pos;
 
