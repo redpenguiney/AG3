@@ -436,8 +436,8 @@ void TestBillboardUi(glm::dvec3 pos, std::string text)
 {
    static  auto [arialLayer, arialFont] = ArialFont();
 
-    auto go = GameObject::New(GameobjectCreateParams({ ComponentBitIndex::Transform }));
-    go->RawGet<TransformComponent>()->SetPos(pos);
+    //auto go = GameObject::New(GameobjectCreateParams({ ComponentBitIndex::Transform }));
+    //go->RawGet<TransformComponent>()->SetPos(pos);
 
     auto billboardMat = Material::Copy(arialFont);
     billboardMat->shader = GraphicsEngine::Get().defaultBillboardGuiMaterial->shader;
@@ -446,7 +446,7 @@ void TestBillboardUi(glm::dvec3 pos, std::string text)
         true,
         std::nullopt,
         std::make_pair(arialLayer, billboardMat),
-        Gui::BillboardGuiInfo {.scaleWithDistance = true, .rotation = std::nullopt, .followObject = go }     
+        Gui::BillboardGuiInfo {.scaleWithDistance = true, .rotation = std::nullopt, .worldPosition = pos }     
     );
     ui->rgba = { 1, 0.5, 0, 0.5 };
     ui->scaleSize = { 0, 0 };

@@ -37,6 +37,11 @@ void Creature::MoveTo(glm::ivec2 worldPos)
 	//NewObjectLifetime(g, 0.1);
 }
 
+void Creature::StopMoving() {
+	currentGoal = Pos();
+	currentPath = std::nullopt;
+}
+
 
 
 Creature::Creature(const std::shared_ptr<Mesh>& mesh, const Body& b) :

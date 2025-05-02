@@ -416,7 +416,7 @@ glm::vec2 Gui::GetPixelSize() {
         //parentResolution.y = parentResolution.y;
     }
     else {
-        std::cout << "Invalid guiScaleMode. Aborting.\n";
+        DebugLogError("Invalid guiScaleMode. Aborting.\n");
         abort();
     }    
 
@@ -425,6 +425,10 @@ glm::vec2 Gui::GetPixelSize() {
     }
 
     glm::vec2 size = (scaleSize * parentResolution) + offsetSize;
+
+    if (billboardInfo && billboardInfo->scaleWithDistance) {
+        
+    }
 
     return size;
 }
@@ -435,8 +439,8 @@ glm::vec2 Gui::GetPixelPos()
     glm::vec2 size = GetPixelSize();
 
     glm::vec2 modifiedScalePos = scalePos;
-    if (billboardInfo.has_value() && !billboardInfo->followObject.expired()) { // TODO: make sure expired checks for nullptr? Also should we just assert that object isn't expired?
-        glm::vec3 projected = GraphicsEngine::Get().GetCurrentCamera().ProjectToScreen(billboardInfo->followObject.lock()->Get<TransformComponent>()->Position(), GraphicsEngine::Get().window.Aspect());
+    if (billboardInfo.has_value()) { // TODO: make sure expired checks for nullptr? Also should we just assert that object isn't expired?
+        glm::vec3 projected = GraphicsEngine::Get().GetCurrentCamera().ProjectToScreen(billboardInfo->GetWorldPosition(), GraphicsEngine::Get().window.Aspect());
         modifiedScalePos += glm::vec2(projected);
         if (projected.z < 0 || projected.z > 1) { modifiedScalePos.x += 10000; }
         //else DebugLogInfo("Proj ", projected);
@@ -552,4 +556,12 @@ glm::vec2 Gui::GetParentContainerScale()
     }
 
     return parentResolution;
+}
+
+glm::dvec3 Gui::BillboardGuiInfo::GetWorldPosition()
+{
+    auto p = worldPosition;
+    if (followObject && !followObject->expired())
+        worldPosition += followObject->lock()->RawGet<TransformComponent>()->Position();
+    return p;
 }

@@ -78,15 +78,22 @@ public:
 
     struct BillboardGuiInfo {
         // Makes the gui get smaller when it's far away if true.
-        bool scaleWithDistance;
+        bool scaleWithDistance = true;
 
         // if nullopt, gui will always face camera and obey rotation.
-        std::optional<glm::quat> rotation;
+        std::optional<glm::quat> rotation = std::nullopt;
 
-        // Billboard position will be projected onto followObject's position every frame if this is true. (so the gui will always appear on top of followObject).
-        // If the gui's position isn't the origin, it is treated as an offset.
-        std::weak_ptr<GameObject> followObject;
+        // where the billboard gui appears in the world. The scalePos/offsetPos of the gui are added to worldPosition after it has been converted to screen space.
+        glm::dvec3 worldPosition = { 0, 0, 0 };
 
+        // Billboard position will be projected onto followObject's position every frame if this isn't nullopt. (so the gui will always appear on top of followObject).
+        // WorldPosition isn't the origin, it is treated as an offset.
+        // Do NOT make nullptr.
+        // If the object the weak_ptr refers to expires, that's fine, the gui will go back to using worldPosition on its own.
+        std::optional<std::weak_ptr<GameObject>> followObject = std::nullopt;
+
+        // helper function, handles worldPosition + followObject
+        glm::dvec3 GetWorldPosition();
         // TODO: ACTUALLY KINDA COMPLICATED WHEN YOU HAVE MULTIPLE GUIS INVOLVED
         // if true, other gameobjects in front of this gui will cover it up
         // bool occludable;
@@ -173,6 +180,7 @@ public:
     unsigned int materialLayer; 
 
     // Call after modifying any position/rotation/scale related variables (including changes to child behaviour and grid size) to actually apply those changes to the gui's transform (and that of its children).
+    // NOTE: automatically called every frame for billboard guis.
     void UpdateGuiTransform();
 
     // Call after changing font, text, or text-formatting-related stuff

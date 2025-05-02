@@ -21,6 +21,8 @@ public:
 	// Make the creature start trying to move towards this destination. Will pathfind as neccesary.
 	void MoveTo(glm::ivec2 worldPos);
 
+	void StopMoving();
+
 protected:
 
 	Creature(const std::shared_ptr<Mesh>& mesh, const Body& b);

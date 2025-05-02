@@ -116,7 +116,11 @@ void TransformComponent::SetRot(glm::quat rot) {
 }
 
 void TransformComponent::SetScl(glm::vec3 scl) {
-    Assert(scl.x != 0 && scl.y != 0 && scl.z);
+    //Assert(scl.x != 0 && scl.y != 0 && scl.z);
+    if (scl.x <= 0) scl.x = 0.0001;
+    if (scl.y <= 0) scl.y = 0.0001;
+    if (scl.z <= 0) scl.z = 0.0001;
+
     if (children.size() > 0) {
         auto deltaScale = scl / scale;
          

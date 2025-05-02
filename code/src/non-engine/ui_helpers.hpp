@@ -20,4 +20,5 @@ private:
 	glm::dvec3 pos;
 	float progress; // in range [0, 1]
 	std::shared_ptr<Gui> root;
+	std::shared_ptr<Gui> bar;
 };

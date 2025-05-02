@@ -2,6 +2,8 @@
 #include "tasks.hpp"
 #include <non-engine/world.hpp>
 
+class WorldProgressBar;
+
 struct ChangeTileTaskInfo {
 	TileLayer layer; // which layer of the tile is being changed
 	int newType; // id of what the tile will be changed into
@@ -22,5 +24,6 @@ public:
 	virtual int EvaluateTaskUtility(const Humanoid& potentialExecutor) override;
 
 private:
+	std::shared_ptr<WorldProgressBar> progressBar;
 	float progress; // 0 - info.baseTimeToComplete; not neccesarily in seconds since rate of completion varies
 };
