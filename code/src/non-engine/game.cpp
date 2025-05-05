@@ -114,7 +114,7 @@ void GameInit()
         auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
         arialFont->depthMaskEnabled = false; why doesn't this one work??? */ 
 
-        auto debugText = new Gui(true, std::nullopt, std::optional(/*std::make_pair(arialLayer, arialFont)*/ ArialFont(12))); // idc if leaked
+        auto debugText = new Gui(true, std::nullopt, std::optional(/*std::make_pair(arialLayer, arialFont)*/ ArialFont(12)), std::nullopt); // idc if leaked
 
         debugText->rgba = { 0, 0, 0, 0};
         debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER

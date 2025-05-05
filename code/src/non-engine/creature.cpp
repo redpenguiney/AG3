@@ -56,9 +56,13 @@ Creature::Creature(const std::shared_ptr<Mesh>& mesh, const Body& b) :
 }
 
 void Creature::Think(float dt) {
+	// First, unstuck if needed
+	// TODO
+
 	body.Update(dt);
 
-	if (glm::dvec2(currentGoal) != ExactPos()) {
+	// Movement
+	if (currentGoal != ExactPos()) {
 		// validate current path (TODO: what if a better path appears?)
 		if (!currentPath.has_value() || currentPath->wayPoints.empty() || currentPath->wayPoints.back() != Pos()) {
 			currentPath = std::make_optional(World::Loaded()->ComputePath(Pos(), currentGoal, ComputePathParams()));
@@ -79,14 +83,14 @@ void Creature::Think(float dt) {
 
 		//DebugLogInfo("Next ", nextPos);
 		//Assert(path.wayPoints[1] != Pos());
-		glm::dvec3 moveDir = glm::dvec3(nextPos.x, gameObject->RawGet<TransformComponent>()->Position().y, nextPos.y) - gameObject->RawGet<TransformComponent>()->Position();
-		Assert(moveDir.x != 0 || moveDir.z != 0);
+		glm::dvec2 moveDir = glm::dvec2(nextPos) - ExactPos();
+		Assert(moveDir.x != 0 || moveDir.y != 0);
 		double speed = dt * GetMoveSpeed(); // TODO: CONSIDER TILE MOVEMENT PENALTIES
-		if (moveDir.x * moveDir.x + moveDir.z * moveDir.z < speed * speed) {
+		if (moveDir.x * moveDir.x + moveDir.y * moveDir.y < speed * speed) {
 			gameObject->RawGet<TransformComponent>()->SetPos(glm::dvec3(nextPos.x, gameObject->RawGet<TransformComponent>()->Position().y, nextPos.y)); // TODO: needs to try and move to next waypoint here with remaining time
 		}
 		else {
-			gameObject->RawGet<TransformComponent>()->SetPos(gameObject->RawGet<TransformComponent>()->Position() + glm::normalize(glm::dvec3(moveDir.x, 0, moveDir.z)) * speed);
+			gameObject->RawGet<TransformComponent>()->SetPos(gameObject->RawGet<TransformComponent>()->Position() + glm::normalize(glm::dvec3(moveDir.x, 0, moveDir.y)) * speed);
 		}
 	}
 	else

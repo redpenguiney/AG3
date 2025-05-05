@@ -59,7 +59,8 @@ void World::Unload() {
 }
 
 TerrainTile& World::GetTileMut(int x, int z) {
-    glm::ivec2 pos = glm::ivec2(x, z) - glm::floorMultiple(glm::ivec2(x, z) + 8, glm::ivec2(16)) + 8;
+    auto cc = ChunkCoords(glm::ivec2(x, z));
+    glm::ivec2 pos = glm::ivec2(x, z) - cc + 8;
 
     //assert(pos.x >= 0 && pos.y >= 0 && pos.x < 16 && pos.y < 16);
 
@@ -74,19 +75,18 @@ TerrainTile World::GetTile(int x, int z)
 }
 
 void World::SetTile(int x, int z, TileLayer layer, int tile) {
-    auto chunkPos = glm::floorMultiple(glm::ivec2(x, z) + 8, glm::ivec2(16)) + 8;
-    glm::ivec2 pos = glm::ivec2(x, z) - glm::floorMultiple(glm::ivec2(x, z) + 8, glm::ivec2(16)) + 8;
+    auto chunkPos = ChunkCoords(glm::ivec2(x, z));
     auto& chunk = GetChunkMut(x, z);
-    chunk.tiles[pos.x][pos.y].layers[layer] = tile;
+    GetTileMut(x, z).layers[layer] = tile;
     chunk.pathfindingDirty = true;
-    if (renderChunks.contains(chunkPos))
+
+    if (renderChunks.contains(chunkPos));
         renderChunks[chunkPos]->dirty = true;
 }
 
 TerrainChunk& World::GetChunkMut(int x, int z) {
     //DebugLogInfo("Chunk ")
-    glm::ivec2 pos(x, z);
-    pos = glm::floorMultiple(pos + 8, glm::ivec2(16)) + 8;
+    glm::ivec2 pos = ChunkCoords({ x, z });
     //DebugLogInfo("Pos ", pos);
 
     auto& chunk = terrain[pos];
@@ -108,6 +108,10 @@ World::~World() {
     // technically pointless
     preRenderConnection = nullptr;
     prePhysicsConnection = nullptr;
+}
+
+glm::ivec2 World::ChunkCoords(glm::ivec2 tilePos) {
+    return glm::ivec2(glm::floor(glm::dvec2(tilePos) / 16)) * 16 + 8;
 }
 
 std::unordered_set<glm::ivec2> World::GetLoadedChunks() {
@@ -283,7 +287,7 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
 
                 if (tree > 0.5) {
                     tiles[localX][localZ].layers[TileLayer::Furniture] = (int)World::TERRAIN_IDS().TREE;
-                    //DebugPlacePointOnPosition(glm::dvec3(position.x + localX, 4, position.y + localZ), { 0, 1, 0.5, 1 });
+                    DebugPlacePointOnPosition(glm::dvec3(position.x + localX, 4, position.y + localZ), { 0, 1, 0.5, 1 });
                 }
             }
             else {

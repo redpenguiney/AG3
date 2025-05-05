@@ -144,6 +144,9 @@ public:
 	const TerrainChunk& GetChunk(int x, int z); 
 
 	~World();
+	
+	// returns the coordinates of the center of the chunk which this tile lies in
+	static glm::ivec2 ChunkCoords(glm::ivec2 tilePos);
 
 private:
 
