@@ -4,6 +4,7 @@
 #include "base_event.hpp"
 #include "debug/log.hpp"
 #include <memory>
+#include "debug/assert.hpp"
 
 // Events of various kinds are triggered by various parts of the AG3 engine (input events, collision events, etc.).
 // You can connect functions to those events to make code run when an event is fired, as well as fire custom events.
@@ -34,6 +35,9 @@ public:
 				}
 			}
 		}
+
+		Connection(const Connection&) = delete;
+		Connection(Connection&&) = delete;
 	private:
 		unsigned int connectedFunctionId;
 		std::weak_ptr<Event> event;
@@ -49,16 +53,17 @@ private:
 		std::weak_ptr<Event> event;
 
 		EventInvocation(ConnectableFunctionArgs args, decltype(event) e): invocationArgs(args), event(e) {}
-		~EventInvocation() = default;
+		virtual ~EventInvocation() = default;
 
 		virtual void RunConnections() override {
 			if (event.expired()) return;
 
 			auto eventLock = event.lock();
-			std::shared_ptr<std::vector<std::pair<unsigned int, ConnectableFunction>>> connectedFunctionsLock = eventLock->connectedFunctions;
+			//std::shared_ptr<std::vector<std::pair<unsigned int, ConnectableFunction>>> connectedFunctionsLock = eventLock->connectedFunctions;
 
 			//for (auto& cfa : *eventInvocationsLock) {
-			for (auto& f : *connectedFunctionsLock) {
+			for (auto& f : *eventLock->connectedFunctions) {
+				Assert(f.second != nullptr);
 				std::apply(f.second, invocationArgs); // std::apply basically calls f using the tuple cfa as a variaidic for us.
 			}
 			//}
@@ -103,6 +108,7 @@ public:
 	// WARNING: if the function is a lambda which captures a shared_ptr, then that shared_ptr gets stored in this event.
 	// This connection is permanent and lasts until the event is destroyed. For a temporary connection use ConnectTemporary().
 	void Connect(ConnectableFunction function) {
+		Assert(function != nullptr);
 		connectedFunctions->push_back(std::make_pair(LAST_CONNECTION_ID++, function));
 	}
 

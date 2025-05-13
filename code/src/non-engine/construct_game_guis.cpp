@@ -577,10 +577,16 @@ void MakeMainMenu() {
             MakeGameMenu();
             GraphicsEngine::Get().window.UseCursor(GraphicsEngine::Get().window.systemPointerCursor); // TODO: this pattern is dumb and WILL  cause (minor) bugs
             //auto cre = Creature::New(CubeMesh(), Body::Humanoid());
-            //auto cre = Humanoid::New();
+            auto cre = Humanoid::New();
             //World::Loaded()->ComputePath({ -13, 10 }, { -13, -13 }, ComputePathParams());
-            //cre->gameObject->RawGet<TransformComponent>()->SetPos({ -13, 1.0, 10 });
+            cre->gameObject->RawGet<TransformComponent>()->SetPos({ -13, 1.0, 10 });
             //cre->MoveTo({ -13, -13 });
+
+            //for (int x = -4; x < 16; x++) {
+                //if (World::Loaded()->GetTile(x, 0).layers[TileLayer::Floor] == (int)World::TERRAIN_IDS().ROCK) {
+                    //DebugPlacePointOnPosition({ x, 3, 0 });
+                //}
+            //}
         }
         });
 

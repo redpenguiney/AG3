@@ -27,6 +27,7 @@ bool ChangeTileTask::Progress(Humanoid& executor, float dt)
 		return false;
 	}
 	else {
+		executor.StopMoving();
 		if (!progressBar) progressBar = WorldProgressBar::New({ pos.x, 2, pos.y });
 
 		float WORK_SPEED = 1.0f; // TODO

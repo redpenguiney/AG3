@@ -39,7 +39,8 @@ void Creature::MoveTo(glm::ivec2 worldPos)
 }
 
 void Creature::StopMoving() {
-	currentGoal = Pos();
+	//currentGoal = Pos();
+	currentGoal = std::nullopt;
 	currentPath = std::nullopt;
 	currentPathWaypointIndex = -1;
 }
@@ -52,7 +53,7 @@ Creature::Creature(const std::shared_ptr<Mesh>& mesh, const Body& b) :
 	currentPathWaypointIndex(-1)
 	//gameObject(GameObject::New(GetCreatureCreateParams(mesh->meshId)))
 {
-	currentGoal = Pos();
+	currentGoal = std::nullopt;
 }
 
 void Creature::Think(float dt) {
@@ -62,10 +63,10 @@ void Creature::Think(float dt) {
 	body.Update(dt);
 
 	// Movement
-	if (currentGoal != ExactPos()) {
+	if (currentGoal && currentGoal != ExactPos()) {
 		// validate current path (TODO: what if a better path appears?)
 		if (!currentPath.has_value() || currentPath->wayPoints.empty() || currentPath->wayPoints.back() != Pos()) {
-			currentPath = std::make_optional(World::Loaded()->ComputePath(Pos(), currentGoal, ComputePathParams()));
+			currentPath = std::make_optional(World::Loaded()->ComputePath(Pos(), *currentGoal, ComputePathParams()));
 			currentPathWaypointIndex = 0;
 			if (!currentPath.has_value()) DebugLogInfo("No path");
 		}
@@ -79,7 +80,8 @@ void Creature::Think(float dt) {
 			return;
 		}
 		auto nextPos = currentPath->wayPoints[currentPathWaypointIndex]; //glm::dvec3(currentPath->wayPoints[currentPathWaypointIndex].x, gameObject->RawGet<TransformComponent>()->Position().y, currentPath->wayPoints[currentPathWaypointIndex].y);
-		//DebugPlacePointOnPosition(glm::dvec3(currentPath->wayPoints[currentPathWaypointIndex].x, gameObject->RawGet<TransformComponent>()->Position().y, currentPath->wayPoints[currentPathWaypointIndex].y));
+		auto t = DebugPlacePointOnPosition(glm::dvec3(currentPath->wayPoints[currentPathWaypointIndex].x, gameObject->RawGet<TransformComponent>()->Position().y, currentPath->wayPoints[currentPathWaypointIndex].y));
+		NewObjectLifetime(t, 1.0);
 
 		//DebugLogInfo("Next ", nextPos);
 		//Assert(path.wayPoints[1] != Pos());

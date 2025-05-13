@@ -32,6 +32,6 @@ protected:
 
 private:
 	std::optional<Path> currentPath = std::nullopt;
-	glm::dvec2 currentGoal; // where creature is currently tryna pathfind to
+	std::optional<glm::dvec2> currentGoal; // where creature is currently tryna pathfind to
 	int currentPathWaypointIndex;
 };

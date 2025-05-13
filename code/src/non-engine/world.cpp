@@ -6,7 +6,6 @@
 #include <noise/noise.h>
 #include "entity.hpp"
 #include <physics/pengine.hpp>
-#include <queue>
 
 World::TerrainIds& World::TERRAIN_IDS()
 {
@@ -291,12 +290,12 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
 
                 if (tree > 0.5) {
                     tiles[localX][localZ].layers[TileLayer::Furniture] = (int)World::TERRAIN_IDS().TREE;
-                    DebugPlacePointOnPosition(glm::dvec3(position.x + localX, 4, position.y + localZ), { 0, 1, 0.5, 1 });
+                    //DebugPlacePointOnPosition(glm::dvec3(worldX, 4, worldZ), { 0, 1, 0.5, 1 });
                 }
             }
             else {
                 tiles[localX][localZ].layers[TileLayer::Floor] = (int)World::TERRAIN_IDS().ROCK;
-                //DebugPlacePointOnPosition(glm::dvec3(position.x + localX, 1.5, position.y + localZ), { 1, 0.7, 0, 1 });
+                //DebugPlacePointOnPosition(glm::dvec3(worldX, 1.5, worldZ), { 1, 0.7, 0, 1 });
             }
 
            
@@ -352,7 +351,7 @@ World::TerrainIds::TerrainIds()
 
                 objects.back()->RawGet<TransformComponent>()->SetPos(glm::dvec3(ret.posOffset) * SCL_FACTOR + glm::dvec3((double)pos.x, SCL_FACTOR * ret.mesh->originalSize.y / 2.0, (double)pos.y));
                 objects.back()->RawGet<TransformComponent>()->SetRot(glm::quat(ret.rotOffset));
-                objects.back()->RawGet<TransformComponent>()->SetScl(SCL_FACTOR * ret.mesh->originalSize);
+                objects.back()->RawGet<TransformComponent>()->SetScl(SCL_FACTOR * ret.mesh->originalSize); 
 
                 RenderComponent* render = objects.back()->MaybeRawGet<RenderComponent>();
                 if (render) {
