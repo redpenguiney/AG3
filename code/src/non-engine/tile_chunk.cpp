@@ -37,16 +37,19 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 	// TODO: not best way to fill up tiles, repeatedly has to fetch same chunk
 	for (int i = 0; i < width + 2; i += stride) {
 		for (int j = 0; j < width + 2; j += stride) {
-			tiles[i * (width + 2) + j] = world->GetTile(i + centerPos.x - radius - 1, j + centerPos.y - radius - 1);
+			int worldX = i + centerPos.x - radius - 1;
+			int worldZ = j + centerPos.y - radius - 1;
+			tiles[i * (width + 2) + j] = world->GetTile(worldX, worldZ);
 		}
 	}
 
 	//DebugLogInfo("Radius ", radius);
 
-	for (int i = 1; i < radius * 2 + 1; i += stride) {
-		for (int j = 1; j < radius * 2 + 1; j += stride) {
+	for (int i = 0; i < width; i += stride) {
+		for (int j = 0; j < width; j += stride) {
 
-			const auto& tile = tiles[i * (width + 2) + j];
+			//const auto& tile = world->GetTile(i - radius + centerPos.x, j - radius + centerPos.y);
+			const auto& tile = tiles[(i + 1) * (width + 2) + j + 1];
 
 			Assert(tile.layers[TileLayer::Floor] != -2);
 
@@ -58,7 +61,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 
 			if (floorData.gameobject.has_value()) {
 				objects.push_back(GameObject::New(floorData.gameobject.value()));
-				objects.back()->RawGet<TransformComponent>()->SetPos(glm::dvec3(i, floorData.yOffset, j));
+				objects.back()->RawGet<TransformComponent>()->SetPos(glm::dvec3(i - radius + centerPos.x, floorData.yOffset, j - radius + centerPos.y));
 				objects.back()->RawGet<TransformComponent>()->SetScl(Mesh::Get(floorData.gameobject->meshId)->originalSize);
 			}
 			else {
@@ -82,9 +85,9 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 						//DebugLogInfo("Writing position ", i + x, " ", j + z);
 
 						// positions
-						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x - 0.5f - 1.0f;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x;
 						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 1] = floorData.yOffset;
-						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = j + z - 0.5f - 1.0f;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = j + z;
 
 						// UVs
 						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = hUvs[x];
@@ -110,7 +113,7 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 				const auto& furnitureData = GetFurnitureData(tile.layers[TileLayer::Furniture]);
 				
 				if (furnitureData.gameobjectMaker.has_value()) {
-					(*furnitureData.gameobjectMaker)({ i + centerPos.x - radius - 1, j + centerPos.y - radius - 1 }, objects);
+					(*furnitureData.gameobjectMaker)({ i + centerPos.x - radius, j + centerPos.y - radius}, objects);
 				}
 			}
 
@@ -128,9 +131,9 @@ RenderChunk::RenderChunk(glm::ivec2 centerPos, int stride, int radius, const std
 {
 	
 	MakeMesh(centerPos, stride, radius);
-	DebugLogInfo("Mesh ", mesh->vertices.size());
+	//DebugLogInfo("Mesh ", mesh->vertices.size());
 
-	//TestSphere(pos.x, 0, pos.y, false);
+	//TestSphere(pos.x, 4, pos.y, false);
 	//mesh = CubeMesh();
 	//DebugLogInfo("Created at ",  mesh->vertices.size());
 

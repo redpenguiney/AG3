@@ -59,6 +59,8 @@ void World::Unload() {
 }
 
 TerrainTile& World::GetTileMut(int x, int z) {
+    //x -= 8;
+    //z -= 8;
     auto cc = ChunkCoords(glm::ivec2(x, z));
     glm::ivec2 pos = glm::ivec2(x, z) - cc + 8;
 
@@ -270,6 +272,8 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
     //perlinNoiseGenerator.SetSeed(1);
     //perlinNoiseGenerator.SetFrequency(16);
     //perlinNoiseGenerator.SetOctaveCount(3);
+
+    //TestSphere(position.x, 3, position.y, false);
 
     int localX = 0;
     for (int worldX = position.x - 8; worldX < position.x + 8; worldX++) {
