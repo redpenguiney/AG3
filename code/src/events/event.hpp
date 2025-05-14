@@ -25,6 +25,7 @@ public:
 		}
 
 		~Connection() {
+			DebugLogInfo("Destroying connection for ", event.lock().get());
 			if (!event.expired()) {
 				auto lockedEvent = event.lock();
 				for (auto it = lockedEvent->connectedFunctions->begin(); it != lockedEvent->connectedFunctions->end(); it++) {
@@ -52,17 +53,23 @@ private:
 		ConnectableFunctionArgs invocationArgs;
 		std::weak_ptr<Event> event;
 
-		EventInvocation(ConnectableFunctionArgs args, decltype(event) e): invocationArgs(args), event(e) {}
+		EventInvocation(ConnectableFunctionArgs args, decltype(event) e) : invocationArgs(args), event(e) { DebugLogInfo("Created invocation of ", event.lock().get()); }
 		virtual ~EventInvocation() = default;
 
 		virtual void RunConnections() override {
 			if (event.expired()) return;
+			DebugLogInfo("Running Event ", event.lock().get());
 
 			auto eventLock = event.lock();
+
+			DebugLogInfo("Aquired lock");
 			//std::shared_ptr<std::vector<std::pair<unsigned int, ConnectableFunction>>> connectedFunctionsLock = eventLock->connectedFunctions;
 
 			//for (auto& cfa : *eventInvocationsLock) {
-			for (auto& f : *eventLock->connectedFunctions) {
+			auto& connectedFunctions = *(eventLock->connectedFunctions);
+			DebugLogInfo("??");
+			for (auto& f : connectedFunctions) {
+				DebugLogInfo(f.first, " ok? ", f.second == nullptr);
 				Assert(f.second != nullptr);
 				std::apply(f.second, invocationArgs); // std::apply basically calls f using the tuple cfa as a variaidic for us.
 			}
