@@ -148,6 +148,9 @@ public:
 	// returns the coordinates of the center of the chunk which this tile lies in
 	static glm::ivec2 ChunkCoords(glm::ivec2 tilePos);
 
+	// returns -1 if impassable, normal ground is 100
+	int GetMoveCost(int x, int z);
+
 private:
 
 	// private bc modifications aren't auto carried over to rendering/etc.

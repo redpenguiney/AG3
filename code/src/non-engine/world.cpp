@@ -115,6 +115,14 @@ glm::ivec2 World::ChunkCoords(glm::ivec2 tilePos) {
     return glm::ivec2(glm::floor(glm::dvec2(tilePos) / 16)) * 16 + 8;
 }
 
+int World::GetMoveCost(int x, int z) {
+    int floor = GetTileData(GetTile(x, z).layers[TileLayer::Floor]).moveCost;
+    int fId = GetTile(x, z).layers[TileLayer::Furniture];
+    int furniture = fId == -1 ? 0 : GetFurnitureData(fId).moveCostModifier;
+    if (furniture == -1) return -1;
+    else return floor + furniture;
+}
+
 std::unordered_set<glm::ivec2> World::GetLoadedChunks() {
     std::unordered_set<glm::ivec2> activeChunkLocations; // in world space, in tiles
 
