@@ -28,7 +28,15 @@ public:
 	// Do NOT call within an event handler
 	static void FlushEventQueue(int depth = 0);
 
+	// neccesary because functional objects connected to events could store things that need singletons to be destructed, yet singletons store events.
+	// Disconnects all events.
+	static void Cleanup();
+
 private:
 	friend class std::shared_ptr<BaseEvent>;
+
+	// helper for Cleanup()
+	virtual void CleanupConnections() = 0;
+	static inline std::vector<BaseEvent*> events = {};
 };
 

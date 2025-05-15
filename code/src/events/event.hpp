@@ -138,7 +138,12 @@ private:
 		connectedFunctions = std::make_shared< std::vector<std::pair<unsigned int, ConnectableFunction>>>();
 	}
 
-	private:
+	virtual void CleanupConnections() override {
+		//DebugLogInfo("Oh, ", this, " ", connectedFunctions.get());
+		connectedFunctions = nullptr;
+		//connectedFunctions->clear();
+	}
+
 	//template <typename T>
 	friend class std::shared_ptr<Event>;
 

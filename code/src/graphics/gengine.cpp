@@ -108,7 +108,7 @@ defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, Shad
     defaultMaterial->shader->Uniform("envLightAmbient", 0.4f);
     defaultMaterial->shader->Uniform("envLightSpecular", 0.0f);
 
-    DebugLogInfo("Default material name is ", defaultMaterial->id);
+    //DebugLogInfo("Default material name is ", defaultMaterial->id);
 
     // must supply our own shader here because material constructor can't fetch default from graphics engine because we're still making the graphics engine!
     //auto pair = Material::New({ .textureParams = {TextureCreateParams({TextureSource("../textures/error_texture.bmp")}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D, .shader = defaultShaderProgram  });

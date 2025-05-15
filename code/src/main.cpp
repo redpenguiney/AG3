@@ -89,6 +89,8 @@ int main(int numArgs, const char *argPtrs[]) {
     GameObject::GAMEOBJECTS();
     //auto & CR = ComponentRegistry::Get();
 
+    atexit(BaseEvent::Cleanup);
+
     atexit(Module::CloseAll); // this is placed here, after the component registry is initialized, because that guarantees that modules' references to gameobjects are destroyed before the gameobjects are (because static destructors/at exits are called in reverse order)
 
     // conglomerate init
