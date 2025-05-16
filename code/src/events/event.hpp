@@ -27,7 +27,7 @@ public:
 		~Connection() {
 
 			if (auto lockedEvent = event.lock()) {
-				
+				if (!lockedEvent->connectedFunctions) return;
 				for (auto it = lockedEvent->connectedFunctions->begin(); it != lockedEvent->connectedFunctions->end(); it++) {
 					if (it->first == connectedFunctionId) {
 						lockedEvent->connectedFunctions->erase(it);
