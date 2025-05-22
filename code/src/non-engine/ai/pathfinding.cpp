@@ -7,6 +7,8 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
     // A* pathfinding based on https://en.wikipedia.org/wiki/A*_search_algorithm 
     // However, since the map is effectively infinite we simulataneously pathfind from the origin to the goal and vice versa, using the distance between the two heads as the heuristic.
 
+    params.maxIterations = 100;
+
     struct PathfindingContext {
         std::unordered_map<glm::ivec2, float> nodeCosts; // key is node pos, value is cost of best currently known path to node (at index) from origin
         //std::unordered_map < glm::ivec2, float > nodeToGoalCosts; // key is node pos, value is cost of best known path from origin to goal that goes through that node
@@ -64,7 +66,7 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
                 auto costToEnd = cost + heuristic(neighbor, context.goal);
                 if (context.openSet.size() == 0) {
                     context.openSet.push_back(neighbor);
-                    //DebugPlacePointOnPosition(glm::dvec3(node.x + 0.5, 3.0, node.y + 0.5), {1, 0, 1, 1});
+                    //DebugPlacePointOnPosition(glm::dvec3(node.x, 3.0, node.y), {1, 0, 1, 1});
                     //TestBillboardUi(glm::dvec3(node.x - 0.5, 3.0, node.y - 0.5), std::to_string((int)(cost)));
                 }
                 else {
@@ -76,30 +78,31 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
                     }
                     context.openSet.push_back(neighbor);
                 done:;
+                DebugPlacePointOnPosition(glm::dvec3(neighbor.x, 3.0, neighbor.y), { 1, 0, 1, 1 });
                 }
             }
 
         }
         };
 
-    auto StepPath = [&AddNodeNeighborsToQueue](PathfindingContext& context, PathfindingContext& otherContext) -> PathResult {
+    auto StepPath = [&AddNodeNeighborsToQueue, &heuristic](PathfindingContext& context, PathfindingContext& otherContext) -> PathResult {
         if (context.openSet.empty()) return Fail;
         auto node = context.openSet.back();
 
         context.openSet.pop_back();
 
-        otherContext.goal = node;
-        /*int c = std::numeric_limits<int>::max();
-        auto bestit = openSet.begin();
-        for (auto it = openSet.begin(); it != openSet.end(); it++) {
-        int betterc = nodeCosts[*it] + heuristic(*it);
-        if (betterc < c) {
-        bestit = it;
-        c = betterc;
+        //otherContext.goal = node;
+        int c = std::numeric_limits<int>::max();
+        auto bestit = context.openSet.begin();
+        for (auto it = context.openSet.begin(); it != context.openSet.end(); it++) {
+            int betterc = context.nodeCosts[*it] + heuristic(*it, context.goal);
+            if (betterc < c) {
+                bestit = it;
+                c = betterc;
+            }
         }
-        }
-        glm::ivec2 node = *bestit;
-        openSet.erase(bestit);*/
+        node = *bestit;
+        context.openSet.erase(bestit);
 
         //DebugLogInfo("Trying ", node, " set is ", openSet.size());
 
@@ -133,8 +136,8 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
         if (fResult == Fail || bResult == Fail) {
             break;
         }
-        else if (fResult == Succeed || bResult == Succeed) {
-            assert(forward.goal == backward.goal);
+        else if (fResult == Succeed) {
+            //assert(forward.goal == backward.goal);
 
             Path p;
 
@@ -153,22 +156,22 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
             std::reverse(p.wayPoints.begin(), p.wayPoints.end());
 
             // add the backward half
-            current = forward.goal;
-            while (true) {
-                if (backward.cameFrom.contains(current)) {
-                    current = backward.cameFrom[current];
-                    p.wayPoints.push_back(current);
-                }
-                else {
-                    break;
-                }
-            }
+            //current = forward.goal;
+            //while (true) {
+                //if (backward.cameFrom.contains(current)) {
+                    //current = backward.cameFrom[current];
+                    //p.wayPoints.push_back(current);
+                //}
+                //else {
+                    //break;
+                //}
+            //}
 
-            return p;
+            //return p;
         }
     }
 
-    //DebugLogInfo("Failed with ", i, " iterations");
+    DebugLogInfo("Failed with ", i, " iterations");
 
     // return empty path if we ran out of iterations or we confirmed that no valid path exists.
     return Path();

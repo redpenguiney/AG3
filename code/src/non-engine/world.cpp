@@ -142,7 +142,7 @@ std::unordered_set<glm::ivec2> World::GetLoadedChunks() {
 
 World::World() {
 
-    chunkLoaders.push_back(ChunkLoader(16, glm::ivec2(8, 8)));
+    chunkLoaders.push_back(ChunkLoader(32, glm::ivec2(8, 8)));
 
     //world.Split(world.rootNodeIndex);
 
