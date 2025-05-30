@@ -2,7 +2,7 @@
 #include "../tile_data.hpp"
 #include "debug/debug.hpp"
 
-Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params)
+/*Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params)
 {
     // A* pathfinding based on https://en.wikipedia.org/wiki/A*_search_algorithm 
     // However, since the map is effectively infinite we simulataneously pathfind from the origin to the goal and vice versa, using the distance between the two heads as the heuristic.
@@ -48,7 +48,7 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
             auto tileMoveCost = GetTileData(GetTile(neighbor.x, neighbor.y).layers[TileLayer::Floor]).moveCost;
             auto furniture = GetTile(neighbor.x, neighbor.y).layers[TileLayer::Furniture];
             auto furnitureMoveCost = furniture < 0 ? 0 : GetFurnitureData(furniture).moveCostModifier;
-            if (tileMoveCost < 0 || furnitureMoveCost < 0) { /*DebugPlacePointOnPosition(glm::dvec3(neighbor.x + 0.0, 3.0, neighbor.y + 0.0), {1, 0, 0, 1});*/ continue; }
+            if (tileMoveCost < 0 || furnitureMoveCost < 0) {  continue; }
             //DebugPlacePointOnPosition(glm::dvec3(neighbor.x + 0.5, 3.0, neighbor.y + 0.5), { 1, 1, 1, 0.5 });
             auto cost = context.nodeCosts[node] + tileMoveCost + furnitureMoveCost;
             if (!context.nodeCosts.contains(neighbor) || cost < context.nodeCosts[neighbor]) { // then we found a better way to get to this node
@@ -89,7 +89,7 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
         if (context.openSet.empty()) return Fail;
         auto node = context.openSet.back();
 
-        context.openSet.pop_back();
+        //context.openSet.pop_back();
 
         //otherContext.goal = node;
         int c = std::numeric_limits<int>::max();
@@ -146,7 +146,7 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
             while (true) {
                 p.wayPoints.push_back(current);
                 if (forward.cameFrom.contains(current)) {
-                    assert(current != forward.cameFrom[current]);
+                    Assert(current != forward.cameFrom[current]);
                     current = forward.cameFrom[current];
                 }
                 else {
@@ -178,4 +178,43 @@ Path World::ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams pa
     //Path combined = forward;
     //combined.wayPoints.insert(forward.wayPoints.end(), backward.wayPoints.rbegin(), backward.wayPoints.rend());
     //return combined;
+}*/
+
+class Pathfinder {
+public:
+    enum PathfinderStatus {
+        Inconclusive,
+        PathFound,
+        NoPath
+    };
+
+    Pathfinder(glm::ivec2 start) {
+        openSet.push_back(start);
+    }
+
+    PathfinderStatus StepToward(Pathfinder& other) {
+
+        // find best node in openset
+
+
+    }
+
+private:
+    // key is node pos, value is cost of best currently known path to node (at index) from this pathfinder's start
+    std::unordered_map<glm::ivec2, float> nodeCosts; 
+
+    std::unordered_map<glm::ivec2, glm::ivec2> cameFrom;
+
+    // Potential places to check next.
+    std::vector<glm::ivec2> openSet;
+
+    // 
+    glm::ivec2 farthestPoint; 
+};
+
+Path World::ComputePath(glm::ivec2 start, glm::ivec2 destination, ComputePathParams params) {
+    // A* pathfinding based on https://en.wikipedia.org/wiki/A*_search_algorithm 
+    // Pathfinds from both ends simultaneously so that it knows when to terminate (since it obviously shouldn't check every tile on an infinite map)
+    
+
 }
