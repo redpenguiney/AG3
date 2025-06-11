@@ -28,7 +28,7 @@ class ShaderProgram: public BaseShaderProgram {
     // Called by GraphicsEngine.
     static void SetCameraUniforms(glm::mat4x4 cameraProjMatrix, glm::mat4x4 cameraProjMatrixNoFloatingOrigin, glm::mat4x4 orthrographicMatrix);
 
-    // Returns id of generated program.
+    // Returns generated program.
     static std::shared_ptr<ShaderProgram> New(const char* vertexPath, const char* fragmentPath, const bool floatingOrigin = true, const bool useLightClusters = true);
 
     // Creates a compute shader for performing arbitrary GPU calculations.

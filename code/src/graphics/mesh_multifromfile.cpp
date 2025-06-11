@@ -373,7 +373,7 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
 
                     std::vector<AnimationKeyframe> keyframes;
                     // our keyframe class is all the bone positions at one timestamp, while assimp's is all the timestamps for one bone.
-                    keyframes.resize(anim->mDuration + 1); // mDuration is num ticks, there's one keyframe per tick plus one for the end keyframe.
+                    keyframes.resize((size_t)(anim->mDuration) + 1); // mDuration is num ticks, there's one keyframe per tick plus one for the end keyframe.
                     {
                         
                         // DebugLogInfo("Len = ", animLengthInSeconds, " tps = ", anim->mTicksPerSecond, " duration in ticks =  ", anim->mDuration);

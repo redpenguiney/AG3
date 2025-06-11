@@ -18,7 +18,13 @@ class Framebuffer {
 
     // Provide a color for each attachment in textureAttachments.
     // For each attachment, the color channels should be in the correct range (integers in [0, 255] for 8 bit rgb, for example) but this isn't enforced.
+        // Pass vec4(-1, -1, -1, -1) to not clear that attachment.
+    // WARNING: calls Bind().
     void Clear(std::vector<glm::vec4> clearColors);
+
+    // Clears the depth renderbuffer (erroring if it doesn't exist)
+    // WARNING: calls Bind().
+    void ClearDepthRenderbuffer();
 
     // Unbinds whatever framebuffer is currently bound, so that all drawing operations are drawn on the window.
     static void Unbind();

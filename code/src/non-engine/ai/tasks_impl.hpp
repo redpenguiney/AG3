@@ -26,4 +26,10 @@ public:
 private:
 	std::shared_ptr<WorldProgressBar> progressBar;
 	float progress; // 0 - info.baseTimeToComplete; not neccesarily in seconds since rate of completion varies
+	
+	// TODO: with current caching scheme they'll still potentially try to repath to unreachable tasks every frame
+	std::unique_ptr<Path> pathCache = nullptr;
+	glm::ivec2 cachedPathOrigin;
+	int cachedPathIndex = 0;
+	int cachedPathCostModifier = 0;
 };

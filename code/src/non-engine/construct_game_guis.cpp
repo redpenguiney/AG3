@@ -291,7 +291,7 @@ void MakeGameMenu() {
 
     constructionFrame->scaleSize = { 0, 0 };
     constructionFrame->offsetSize = { constructionTabs.size() * TAB_ICON_WIDTH + (constructionTabs.size() + 1) * TAB_ICON_SPACING, TAB_ICON_WIDTH + 2 * TAB_ICON_SPACING };
-    constructionFrame->zLevel = -0.01;
+    constructionFrame->zLevel = -0.01f;
 
     constructionFrame->anchorPoint = { -0.5, -0.5 };
     constructionFrame->rgba = { 1.0, 1.0, 1.0, 0.4 };
@@ -315,7 +315,7 @@ void MakeGameMenu() {
 
         tab->scaleSize = { 0, 0 };
         tab->offsetSize = { TAB_ICON_WIDTH, TAB_ICON_WIDTH };
-        tab->zLevel = -0.02;
+        tab->zLevel = -0.02f;
 
         tab->sortValue = tabIndex++;
         tab->SetParent(constructionFrame.get());
@@ -365,7 +365,7 @@ void MakeGameMenu() {
                 buildingsList->scaleSize = { 0, 0 };
                 buildingsList->offsetSize = { 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING, 3 * TAB_ICON_WIDTH + 4 * TAB_ICON_SPACING };
 
-                buildingsList->zLevel = -0.03;
+                buildingsList->zLevel = -0.03f;
 
                 buildingsList->anchorPoint = { -0.5, -0.5 };
                 buildingsList->rgba = { 1.0, 1.0, 1.0, 0.4 };
@@ -402,7 +402,7 @@ void MakeGameMenu() {
                     construction->offsetSize = { TAB_ICON_WIDTH, TAB_ICON_WIDTH };
                     construction->anchorPoint = { -0.5, 0.5 };
 
-                    construction->zLevel = -0.04;
+                    construction->zLevel = -0.04f;
 
                     construction->GetTextInfo().leftMargin = -1000;
                     construction->GetTextInfo().rightMargin = 1000;
@@ -579,6 +579,7 @@ void MakeMainMenu() {
             //auto cre = Creature::New(CubeMesh(), Body::Humanoid());
             auto cre = Humanoid::New();
             //World::Loaded()->ComputePath({ -13, 10 }, { -13, -13 }, ComputePathParams());
+            //World::Loaded()->ComputePath({ -7, -13 }, { -7, 5 }, ComputePathParams());
             cre->gameObject->RawGet<TransformComponent>()->SetPos({ -13, 1.0, 10 });
             //cre->MoveTo({ -13, -13 });
 

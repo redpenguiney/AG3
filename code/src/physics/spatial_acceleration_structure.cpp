@@ -224,7 +224,7 @@ void SpatialAccelerationStructure::DebugVisualize() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //glViewport(0, 0, GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height);
     glDisable(GL_SCISSOR_TEST);
-    glDrawElementsInstanced(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr, numInstances);
+    glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_INT, nullptr, numInstances);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glDeleteBuffers(1, &vbo);  
@@ -549,9 +549,11 @@ void SpatialAccelerationStructure::UpdateCollider(ColliderComponent& collider, c
     
 }
 
+#pragma warning( disable : 28182)
 void SpatialAccelerationStructure::UpdateColliderLayer(ColliderComponent& collider, CollisionLayer oldLayer)
 {
     auto p = collider.node;
+    Assert(p);
     while (p && p->layers[collider.layer] == false) {
         p->layers.set(collider.layer, true);
         p = p->parent;

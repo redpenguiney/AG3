@@ -188,33 +188,131 @@ public:
         NoPath
     };
 
-    Pathfinder(glm::ivec2 start) {
-        openSet.push_back(start);
+    Pathfinder(glm::ivec2 start, glm::ivec2 end) {
+        openSet.insert(start);
+        nodeCosts[start] = 0;
+        goal = end;
     }
 
-    PathfinderStatus StepToward(Pathfinder& other) {
+    PathfinderStatus Step() {
 
-        // find best node in openset
+        Assert(!openSet.empty());
 
+        // find best node in openset; 
+        auto bestIt = openSet.begin();
+        {
+            float bestCost = INFINITY;
+            for (auto it = openSet.begin(); it != openSet.end(); it++) {
+                float cost = nodeCosts[*it] + Heuristic(*it);
+                if (cost < bestCost) {
+                    bestIt = it;
+                    bestCost = cost;
+                }
+            }
+        }
+        glm::ivec2 bestNode = *bestIt;
+        
+        openSet.erase(bestIt);
 
+        if (bestNode == goal) {
+
+            auto current = bestNode;
+            while (cameFrom.contains(current)) {
+                waypoints.push_back(current);
+                current = cameFrom[current];
+            }
+
+            return PathFound;
+        }
+
+        std::array<glm::ivec2, 4> neighborOffsets ({{ 1, 0}, {-1, 0}, {0, 1}, {0, -1}});
+        for (glm::ivec2 neighborOffset : neighborOffsets) {
+            auto neighbor = bestNode + neighborOffset;
+            int moveCost = World::Loaded()->GetMoveCost(neighbor.x, neighbor.y);
+            if (moveCost < 0) continue;
+            auto costToReach = nodeCosts[bestNode] + moveCost;
+            
+            if (!nodeCosts.contains(neighbor) || costToReach < nodeCosts[neighbor]) {
+                nodeCosts[neighbor] = costToReach;
+                cameFrom[neighbor] = bestNode;
+
+                if (!openSet.contains(neighbor)) {
+                    openSet.insert(neighbor);
+                }
+            }
+        }
+
+        if (openSet.empty()) {
+            DebugLogInfo("FAIL PATH");
+            return NoPath;
+        }
+
+        return Inconclusive;
+    }
+
+    // consumes waypoints; only call once
+    std::vector<glm::ivec2> GetWaypoints() {
+        return std::move(waypoints);
     }
 
 private:
+    // note: stored in backwards order, so the goal is first element.
+    // Contains the goal but not the start of the path.
+    std::vector<glm::ivec2> waypoints;
+
     // key is node pos, value is cost of best currently known path to node (at index) from this pathfinder's start
     std::unordered_map<glm::ivec2, float> nodeCosts; 
 
     std::unordered_map<glm::ivec2, glm::ivec2> cameFrom;
 
     // Potential places to check next.
-    std::vector<glm::ivec2> openSet;
+    std::unordered_set<glm::ivec2> openSet;
 
-    // 
-    glm::ivec2 farthestPoint; 
+    glm::ivec2 goal; 
+
+    float Heuristic(glm::ivec2 point) const {
+        return 100.0f * ((abs(goal.x - point.x) + abs(goal.y - point.y)));
+    }
 };
 
-Path World::ComputePath(glm::ivec2 start, glm::ivec2 destination, ComputePathParams params) {
+std::unique_ptr<Path> World::ComputePath(glm::ivec2 start, glm::ivec2 destination, ComputePathParams params) {
     // A* pathfinding based on https://en.wikipedia.org/wiki/A*_search_algorithm 
     // Pathfinds from both ends simultaneously so that it knows when to terminate (since it obviously shouldn't check every tile on an infinite map)
     
+    if (World::Loaded()->GetMoveCost(start.x, start.y) < 0) return nullptr;
+    if (World::Loaded()->GetMoveCost(destination.x, destination.y) < 0) return nullptr;
 
+    Pathfinder forward(start, destination);
+    Pathfinder backward(destination, start);
+
+    int i = 0;
+    while (i++ < params.maxIterations) {
+        //DebugLogInfo("Stepping ", i);
+        auto status1 = forward.Step();
+        if (status1 == Pathfinder::NoPath) {
+            return nullptr;
+        }
+        else if (status1 == Pathfinder::PathFound) {
+            DebugLogInfo("Found path!");
+            auto w = forward.GetWaypoints();
+            std::reverse(w.begin(), w.end());
+            Assert(!w.empty());
+            return std::make_unique<Path>(w, w.size());
+        }
+        //DebugLogInfo("Backstepping");
+        auto status2 = backward.Step();
+        if (status2 == Pathfinder::NoPath) {
+            return nullptr;
+        }
+        else if (status2 == Pathfinder::PathFound) {
+            //Assert(false);
+            DebugLogInfo("Found path (backward)!");
+            auto w = backward.GetWaypoints();
+            Assert(!w.empty());
+            return std::make_unique<Path>(w, w.size());
+        }
+    }
+
+    DebugLogError("Exhausted path iterations (", params.maxIterations, ")");
+    return nullptr;
 }

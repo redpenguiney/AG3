@@ -19,6 +19,8 @@
 
 #include "construct_game_guis.hpp"
 #include "conglomerates/input_stack.hpp"
+#include <conglomerates/skybox_factory.cpp>
+#include <conglomerates/basic_renderer.hpp>
 
 //#include "noise/noise.h"
 
@@ -47,7 +49,10 @@ void GameInit()
     //TestCubeArray({ 2, 2, 2 }, {4, 4, 4}, {2, 2, 2}, true);
     //PE.SetCollisionLayers(0, 0, false);
 
-    GE.skyboxMaterial->shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl");
+    BasicRenderer::Setup();
+
+    auto skyboxMaterial = Material::New(MaterialCreateParams{ .shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl"), .drawOrder = 500 }).second;
+    MakeSkybox(skyboxMaterial);
     //return;
 
     //World::Generate();
@@ -97,8 +102,8 @@ void GameInit()
         float panSpeed = GE.camera.position.y / 50.0f;
 
         if (GE.window.PRESSED_KEYS.count(InputObject::MMB)) {
-            dx = 0.25 * GE.window.MOUSE_DELTA.x;
-            dz = 0.25 * GE.window.MOUSE_DELTA.y;
+            dx = 0.25f * (float)GE.window.MOUSE_DELTA.x;
+            dz = 0.25f * (float)GE.window.MOUSE_DELTA.y;
         }
 
         

@@ -84,6 +84,7 @@ void Humanoid::Think(float dt)
 			DebugLogInfo("Commencing new task ", currentTask.get());
 		}
 	
+	DebugLogInfo("Doing task ", currentTask.get());
 	if (currentTask)
 		if (currentTask->Progress(*this, dt)) { // then we finished the task (or it's no longer valid)
 			currentTask = nullptr; // destroy the task since it's done or invalid

@@ -69,8 +69,7 @@ public:
     void SetInstancedVertexAttribute(const DrawHandle& handle, const CheckedUint attributeName, const AttributeType& value);
 
     // idk what to put here, you probably know what this does
-    // prePostProc is true if this is being drawn BEFORE post processing runs
-    void Draw(bool prePostProc);
+    //void Draw();
 
     // needed for BufferedBuffer's double/triple buffering, call every frame AFTER writing vertex/instance data and BEFORE calling Draw().
     void Commit();
@@ -79,10 +78,10 @@ public:
     // Might yield if GPU isn't ready for us to write the data, so call at the last possible second.
     void FlipBuffers();
 
-
-private:
     inline static const CheckedUint BONE_BUFFER_BINDING = 2;
     inline static const CheckedUint BONE_OFFSET_BUFFER_BINDING = 3;
+
+private:
 
     struct MeshUpdate {
         CheckedUint updatesLeft;
@@ -109,9 +108,12 @@ private:
         CheckedUint nUsers; // num draw commands using this mesh slot
     };
 
+public:
     class DrawCommandBuffer {
     public:
-        DrawCommandBuffer(const std::shared_ptr<Material>&, BufferedBuffer&&);
+        Meshpool* const pool;
+
+        DrawCommandBuffer(Meshpool* pool, const std::shared_ptr<Material>&, BufferedBuffer&&);
 
         // may NOT be nullptr. everything has a material.
         std::shared_ptr<Material> material;
@@ -141,6 +143,8 @@ private:
         // Doubles currentDrawCommandCapacity.
         void ExpandDrawCommandCapacity();
 
+        void Draw();
+
         // bc bufferedbuffer can only be moved
         DrawCommandBuffer(DrawCommandBuffer&&) noexcept;
         DrawCommandBuffer& operator=(DrawCommandBuffer&& old) noexcept;    // move assignment operator
@@ -148,6 +152,10 @@ private:
         DrawCommandBuffer(const DrawCommandBuffer&) = delete;
         DrawCommandBuffer& operator=(const DrawCommandBuffer&) = delete;
     };
+
+    std::vector<DrawCommandBuffer*> GetDrawCommandBuffers();
+
+private:
 
     // the size of a single instance for a single object in bytes. Equal to the InstancedSize() of the vertex format.
     const CheckedUint instanceSize;
@@ -190,10 +198,21 @@ private:
     // key is instance slot
     std::vector<CommandLocation> instanceSlotsToCommands;
 
-
+public: // GraphicsEngine needs to access these to draw.
 
     // the VAO basically tells openGL how our vertices are structured
-    unsigned int vaoId;
+    CheckedUint vaoId;
+
+    // stores indices for all the pool's indices
+    BufferedBuffer indices;
+
+    // if the mesh/material combo supports animations, stores the bone transform matrices (and the number of them)
+    std::optional<BufferedBuffer> bones;
+
+    // if the mesh/material combo supports animations, stores offsets into the bone buffer for each object
+    std::optional<BufferedBuffer> boneOffsetBuffer;
+
+private:
 
     // stores vertices for all the pool's meshes.
     BufferedBuffer vertices;
@@ -201,18 +220,9 @@ private:
     // stores instances for each object being drawn.
     BufferedBuffer instances;
 
-    // stores indices for all the pool's indices
-    BufferedBuffer indices;
-
     // each buffer stores indirect draw commands, which basically tell the GPU which vertices/instances to draw.
     std::vector <std::optional< DrawCommandBuffer >> drawCommands;
     std::vector<CheckedUint> availableDrawCommandBufferIndices;
-
-    // if the mesh/material combo supports animations, stores the bone transform matrices (and the number of them)
-    std::optional<BufferedBuffer> bones;
-
-    // if the mesh/material combo supports animations, stores offsets into the bone buffer for each object
-    std::optional<BufferedBuffer> boneOffsetBuffer;
 
     // Expands vertices and indices so that they can contain at minimum meshIndexEnd. 
     // Works by doubling the current capacity until it fits.

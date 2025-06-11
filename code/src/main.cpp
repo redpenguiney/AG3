@@ -44,17 +44,17 @@ using namespace std;
 double timeAtWhichExitProcessStarted = 0;
 
 
-void AtExit() {        
+static void AtExit() {        
     LogElapsed(timeAtWhichExitProcessStarted, "Exit process elapsed ");
     DebugLogInfo("Program ran successfully. Exiting.");
 }
 
-void RecordSingletonClosing() {
+static void RecordSingletonClosing() {
     DebugLogInfo("Singletons destroyed.");
 }
 
 // just prints about unhandled exceptions because visual studio won't.
-void TerminateHandler() {
+static void TerminateHandler() {
     DebugLogError("Fatal error: Unhandled exception.");
     try {
         std::rethrow_exception(std::current_exception());
@@ -97,8 +97,8 @@ int main(int numArgs, const char *argPtrs[]) {
     Gui::Init();
 
     DebugLogInfo("Calling GameInit().");
-    GameInit();
-    //TestGraphics();
+    //GameInit();
+    TestGraphics();
     //GE.SetDebugFreecamEnabled(true);
     //TestGrassFloor();
     //TestStationaryPointlight();
@@ -111,7 +111,7 @@ int main(int numArgs, const char *argPtrs[]) {
     // TODO: right now rendering extrapolates positions for rigidbodies, we could possibly do interpolation??? would require storing old positions tho so idk
     // TODO: options for other mainloops
     // TODO: max framerate option in leiu of vsync
-    const double SIMULATION_TIMESTEP = 1.0/60.0; // number of seconds simulation is stepped by every frame
+    const float SIMULATION_TIMESTEP = 1.0f/60.0f; // number of seconds simulation is stepped by every frame
 
     const unsigned int N_PHYSICS_ITERATIONS = 1; // bigger number = higher quality physics simulation, although do we ever want this? what about just decrease sim timestep?
     double previousTime = Time();
@@ -210,7 +210,7 @@ int main(int numArgs, const char *argPtrs[]) {
         BaseEvent::FlushEventQueue();
         LUA.PreRenderCallbacks();
 
-        GE.RenderScene(elapsedTime);
+        GE.RenderScene((float)elapsedTime);
 
         // TODO: unsure about placement of flip buffers? 
         // i think this yields until GPU done drawing and image on screen
@@ -231,7 +231,7 @@ int main(int numArgs, const char *argPtrs[]) {
 
     DebugLogInfo("Closing game.");
     auto gtstartclosetime = Time();
-    GameClose();
+    //GameClose();
     LogElapsed(gtstartclosetime, "\nClosing game elapsed ");
 
     timeAtWhichExitProcessStarted = Time();

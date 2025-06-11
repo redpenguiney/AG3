@@ -1,25 +1,54 @@
 #include "graphics_test.hpp"
 #include "gameobjects/gameobject.hpp"
 #include "gameobject_tests.hpp"
+#include <conglomerates/basic_renderer.hpp>
 
 // I will find the graphics bugs. Once. And. For all.
 void TestGraphics() {
+
+	BasicRenderer::Setup();
 	TestSkybox();
+
+	TestGrassFloor();
+
+	TestStationaryPointlight();
 
 	static std::vector<std::shared_ptr<GameObject>> cubes = {};
 	static std::vector<std::shared_ptr<GameObject>> spheres = {};
 	static std::vector<std::shared_ptr<GameObject>> unique_cubes = {};
 
 	GraphicsEngine::Get().SetDebugFreecamEnabled(true);
-	GraphicsEngine::Get().SetWireframeEnabled(true);
+	//GraphicsEngine::Get().SetWireframeEnabled(true);
 
 	static auto cubeM = CubeMesh();
 	static auto sphereM = SphereMesh();
+
+	auto transparentMaterial = Material::Copy(GraphicsEngine::Get().defaultMaterial);
+	transparentMaterial->depthMaskEnabled = false;
+	transparentMaterial->drawOrder = 1000;
+	transparentMaterial->shader = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment_translucent.glsl");
+	
+	//transparentMaterial->depthTestFunc = DepthTestMode::Disabled;
+	transparentMaterial->blendingSrcFactor = { BlendFactorMode::One, BlendFactorMode::Zero, };
+	transparentMaterial->blendingDstFactor = { BlendFactorMode::One, BlendFactorMode::OneMinusSrcAlpha };
 
 	GameobjectCreateParams cubeParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
 	cubeParams.meshId = cubeM->meshId;
 	GameobjectCreateParams sphereParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
 	sphereParams.meshId = sphereM->meshId;
+	GameobjectCreateParams transparentCubeParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
+	transparentCubeParams.meshId = cubeM->meshId;
+	transparentCubeParams.materialId = transparentMaterial->id;
+	//transparentCubeParams.materialId = GraphicsEngine::Get().defa
+
+	for (int i = 0; i < 3; i++) {
+		auto g = GameObject::New(transparentCubeParams);
+		g->RawGet<TransformComponent>()->SetPos(glm::dvec3{ -4, 2, -4 + 3 * i });
+		glm::vec4 color{ 0, 0, 0, 0.5 };
+		color[i] = 1;
+		g->RawGet<RenderComponent>()->SetColor(color);
+		g->RawGet<RenderComponent>()->SetTextureZ(-1);
+	}
 
 	GraphicsEngine::Get().GetWindow().inputDown->Connect([cubeParams, sphereParams](InputObject io) {
 		if (io.input == InputObject::One) {

@@ -85,9 +85,9 @@ void RenderChunk::MakeMesh(glm::ivec2 centerPos, int stride, int radius) {
 						//DebugLogInfo("Writing position ", i + x, " ", j + z);
 
 						// positions
-						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = i + x;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat)] = (float)(i + x);
 						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 1] = floorData.yOffset;
-						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = j + z;
+						vertices[floatIndex + params.meshVertexFormat->attributes.position->offset / sizeof(GLfloat) + 2] = (float)(j + z);
 
 						// UVs
 						vertices[floatIndex + params.meshVertexFormat->attributes.textureUV->offset / sizeof(GLfloat)] = hUvs[x];

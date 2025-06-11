@@ -5,6 +5,7 @@
 #include "physics/spatial_acceleration_structure.hpp"
 #include <gameobjects/gameobject.hpp>
 
+#include <vector>
 #include <filesystem>
 #include <tests/gameobject_tests.hpp>
 
@@ -144,6 +145,10 @@ namespace TG3
 
 			SAS.Update();
 			Assert::IsTrue(SAS.Query(AABB({ 6, 6, 6 }, { 12, 12, 24 })).size() == 0);
+		}
+
+		TEST_METHOD(TestTransparency) {
+
 		}
 	};
 }

@@ -35,7 +35,7 @@ protected:
 	// never returns less than -100,000 or more than 0
 	// penalty is proportional to distance squared for performance reasons
 	// TODO: this won't work because if pathfinding towards the "closest" task could make an NPC come closer to a different task and switch to that and rubberband forever.
-	static int TaskDistanceUtilityPenalty(const glm::ivec2& p1, const glm::ivec2& p2);
+	//static int TaskDistanceUtilityPenalty(const glm::ivec2& p1, const glm::ivec2& p2);
 };
 
 // Copyable reference to a task which enables cache-friendly iteration through the information needed for an NPC to pick which task to do.

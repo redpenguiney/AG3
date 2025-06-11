@@ -31,36 +31,11 @@ GraphicsEngine& GraphicsEngine::Get() {
 
 
 
-// XYZ, UV
-const std::vector<GLfloat> screenQuadVertices = {
-    -1.0, -1.0, 0.0,   0.0, 0.0,
-    -1.0,  1.0, 0.0,   0.0, 1.0,
-     1.0, -1.0, 0.0,   1.0, 0.0,
-     1.0,  1.0, 0.0,   1.0, 1.0,
-};
 
-MeshVertexFormat screenQuadVertexFormat = MeshVertexFormat({
-    .position = {{
-        .offset = 0,
-        .nFloats = 3,
-        .instanced = false
-    }},
-    .textureUV = {{
-        .offset = 3 * sizeof(GLfloat),
-        .nFloats = 2,
-        .instanced = false
-    }}
-});
-
-const std::vector<GLuint> screenQuadIndices = {
-    0, 2, 1,
-    1, 2, 3
-};
 
 GraphicsEngine::GraphicsEngine():
 pointLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(PointLightInfo) * 1000)),
 spotLightDataBuffer(GL_SHADER_STORAGE_BUFFER, 3, (sizeof(SpotLightInfo) * 1000)),
-screenQuad(Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .opacity = 1, .normalizeSize = false}), false)),
 
 preRenderEvent(Event<float>::New()),
 postRenderEvent(Event<float>::New()),
@@ -84,13 +59,10 @@ defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, Shad
     defaultBillboardGuiMaterial = Material::New(MaterialCreateParams{ {}, Texture::Texture2D,  ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", true, false), nullptr, true, true }).second;
     defaultBillboardGuiMaterial->ignorePostProc = true;
     //skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
-    postProcessingShaderProgram = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl");
+    
     crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", false, false);
 
-    auto skyboxImport = Mesh::MultiFromFile("../models/skybox.obj", MeshCreateParams{.textureZ = -1.0, .opacity = 1, .expectedCount = 1, .normalizeSize = false}).at(0);
-    skybox = new RenderableMesh(skyboxImport.mesh);
-    skyboxMaterial = skyboxImport.material ? skyboxImport.material : Material::New(MaterialCreateParams {.shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl")}).second;
-    skyboxMaterialLayer = skyboxImport.materialZ;
+    
     // std::cout << "SKYBOX has indices: ";
     // for (auto & v: skybox_boxmesh->indices) {
     //     std::cout << v << ", ";
@@ -132,7 +104,7 @@ GraphicsEngine::~GraphicsEngine() {
         delete pool;
     }
 
-    delete skybox;
+    //delete skybox;
 
     
 }
@@ -158,13 +130,9 @@ Camera& GraphicsEngine::GetMainCamera() {
 //    skyboxShaderProgram = program;
 //}
 
-void GraphicsEngine::SetSkyboxMaterial(std::shared_ptr<Material> material) {
-    skyboxMaterial = material;
-}
-
-void GraphicsEngine::SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram> program) {
-    postProcessingShaderProgram = program;
-}
+//void GraphicsEngine::SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram> program) {
+//    postProcessingShaderProgram = program;
+//}
 
 //void GraphicsEngine::SetDefaultMaterial(std::shared_ptr<Material> mat) {
 //    defaultShaderProgram = mat;
@@ -201,22 +169,9 @@ bool GraphicsEngine::ShouldClose() {
     return window.ShouldClose();
 }
 
-void GraphicsEngine::UpdateMainFramebuffer() {
-    if (!mainFramebuffer.has_value() || mainFramebuffer->width != window.width || mainFramebuffer->height != window.height) {
-        TextureCreateParams colorTextureParams({}, Texture::ColorMap);
-        colorTextureParams.filteringBehaviour = Texture::LinearTextureFiltering;
-        colorTextureParams.mipmapBehaviour = Texture::NoMipmaps;
-        colorTextureParams.format = Texture::RGBA_16Float;
-        colorTextureParams.wrappingBehaviour = Texture::WrapClampToEdge;
-        // 2nd color attachment used for order-independent transparency
-        TextureCreateParams alphaTextureParams({}, Texture::ColorMap);
-        alphaTextureParams.filteringBehaviour = Texture::LinearTextureFiltering;
-        alphaTextureParams.mipmapBehaviour = Texture::NoMipmaps;
-        alphaTextureParams.format = Texture::Grayscale_8Bit;
-        alphaTextureParams.wrappingBehaviour = Texture::WrapClampToEdge;
-        mainFramebuffer.emplace(window.width, window.height, std::vector {colorTextureParams, alphaTextureParams }, true);
-    }
-}
+//void GraphicsEngine::UpdateMainFramebuffer() {
+    
+//}
 
 void GraphicsEngine::DebugAxis() {
 
@@ -357,8 +312,8 @@ void GraphicsEngine::RenderScene(float dt) {
     ShaderProgram::SetCameraUniforms(projectionMatrix * cameraMatrix, projectionMatrix * cameraMatrixNoFloatingOrigin, glm::ortho(0.0f, float(window.width), 0.0f, float(window.height), -1.0f, 1.0f));
 
     // Draw the world onto a framebuffer so we can draw the contents of that framebuffer onto the screen with a postprocessing shader.
-    UpdateMainFramebuffer();
-    mainFramebuffer->Bind();
+    //UpdateMainFramebuffer();
+    //mainFramebuffer->Bind();
     
     //glDisable(GL_DEPTH_TEST);
 
@@ -366,42 +321,44 @@ void GraphicsEngine::RenderScene(float dt) {
     //glBlendFunci(1, GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
     //glBlendFunci(1, GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
-    glDisable(GL_SCISSOR_TEST);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    mainFramebuffer->Clear({ { 0, 0, 0, 0 }, { 1, 1, 1, 1 } });
-    DrawWorld(true);
+    //glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
+    //glDisable(GL_SCISSOR_TEST);
+    //glClear(GL_DEPTH_BUFFER_BIT);
+    //mainFramebuffer->Clear({{  0, 0, 0, 0 },});
+    //mainTransparentFramebuffer->Clear({ { 0, 0, 0, 0 }, { 1, 1, 1, 1 } });
+
+    //DrawWorld(true);
 
 
-    DrawSkybox(); // Draw skybox afterwards to encourage early z-test
+    //DrawSkybox(); // Draw skybox afterwards to encourage early z-test
 
     // Go back to drawing on the window.
-    Framebuffer::Unbind();
+    //Framebuffer::Unbind();
 
     //glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
 
-    glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
-    glDisable(GL_SCISSOR_TEST);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
+    //glDisable(GL_SCISSOR_TEST);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    glDisable(GL_DEPTH_TEST);
+    //glDisable(GL_DEPTH_TEST);
 
     // Draw contents of main framebuffer on screen quad, using the postprocessing shader.
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // obviously the screen quad should not be drawn with wireframe
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // obviously the screen quad should not be drawn with wireframe
 
-    postProcessingShaderProgram->Use();
-    mainFramebuffer->textureAttachments.at(0).Use();
-    mainFramebuffer->textureAttachments.at(1).Use();
-    screenQuad.Draw();
+    //postProcessingShaderProgram->Use();
+    //mainFramebuffer->textureAttachments.at(0).Use();
+    //mainTransparentFramebuffer->textureAttachments.at(1).Use();
+    //screenQuad.Draw();
 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Draw stuff that doesn't do post processing.
-    glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
-    glDisable(GL_SCISSOR_TEST);
-    glClear( GL_DEPTH_BUFFER_BIT);
+    //glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
+    //glDisable(GL_SCISSOR_TEST);
+    //glClear( GL_DEPTH_BUFFER_BIT);
     
-    DrawWorld(false);
+    DrawWorld();
 
     // Debugging stuff
     // TODO: actual settings to toggle debug stuff
@@ -416,19 +373,19 @@ void GraphicsEngine::RenderScene(float dt) {
     //BaseEvent::FlushEvevntQueue();
 }
 
-void GraphicsEngine::DrawSkybox() {
-    //if (skyboxShaderProgram == nullptr || skyboxMaterial == nullptr) {return;} // make sure there is a skybox
-    glDisable(GL_CULL_FACE);
-
-    skyboxMaterial->shader->Uniform("shaderTime", GraphicsEngine::Get().shaderTime);
-
-    // glDisable(GL_DEPTH_TEST);
-    //skyboxShaderProgram->Use();
-    skyboxMaterial->Use();
-    skybox->Draw();
-    
-    glClear(GL_DEPTH_BUFFER_BIT); // make sure skybox isn't drawn over everything else
-}
+//void GraphicsEngine::DrawSkybox() {
+//    //if (skyboxShaderProgram == nullptr || skyboxMaterial == nullptr) {return;} // make sure there is a skybox
+//    glDisable(GL_CULL_FACE);
+//
+//    skyboxMaterial->shader->Uniform("shaderTime", GraphicsEngine::Get().shaderTime);
+//
+//    // glDisable(GL_DEPTH_TEST);
+//    //skyboxShaderProgram->Use();
+//    skyboxMaterial->Use();
+//    skybox->Draw();
+//    
+//    glClear(GL_DEPTH_BUFFER_BIT); // make sure skybox isn't drawn over everything else
+//}
 
 void GraphicsEngine::UpdateLights() {
 
@@ -537,23 +494,89 @@ void GraphicsEngine::FlipMeshpoolBuffers()
     }
 }
 
-void GraphicsEngine::DrawWorld(bool postProc)
+void GraphicsEngine::DrawWorld()
 {
     //glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
 
-    if (wireframeDrawing) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    }
-    else {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //if (wireframeDrawing) {
+    //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //}
+    //else {
+    //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //}
+
+    // First, we fetch all the different draw commands. Each draw command has its own OpenGL state requirements (texture/shader/buffer bindings, mesh format, etc.).
+    std::vector<Meshpool::DrawCommandBuffer*> sortedDrawCommands;
+    for (auto pool : meshpools) {
+        if (pool != nullptr) {
+            auto cmds = pool->GetDrawCommandBuffers();
+            sortedDrawCommands.insert(sortedDrawCommands.begin(), cmds.begin(), cmds.end());
+        }
     }
 
-    // Draw world stuff.
-    for (auto& pool : meshpools) {
-        if (pool != nullptr) {
-            pool->Draw(postProc);
+    // Then we sort those drawCommands to minimize OpenGL state changes between draw calls (since they hurt performance).
+    // (We still need to respect Material::drawOrder, though!)
+    std::sort(sortedDrawCommands.begin(), sortedDrawCommands.end(), [](const Meshpool::DrawCommandBuffer* a, const Meshpool::DrawCommandBuffer* b) {
+        // sort function returns true if 1st goes BEFORE 2nd, false otherwise
+
+        // handle case of no material for one of them
+        if (a->material == nullptr)
+            return true;
+        if (b->material == nullptr)
+            return false;
+
+        if (a->material == b->material)
+            return false;
+
+        // sorting by draw order is first priority; the user expects this order for their pipeline to work properly.
+        if (a->material->drawOrder != b->material->drawOrder)
+            return a->material->drawOrder < b->material->drawOrder; // TODO: might be backwards lol
+        // if that's not an issue, changing the bound shader program is very expensive
+        else if (a->material->shader->shaderProgramId != b->material->shader->shaderProgramId)
+            return a->material->shader->shaderProgramId < b->material->shader->shaderProgramId;
+        // surprisingly changing depth/blend modes and stuff is pretty bad too because it sometimes involves a different shader program being used internally on the GPU
+        else if (a->material->blendingEnabled != b->material->blendingEnabled)
+            return a->material->blendingEnabled < b->material->blendingEnabled;
+        else if (a->material->blendingSrcFactor != b->material->blendingSrcFactor)
+            return a->material->blendingSrcFactor < b->material->blendingSrcFactor;
+        else if (a->material->blendingDstFactor != b->material->blendingDstFactor)
+            return a->material->blendingDstFactor < b->material->blendingDstFactor;
+        else if (a->material->depthMaskEnabled != b->material->depthMaskEnabled)
+            return a->material->depthMaskEnabled < b->material->depthMaskEnabled;
+        else if (a->material->depthTestFunc != b->material->depthTestFunc)
+            return a->material->depthTestFunc < b->material->depthTestFunc;
+        else if (a->material->scissoringEnabled != b->material->scissoringEnabled)
+            return a->material->scissoringEnabled < b->material->scissoringEnabled;
+        // given that different materials could have some textures in common but not others, sorting by that would be complicated for meagre gain (TODO i want meagre gain)
+        else if (a->material->textures->id == b->material->textures->id) {
+            return a->material->textures->id < b->material->textures->id;
         }
+        else if (a->pool != b->pool) {
+            return a->pool->vaoId < b->pool->vaoId;
+        }
+        else {
+            return false;
+        }
+        });
+
+    // Then we draw. Gloriously simple now.
+    // Only catch is, we do a little work to avoid redundantly binding the indices/VAOs because we can't trust the drivers to do that sadly. 
+    int lastVaoId;
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &lastVaoId);
+    
+    for (Meshpool::DrawCommandBuffer* command : sortedDrawCommands) {
+        //if (command->pool->vaoId != lastVaoId) {
+            lastVaoId = command->pool->vaoId;
+            glBindVertexArray(command->pool->vaoId);
+            command->pool->indices.Bind();
+            if (command->pool->bones.has_value()) {
+                command->pool->bones->BindBase(Meshpool::BONE_BUFFER_BINDING);
+                command->pool->boneOffsetBuffer->BindBase(Meshpool::BONE_OFFSET_BUFFER_BINDING);
+            }
+        //}
+        
+        command->Draw();
     }
 }
 
@@ -717,7 +740,7 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
         //for (auto& offset : boneOffsets) {
         //DebugLogInfo("Putting bone at ", glm::to_string(boneOffsets.at(0)));
         //}
-        SetBoneState(*animComp->renderComponent, animComp->mesh->bones->size(), boneOffsets.data());
+        SetBoneState(*animComp->renderComponent, (unsigned)animComp->mesh->bones->size(), boneOffsets.data());
     }
 
     

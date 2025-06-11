@@ -79,9 +79,9 @@ void World::SetTile(int x, int z, TileLayer layer, int tile) {
     auto chunkPos = ChunkCoords(glm::ivec2(x, z));
     auto& chunk = GetChunkMut(x, z);
     GetTileMut(x, z).layers[layer] = tile;
-    chunk.pathfindingDirty = true;
+    //chunk.pathfindingDirty = true;
 
-    if (renderChunks.contains(chunkPos));
+    if (renderChunks.contains(chunkPos))
         renderChunks[chunkPos]->dirty = true;
 }
 
@@ -286,8 +286,8 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
     for (int worldX = position.x - 8; worldX < position.x + 8; worldX++) {
         int localZ = 0;
         for (int worldZ = position.y - 8; worldZ < position.y + 8; worldZ++) {
-            float height = perlinNoiseGenerator.GetValue(worldX/16.f, worldZ/16.f, 0);
-            float tree = treeNoiseGenerator.GetValue(worldX * 1.5f, worldZ * 1.5f, 0);
+            float height = (float)perlinNoiseGenerator.GetValue(worldX/16.f, worldZ/16.f, 0);
+            float tree = (float)treeNoiseGenerator.GetValue(worldX * 1.5f, worldZ * 1.5f, 0);
             
 
             //DebugLogInfo("Hiehgt ", height);
@@ -314,14 +314,14 @@ TerrainChunk::TerrainChunk(glm::ivec2 position)
     }
 }
 
-const std::vector<TerrainChunk::NavmeshNode>& TerrainChunk::GetNavmesh()
-{
-    //if (!navmesh.has_value()) {
-
-    //}
-
-    return navmesh.value();
-}
+//const std::vector<TerrainChunk::NavmeshNode>& TerrainChunk::GetNavmesh()
+//{
+//    //if (!navmesh.has_value()) {
+//
+//    //}
+//
+//    return navmesh.value();
+//}
 
 World::TerrainIds::TerrainIds()
 {
@@ -349,13 +349,20 @@ World::TerrainIds::TerrainIds()
         .displayName = "Anomalous tree",
         .gameobjectMaker = [](glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
             static auto vec = Mesh::MultiFromFile("../models/tree.fbx");
+            static auto leavesMaterial = Material::Copy(GraphicsEngine::Get().defaultMaterial);
+            leavesMaterial->depthTestFunc = DepthTestMode::Disabled;
+            leavesMaterial->blendingSrcFactor = { BlendFactorMode::One, BlendFactorMode::Zero, };
+            leavesMaterial->blendingDstFactor = { BlendFactorMode::One, BlendFactorMode::OneMinusSrcAlpha };
+
             auto d = GameobjectCreateParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform });
 
             constexpr double SCL_FACTOR = 0.1;
             int i = 0;
             for (auto& ret : vec) {
                 d.meshId = ret.mesh->meshId;
-                objects.push_back(GameObject::New(d));
+                auto dAlpha = d;
+                dAlpha.materialId = leavesMaterial->id;
+                objects.push_back(GameObject::New(i == 0 ? d : dAlpha));
 
                 objects.back()->RawGet<TransformComponent>()->SetPos(glm::dvec3(ret.posOffset) * SCL_FACTOR + glm::dvec3((double)pos.x, SCL_FACTOR * ret.mesh->originalSize.y / 2.0, (double)pos.y));
                 objects.back()->RawGet<TransformComponent>()->SetRot(glm::quat(ret.rotOffset));
@@ -368,6 +375,7 @@ World::TerrainIds::TerrainIds()
                         render->SetColor({ 0.5, 0.5, 0, 1 });
                     }
                     else {
+                        
                         render->SetColor({ 0, 1, 0, 0.5 });
                     }
 
@@ -392,4 +400,41 @@ World::TerrainIds::TerrainIds()
         },
         .moveCostModifier = -1
     });
+}
+
+Path::Path(const std::vector<glm::ivec2>& waypoints, int dist):
+    wayPoints(waypoints),
+    distance(dist),
+    totalMoveCost([&waypoints]() {int i = 0; for (auto& w : waypoints) { i += World::Loaded()->GetMoveCost(w.x, w.y); } return i; }())
+{
+    for (TerrainChunk* c : GetContainingChunks()) {
+        c->paths.push_back(this);
+    }
+}
+
+Path::~Path(){
+    for (TerrainChunk* c : GetContainingChunks()) {
+        for (int i = 0; i < c->paths.size(); i++) {
+            if (c->paths[i] == this) {
+                c->paths[i] = c->paths.back();
+                c->paths.pop_back();
+                return;
+            }
+        }
+    }
+}
+
+std::vector<TerrainChunk*> Path::GetContainingChunks()
+{
+    std::vector<TerrainChunk*> chunks;
+    Assert(wayPoints.size() > 0);
+    glm::ivec2 lastChunk = glm::ivec2(1, 1); // invalid chunk position so we good
+    for (auto& w : wayPoints) {
+        glm::ivec2 pos = World::ChunkCoords(w);
+        if (lastChunk != pos) {
+            lastChunk = pos;
+            chunks.push_back(&World::Loaded()->GetChunkMut(pos.x, pos.y));
+        }
+    }
+    return chunks;
 }

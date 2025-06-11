@@ -62,6 +62,7 @@ unsigned int NChannelsFromFormat(Texture::TextureFormat format ) {
 
 
 // Create texture (for use on objects).
+#pragma warning( disable: 4244)
 Texture::Texture(const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType):
 format(params.format),
 type(textureType),
@@ -390,6 +391,7 @@ glTextureIndex(textureIndex)
 // }
 
 // Create texture and attach it to framebuffer
+#pragma warning( disable: 4244)
 Texture::Texture(Framebuffer& framebuffer, const TextureCreateParams& params, const GLuint textureIndex, const TextureType textureType, const GLenum framebufferAttachmentType):
 format(params.format),
 type(textureType),
@@ -437,7 +439,7 @@ glTextureIndex(textureIndex)
     // Framebuffer::Unbind(); // TODO: probably not really needed and might carry high perf cost?
 }
 
-Texture::Texture(Texture&& old) :
+Texture::Texture(Texture&& old) noexcept :
     format(old.format),
     type(old.type),
     usage(old.usage),
@@ -561,7 +563,7 @@ void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, Texture
         int stride = 2;
         for (int x = 0; x < mipWidth; x++) {
             for (int y = 0; y < mipHeight; y++) {
-                for (int channel = 0; channel < nChannels; channel++) {
+                for (unsigned int channel = 0; channel < nChannels; channel++) {
                     float sum = 0;
 
                     sum += Sample(src, mipWidth, mipHeight, nChannels, params.wrappingBehaviour, tx,     ty, channel);
@@ -585,7 +587,7 @@ void Texture::GenMipmap(const TextureCreateParams& params, uint8_t* src, Texture
 
                     //sum = (x % 8 > 3) * 255;
 
-                    dst[x * nChannels * mipHeight + y * nChannels + channel] = sum;
+                    dst[x * nChannels * mipHeight + y * nChannels + channel] = (uint8_t)sum;
                 }
                 ty += stride;
             }

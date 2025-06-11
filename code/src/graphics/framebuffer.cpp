@@ -64,7 +64,7 @@ void Framebuffer::Bind() {
     glBindFramebuffer(bindingLocation, glFramebufferId);
 
     //const GLenum buffers[]{ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-    glDrawBuffers(colorAttachmentNames.size(), colorAttachmentNames.data());
+    glDrawBuffers((GLsizei)colorAttachmentNames.size(), colorAttachmentNames.data());
     glViewport(0, 0, width, height);
 }
 
@@ -74,13 +74,20 @@ void Framebuffer::Clear(std::vector<glm::vec4> clearColors)
 
     Bind();
     for (int i = 0; i < clearColors.size(); i++) {
+        if (clearColors[i] == glm::vec4(-1, -1, -1, -1)) continue;
         //if (textureAttachments[i].format == Texture::TextureFormat::RGBA_16Float) {
-            glClearBufferfv(GL_COLOR, i, &clearColors[i][0]);
+        glClearBufferfv(GL_COLOR, i, &clearColors[i][0]);
         //}
         //else {
             //glm::ivec4 casted =
         //}
     }
+}
+
+void Framebuffer::ClearDepthRenderbuffer() {
+    Assert(depthRenderbufferId.has_value());
+    Bind();
+    glClear(GL_DEPTH_BUFFER_BIT);
 }
 
 void Framebuffer::Unbind() {

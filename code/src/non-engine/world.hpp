@@ -16,10 +16,29 @@ struct ComputePathParams {
 	int maxIterations = 10000;
 };
 
-struct Path {
-	// move in straight line between waypoints.
+struct TerrainChunk;
+
+class Path {
+public:
+	Path(const std::vector<glm::ivec2>& waypoints, int length);
+	~Path();
+
+	// if false, then the terrain this path traverses through has changed and it may no longer be valid (or optimal).
+	// if true, this path still might no longer be optimal if terrain the path does NOT traverse changed in a way which makes a new, better route possible
+	bool good = true; 
+
+	// move in straight line between waypoints. Includes destination but not starting point.
 	// empty in event of pathfinding failure
-	std::vector<glm::ivec2> wayPoints;
+	const std::vector<glm::ivec2> wayPoints;
+
+	// distance to traverse whole path, including the distance between the start and the first waypoint.
+	const int distance;
+
+	// total turns needed to traverse the entire path
+	const int totalMoveCost;
+private:
+	std::vector<TerrainChunk*> GetContainingChunks();
+
 };
 
 enum TileLayer: int {
@@ -40,8 +59,7 @@ public:
 
 	std::array<std::array<TerrainTile, 16>, 16> tiles;
 
-	// if true, the terrain chunk was modified this frame and paths routing through it must be recomputed. Reset to false after every time entity::UpdateAll() runs.
-	bool pathfindingDirty;
+
 	//std::vector<std::unique_ptr<Entity>> entities;
 
 	// TODO
@@ -53,10 +71,16 @@ public:
 		std::array<int, 2> neighborTraversalCosts; // cost to move from this node to its neighbor at the same index
 	};
 
-	const std::vector<NavmeshNode>& GetNavmesh();
+	// contains paths which route through this chunk
+	// ptrs are always valid and managed by Path constructor/destructor
+	std::vector<Path*> paths;
+
+	//const std::vector<NavmeshNode>& GetNavmesh();
 
 private:
-	std::optional <std::vector<NavmeshNode>> navmesh;
+	//std::optional <std::vector<NavmeshNode>> navmesh;
+
+	
 };
 
 struct ClimateTile {
@@ -135,7 +159,8 @@ public:
 	// unloads the currently loaded world. (does nothing if no loaded world)
 	static void Unload();
 
-    Path ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params);
+	// returns nullptr if no valid path exists
+    std::unique_ptr<Path> ComputePath(glm::ivec2 origin, glm::ivec2 goal, ComputePathParams params);
 
 	TerrainTile GetTile(int x, int z);
 	void SetTile(int x, int z, TileLayer layer, int tile);
@@ -152,6 +177,8 @@ public:
 	int GetMoveCost(int x, int z);
 
 private:
+
+	friend class Path;
 
 	// private bc modifications aren't auto carried over to rendering/etc.
 	TerrainChunk& GetChunkMut(int x, int z);

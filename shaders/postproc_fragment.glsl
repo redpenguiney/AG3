@@ -4,7 +4,6 @@ out vec4 FragColor;
 in vec2 TexCoords;
 
 layout(binding=0) uniform sampler2D screenTextureColor; // note: this syntax not ok until opengl 4.2
-layout(binding=1) uniform sampler2D screenTextureAlpha; // note: this syntax not ok until opengl 4.2
 
 const float offset = 1.0 / 1000.0;  
 
@@ -32,11 +31,7 @@ void main()
     vec3 sampleTex[9];
     for(int i = 0; i < 9; i++)
     {
-        // OIT finishes here
-        vec4 accum = texture(screenTextureColor, TexCoords.st + offsets[i], 0);
-        float reveal = texture(screenTextureAlpha, TexCoords.st + offsets[i], 0).r;
-        sampleTex[i] = accum.rgb / max(accum.a, 1e-5);
-        //sampleTex[i] = vec3(texture(screenTextureColor, TexCoords.st + offsets[i]));
+        sampleTex[i] = texture(screenTextureColor, TexCoords + offsets[i]).xyz;
     }
     vec3 col = vec3(0.0);
     for(int i = 0; i < 9; i++)
@@ -50,7 +45,11 @@ void main()
     //FragColor = vec4(0, 1, 1, 1);
     //float depthValue = texture(screenTextureColor, TexCoords).r;
     //FragColor = vec4(vec3(depthValue), 1.0);
-    FragColor = vec4(texture(screenTextureColor, (TexCoords.st), 0).xyz, 1.0);
+    //FragColor = vec4(texture(screenTextureColor, (TexCoords.st), 0).xyz, 1.0);
     //FragColor = vec4(texture(screenTextureAlpha, (TexCoords.st), 0).rrr, 1.0);
     //FragColor = vec4(1.0, 1.0, 0.0, 1.0);   
+
+
+
+    
 }

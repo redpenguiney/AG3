@@ -157,12 +157,12 @@ Chunk::~Chunk()
 }
 
 float Chunk::Size() {
-	return MAX_CHUNK_SIZE * powf(2, -lod);
+	return MAX_CHUNK_SIZE * powf(2.0f, -lod);
 }
 
 float Chunk::Resolution() const
 {
-	return MAX_CHUNK_RESOLUTION * powf(2, -lod);
+	return MAX_CHUNK_RESOLUTION * powf(2.0f, -lod);
 }
 
 void Chunk::Update()

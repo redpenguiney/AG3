@@ -46,22 +46,10 @@ public:
     // the time passed to shaders; wraps around to stay in range [0.0f, 1024.0f) for precision reasons
     float shaderTime = 0;
 
-    // the shader used to render the skybox. Can freely change this with no issues.
-    //std::shared_ptr<ShaderProgram> skyboxShaderProgram;
-
-    // skybox material. Must be a cubemap. Can freely change this with no issues.
-    std::shared_ptr<Material> skyboxMaterial;
-
-    // Which layer of the skyboxMaterial we should actually be using.
-    unsigned int skyboxMaterialLayer; 
-
-    // Postprocessing shader, aka the shader used to render the screen quad that the actual world was rendered onto the texture of.
-    // Can freely change this with no issues.
-    std::shared_ptr<ShaderProgram> postProcessingShaderProgram; 
-
-    // Default material used for new RenderComponents. Has no textures.
+    // Default material used for new RenderComponents. Has no textures and cannot handle transparency.
     const std::shared_ptr<Material> defaultMaterial; 
 
+    // TODO: make member of GuiGlobals
     // Default material which Gui makes a copy of when creating instances of the Gui conglomerate class. Should be able to freely change this with no issues (TODO verify)
     std::shared_ptr<Material> defaultGuiMaterial;
 
@@ -87,11 +75,6 @@ public:
 
     double debugFreecamPitch = 0; // in degrees, don't get tripped up when you do lookvector which wants radians
     double debugFreecamYaw = 0;
-
-    //void SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram>) override;
-    void SetSkyboxMaterial(std::shared_ptr<Material>) override;
-
-    void SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram>) override;
     
     //void SetDefaultShaderProgram(std::shared_ptr<ShaderProgram>) override;
     void SetDefaultGuiMaterial(std::shared_ptr<Material>) override;
@@ -179,18 +162,7 @@ private:
     // vec3 padding
     // lightInfo pointLights[];
 
-    
-    
-    
-
-    RenderableMesh* skybox; 
-
-    // everything is drawn onto this framebuffer, and then this framebuffer's texture is used to draw a screen quad on the default framebuffer with a post processing shader.
-    // todo: make it not do post processing when this isn't here
-    std::optional<Framebuffer> mainFramebuffer;
-
-    // Used for postprocessing, the mesh is just a quad that covers the screen, nothing deep.
-    RenderableMesh screenQuad;
+    //RenderableMesh* skybox; 
 
     // just a little thing to visualize axis
     void DebugAxis();
@@ -293,10 +265,10 @@ private:
     GraphicsEngine(const GraphicsEngine&) = delete;
     ~GraphicsEngine();
 
-    void UpdateMainFramebuffer();
+    //void UpdateMainFramebuffer();
     //void CalculateLightingClusters();
     void UpdateLights();
-    void DrawSkybox();
+    //void DrawSkybox();
     //void Update();
     void UpdateRenderComponents(float dt);
 
@@ -308,8 +280,8 @@ private:
     void CommitMeshpools();
 
     void FlipMeshpoolBuffers();
-    // postProc is true if what's being drawn SHOULD do post proc
-    void DrawWorld(bool postProc);
+
+    void DrawWorld();
 
     // void SetColor(const RenderComponent& component, const glm::vec4& rgba);
     /*void SetModelMatrix(const RenderComponent& component, const glm::mat4x4& model);

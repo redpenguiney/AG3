@@ -8,14 +8,9 @@ class Window;
 
 class ModuleGraphicsEngineInterface {
     public:
-    virtual ~ModuleGraphicsEngineInterface(); // apparently this is important idk why
+    virtual ~ModuleGraphicsEngineInterface();
 
     static ModuleGraphicsEngineInterface* Get();
-
-    //virtual void SetSkyboxShaderProgram(std::shared_ptr<ShaderProgram>) = 0;
-    virtual void SetSkyboxMaterial(std::shared_ptr<Material>) = 0;
-
-    virtual void SetPostProcessingShaderProgram(std::shared_ptr<ShaderProgram>) = 0;
     
     //virtual void SetDefaultShaderProgram(std::shared_ptr<ShaderProgram>) = 0;
     virtual void SetDefaultGuiMaterial(std::shared_ptr<Material>) = 0;

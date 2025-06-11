@@ -41,7 +41,7 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
 Meshpool::~Meshpool()
 {
 	if (vaoId != 0) {
-		glDeleteVertexArrays(1, &vaoId);
+		glDeleteVertexArrays(1, &vaoId.value);
 	}
 }
 
@@ -336,115 +336,23 @@ void Meshpool::SetBoneState(const DrawHandle& handle, CheckedUint nBones, glm::m
     memcpy(bonesLocation, offsets, nBones.value * sizeof(glm::mat4x4));
 }
 
-void Meshpool::Draw(bool prePostProc) {
-    glBindVertexArray(vaoId);
+//void Meshpool::Draw() {
+    /*glBindVertexArray(vaoId);
     indices.Bind();
     if (bones.has_value()) {
         bones->BindBase(BONE_BUFFER_BINDING);
         boneOffsetBuffer->BindBase(BONE_OFFSET_BUFFER_BINDING);
-    }
+    }*/
     
     //double start1 = Time();
     //glPointSize(4.0);
 
     // We want to sort the draw commands by draw order, shader binding, texture binding, and other GL state paramters to reduce GL state changes which seriously hurt performance.
-    std::vector<DrawCommandBuffer*> sortedDrawCommands;
-    for (auto& maybeBuffer : drawCommands) {
-        if (maybeBuffer.has_value() && maybeBuffer->material->ignorePostProc != prePostProc) {
-            sortedDrawCommands.push_back(&*maybeBuffer);
-        }
-    }
-    std::sort(sortedDrawCommands.begin(), sortedDrawCommands.end(), [](const DrawCommandBuffer* a, const DrawCommandBuffer* b) {
-        // sort function returns true if 1st goes BEFORE 2nd, false otherwise
-
-        // handle case of no material for one of them
-        if (a->material == nullptr)
-            return true;
-        if (b->material == nullptr)
-            return false;
-
-        if (a->material == b->material)
-            return false;
-
-        // sorting by draw order is first priority; the user expects this order for their pipeline to work properly.
-        if (a->material->drawOrder != b->material->drawOrder)
-            return a->material->drawOrder < b->material->drawOrder; // TODO: might be backwards lol
-        // if that's not an issue, changing the bound shader program is very expensive
-        else if (a->material->shader->shaderProgramId != b->material->shader->shaderProgramId)
-            return a->material->shader->shaderProgramId < b->material->shader->shaderProgramId;
-        // surprisingly changing depth/blend modes and stuff is pretty bad too because it sometimes involves a different shader program being used internally on the GPU
-        else if (a->material->blendingEnabled != b->material->blendingEnabled)
-            return a->material->blendingEnabled < b->material->blendingEnabled;
-        else if (a->material->blendingSrcFactor != b->material->blendingSrcFactor)
-            return a->material->blendingSrcFactor < b->material->blendingSrcFactor;
-        else if (a->material->blendingDstFactor != b->material->blendingDstFactor)
-            return a->material->blendingDstFactor < b->material->blendingDstFactor;
-        else if (a->material->depthMaskEnabled != b->material->depthMaskEnabled)
-            return a->material->depthMaskEnabled < b->material->depthMaskEnabled;
-        else if (a->material->depthTestFunc != b->material->depthTestFunc)
-            return a->material->depthTestFunc < b->material->depthTestFunc;
-        else if (a->material->scissoringEnabled != b->material->scissoringEnabled)
-            return a->material->scissoringEnabled < b->material->scissoringEnabled;
-        // given that different materials could have some textures in common but not others, sorting by that would be complicated for meagre gain (TODO i want meagre gain)
-        else {
-            return a->material->textures->id < b->material->textures->id;
-        }
-    });
-
-    for (auto& command : sortedDrawCommands) {
-        command->buffer.Bind();
-        auto& shader = command->material->shader;
-        shader->Use();
-
-        
-        
-        shader->Uniform("vertexColorEnabled", format.attributes.color.has_value());
-        shader->Uniform("shaderTime", GraphicsEngine::Get().shaderTime); // skybox needs done seperately bruh
-
-        if (shader->useClusteredLighting) {
-            shader->Uniform("pointLightCount", GraphicsEngine::Get().pointLightCount);
-            shader->Uniform("spotLightCount", GraphicsEngine::Get().spotLightCount);
-            shader->Uniform("pointLightOffset", CheckedUint(GraphicsEngine::Get().pointLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::PointLightInfo)));
-            shader->Uniform("spotLightOffset", CheckedUint(GraphicsEngine::Get().spotLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::SpotLightInfo)));
-        }
-
-        
-        GraphicsEngine::Get().pointLightDataBuffer.BindBase(0);
-        GraphicsEngine::Get().spotLightDataBuffer.BindBase(1);
-
-        auto& material = command->material;
-        material->Use();
-
-        // if (materialId == 4) {
-        //     std::cout << "BINDING THING WITH FONTMAP.\n";
-        // }
-
-        shader->Uniform("specularMappingEnabled", material->Count(Texture::SpecularMap));
-        shader->Uniform("fontMappingEnabled", material->Count(Texture::FontMap));
-        shader->Uniform("normalMappingEnabled", material->Count(Texture::NormalMap));
-        shader->Uniform("parallaxMappingEnabled", material->Count(Texture::DisplacementMap));
-        shader->Uniform("colorMappingEnabled", material->Count(Texture::ColorMap));
-
-        glPointSize(3.0);
-        
-        for (int i = 0; i < command->GetDrawCount(); i++) {
-            auto cmd = command->clientCommands.at(i);
-            cmd.baseInstance += instances.GetOffset() / instanceSize; //command->buffer.GetOffset() / sizeof(IndirectDrawCommand);
-            cmd.baseVertex += vertices.GetOffset() / vertexSize;
-            //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            //GLenum buffers[]{ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-            //if (prePostProc) {
-                //glDrawBuffers(2, buffers);
-            //}
-            
-            glDrawElementsInstancedBaseVertexBaseInstance(format.primitiveType, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
-        }
-        // TODO: INDIRECT DRAWING
-        //glMultiDrawElementsIndirect(format.primitiveType, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
-    }
+    // TODO: is caching this sorted buffer worth doing? probably not since there shouldn't be very many of these
+    
      
     
-}
+//}
 
 void Meshpool::Commit() {
     // write vertex/index changes to buffer
@@ -543,6 +451,18 @@ void Meshpool::FlipBuffers()
     }
 }
 
+std::vector<Meshpool::DrawCommandBuffer*> Meshpool::GetDrawCommandBuffers()
+{
+    std::vector<DrawCommandBuffer*> cmds;
+    for (auto& maybeBuffer : drawCommands) {
+        if (maybeBuffer.has_value()) {
+            cmds.push_back(&*maybeBuffer);
+        }
+    }
+
+    return cmds;
+}
+
 void Meshpool::ExpandVertexCapacity()
 {
 
@@ -561,14 +481,14 @@ void Meshpool::ExpandVertexCapacity()
 
     // delete old vao
     if (vaoId != 0) {
-        glDeleteVertexArrays(1, &vaoId);
+        glDeleteVertexArrays(1, &vaoId.value);
     }
 
     // make new vao
-    glGenVertexArrays(1, &vaoId);
+    glGenVertexArrays(1, &vaoId.value);
     glBindVertexArray(vaoId);
     vertices.Bind();
-    format.SetNonInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
+    format.SetNonInstancedVaoVertexAttributes(vaoId.value, instanceSize, vertexSize);
     
 #ifdef MESHPOOL_LOGGING 
     DebugLogInfo("EVC", vaoId);
@@ -578,7 +498,7 @@ void Meshpool::ExpandVertexCapacity()
     // but when we're initializing, we don't want to do this because calling ExpandInstanced() in initializiation will and we don't have an instanced vertex buffer yet
     if (instances.bufferId != 0) {
         instances.Bind();
-        format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
+        format.SetInstancedVaoVertexAttributes(vaoId.value, instanceSize, vertexSize);
     }
 
     // Tragically, for every indirect draw command we have to update the 2nd and 3rd buffers' baseVertex since it was offset to correct for the OLD vertex buffer's size.
@@ -646,7 +566,59 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
     clientCommands.resize(currentDrawCommandCapacity, IndirectDrawCommand(0, 0, 0, 0, 0));
 }
 
+void Meshpool::DrawCommandBuffer::Draw() {
+    DebugLogInfo(material->drawOrder);
+    Assert(pool);
+    buffer.Bind();
+    auto& shader = material->shader;
+    shader->Use();
+
+    // TODO: should cache a LOT of this stuff to avoid redundant state changes
+
+    shader->Uniform("vertexColorEnabled", pool->format.attributes.color.has_value());
+    shader->Uniform("shaderTime", GraphicsEngine::Get().shaderTime); // skybox needs done seperately bruh
+
+    if (shader->useClusteredLighting) {
+        shader->Uniform("pointLightCount", GraphicsEngine::Get().pointLightCount);
+        shader->Uniform("spotLightCount", GraphicsEngine::Get().spotLightCount);
+        shader->Uniform("pointLightOffset", CheckedUint(GraphicsEngine::Get().pointLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::PointLightInfo)));
+        shader->Uniform("spotLightOffset", CheckedUint(GraphicsEngine::Get().spotLightDataBuffer.GetOffset() / sizeof(GraphicsEngine::SpotLightInfo)));
+        GraphicsEngine::Get().pointLightDataBuffer.BindBase(0);
+        GraphicsEngine::Get().spotLightDataBuffer.BindBase(1);
+    }
+
+    material->Use();
+
+    // if (materialId == 4) {
+    //     std::cout << "BINDING THING WITH FONTMAP.\n";
+    // }
+
+    shader->Uniform("specularMappingEnabled", material->Count(Texture::SpecularMap));
+    shader->Uniform("fontMappingEnabled", material->Count(Texture::FontMap));
+    shader->Uniform("normalMappingEnabled", material->Count(Texture::NormalMap));
+    shader->Uniform("parallaxMappingEnabled", material->Count(Texture::DisplacementMap));
+    shader->Uniform("colorMappingEnabled", material->Count(Texture::ColorMap));
+
+    glPointSize(3.0);
+
+    for (int i = 0; i < GetDrawCount(); i++) {
+        auto cmd = clientCommands.at(i);
+        cmd.baseInstance += pool->instances.GetOffset() / pool->instanceSize; //command->buffer.GetOffset() / sizeof(IndirectDrawCommand);
+        cmd.baseVertex += pool->vertices.GetOffset() / pool->vertexSize;
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        //GLenum buffers[]{ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+        //if (prePostProc) {
+            //glDrawBuffers(2, buffers);
+        //}
+
+        glDrawElementsInstancedBaseVertexBaseInstance(pool->format.primitiveType, cmd.count, GL_UNSIGNED_INT, (const void*)(cmd.firstIndex * sizeof(GLuint)).value, cmd.instanceCount, cmd.baseVertex, cmd.baseInstance);
+    }
+    // TODO: INDIRECT DRAWING
+    //glMultiDrawElementsIndirect(format.primitiveType, GL_UNSIGNED_INT, (void*)command->buffer.GetOffset(), command->GetDrawCount(), 0);
+}
+
 Meshpool::DrawCommandBuffer::DrawCommandBuffer(DrawCommandBuffer&& old) noexcept :
+    pool(old.pool),
     material(old.material),
     buffer(std::move(old.buffer)),
     currentDrawCommandCapacity(old.currentDrawCommandCapacity),
@@ -692,7 +664,7 @@ void Meshpool::ExpandInstanceCapacity()
     Assert(vaoId != 0);
     instances.Bind();
     glBindVertexArray(vaoId);
-    format.SetInstancedVaoVertexAttributes(vaoId, instanceSize, vertexSize);
+    format.SetInstancedVaoVertexAttributes(vaoId.value, instanceSize, vertexSize);
 
 #ifdef MESHPOOL_LOGGING 
     DebugLogInfo("EIC ", vaoId);
@@ -734,7 +706,7 @@ CheckedUint Meshpool::GetCommandBuffer(const std::shared_ptr<Material>& material
 
     BufferedBuffer b(GL_DRAW_INDIRECT_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0);
     std::optional<DrawCommandBuffer> oB(std::nullopt);
-    oB.emplace(material, std::move(b));
+    oB.emplace(this, material, std::move(b));
 
     if (availableDrawCommandBufferIndices.size()) {
         CheckedUint index = availableDrawCommandBufferIndices.back();
@@ -748,11 +720,12 @@ CheckedUint Meshpool::GetCommandBuffer(const std::shared_ptr<Material>& material
     }
 }
 
-Meshpool::DrawCommandBuffer::DrawCommandBuffer(const std::shared_ptr<Material>& m, BufferedBuffer&& b):
+Meshpool::DrawCommandBuffer::DrawCommandBuffer(Meshpool* pool, const std::shared_ptr<Material>& m, BufferedBuffer&& b):
+    pool(pool),
     material(m),
     buffer(std::move(b))
 {
-
+    
 }
 
 CheckedUint Meshpool::DrawCommandBuffer::GetNewDrawCommandSlot()

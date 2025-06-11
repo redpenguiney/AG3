@@ -3,6 +3,7 @@
 #include "material.hpp"
 
 // helper thing for Mesh::FromFile() and TextMeshFromText() that will expand the vector so that it contains index if needed, then return vector.at(index)
+#pragma warning( disable : 4305)
 template<typename T>
 typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::vector<T>& vector) {
     if (vector.size() <= index) {
@@ -233,9 +234,9 @@ void TextMeshFromText(std::string text, const Texture& font, const TextMeshCreat
 
         // based on https://learnopengl.com/In-Practice/Text-Rendering 
         GLfloat characterX = currentX + glyph.bearingX;
-        GLfloat width = glyph.width;
+        GLfloat width = (GLfloat)glyph.width;
         GLfloat characterY = currentY - glyph.bearingY;
-        GLfloat height = glyph.height;
+        GLfloat height = (GLfloat)glyph.height;
 
         indices.push_back(vertexIndex + 2);
         indices.push_back(vertexIndex + 1);

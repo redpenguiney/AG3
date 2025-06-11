@@ -1,5 +1,6 @@
 #pragma once
 #include <ostream>
+#include <concepts>
 
 template<typename T>
 concept CheckedUintOperand = std::integral<T>;

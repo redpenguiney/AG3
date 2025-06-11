@@ -57,13 +57,13 @@ PhysicsEngine& PhysicsEngine::Get() {
 }
 
 // Simulates physics of a single rigidbody.
-void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::vector<std::pair<TransformComponent*, glm::dvec3>>& seperations) {    
+static void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::vector<std::pair<TransformComponent*, glm::dvec3>>& seperations) {    
     if (rigidbody.InverseMass() == 0) {
         return; // infinite mass = collisions/forces ain't doing nothing to this
     }
     
     // TODO: should REALLY use tight fitting AABB here
-    auto aabbToTest = collider.GetAABB();
+    const auto& aabbToTest = collider.GetAABB();
     std::vector<ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest, PhysicsEngine::Get().GetCollisionLayerMatrix()[collider.GetCollisionLayer()]);
     // Assert(potentialColliding.size() == 0);
 
@@ -323,7 +323,7 @@ void PhysicsEngine::Step(const double timestep) {
         }
 
         // exponentiation is used to make the drag work consistently across all timesteps
-        rigidbody.velocity *= powf(rigidbody.linearDrag, float(timestep));
+        rigidbody.velocity *= pow(rigidbody.linearDrag, timestep);
         rigidbody.angularVelocity *= powf(rigidbody.angularDrag, float(timestep));
 
         // f = ma, so a = f/m

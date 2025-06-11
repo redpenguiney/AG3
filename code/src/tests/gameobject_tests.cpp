@@ -3,7 +3,7 @@
 #include <gameobjects/gameobject.hpp>
 #include <physics/pengine.hpp>
 #include <conglomerates/gui.hpp>
-
+#include <conglomerates/skybox_factory.cpp>
 
 #include "noise/noise.h"
 
@@ -14,10 +14,12 @@ void TestSkybox() {
             TextureCreateParams({TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}}, Texture::ColorMap),
     },
     .type = Texture::TextureType::TextureCubemap,
-    .shader = GraphicsEngine::Get().skyboxMaterial->shader,
+    .shader = GetDefaultSkyboxShaderProgram()
 
     };
-    GraphicsEngine::Get().skyboxMaterial = Material::New(params).second;
+
+    MakeSkybox(Material::New(params).second);
+    //GraphicsEngine::Get().skyboxMaterial = Material::New(params).second;
     //GraphicsEngine::Get().skyboxMaterial->textures = TextureCollection::FindCollection(params).first;
 }
 
@@ -112,9 +114,9 @@ void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool phy
     auto m = CubeMesh();
 
     int nObjs = 0;
-    for (int x = 0; x < dim.x; x++) {
-        for (int y = 0; y < dim.y; y++) {
-            for (int z = 0; z < dim.z; z++) {
+    for (unsigned x = 0; x < dim.x; x++) {
+        for (unsigned y = 0; y < dim.y; y++) {
+            for (unsigned z = 0; z < dim.z; z++) {
                 GameobjectCreateParams params = physics ? 
                     GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider , ComponentBitIndex::Rigidbody }) : 
                     GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
@@ -123,8 +125,8 @@ void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool phy
                 //params.materialId = brickMaterial->id;
                 auto g = GameObject::New(params);
                 g->Get<TransformComponent>()->SetPos(glm::dvec3(start + stride * glm::uvec3(x, y, z)));
-                g->Get<ColliderComponent>()->elasticity = 0.3;
-                g->Get<ColliderComponent>()->friction = 1.0;
+                g->Get<ColliderComponent>()->elasticity = 0.3f;
+                g->Get<ColliderComponent>()->friction = 1.0f;
                 // g->rigidbodyComponent->angularDrag = 1.0;
                 // g->rigidbodyComponent->linearDrag = 1.0;
                 // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
@@ -183,8 +185,8 @@ void TestSphere(int x, int y, int z, bool physics)
     //params.materialId = brickMaterial->id;
     auto g = GameObject::New(params);
     g->Get<TransformComponent>()->SetPos({ x, y, z });
-    g->Get<ColliderComponent>()->elasticity = 0.3;
-    g->Get<ColliderComponent>()->friction = 1.0;
+    g->Get<ColliderComponent>()->elasticity = 0.3f;
+    g->Get<ColliderComponent>()->friction = 1.0f;
     // g->rigidbodyComponent->angularDrag = 1.0;
     // g->rigidbodyComponent->linearDrag = 1.0;
     // g->rigidbodyComponent->velocity = {1.0, 0.0, 1.0};
@@ -269,7 +271,7 @@ void TestGrassFloor()
     floor->RawGet<TransformComponent>()->SetRot(glm::vec3{ 0.0, glm::radians(0.0), glm::radians(0.0) });
     floor->RawGet<ColliderComponent>()->elasticity = 1.0;
     floor->RawGet<TransformComponent>()->SetScl({ 10, 1, 10 });
-    floor->RawGet<RenderComponent>()->SetColor({ 0, 1, 0, 1.0 });
+    floor->RawGet<RenderComponent>()->SetColor({ 1, 1, 1, 1.0 });
     floor->RawGet<RenderComponent>()->SetTextureZ(grassTextureZ);
     floor->name = "ah yes the floor here is made of floor";
 }
@@ -385,8 +387,8 @@ void TestGarticMusic()
     auto soundSounder = GameObject::New(params);
     soundSounder->RawGet<AudioPlayerComponent>()->looped = true;
     soundSounder->RawGet<AudioPlayerComponent>()->positional = false;
-    soundSounder->RawGet<AudioPlayerComponent>()->volume = 0.15;
-    soundSounder->RawGet<AudioPlayerComponent>()->pitch = 0.5;
+    soundSounder->RawGet<AudioPlayerComponent>()->volume = 0.15f;
+    soundSounder->RawGet<AudioPlayerComponent>()->pitch = 0.5f;
     soundSounder->RawGet<AudioPlayerComponent>()->Play();
 }
 

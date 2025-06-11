@@ -4,7 +4,7 @@
 #include <array>
 #include "texture.hpp"
 
-class MaterialCreateParams;
+struct MaterialCreateParams;
 
 // Materials can share their textures (by storing them in texture arrays, for example), so materials do not directly store their textures but instead hold references to TextureCollections.
 class TextureCollection {

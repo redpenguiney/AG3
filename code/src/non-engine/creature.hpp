@@ -21,6 +21,9 @@ public:
 	// Make the creature start trying to move towards this destination. Will pathfind as neccesary.
 	void MoveTo(glm::ivec2 worldPos);
 
+	// Makes the creature move towards the destination (the last waypoint of the path), using the given path (initially; may recalculate path as needed).
+	void MoveTo(std::unique_ptr<Path> path);
+
 	void StopMoving();
 
 protected:
@@ -31,7 +34,7 @@ protected:
 	virtual void Think(float dt) override;
 
 private:
-	std::optional<Path> currentPath = std::nullopt;
+	std::unique_ptr<Path> currentPath = nullptr;
 	std::optional<glm::dvec2> currentGoal; // where creature is currently tryna pathfind to
 	int currentPathWaypointIndex;
 };
