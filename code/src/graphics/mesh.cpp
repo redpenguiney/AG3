@@ -340,6 +340,11 @@ Mesh::~Mesh() {
     //DebugLogInfo("Deleting mesh with id ", meshId, " of kilobytes ", vertices.size() / 256);
 }
 
+std::shared_ptr<Mesh>& Mesh::Empty() {
+    static std::shared_ptr<Mesh> mesh = Mesh::New(RawMeshProvider());
+    return mesh;
+}
+
 Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshCreateParams& params, bool dynamic, bool fromText, std::optional<std::vector<Bone>> bonez, std::optional<std::vector<Animation>> anims, unsigned int rootBoneIndex):
 dynamic(dynamic),
 meshId(MeshGlobals::Get().LAST_MESH_ID++),
@@ -438,10 +443,11 @@ void Mesh::StopModifying(bool normalizeSize) {
         m->RefreshMesh();
     }
 
-    if (GraphicsEngine::Get().dynamicMeshLocations.contains(meshId)) { //  this could be legitimately not the case if the mesh just isn't in use
+    auto& GE = GraphicsEngine::Get();
+    if (GE.dynamicMeshLocations.contains(meshId)) { //  this could be legitimately not the case if the mesh just isn't in use
         //DebugLogInfo("Completing modification for ", meshId, " count ", indices.size());
-        auto [meshpoolId, currentMeshSlot] = GraphicsEngine::Get().dynamicMeshLocations.at(meshId);
-        Meshpool& pool = *GraphicsEngine::Get().meshpools.at(meshpoolId);
+        auto [meshpoolId, currentMeshSlot] = GE.dynamicMeshLocations.at(meshId);
+        Meshpool& pool = *GE.meshpools.at(meshpoolId);
         //DebugLogInfo("Current slot byte capacity is ", pow(2, (int)pool.meshSlotContents.at(pool.meshUsers.at(meshId)).sizeClass) * vertexFormat.GetNonInstancedVertexSize(), " we need capacity of ", std::max(indices.size() * sizeof(GLuint), vertexFormat.GetNonInstancedVertexSize() * vertices.size()));
 
 
@@ -489,13 +495,13 @@ void Mesh::StopModifying(bool normalizeSize) {
             // low priority in any case
             // TODO: could making component no longer in a meshpool could break stuff that calls methods of rendercomponent before it's readded?
 
-            auto componentsToUpdate = GraphicsEngine::Get().dynamicMeshUsers.at(meshId); // deliberate vector copy. Calling RemoveObject() will modify the vector otherwise which is undesirable
+            auto componentsToUpdate = GE.dynamicMeshUsers.at(meshId); // deliberate vector copy. Calling RemoveObject() will modify the vector otherwise which is undesirable
             for (auto& renderComponent : componentsToUpdate) {
-                GraphicsEngine::Get().RemoveObject(renderComponent);
+                GE.RemoveObject(renderComponent);
                 renderComponent->drawHandle.drawBufferIndex = -1;
                 renderComponent->drawHandle.instanceSlot = -1;
                 renderComponent->drawHandle.meshIndex = -1;
-                GraphicsEngine::Get().AddObject(renderComponent->materialId, meshId, renderComponent);
+                GE.AddObject(renderComponent->materialId, meshId, renderComponent);
             }
         }
     }

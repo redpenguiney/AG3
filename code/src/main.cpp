@@ -100,7 +100,14 @@ int main(int numArgs, const char *argPtrs[]) {
     //GameInit();
     TestGraphics();
     //GE.SetDebugFreecamEnabled(true);
+
     //TestGrassFloor();
+    //TestBrickWall();
+    //TestSpinningSpotlight();
+    //TestCubeArray({ 3, 4, 3 }, { 1, 1, 1 }, { 10, 10, 10 }, false);
+    //TestSphere(4, 4, 4, false);
+    //TestUi();
+    //TestSkybox();
     //TestStationaryPointlight();
     //GE.skyboxMaterial->shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl");
 

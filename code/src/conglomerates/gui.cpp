@@ -102,11 +102,22 @@ void Gui::FireInputEvents()
     //DebugLogInfo("Checked ", c);
 }
 
+static void ClearDepthBuffer(Material*, std::shared_ptr<ShaderProgram>) {
+    glClear(GL_DEPTH_BUFFER_BIT);
+}
+
 void Gui::Init()
 {
     GraphicsEngine::Get().GetWindow().onWindowResize->Connect(&UpdateGuiForNewWindowResolution);
     GraphicsEngine::Get().GetWindow().postInputProccessing->Connect(&FireInputEvents);
     GraphicsEngine::Get().preRenderEvent->Connect(&UpdateBillboardGuis);
+
+    // create a thing that clears the depth buffer before drawing gui
+    auto depthClearerMat = Material::New(MaterialCreateParams{ .inputProvider = ShaderInputProvider(ClearDepthBuffer), .drawOrder = GUI_DRAW_ORDER - 1 });
+    auto depthClearGoParams = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
+    depthClearGoParams.materialId = depthClearerMat.second->id;
+    depthClearGoParams.meshId = Mesh::Empty()->meshId;
+    GameObject::New(depthClearGoParams);
 }
 
 
@@ -117,7 +128,7 @@ void Gui::UpdateBillboardGuis(float) {
 }
 
 #pragma warning(disable : 26829)
-Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial,  std::optional<BillboardGuiInfo> billboardGuiInfo, bool clippingEnabled):
+Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial,  std::optional<BillboardGuiInfo> billboardGuiInfo, bool clippingEnabled, bool overrideDrawOrder):
     material(clippingEnabled ? Material::Copy(guiMaterial.has_value() ? guiMaterial->second : (billboardGuiInfo.has_value() ? GraphicsEngine::Get().defaultBillboardGuiMaterial : GraphicsEngine::Get().defaultGuiMaterial)) : guiMaterial.has_value() ? guiMaterial->second : (billboardGuiInfo.has_value() ? GraphicsEngine::Get().defaultBillboardGuiMaterial : GraphicsEngine::Get().defaultGuiMaterial)),
     ownsMaterial(clippingEnabled),
     onMouseEnter(Event<>::New()),
@@ -126,7 +137,13 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
     onInputEnd(Event<InputObject>::New())
 
 {
-   
+
+    if (overrideDrawOrder) {
+        material->drawOrder = GUI_DRAW_ORDER;
+        if (fontMaterial.has_value()) {
+            fontMaterial->second->drawOrder = GUI_DRAW_ORDER;
+        }
+    }
     //DebugLogInfo("Generated gui ", this);
     
     GameobjectCreateParams objectParams({ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO});

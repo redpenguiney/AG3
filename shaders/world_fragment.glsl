@@ -69,9 +69,9 @@ void main()
     color *= tx * vec4(light, 1);
 
     if (color.a < 0.001) {
-        discard;
+        //discard;
     };
 
     Output = color;
-
+    Output = vec4(1, 1, 1, 1);
 };

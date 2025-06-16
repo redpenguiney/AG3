@@ -74,8 +74,8 @@ defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, Shad
     // }
     // std::cout << "\n";
 
-    defaultMaterial->shader->Uniform("envLightDirection", glm::normalize(-glm::vec3(1, 1, 1)));
-    defaultMaterial->shader->Uniform("envLightColor", glm::vec3(1.0, 0.85, 0.7));
+    defaultMaterial->shader->Uniform("envLightDirection", glm::normalize(-glm::vec3(0.9, -1, 0.8)));
+    defaultMaterial->shader->Uniform("envLightColor", glm::vec3(237.f/255, 213.f/255, 158.f/255));
     defaultMaterial->shader->Uniform("envLightDiffuse", 0.9f);
     defaultMaterial->shader->Uniform("envLightAmbient", 0.4f);
     defaultMaterial->shader->Uniform("envLightSpecular", 0.0f);
@@ -88,12 +88,12 @@ defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, Shad
     errorMaterialTextureZ = 0.0;  //pair.first;
 
     // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
-    glDepthFunc(GL_LEQUAL); 
+    //glDepthFunc(GL_LEQUAL); 
 
     // tell opengl how to do transparency
-    glEnable(GL_BLEND);
+    //glEnable(GL_BLEND);
     //glBlendEquation(GL_FUNC_ADD); // this is default
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     //glEnable(GL_ALPHA_TEST);
     //glAlphaFunc(GL_GREATER, 0.0f);
 }
@@ -323,7 +323,7 @@ void GraphicsEngine::RenderScene(float dt) {
 
     //glDepthMask(GL_TRUE); // apparently this being off prevents clearing the depth buffer to work?? 
     //glDisable(GL_SCISSOR_TEST);
-    //glClear(GL_DEPTH_BUFFER_BIT);
+    
     //mainFramebuffer->Clear({{  0, 0, 0, 0 },});
     //mainTransparentFramebuffer->Clear({ { 0, 0, 0, 0 }, { 1, 1, 1, 1 } });
 
@@ -358,13 +358,16 @@ void GraphicsEngine::RenderScene(float dt) {
     //glDisable(GL_SCISSOR_TEST);
     //glClear( GL_DEPTH_BUFFER_BIT);
     
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     DrawWorld();
 
     // Debugging stuff
     // TODO: actual settings to toggle debug stuff
-    //glDisable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_SCISSOR_TEST);
+    // (will be reenabled by materials next frame)
     //SpatialAccelerationStructure::Get().DebugVisualize();
-    
     DebugAxis();
 
     glFlush(); // Tell OpenGL we're done drawing.
@@ -497,7 +500,7 @@ void GraphicsEngine::FlipMeshpoolBuffers()
 void GraphicsEngine::DrawWorld()
 {
     //glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
-    glEnable(GL_CULL_FACE); // backface culling
+    glDisable(GL_CULL_FACE); // backface culling
 
     //if (wireframeDrawing) {
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -531,7 +534,7 @@ void GraphicsEngine::DrawWorld()
 
         // sorting by draw order is first priority; the user expects this order for their pipeline to work properly.
         if (a->material->drawOrder != b->material->drawOrder)
-            return a->material->drawOrder < b->material->drawOrder; // TODO: might be backwards lol
+            return a->material->drawOrder < b->material->drawOrder; 
         // if that's not an issue, changing the bound shader program is very expensive
         else if (a->material->shader->shaderProgramId != b->material->shader->shaderProgramId)
             return a->material->shader->shaderProgramId < b->material->shader->shaderProgramId;

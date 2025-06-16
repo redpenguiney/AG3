@@ -107,6 +107,9 @@ class Mesh: public std::enable_shared_from_this<Mesh> {
     
     ~Mesh();
 
+    // Returns an empty mesh, useful for rendercomponents that are just there for their material
+    static std::shared_ptr<Mesh>& Empty();
+
     // Updates all objects using this mesh after you changed the mesh via StartModifying().
     // Must only be called after a call to StartModifying().
     void StopModifying(bool normalizeSize);

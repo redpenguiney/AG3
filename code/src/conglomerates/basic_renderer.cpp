@@ -4,6 +4,7 @@
 
 
 BasicRenderer& BasicRenderer::Setup(std::shared_ptr<ShaderProgram> postProcShader) {
+    used = true;
     static BasicRenderer renderer(postProcShader);
     return renderer;
 }
@@ -70,16 +71,19 @@ static void UpdateFramebuffer() {
     }
 }
 
-static void PrepPostprocessing(Material* material, std::shared_ptr<ShaderProgram> _) {
+void BasicRenderer::PrepPostprocessing(Material* material, std::shared_ptr<ShaderProgram> _) {
     auto& BE = BasicRenderer::Setup();
 
     UpdateFramebuffer();
-    
-    // clearing for purposes of the next frame
 
-    //BE.mainFramebuffer->Clear({ {0, 0, 0, 0 }, {0, 0, 0, 0}, { 1, 1, 1, 1 } });
+    // clearing depth/accum/reveal for purposes of the next frame; only the color is still needed, and next frame will paint it over assuming skybox exists
+    BE.mainFramebuffer->Clear({ {-1, -1, -1, -1 }, {0, 0, 0, 0}, { 1, 1, 1, 1 } });
+    BE.mainFramebuffer->ClearDepthRenderbuffer();
+   
     BE.mainFramebuffer->Unbind();
     BE.mainFramebuffer->textureAttachments[0].Use();
+
+   
 
     DebugLogInfo("POSTPROC");
 }
@@ -90,6 +94,7 @@ static void PrepOITComposition(Material* material, std::shared_ptr<ShaderProgram
 
     UpdateFramebuffer();
 
+    
     BE.mainFramebuffer->Bind();
     BE.mainFramebuffer->textureAttachments[1].Use();
     BE.mainFramebuffer->textureAttachments[2].Use();
@@ -97,7 +102,7 @@ static void PrepOITComposition(Material* material, std::shared_ptr<ShaderProgram
     DebugLogInfo("OIT COMPOSITION.");
 }
 
-static void PrepNormalRendering(Material* material, std::shared_ptr<ShaderProgram> _) {
+void BasicRenderer::PrepNormalRendering(Material* material, std::shared_ptr<ShaderProgram> _) {
     auto& BE = BasicRenderer::Setup();
 
     UpdateFramebuffer();
@@ -113,7 +118,7 @@ BasicRenderer::BasicRenderer(std::shared_ptr<ShaderProgram> postProcShader) {
 
     auto screenQuadMesh = Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .expectedCount = 2, .normalizeSize = false }));
 
-    GraphicsEngine::Get().defaultMaterial->inputProvider = PrepNormalRendering;
+    GraphicsEngine::Get().defaultMaterial->inputProvider = ShaderInputProvider(PrepNormalRendering);
 
     auto [_, oitCompositorMaterial] = Material::New(MaterialCreateParams{
         .shader = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/transparent_compositor_frag.glsl", false, false),

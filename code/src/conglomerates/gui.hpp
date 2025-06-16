@@ -6,6 +6,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include "basic_renderer.hpp"
 
 class Gui;
 
@@ -47,6 +48,7 @@ enum class GuiChildBehaviour {
 class Gui: public std::enable_shared_from_this<Gui> {
 public:
     
+    static inline int GUI_DRAW_ORDER = BasicRenderer::POSTPROC_DRAW_ORDER + 500;
 
     // called in main.cpp, connects some events
     static void Init();
@@ -125,7 +127,7 @@ public:
     // generally should be used with std::make_shared/shared_ptr, but most features will function even if you don't.
     // guiMaterial will default to the default gui material specified in GraphicsEngine if nullopt. 
     // if clippingEnabled, then clipTarget may be used and Gui::material will be set to a copy of guiMaterial (or the default material).
-    Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<BillboardGuiInfo> billboardInfo = std::nullopt, bool clippingEnabled = false);
+    Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<BillboardGuiInfo> billboardInfo = std::nullopt, bool clippingEnabled = false, bool overrideDrawOrder = true);
 
     ~Gui();
 

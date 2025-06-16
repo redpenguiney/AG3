@@ -567,7 +567,7 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
 }
 
 void Meshpool::DrawCommandBuffer::Draw() {
-    DebugLogInfo(material->drawOrder);
+    //DebugLogInfo(material->drawOrder);
     Assert(pool);
     buffer.Bind();
     auto& shader = material->shader;

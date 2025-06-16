@@ -14,8 +14,8 @@ void TestSkybox() {
             TextureCreateParams({TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}, TextureSource {"../textures/sky/top.png"}}, Texture::ColorMap),
     },
     .type = Texture::TextureType::TextureCubemap,
-    .shader = GetDefaultSkyboxShaderProgram()
-
+    .shader = GetDefaultSkyboxShaderProgram(),
+    .inputProvider = BasicRenderer::used ? ShaderInputProvider(BasicRenderer::PrepNormalRendering) : ShaderInputProvider()
     };
 
     MakeSkybox(Material::New(params).second);
@@ -44,15 +44,23 @@ std::shared_ptr<Mesh> SphereMesh() {
     return m;
 }
 
-std::pair<float, std::shared_ptr<Material>> GrassMaterial() {
-    static auto grass = Material::New(MaterialCreateParams{
-        .textureParams = {
-             TextureCreateParams({ TextureSource{"../textures/grass.png"},}, Texture::ColorMap),
-             TextureCreateParams({TextureSource {"../textures/crate_specular.png"}}, Texture::SpecularMap)
-        },
-        .type = Texture::Texture2D }
-    );
+std::pair<float, std::shared_ptr<Material>> _GetGrass() {
+    auto grass = Material::Copy(GraphicsEngine::Get().defaultMaterial);
 
+    auto collection = TextureCollection::FindCollection(MaterialCreateParams{
+            .textureParams = {
+                 TextureCreateParams({ TextureSource{"../textures/grass.png"},}, Texture::ColorMap),
+                 TextureCreateParams({TextureSource {"../textures/crate_specular.png"}}, Texture::SpecularMap)
+            },
+            .type = Texture::Texture2D });
+
+    grass->textures = collection.first;
+
+    return std::make_pair(collection.second, grass);
+}
+
+std::pair<float, std::shared_ptr<Material>> GrassMaterial() {
+    static auto grass = _GetGrass();
     return grass;
 }
 
@@ -271,7 +279,7 @@ void TestGrassFloor()
     floor->RawGet<TransformComponent>()->SetRot(glm::vec3{ 0.0, glm::radians(0.0), glm::radians(0.0) });
     floor->RawGet<ColliderComponent>()->elasticity = 1.0;
     floor->RawGet<TransformComponent>()->SetScl({ 10, 1, 10 });
-    floor->RawGet<RenderComponent>()->SetColor({ 1, 1, 1, 1.0 });
+    floor->RawGet<RenderComponent>()->SetColor({ 0.5, 1, 0.5, 1.0 });
     floor->RawGet<RenderComponent>()->SetTextureZ(grassTextureZ);
     floor->name = "ah yes the floor here is made of floor";
 }
@@ -337,8 +345,8 @@ void TestSpinningSpotlight()
     coolLight->Get<RenderComponent>()->SetTextureZ(-1);
     coolLight->Get<TransformComponent>()->SetPos({ 30, 5, 0 });
     coolLight->Get<SpotLightComponent>()->SetRange(100);
-    coolLight->Get<SpotLightComponent>()->SetColor({ 1, 1, 1 });
-    coolLight->Get<RenderComponent>()->SetColor({ 0, 1, 0.5, 1 });
+    coolLight->Get<SpotLightComponent>()->SetColor({ 1, 1, 0 });
+    coolLight->Get<RenderComponent>()->SetColor({ 1, 1, 0.0, 1 });
 
     PhysicsEngine::Get().prePhysicsEvent->Connect([coolLight](float dt) {
         coolLight->Get<TransformComponent>()->SetPos({ cos(Time()) * 10, 5.0, sin(Time()) * 10 });
@@ -397,7 +405,9 @@ void TestUi()
 
     auto [arialLayer, arialFont] = ArialFont();
 
-    auto ui = new Gui(true,
+    auto ui = new Gui(
+        true,
+        std::nullopt,
         std::make_optional(std::make_pair(arialLayer, arialFont)),
         std::nullopt
         //Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), 

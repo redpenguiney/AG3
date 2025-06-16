@@ -5,6 +5,7 @@
 
 class GameObject;
 class ShaderProgram;
+class Material;
 
 // A simple renderer with support for postprocessing and order-independent transparency (OIT). You'll need to create your own equivalent for this if you want rendering to work.
 // Plays nice with the functions of skybox_factory.cpp.
@@ -19,11 +20,16 @@ public:
 	// Call once before rendering begins.
 	static BasicRenderer& Setup(std::shared_ptr<ShaderProgram> postProcShader = nullptr);
 
+	// true if Setup() has been called.
+	static inline bool used = false;
+
 	// everything is drawn onto this framebuffer
 	// todo: make it not do post processing when this isn't here
 	// has color and depth, plus accumulation + revealage for use in OIT
 	std::optional<Framebuffer> mainFramebuffer;
 
+	static void PrepPostprocessing(Material* material, std::shared_ptr<ShaderProgram> _);
+	static void PrepNormalRendering(Material* material, std::shared_ptr<ShaderProgram> _);
 	// Used for OIT
 	//std::shared_ptr<GameObject> compositionScreenQuad;
 
