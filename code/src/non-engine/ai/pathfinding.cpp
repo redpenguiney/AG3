@@ -296,7 +296,7 @@ std::unique_ptr<Path> World::ComputePath(glm::ivec2 start, glm::ivec2 destinatio
             DebugLogInfo("Found path!");
             auto w = forward.GetWaypoints();
             std::reverse(w.begin(), w.end());
-            Assert(!w.empty());
+            //Assert(!w.empty()); if w is empty, that just means start/goal were the same
             return std::make_unique<Path>(w, w.size());
         }
         //DebugLogInfo("Backstepping");
@@ -308,7 +308,7 @@ std::unique_ptr<Path> World::ComputePath(glm::ivec2 start, glm::ivec2 destinatio
             //Assert(false);
             DebugLogInfo("Found path (backward)!");
             auto w = backward.GetWaypoints();
-            Assert(!w.empty());
+            //Assert(!w.empty()); if w is empty, that just means start/goal were the same
             return std::make_unique<Path>(w, w.size());
         }
     }

@@ -427,7 +427,7 @@ Path::~Path(){
 std::vector<TerrainChunk*> Path::GetContainingChunks()
 {
     std::vector<TerrainChunk*> chunks;
-    Assert(wayPoints.size() > 0);
+    //Assert(wayPoints.size() > 0);
     glm::ivec2 lastChunk = glm::ivec2(1, 1); // invalid chunk position so we good
     for (auto& w : wayPoints) {
         glm::ivec2 pos = World::ChunkCoords(w);
