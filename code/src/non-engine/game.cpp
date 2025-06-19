@@ -49,7 +49,7 @@ void GameInit()
     //TestCubeArray({ 2, 2, 2 }, {4, 4, 4}, {2, 2, 2}, true);
     //PE.SetCollisionLayers(0, 0, false);
 
-    BasicRenderer::Setup();
+    //BasicRenderer::Setup();
 
     auto skyboxMaterial = Material::New(MaterialCreateParams{ .shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl"), .drawOrder = 500 }).second;
     MakeSkybox(skyboxMaterial);
