@@ -1,4 +1,9 @@
-vcpkg_installed
+vcpkg_installed/*
 .cache
-.cache/
-.vs/
+.cache/*
+.vs/*
+AG3/*
+!AG3/AG3.sln
+!AG3/AG3.vcxproj
+!AG3/AG3.vcxproj.filters
+!AG3/AG3.vcxproj.user
