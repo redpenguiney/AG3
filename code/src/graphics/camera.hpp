@@ -2,6 +2,7 @@
 
 class Camera {
     public: 
+    // in degrees
     float fieldOfView;
     float near = 0.1f;
     float far = 16384.0f;

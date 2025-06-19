@@ -44,6 +44,8 @@ defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, Shad
 {
     //defaultMaterial->ignorePostProc = true;
 
+    debugFreecamCamera.fieldOfView = 120;
+    
     pointLightCount = 0;
     spotLightCount = 0;
 

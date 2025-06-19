@@ -13,7 +13,7 @@ glm::mat4x4 Camera::GetProj(float aspect) {
     Assert(aspect > 0);
     Assert(near > 0);
     Assert(far > near);
-    return glm::perspective(fieldOfView, aspect, near, far);
+    return glm::perspective(glm::radians(fieldOfView), aspect, near, far);
 }
 
 glm::mat4x4 Camera::GetCamera() {
