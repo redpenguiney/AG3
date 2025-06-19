@@ -500,7 +500,7 @@ void GraphicsEngine::FlipMeshpoolBuffers()
 void GraphicsEngine::DrawWorld()
 {
     //glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
-    glDisable(GL_CULL_FACE); // backface culling
+    glEnable(GL_CULL_FACE); // backface culling
 
     //if (wireframeDrawing) {
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
