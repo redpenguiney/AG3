@@ -6,7 +6,7 @@
 // I will find the graphics bugs. Once. And. For all.
 void TestGraphics() {
 
-	BasicRenderer::Setup();
+	//BasicRenderer::Setup();
 	TestSkybox();
 
 	TestGrassFloor();

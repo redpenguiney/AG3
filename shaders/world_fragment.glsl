@@ -73,5 +73,5 @@ void main()
     };
 
     Output = color;
-    Output = vec4(1, 1, 1, 1);
+    //Output = vec4(1, 1, 1, 1);
 };
