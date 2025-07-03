@@ -50,29 +50,44 @@ Framebuffer::~Framebuffer() {
 
 // TODO: apparently sometimes you want to use an argument besides GL_FRAMEBUFFER?
 void Framebuffer::Bind() {
+    std::vector<size_t> attachments;
+    for (size_t i = 0; i < colorAttachmentNames.size(); i++) attachments.push_back(i);
+    Bind(attachments);
+}
+
+void Framebuffer::Bind(std::vector<size_t> attachmentIndices) {
+
+    std::vector<GLenum> attachments;
+    for (auto i : attachmentIndices) {
+        attachments.push_back(colorAttachmentNames.at(i));
+    }
+
     if (currentlyBound == glFramebufferId) {
-        //DebugLogInfo("Failed to bind");
-        return;
-        
+        if (attachmentIndices != currentDrawBuffers) {
+            glDrawBuffers((GLsizei)attachments.size(), attachments.data());
+            
+        }
     }
     else {
         //DebugLogInfo("Bound framebuffer. (prev was ", currentlyBound, " now ", glFramebufferId, ")");
         currentlyBound = glFramebufferId;
-        
+        glBindFramebuffer(bindingLocation, glFramebufferId);
+        glViewport(0, 0, width, height);
+        glDrawBuffers((GLsizei)attachments.size(), attachments.data());
     }
-
-    glBindFramebuffer(bindingLocation, glFramebufferId);
-
+    currentDrawBuffers = attachmentIndices;
+    
     //const GLenum buffers[]{ GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-    glDrawBuffers((GLsizei)colorAttachmentNames.size(), colorAttachmentNames.data());
-    glViewport(0, 0, width, height);
+    
+    
 }
 
 void Framebuffer::Clear(std::vector<glm::vec4> clearColors)
 {
-    Assert(clearColors.size() == colorAttachmentNames.size());
+    //Assert(clearColors.size() == colorAttachmentNames.size());
+    Assert(clearColors.size() == currentDrawBuffers.size());
+    Assert(currentlyBound == glFramebufferId);
 
-    Bind();
     for (int i = 0; i < clearColors.size(); i++) {
         if (clearColors[i] == glm::vec4(-1, -1, -1, -1)) continue;
         //if (textureAttachments[i].format == Texture::TextureFormat::RGBA_16Float) {
@@ -86,7 +101,8 @@ void Framebuffer::Clear(std::vector<glm::vec4> clearColors)
 
 void Framebuffer::ClearDepthRenderbuffer() {
     Assert(depthRenderbufferId.has_value());
-    Bind();
+    Assert(currentlyBound == glFramebufferId);
+    glDepthMask(true);
     glClear(GL_DEPTH_BUFFER_BIT);
 }
 

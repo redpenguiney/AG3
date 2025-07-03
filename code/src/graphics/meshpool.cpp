@@ -21,7 +21,7 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
     indices(GL_ELEMENT_ARRAY_BUFFER, MESH_BUFFERING_FACTOR, 0),
     instances(GL_ARRAY_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0),
     drawCommands(),
-    bones(std::nullopt),
+    bones( std::nullopt),
     boneOffsetBuffer(std::nullopt),
 
     vaoId(0),
@@ -36,6 +36,12 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
 #ifdef MESHPOOL_LOGGING 
     DebugLogInfo("Meshpool created"); 
 #endif
+
+
+    if (format.supportsAnimation) {
+        bones.emplace(GL_SHADER_STORAGE_BUFFER, 1, 0);
+        boneOffsetBuffer.emplace(GL_SHADER_STORAGE_BUFFER, 1, 0);
+    }
 }
 
 Meshpool::~Meshpool()
@@ -323,7 +329,7 @@ void Meshpool::SetBoneState(const DrawHandle& handle, CheckedUint nBones, glm::m
 {
     Assert(format.supportsAnimation);
         
-    Assert(format.maxBones <= nBones.value);
+    Assert(format.maxBones >= nBones.value);
     glm::mat4x4* bonesLocation = (glm::mat4x4*)(bones->Data() + handle.instanceSlot * sizeof(glm::mat4x4));
     
     // make sure we don't segfault 
@@ -567,6 +573,7 @@ void Meshpool::DrawCommandBuffer::ExpandDrawCommandCapacity()
 }
 
 void Meshpool::DrawCommandBuffer::Draw() {
+
     //DebugLogInfo(material->drawOrder);
     Assert(pool);
     buffer.Bind();

@@ -103,6 +103,8 @@ void Gui::FireInputEvents()
 }
 
 static void ClearDepthBuffer(Material*, std::shared_ptr<ShaderProgram>) {
+    Framebuffer::Unbind();
+    glDepthMask(GL_TRUE);
     glClear(GL_DEPTH_BUFFER_BIT);
 }
 
@@ -128,9 +130,9 @@ void Gui::UpdateBillboardGuis(float) {
 }
 
 #pragma warning(disable : 26829)
-Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial,  std::optional<BillboardGuiInfo> billboardGuiInfo, bool clippingEnabled, bool overrideDrawOrder):
-    material(clippingEnabled ? Material::Copy(guiMaterial.has_value() ? guiMaterial->second : (billboardGuiInfo.has_value() ? GraphicsEngine::Get().defaultBillboardGuiMaterial : GraphicsEngine::Get().defaultGuiMaterial)) : guiMaterial.has_value() ? guiMaterial->second : (billboardGuiInfo.has_value() ? GraphicsEngine::Get().defaultBillboardGuiMaterial : GraphicsEngine::Get().defaultGuiMaterial)),
-    ownsMaterial(clippingEnabled),
+Gui::Gui(const GuiCreateParams& params):
+    material(params.clippingEnabled ? Material::Copy(params.guiMaterial ? params.guiMaterial : (params.billboardInfo.has_value() ? GraphicsEngine::Get().defaultBillboardGuiMaterial : GraphicsEngine::Get().defaultGuiMaterial)) : params.guiMaterial ? params.guiMaterial : (params.billboardInfo.has_value() ? GraphicsEngine::Get().defaultBillboardGuiMaterial : GraphicsEngine::Get().defaultGuiMaterial)),
+    ownsMaterial(params.clippingEnabled),
     onMouseEnter(Event<>::New()),
     onMouseExit(Event<>::New()),
     onInputBegin(Event<InputObject>::New()),
@@ -138,10 +140,10 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
 
 {
 
-    if (overrideDrawOrder) {
+    if (params.overrideDrawOrder) { 
         material->drawOrder = GUI_DRAW_ORDER;
-        if (fontMaterial.has_value()) {
-            fontMaterial->second->drawOrder = GUI_DRAW_ORDER;
+        if (params.textInfo.has_value()) {
+            params.textInfo->fontMaterial->drawOrder = GUI_DRAW_ORDER;
         }
     }
     //DebugLogInfo("Generated gui ", this);
@@ -152,7 +154,7 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
 
     
     objectParams.materialId = material->id;
-    materialLayer = guiMaterial.has_value() ? guiMaterial->first : -1;
+    materialLayer = params.guiMaterialTextureLayer;
     
     objectParams.meshId = Mesh::Square()->meshId;
 
@@ -174,10 +176,10 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
 
     rgba = {1, 0, 0, 1};
 
-    if (haveText) {
-        Assert(fontMaterial.has_value() && fontMaterial->second->Count(Texture::FontMap));
+    if (params.textInfo.has_value()) {
+        Assert(params.textInfo->fontMaterial && params.textInfo->fontMaterial->Count(Texture::FontMap));
 
-        auto fMat = clippingEnabled ? Material::Copy(fontMaterial->second) : fontMaterial->second;
+        auto fMat = params.clippingEnabled ? Material::Copy(params.textInfo->fontMaterial) : params.textInfo->fontMaterial;
 
         GameobjectCreateParams textObjectParams({ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO });
         textObjectParams.materialId = fMat->id;
@@ -199,16 +201,16 @@ Gui::Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>
             .text = "Text",
             .object = GameObject::New(textObjectParams),
             .fontMaterial = fMat,
-            .fontMaterialLayer = fontMaterial->first
+            .fontMaterialLayer = params.textInfo->fontMaterialTextureLayer
         });
 
         guiTextInfo->object->name = "GuiText";
 
     }
 
-    billboardInfo = billboardGuiInfo;
+    billboardInfo = params.billboardInfo;
 
-    if (haveText) {
+    if (params.textInfo.has_value()) {
         UpdateGuiText();
     }
     UpdateGuiGraphics();

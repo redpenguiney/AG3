@@ -3,36 +3,40 @@
 #include "gameobject_tests.hpp"
 #include <conglomerates/basic_renderer.hpp>
 
+
+void TransparentHandler(Material*, std::shared_ptr<ShaderProgram>) {
+	//BasicRenderer::Setup().mainFramebuffer->Bind({ 1, 2 });
+}
+
 // I will find the graphics bugs. Once. And. For all.
 void TestGraphics() {
 
-	//BasicRenderer::Setup();
+	BasicRenderer::Setup();
 	TestSkybox();
 
 	TestGrassFloor();
+	TestBrickWall();
 
-	TestCubeArray({ 3, 4, 3 }, { 1, 1, 1 }, { 10, 10, 10 }, false);
+	TestAnimation();
 
-	TestStationaryPointlight();
+	//TestUi();
+
+	//TestCubeArray({ 3, 4, 3 }, { 1, 1, 1 }, { 10, 10, 10 }, false);
+
+	//TestStationaryPointlight();
 
 	static std::vector<std::shared_ptr<GameObject>> cubes = {};
 	static std::vector<std::shared_ptr<GameObject>> spheres = {};
 	static std::vector<std::shared_ptr<GameObject>> unique_cubes = {};
 
 	GraphicsEngine::Get().SetDebugFreecamEnabled(true);
+	GraphicsEngine::Get().GetDebugFreecamCamera().position += glm::dvec3 {0, 0, 15};
 	//GraphicsEngine::Get().SetWireframeEnabled(true);
 
 	static auto cubeM = CubeMesh();
 	static auto sphereM = SphereMesh();
 
-	auto transparentMaterial = Material::Copy(GraphicsEngine::Get().defaultMaterial);
-	transparentMaterial->depthMaskEnabled = false;
-	transparentMaterial->drawOrder = 1000;
-	transparentMaterial->shader = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment_translucent.glsl");
-	
-	//transparentMaterial->depthTestFunc = DepthTestMode::Disabled;
-	transparentMaterial->blendingSrcFactor = { BlendFactorMode::One, BlendFactorMode::Zero, };
-	transparentMaterial->blendingDstFactor = { BlendFactorMode::One, BlendFactorMode::OneMinusSrcAlpha };
+	auto transparentMaterial = BasicRenderer::GetDefaultTransparentMaterial();
 
 	GameobjectCreateParams cubeParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
 	cubeParams.meshId = cubeM->meshId;
@@ -43,14 +47,22 @@ void TestGraphics() {
 	transparentCubeParams.materialId = transparentMaterial->id;
 	//transparentCubeParams.materialId = GraphicsEngine::Get().defa
 
-	/*for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 3; i++) {
 		auto g = GameObject::New(transparentCubeParams);
 		g->RawGet<TransformComponent>()->SetPos(glm::dvec3{ -4, 2, -4 + 3 * i });
 		glm::vec4 color{ 0, 0, 0, 0.5 };
 		color[i] = 1;
 		g->RawGet<RenderComponent>()->SetColor(color);
 		g->RawGet<RenderComponent>()->SetTextureZ(-1);
-	}*/
+	}
+
+	for (int i = 0; i < 10; i++) {
+		auto g = GameObject::New(transparentCubeParams);
+		g->RawGet<TransformComponent>()->SetPos(glm::dvec3{ -7, 2, -4 + 3 * i });
+		glm::vec4 color{ 0.5, 0.5, 0.5, i/10.0 };
+		g->RawGet<RenderComponent>()->SetColor(color);
+		g->RawGet<RenderComponent>()->SetTextureZ(-1);
+	}
 
 	GraphicsEngine::Get().GetWindow().inputDown->Connect([cubeParams, sphereParams](InputObject io) {
 		if (io.input == InputObject::One) {

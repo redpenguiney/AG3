@@ -49,7 +49,7 @@ void GameInit()
     //TestCubeArray({ 2, 2, 2 }, {4, 4, 4}, {2, 2, 2}, true);
     //PE.SetCollisionLayers(0, 0, false);
 
-    //BasicRenderer::Setup();
+    BasicRenderer::Setup();
 
     auto skyboxMaterial = Material::New(MaterialCreateParams{ .shader = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment_static.glsl"), .drawOrder = 500 }).second;
     MakeSkybox(skyboxMaterial);
@@ -119,7 +119,8 @@ void GameInit()
         auto [arialLayer, arialFont] = Material::New({ .textureParams = { ttfParams }, .type = Texture::Texture2D, .depthMask = false });
         arialFont->depthMaskEnabled = false; why doesn't this one work??? */ 
 
-        auto debugText = new Gui(true, std::nullopt, std::optional(/*std::make_pair(arialLayer, arialFont)*/ ArialFont(12)), std::nullopt); // idc if leaked
+        auto [arialLayer, arialFont] = ArialFont(12);
+        auto debugText = new Gui(GuiCreateParams{ .textInfo = GuiFontInfo {.fontMaterial = arialFont, .fontMaterialTextureLayer = arialLayer } }); // idc if leaked
 
         debugText->rgba = { 0, 0, 0, 0};
         debugText->zLevel = 0; // TODO FIX Z-LEVEL/DEPTH BUFFER
@@ -309,7 +310,7 @@ void GameInit()
     //    DebugLogInfo("Input = ", input.input);
     //});*/
 
-
+    BasicRenderer::Setup().SetEnvironmentalLighting(BasicRenderer::EnvironmentalLighting());
 }
 
 void GameClose() {

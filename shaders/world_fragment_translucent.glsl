@@ -10,8 +10,9 @@ in mat3 TBNmatrix;
 
 #$INCLUDE$ "../shaders/phong_lighting.glsl"
 
-layout(location = 1) out vec4 accum;
-layout(location = 2) out float reveal;
+//layout(location = 0) out vec4 testOut;
+layout(location = 0) out vec4 accum;
+layout(location = 1) out float reveal;
 
 layout(binding=0) uniform sampler2DArray colorMap; // note: this syntax not ok until opengl 4.2
 layout(binding=1) uniform sampler2DArray normalMap; // note: this syntax not ok until opengl 4.2
@@ -73,10 +74,17 @@ void main()
         discard;
     };
 
+    //color = vec4(1, 1, 1, color.a);
+
     float weight = clamp(pow(min(1.0, color.a * 10.0) + 0.01, 3.0) * 1e8 * 
-                         pow(1.0 - gl_FragCoord.z * 0.9, 3.0), 1e-2, 3e3);
+                       pow(1.0 - gl_FragCoord.z * 0.9, 3.0), 1e-2, 3e3);
+
+    //float weight = clamp(pow(min(1.0, color.a * 10.0) + 0.01, 3.0) * 1e8 * pow(1.0 - gl_FragCoord.z * 0.9, 3.0), 1e-2, 3e3);
 
     accum = vec4(color.rgb * color.a, color.a) * weight;
     reveal = color.a;
-    reveal = 0.5;
+    //reveal = 0.5;
+    //accum = vec4(weight, weight, weight, weight);
+    //accum = vec4(gl_FragCoord.zzzz);
+    //testOut = vec4(1, 1, 1, 1);
 };

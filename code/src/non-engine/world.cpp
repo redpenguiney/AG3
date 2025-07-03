@@ -6,6 +6,7 @@
 #include <noise/noise.h>
 #include "entity.hpp"
 #include <physics/pengine.hpp>
+#include <conglomerates/basic_renderer.hpp>
 
 World::TerrainIds& World::TERRAIN_IDS()
 {
@@ -349,10 +350,7 @@ World::TerrainIds::TerrainIds()
         .displayName = "Anomalous tree",
         .gameobjectMaker = [](glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
             static auto vec = Mesh::MultiFromFile("../models/tree.fbx");
-            static auto leavesMaterial = Material::Copy(GraphicsEngine::Get().defaultMaterial);
-            leavesMaterial->depthTestFunc = DepthTestMode::Disabled;
-            leavesMaterial->blendingSrcFactor = { BlendFactorMode::One, BlendFactorMode::Zero, };
-            leavesMaterial->blendingDstFactor = { BlendFactorMode::One, BlendFactorMode::OneMinusSrcAlpha };
+            static auto leavesMaterial = BasicRenderer::GetDefaultTransparentMaterial();
 
             auto d = GameobjectCreateParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform });
 
@@ -376,7 +374,7 @@ World::TerrainIds::TerrainIds()
                     }
                     else {
                         
-                        render->SetColor({ 0, 1, 0, 0.5 });
+                        render->SetColor({ 0.05, 0.4, 0.1, 0.5 });
                     }
 
 

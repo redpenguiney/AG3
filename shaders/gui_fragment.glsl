@@ -29,9 +29,9 @@ void main()
     vec4 color = fragmentColor * colorTx;
     color.a *= font;
 
-    if (color.a < 0.1) {
-        discard;
-    };
+    //if (color.a < 0.1) {
+        //discard;
+    //};
 
     Output = color;
     //Output = texture(fontMap, fragmentTexCoords);

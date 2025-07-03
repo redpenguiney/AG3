@@ -154,7 +154,14 @@ glTextureIndex(textureIndex)
                             throw std::runtime_error("Mixed usage of embedded uncompressed argb textures and non-argb textures is illegal.");
                         }
                         isArgb = 1; // assimp always gives uncompressed in argb according to docs
-                        imageDatas.emplace_back(std::make_shared<Image>((uint8_t*)(embeddedTexture->pcData), width, height, nChannels, Image::UserOrAssimpSupplied));
+
+                        // ...and yet apparently we still need to use assimp???
+                        uint8_t* ptr = stbi_load_from_memory(reinterpret_cast<const stbi_uc*>(embeddedTexture->pcData), embeddedTexture->mWidth * embeddedTexture->mHeight, &width, &height, &nChannels, NChannelsFromFormat(params.format));
+                        if (ptr == nullptr) {
+                            throw std::runtime_error(std::string("STBI failed to load") + path + "because " + stbi_failure_reason() + ".");
+                        }
+                        imageDatas.emplace_back(std::make_shared<Image>(ptr, width, height, nChannels, Image::StbiSupplied));
+                        //imageDatas.emplace_back(std::make_shared<Image>((uint8_t*)(embeddedTexture->pcData), width, height, nChannels, Image::UserOrAssimpSupplied));
 
                         DebugLogInfo("OMG IT WORKED U CAN DELETE THIS PRINT NOW");
                     }

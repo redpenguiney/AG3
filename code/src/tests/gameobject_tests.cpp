@@ -78,23 +78,26 @@ std::pair<float, std::shared_ptr<Material>> ArialFont(int size)
     auto ttfParams = TextureCreateParams({ TextureSource{"../fonts/arial.ttf"}, }, Texture::FontMap);
     ttfParams.fontHeight = size;
     ttfParams.format = Texture::Grayscale_8Bit;
-    //ttfParams.mipmapBehaviour = Texture::NoMipmaps;
-    auto b = Material::New(MaterialCreateParams({ ttfParams }, Texture::Texture2D, GraphicsEngine::Get().defaultGuiMaterial->shader, nullptr, false));
-    b.second->ignorePostProc = true;
-    b.second->depthMaskEnabled = false;
-    b.second->depthTestFunc = DepthTestMode::Disabled;
-    return b;
+    ttfParams.mipmapBehaviour = Texture::NoMipmaps;
+    ttfParams.wrappingBehaviour = Texture::WrapClampToEdge;
+    auto b = Material::Copy(GraphicsEngine::Get().defaultGuiMaterial);
+    b->textures = TextureCollection::FindCollection(MaterialCreateParams({ ttfParams }, Texture::Texture2D, GraphicsEngine::Get().defaultGuiMaterial->shader)).first;
+    b->depthMaskEnabled = false;
+    b->depthTestFunc = DepthTestMode::Disabled;
+    return std::make_pair(0, b);
 }
 
 void MakeFPSTracker()
 {
     auto font = ArialFont(12);
 
-    auto ui = new Gui(true,
-        std::nullopt,
-        std::make_optional(font)
+    auto ui = new Gui(GuiCreateParams{
+         .textInfo = std::make_optional(GuiFontInfo {.fontMaterial = font.second, .fontMaterialTextureLayer = font.first}),
+        .guiMaterial = nullptr,
+       
         //Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), 
         //GraphicsEngine::Get().defaultBillboardGuiShaderProgram);
+        }
     );
     ui->scaleSize = { 0.8, 0.15 };
     ui->guiScaleMode = Gui::ScaleXX;
@@ -403,22 +406,20 @@ void TestGarticMusic()
 void TestUi()
 {
 
-    auto [arialLayer, arialFont] = ArialFont();
+    auto [arialLayer, arialFont] = ArialFont(48);
 
-    auto ui = new Gui(
-        true,
-        std::nullopt,
-        std::make_optional(std::make_pair(arialLayer, arialFont)),
-        std::nullopt
+    auto ui = new Gui(GuiCreateParams{
+        .textInfo = GuiFontInfo { .fontMaterial = arialFont, .fontMaterialTextureLayer = arialLayer},
+        .guiMaterial = nullptr,
         //Gui::BillboardGuiInfo({.scaleWithDistance = false, .rotation = std::nullopt, .followObject = goWeakPtr}), 
         //GraphicsEngine::Get().defaultBillboardGuiShaderProgram);
-        );
+        });
     ui->scaleSize = {0.5, 0.15};
     ui->guiScaleMode = Gui::ScaleXX;
     ui->offsetPos = {0.0, 0.0};
         ui->scalePos = {0.5, 0.5};
     ui->anchorPoint = {0.0, 0.0};
-    ui->rgba.a = 0.0;
+    ui->rgba = { 0, 0, 0, 0.5 };
     ui->GetTextInfo().rgba = {1.0, 1.0, 1.0, 1.0};
 
         ui->GetTextInfo().text = "Honey is a free browser add-on available on Google, Oprah, Firefox, Safari, if it's a browser it has Honey. All you have to do is when you're checking out on one of these major sites, just click that little orange button, and it will scan the entire internet and find discount codes for you. As you see right here, I'm on Hanes, y'know, ordering some shirts because who doesn't like ordering shirts; We saved 11 dollars! Dude our total is 55 dollars, and after Honey, it's 44 dollars. Boom. I clicked once and I saved 11 dollars. There's literally no reason not to install Honey. It takes two clicks, 10 million people use it, 100,000 five star reviews, unless you hate money, you should install Honey. ";
@@ -432,7 +433,8 @@ void TestUi()
     ui->UpdateGuiGraphics();
     ui->UpdateGuiTransform();
 
-    Gui* ui2 = new Gui(false, std::make_optional(std::make_pair(arialLayer, arialFont)));
+    // NOTE: this is NOT trying to make a gui with text. This is rendering the font texture atlas for testing purposes. i'm not crazy
+    Gui* ui2 = new Gui(GuiCreateParams{ .guiMaterial = arialFont, .guiMaterialTextureLayer = arialLayer });
     ui2->scaleSize = {0.25, 0.05};
     ui2->guiScaleMode = Gui::ScaleXX;
     ui2->offsetPos = {0.0, 0.0};
@@ -442,6 +444,8 @@ void TestUi()
     ui2->rgba = {1.0, 0.5, 0.0, 1.0};
     ui2->UpdateGuiGraphics();
     ui2->UpdateGuiTransform();
+
+    //Gui* ui3 = new Gui
 }
 
 void TestBillboardUi(glm::dvec3 pos, std::string text)
@@ -454,12 +458,11 @@ void TestBillboardUi(glm::dvec3 pos, std::string text)
     auto billboardMat = Material::Copy(arialFont);
     billboardMat->shader = GraphicsEngine::Get().defaultBillboardGuiMaterial->shader;
 
-    auto ui = new Gui(
-        true,
-        std::nullopt,
-        std::make_pair(arialLayer, billboardMat),
-        Gui::BillboardGuiInfo {.scaleWithDistance = true, .rotation = std::nullopt, .worldPosition = pos }     
-    );
+    auto ui = new Gui(GuiCreateParams{
+        .textInfo = GuiFontInfo {.fontMaterial = billboardMat, .fontMaterialTextureLayer = arialLayer},
+        .guiMaterial = nullptr,
+        .billboardInfo = Gui::BillboardGuiInfo {.scaleWithDistance = true, .rotation = std::nullopt, .worldPosition = pos } 
+        });
     ui->rgba = { 1, 0.5, 0, 0.5 };
     ui->scaleSize = { 0, 0 };
     ui->offsetSize = { 128, 32 };
@@ -480,20 +483,43 @@ void TestBillboardUi(glm::dvec3 pos, std::string text)
 
 void TestAnimation()
 {
-    Assert(false); // TODO
+    //Assert(false); // TODO
     auto [brickTextureZ, brickMaterial] = BrickMaterial();
     auto animShader = ShaderProgram::New("../shaders/world_vertex_animation.glsl", "../shaders/world_fragment.glsl");
-    auto stuff = Mesh::MultiFromFile("../models/test_anims.fbx");
+    BasicRenderer::Setup().AddShader(animShader);
+    auto mp = MeshCreateParams::Default();
+    mp.normalizeSize = false;
+ 
+    auto stuff = Mesh::MultiFromFile("../models/test_anims.fbx", mp);
     for (auto & ret : stuff) {
+    //auto ret = stuff[1];
+        ret.material->shader = animShader;
         GameobjectCreateParams params({ComponentBitIndex::Transform, ComponentBitIndex::Animation, ComponentBitIndex::Render});
         params.meshId = ret.mesh->meshId;
         params.materialId = ret.material != nullptr ? ret.material->id : brickMaterial->id;
         //params.shaderId = animShader->shaderProgramId;
         auto obj = GameObject::New(params);
         obj->RawGet<RenderComponent>()->SetTextureZ(ret.material != nullptr ? ret.materialZ : brickTextureZ);
+        obj->RawGet<RenderComponent>()->SetColor({1, 1, 1, 1});
         obj->RawGet<TransformComponent>()->SetPos(glm::vec3(5, 3, 5) + ret.posOffset);
         obj->RawGet<TransformComponent>()->SetScl(ret.mesh->originalSize);
+        
+        //obj->RawGet<AnimationComponent>()->PlayAnimation(ret.mesh->animations->front().name, true);
 
-        obj->RawGet<AnimationComponent>()->PlayAnimation(ret.mesh->animations->front().name);
+        //obj->RawGet<AnimationComponent>()->SetBoneBindSpaceTransformMatrix("mixamorig:Neck", glm::translate(glm::vec3(0, 1, 0)), 1000);
+
+        if (ret.mesh->bones) {
+            for (auto& b : ret.mesh->bones.value()) {
+                if (b.parentIndex == -1) continue;
+                DebugLogInfo("Bone ", b.name, " inherits ", ret.mesh->bones.value()[b.parentIndex].name, " and translates from root by ", b.baseBonePosition[3]);
+            }
+        }
+
+        GraphicsEngine::Get().preRenderEvent->Connect([obj](float dt) {  
+            double y = sin((double)GraphicsEngine::Get().frameId * 0.01);
+            //DebugLogInfo(y);
+            //y = 1;
+            obj->RawGet<AnimationComponent>()->SetBoneBindSpaceTransformMatrix("mixamorig:LeftShoulder", glm::translate(glm::vec3(y, 0, 0)), 1000);
+        });
     }
 }

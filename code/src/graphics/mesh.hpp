@@ -85,6 +85,8 @@ class Mesh: public std::enable_shared_from_this<Mesh> {
     const std::optional<std::vector<Animation>>& animations = meshAnimations;
     const std::optional<std::vector<Bone>>& bones = meshBones;
 
+    const unsigned int rootBoneId; // index into meshBones of root bone (usually the spine for humanoids); undefined value if no bones
+
     const unsigned int instanceCount; // meshpool will make room for this many objects to use this mesh (if you go over it's fine, but performance may be affected)
                                       // the memory cost of this is ~64 * instanceCount bytes
                                       // def make it like a million for cubes and stuff, otherwise default of 1024 should be fine
@@ -204,8 +206,20 @@ class Mesh: public std::enable_shared_from_this<Mesh> {
     // true if the mesh was created using Mesh::FromText(). If that's the case, TODO WHAT WAS SUPPOSED TO FINISH THIS COMMENT LOL
     const bool wasCreatedFromText;
 
+    struct MeshConstructorArgs {
+        const std::vector<GLfloat>& verts;
+        const std::vector<GLuint>& indies;
+        const MeshCreateParams& params;
+        bool dynamic = false;
+        bool fromText = false;
+        std::optional<std::vector<Bone>> bones = std::nullopt;
+        std::optional<std::vector<Animation>> anims = std::nullopt; 
+        const unsigned int rootBoneIndex = 0;
+    };
+
+
     // params.vertexFormat must have value
-    Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshCreateParams& params, bool dynamic = false, bool fromText = false, std::optional<std::vector<Bone>> bones = std::nullopt, std::optional<std::vector<Animation>> anims = std::nullopt, const unsigned int rootBoneIndex = 0);
+    Mesh(MeshConstructorArgs args);
 
     // scale vertex positions into range -0.5 to 0.5 and calculate originalSize
     void NormalizePositions();
@@ -215,5 +229,4 @@ class Mesh: public std::enable_shared_from_this<Mesh> {
 
     std::optional<std::vector<Bone>> meshBones;
     std::optional<std::vector<Animation>> meshAnimations; // TODO: allow empty
-    const unsigned int rootBoneId; // index into meshBones of root bone (usually the spine for humanoids); undefined value if no bones
 };

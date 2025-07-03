@@ -46,6 +46,11 @@ void main()
     // prevent floating point precision bug
     vec3 average_color = accumulation.rgb / max(accumulation.a, EPSILON);
 
+    //revealage = 0.5f;
+    //revealage = 1.0f;
+
     // blend pixels
     frag = vec4(average_color, 1.0f - revealage);
+
+    //frag = vec4(1, 1, 1, 1);
 }

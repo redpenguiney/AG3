@@ -22,7 +22,7 @@ std::shared_ptr<Mesh> Mesh::New(const MeshProvider& provider, bool dynamic) {
 	auto realParams = provider.meshParams;
 	if (realParams.meshVertexFormat.has_value() == false) { realParams.meshVertexFormat.emplace(MeshVertexFormat::Default()); }
     auto product = provider.GetMesh();
-    auto mesh = std::shared_ptr<Mesh>(new Mesh(product.first, product.second, realParams, dynamic));
+    auto mesh = std::shared_ptr<Mesh>(new Mesh(MeshConstructorArgs{ .verts = product.first, .indies = product.second, .params = realParams, .dynamic = dynamic }));
 	MeshGlobals::Get().LOADED_MESHES[meshId] = mesh;
 	return mesh;
 }
@@ -345,19 +345,19 @@ std::shared_ptr<Mesh>& Mesh::Empty() {
     return mesh;
 }
 
-Mesh::Mesh(const std::vector<GLfloat> &verts, const std::vector<GLuint> &indies, const MeshCreateParams& params, bool dynamic, bool fromText, std::optional<std::vector<Bone>> bonez, std::optional<std::vector<Animation>> anims, unsigned int rootBoneIndex):
-dynamic(dynamic),
+Mesh::Mesh(Mesh::MeshConstructorArgs args):
+dynamic(args.dynamic),
 meshId(MeshGlobals::Get().LAST_MESH_ID++),
-instanceCount(params.expectedCount),
-nonInstancedVertexSize(params.meshVertexFormat.value().GetNonInstancedVertexSize()),
-instancedVertexSize(params.meshVertexFormat.value().GetInstancedVertexSize()),
-vertexFormat(params.meshVertexFormat.value()),
-wasCreatedFromText(fromText),
-meshVertices(verts),
-meshIndices(indies),
-meshBones(bonez),
-meshAnimations(anims),
-rootBoneId(rootBoneIndex),
+instanceCount(args.params.expectedCount),
+nonInstancedVertexSize(args.params.meshVertexFormat.value().GetNonInstancedVertexSize()),
+instancedVertexSize(args.params.meshVertexFormat.value().GetInstancedVertexSize()),
+vertexFormat(args.params.meshVertexFormat.value()),
+wasCreatedFromText(args.fromText),
+meshVertices(args.verts),
+meshIndices(args.indies),
+meshBones(args.bones),
+meshAnimations(args.anims),
+rootBoneId(args.rootBoneIndex),
 originalSize(1)
 {    
     //DebugLogInfo("Generated mesh with id ", meshId);
@@ -366,7 +366,7 @@ originalSize(1)
     //Assert(meshVertices.size() > 0);
     //Assert(meshIndices.size() > 0);
 
-    if (params.normalizeSize) {
+    if (args.params.normalizeSize) {
         NormalizePositions();
     }
 

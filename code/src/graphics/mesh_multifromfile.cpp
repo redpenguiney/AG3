@@ -13,13 +13,13 @@
 glm::mat4x4 AssimpMatrixToGLM(aiMatrix4x4);
 
 // recursive function used by Mesh::MultiFromFile() to process loaded assimp data
-void ProcessNode(aiNode* node, const aiScene* scene, std::vector<aiMesh*>& meshes, std::vector<glm::mat4x4>& transformations, glm::mat4x4 nodeTransformation) {
+void ProcessNode(aiNode* node, const aiScene* scene, std::vector<std::pair<aiMesh*, aiNode*>>& meshes, std::vector<glm::mat4x4>& transformations, glm::mat4x4 nodeTransformation) {
     nodeTransformation = nodeTransformation * AssimpMatrixToGLM(node->mTransformation);
     
     // DebugLogInfo("Node ", node->mName.C_Str(), " has ", node->mNumChildren, "kids (but ",  node->mNumMeshes, " meshes)");
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        meshes.push_back(mesh);
+        meshes.push_back(std::make_pair(mesh, node));
         transformations.push_back(nodeTransformation);
     }
     for (unsigned int i = 0; i < node->mNumChildren; i++) {
@@ -53,17 +53,15 @@ int NodeIsBone(const std::vector<Bone>& bones, aiNode* node) {
 
 // recursive function, sets the childrenBoneIndices of the bones vector and returns index of root bone
 // will return -1 if no root bone was found
-int BuildBoneHierarchy(std::vector<Bone>& bones, aiNode* node, bool rootAlreadyFound = false) {
-
-    int rootBoneIndex = -1;
+void BuildBoneHierarchy(std::vector<Bone>& bones, aiNode* node, int& rootIndex) {
 
     int boneIndex = NodeIsBone(bones, node);
-    if (!rootAlreadyFound && boneIndex != -1) { // then this node is a bone
+    if (rootIndex == -1 && boneIndex != -1) { // then this node is a bone
         // DebugLogInfo("Node is bone ", node->mName.C_Str(), "  at ", boneIndex);
         // a bone is the root bone if its corresponding node has no parent, or its parent is not a bone
         if ((node->mParent == nullptr || NodeIsBone(bones, node->mParent) == -1)) { 
             // DebugLogInfo("NOde parent is NOT BONE, ", NodeIsBone(bones, node->mParent));
-            rootBoneIndex = boneIndex;
+            rootIndex = boneIndex;
         }
     }
 
@@ -72,21 +70,24 @@ int BuildBoneHierarchy(std::vector<Bone>& bones, aiNode* node, bool rootAlreadyF
 
         // if this node is a bone, then set bone children
         if (boneIndex != -1) {
-            if (int childIndex = NodeIsBone(bones, node->mChildren[i])) { // make sure child is also a bone
+            int childIndex = NodeIsBone(bones, node->mChildren[i]);
+            if (childIndex != -1) { // make sure child is also a bone
                 bones.at(boneIndex).childrenBoneIndices.push_back(childIndex);    
+                bones.at(childIndex).parentIndex = boneIndex;
             }
         }
         
         // even if this node isn't a bone, its children might be, so call this function on them too
         // DebugLogInfo("trying child...");
-        int foundRoot = BuildBoneHierarchy(bones, node->mChildren[i], rootBoneIndex != -1 ? true : rootAlreadyFound);
-        if (foundRoot != -1) {
-            Assert(rootBoneIndex == -1); // if this isn't the case, then we found two root bones somehow??
-            rootBoneIndex = foundRoot;
-        }
+
+        BuildBoneHierarchy(bones, node->mChildren[i], rootIndex);
+        //if (foundRoot != -1) {
+        //    Assert(rootBoneIndex == -1); // if this isn't the case, then we found two root bones somehow??
+        //    rootBoneIndex = foundRoot;
+        //}
     }
 
-    return rootBoneIndex;
+    //return rootBoneIndex;
 }
 
 glm::mat4x4 AssimpMatrixToGLM(aiMatrix4x4 mat) {
@@ -115,7 +116,7 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
     //const aiScene* scene = importer.ReadFile(path, aiProcess_OptimizeMeshes  | aiProcess_GlobalScale | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
     //importer.SetPropertyBool(AI_CONFIG_FBX_CONVERT_TO_M, true);
     //aiSetImportPropertyInteger()
-    const aiScene* scene = aiImportFile(path.c_str(), aiProcess_OptimizeMeshes | aiProcess_GlobalScale | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
+    const aiScene* scene = aiImportFile(path.c_str(), aiProcess_OptimizeMeshes | aiProcess_GlobalScale | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_ImproveCacheLocality | aiProcess_OptimizeGraph | aiProcess_PopulateArmatureData);
     if (scene == nullptr || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode || !scene->HasMeshes()) {
         aiReleaseImport(scene);
         DebugLogError("Mesh::MultiFromFile() failed to load ", path, " because ", aiGetErrorString());
@@ -126,7 +127,7 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
     // DebugLogInfo("Scene has ", scene->mNumMeshes, " root ", scene->mRootNode->mNumMeshes, " root kids ", scene->mRootNode->mNumChildren);
 
     std::vector<glm::mat4x4> assimpMeshTransformations;
-    std::vector<aiMesh*> assimpMeshes;
+    std::vector<std::pair<aiMesh*, aiNode*>> assimpMeshes;
     ProcessNode(scene->mRootNode, scene, assimpMeshes, assimpMeshTransformations, glm::identity<glm::mat4x4>());
     // for (unsigned int i = 0; i < scene->mNumMeshes; i++) {
     //     assimpMeshes.push_back(scene->mMeshes[i]);
@@ -135,7 +136,7 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
     std::vector<MeshRet> returnValue;
 
     int i = 0;
-    for (auto & mesh: assimpMeshes) {
+    for (auto & [mesh, meshNode]: assimpMeshes) {
         glm::mat4x4 transform = assimpMeshTransformations[i++];
         // Assert(mesh->mNumUVComponents == 2);
 
@@ -245,7 +246,15 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
                 vertices[i * format.GetNonInstancedVertexSize()/sizeof(GLfloat) + format.attributes.color->offset/sizeof(GLfloat) + 3] = mesh->mColors[0][i].a;
             }
 
-            // bone ids/weights done below bc assimp is weird
+            // bone ids/weights done for realsies later bc assimp is weird; this just supplies -1 as default for boneIds
+            if (format.attributes.arbitrary1.has_value() && !format.attributes.arbitrary1.value().instanced) {
+                // DebugLogInfo("adding color.");
+                vertices[i * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + format.attributes.arbitrary1->offset / sizeof(GLint)] = reinterpret_cast<const float&>((const int&)(-1));
+                vertices[i * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + format.attributes.arbitrary1->offset / sizeof(GLint) + 1] = reinterpret_cast<const float&>((const int&)(-1));
+                vertices[i * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + format.attributes.arbitrary1->offset / sizeof(GLint) + 2] = reinterpret_cast<const float&>((const int&)(-1));
+                vertices[i * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + format.attributes.arbitrary1->offset / sizeof(GLint) + 3] = reinterpret_cast<const float&>((const int&)(-1));
+            }
+
         }
 
         std::vector<GLuint> indices;
@@ -280,9 +289,11 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
             }
             else {
                 try {
-                    auto pair = Material::New(MaterialCreateParams{ .textureParams = texParams, .type = Texture::TextureType::Texture2D });
-                    matPtr = pair.second;
-                    textureZ = pair.first;
+                    auto mat = Material::Copy(GraphicsEngine::Get().defaultMaterial);
+                    auto [textures, layer] = TextureCollection::FindCollection(MaterialCreateParams{ .textureParams = texParams, .type = Texture::TextureType::Texture2D });
+                    mat->textures = textures;
+                    matPtr = mat;
+                    textureZ = layer;
                 }
                 catch (std::runtime_error& error) {
                     DebugLogError("In the loading of the material \"", material->GetName().C_Str(), "\" for the mesh \"", mesh->mName.C_Str(), "\" from the file \"", path, "\", the following exception was thrown:\n\t", error.what(), "\n\tUsing fallback texture.");
@@ -296,8 +307,18 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
         std::optional<std::vector<Bone>> bones;
         
         //DebugLogInfo("There are, ", mesh->mNumBones);
+
+        int rootBoneIndex = -1;
+
+
         if (mesh->mNumBones > 0) {
             bones.emplace();
+
+
+            std::unordered_map<aiNode*, int> nodesToBoneIndices;
+            for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++) {
+                nodesToBoneIndices[mesh->mBones[boneIndex]->mNode] = boneIndex;
+            }
 
             std::vector<unsigned int> numBonesOnEachVertex;
             numBonesOnEachVertex.resize(vertices.size(), 0);
@@ -307,12 +328,17 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
             std::unordered_map<std::string, unsigned int> boneNamesToIds;
             for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++) {
                 aiBone* bone = mesh->mBones[boneIndex];
-                DebugLogInfo("Bone named ", bone->mName.C_Str(), " has ", bone->mNumWeights);
-                bones->emplace_back(Bone {
+                //DebugLogInfo("Bone named ", bone->mName.C_Str(), " has ", bone->mNumWeights);
+
+                bones->emplace_back(Bone{
                     .name = bone->mName.C_Str(),
                     .id = boneIndex,
-                    .localBoneTransform = AssimpMatrixToGLM(bone->mOffsetMatrix),
+                    .childrenBoneIndices = {}, // done later
+                    .parentIndex = -1, // done later
+                    .inverseBindTransform = AssimpMatrixToGLM(bone->mOffsetMatrix),                    
+                    //.baseBonePosition = done later 
                 });
+
 
                 boneNamesToIds[bone->mName.C_Str()] = boneIndex;
 
@@ -324,12 +350,13 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
                     // also, apparently faces generally need more than 4 bones
                     
                     unsigned int numBonesAffectingThisVertex = numBonesOnEachVertex[weight.mVertexId];
-                    unsigned int boneIdIndex = indices[weight.mVertexId] * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + format.attributes.arbitrary1->offset / sizeof(GLint);
-                    unsigned int boneWeightIndex = indices[weight.mVertexId] * format.GetNonInstancedVertexSize()/sizeof(GLfloat) + format.attributes.arbitrary2->offset/sizeof(GLfloat);
+                    unsigned int boneIdIndex = weight.mVertexId * format.GetNonInstancedVertexSize() / sizeof(GLfloat) + format.attributes.arbitrary1->offset / sizeof(GLint);
+                    unsigned int boneWeightIndex = weight.mVertexId * format.GetNonInstancedVertexSize()/sizeof(GLfloat) + format.attributes.arbitrary2->offset/sizeof(GLfloat);
                     if (numBonesAffectingThisVertex < 4) {
-                        numBonesOnEachVertex[weight.mVertexId] += 1;
+                        
                         vertices[boneIdIndex + numBonesAffectingThisVertex] = reinterpret_cast<const float&>((const int&)(boneIndex));
                         vertices[boneWeightIndex + numBonesAffectingThisVertex] = weight.mWeight; 
+                        numBonesOnEachVertex[weight.mVertexId] += 1;
                         //DebugLogInfo("Wrote weight ", weight.mWeight, " and id ", boneIndex, " to ", boneIdIndex + numBonesAffectingThisVertex);
                     }
                     else {  // if there's already 4, we'll see if there's one with less weight than this one, and if so replace that one
@@ -342,6 +369,46 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
                         }
                     }
 
+                }
+            }
+
+            auto findBoneParent = [&](aiBone* bone, glm::mat4x4& nodeTransform) -> int {
+                auto currentNode = bone->mNode;
+
+                nodeTransform = AssimpMatrixToGLM(currentNode->mTransformation) * nodeTransform;
+
+                while (currentNode && currentNode != meshNode) {
+
+                    
+
+                    if (nodesToBoneIndices.contains(currentNode->mParent)) {
+                        
+                        return nodesToBoneIndices[currentNode->mParent];
+                    }
+                    else {
+                        currentNode = currentNode->mParent;
+                    }
+                }
+
+                return -1;
+            };
+
+            for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++) {
+                aiBone* bone = mesh->mBones[boneIndex];
+                //DebugLogInfo("Bone named ", bone->mName.C_Str(), " has ", bone->mNumWeights);
+
+                // Find bone children/parent and the bone's transform in the bind pose
+                glm::mat4x4 bindPoseTransform = glm::identity<glm::mat4x4>();
+
+                int parent = findBoneParent(bone, bindPoseTransform);
+                bones.value()[boneIndex].baseBonePosition = bindPoseTransform;
+                if (parent == -1) {
+                    Assert(rootBoneIndex == -1);
+                    rootBoneIndex = boneIndex;
+                }
+                else {
+                    bones.value()[boneIndex].parentIndex = parent;
+                    bones.value()[parent].childrenBoneIndices.push_back(boneIndex);
                 }
             }
 
@@ -371,56 +438,49 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
                     float animLengthInSeconds = anim->mDuration/anim->mTicksPerSecond;
                     float secondsPerTick = 1.0/anim->mTicksPerSecond;
 
-                    std::vector<AnimationKeyframe> keyframes;
-                    // our keyframe class is all the bone positions at one timestamp, while assimp's is all the timestamps for one bone.
-                    keyframes.resize((size_t)(anim->mDuration) + 1); // mDuration is num ticks, there's one keyframe per tick plus one for the end keyframe.
-                    {
-                        
-                        // DebugLogInfo("Len = ", animLengthInSeconds, " tps = ", anim->mTicksPerSecond, " duration in ticks =  ", anim->mDuration);
-                        for (unsigned int keyFrameIndex = 0; keyFrameIndex < anim->mDuration + 1; keyFrameIndex++) {
-                            auto & keyframe = keyframes.at(keyFrameIndex);
-                            keyframe.timestamp = keyFrameIndex * secondsPerTick;
-                            // keyframe.boneKeyframes.resize(numAffectedBones);
-                        }   
-                    }
+                    std::vector<BoneAnimation> boneAnims;
                     
-
+                    // each ASSIMP animation channel affects one node (and in our case nodes are bones)
                     for (unsigned int channelIndex = 0; channelIndex < anim->mNumChannels; channelIndex++) {
                         aiNodeAnim* channel = anim->mChannels[channelIndex];
-
                         Assert(channel->mNumPositionKeys == channel->mNumRotationKeys);
                         Assert(channel->mNumPositionKeys == channel->mNumScalingKeys);
-                        if (channel->mNumPositionKeys == 1) {
-                            continue;
-                        }
+
+                        // TODO: we should have some way to handle animations affecting nodes that aren't bones
+                        if (!boneNamesToIds.contains(channel->mNodeName.C_Str())) 
+                            continue;  // since animations are done on a whole-scene basis, the animation will likely affect stuff we don't care about.
+                        
                         unsigned int boneId = boneNamesToIds.at(channel->mNodeName.C_Str());
-                        unsigned int keyframeIndex = 0;
+
+                        std::vector<BoneKeyframe> keyframes;
 
                         //DebugLogInfo("Ok so channel ", channel, " for bone ", channel->mNodeName.C_Str(), " has ", channel->mNumPositionKeys, " vs ", keyframes.size());
-                        for (auto & keyframe: keyframes) {
+                        for (unsigned int keyframeI = 0; keyframeI < channel->mNumPositionKeys; keyframeI++) {
                             // DebugLogInfo("its ", channel->mNumPositionKeys, " ", channel->mNumRotationKeys);
-                            Assert(channel->mNumPositionKeys > keyframeIndex);
                             // DebugLogInfo("Pos keyframe at ", channel->mPositionKeys[keyframeIndex].mTime);
-                            Assert(channel->mPositionKeys[keyframeIndex].mTime == channel->mRotationKeys[keyframeIndex].mTime);
-                            Assert(channel->mPositionKeys[keyframeIndex].mTime == channel->mScalingKeys[keyframeIndex].mTime);
+                            Assert(channel->mPositionKeys[keyframeI].mTime == channel->mRotationKeys[keyframeI].mTime);
+                            Assert(channel->mPositionKeys[keyframeI].mTime == channel->mScalingKeys[keyframeI].mTime);
                             // Assert(channel->mPositionKeys[keyframeIndex].mTime == keyframeIndex);
-                            keyframe.boneKeyframes.push_back(BoneKeyframe {
-                                .boneIndex = boneId,
-                                .translation = AssimpVecToGLM(channel->mPositionKeys[keyframeIndex].mValue),
-                                .scale = AssimpVecToGLM(channel->mScalingKeys[keyframeIndex].mValue),
-                                .rotation = AssimpQuatToGLM(channel->mRotationKeys[keyframeIndex].mValue)
+                            keyframes.push_back(BoneKeyframe{
+                                .translation = AssimpVecToGLM(channel->mPositionKeys[keyframeI].mValue),
+                                .scale = AssimpVecToGLM(channel->mScalingKeys[keyframeI].mValue),
+                                .rotation = AssimpQuatToGLM(channel->mRotationKeys[keyframeI].mValue),
+                                .timestamp = (float)channel->mPositionKeys[keyframeI].mTime * secondsPerTick
                             });
-                            // DebugLogInfo("Keyframe has ", glm::to_string(keyframe.boneKeyframes.back().rotation));
-                            keyframeIndex++;
+
                         }
 
+                        boneAnims.push_back(BoneAnimation{
+                            .keyframes = keyframes,
+                            .boneIndex = boneId
+                        });
                     }
 
                     animations->push_back(Animation {
                         .name = anim->mName.C_Str(),
                         .duration = animLengthInSeconds,
                         .priority = 0,
-                        .keyframes = keyframes
+                        .boneAnimations = boneAnims
                     });
 
                 }
@@ -434,40 +494,36 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
             DebugLogError("Warning: the mesh ", mesh->mName.C_Str(), " in ", path, " has vertex based animation, which is not supported by AG3. Sorry!");
         }
 
-        // for (unsigned int animIndex = 0; animIndex < scene->mNumAnimations; animIndex++) {
-        //     aiAnimation* aiAnim = scene->mAnimations[animIndex];
-        //     // animations are done on a whole-scene basis, but we just want the part of the animation for this mesh
-        //     for (unsigned int channelIndex = 0; channelIndex < aiAnim->mNumChannels; channelIndex++) {
-        //         aiNodeAnim* meshAnim = aiAnim->mChannels[channelIndex];
-        //         if (meshAnim) {
-    
-        //         }
-        //         meshAnim.
-        //     }
-            
         // }
 
-        int rootBoneIndex = bones.has_value() ? BuildBoneHierarchy(bones.value(), scene->mRootNode) : 0; // setup bone hierarchy and find the root bone
-        Assert(rootBoneIndex != -1); 
-        if (bones.has_value()) {
-            //DebugLogInfo("The root of ", mesh->mName.C_Str(), " is ", rootBoneIndex, " aka ", bones->at(rootBoneIndex).name);
-        }
+        //int rootBoneIndex = 0;
+        //if (bones.has_value()) {
+        //    rootBoneIndex = -1;
+        //    BuildBoneHierarchy(bones.value(), scene->mRootNode, rootBoneIndex); // setup bone hierarchy and find the root bone
+        //}
+        //Assert(rootBoneIndex != -1); 
+        //if (bones.has_value()) {
+        //    //DebugLogInfo("The root of ", mesh->mName.C_Str(), " is ", rootBoneIndex, " aka ", bones->at(rootBoneIndex).name);
+        //}
+        
         
 
         MeshCreateParams makeMeshParams = params;
         makeMeshParams.meshVertexFormat.emplace(format);
 
+        if (bones.has_value()) Assert(rootBoneIndex != -1);
+
         unsigned int meshId = MeshGlobals::Get().LAST_MESH_ID; // (creating a mesh increments this)
-        auto meshPtr = std::shared_ptr<Mesh>(new Mesh(
-            vertices, 
-            indices, 
-            makeMeshParams,
-            false,
-            false, 
-            (bones.has_value() && bones->size() > 0) ? bones: std::nullopt, 
-            (animations.has_value() && animations->size() > 0) ? animations : std::nullopt,
-            rootBoneIndex
-        ));
+        auto meshPtr = std::shared_ptr<Mesh>(new Mesh(MeshConstructorArgs{
+            .verts = vertices,
+            .indies = indices,
+            .params = makeMeshParams,
+            .dynamic = false,
+            .fromText = false,
+            .bones = (bones.has_value() && bones->size() > 0) ? bones : std::nullopt,
+            .anims = (animations.has_value() && animations->size() > 0) ? animations : std::nullopt,
+            .rootBoneIndex = bones.has_value() ? (unsigned)rootBoneIndex : 0
+        }));
         
         MeshGlobals::Get().LOADED_MESHES[meshId] = meshPtr;
 

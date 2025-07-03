@@ -17,6 +17,8 @@ public:
 
 	void BindMaterialToShader(Material* material, std::shared_ptr<ShaderProgram> program);
 
-
+	// Runs BEFORE stuff like textures and stuff are bound at material usetime, so changes to that stuff will be overridden.
 	BindingFunction onBindingFunc;
+
+	// TODO: version that runs after
 };

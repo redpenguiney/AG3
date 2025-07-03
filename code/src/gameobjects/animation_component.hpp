@@ -10,8 +10,8 @@ class Animation;
 class GraphicsEngine;
 
 // Use with a render component that uses a mesh that supports animation. 
-class AnimationComponent: public BaseComponent {
-    public:
+class AnimationComponent : public BaseComponent {
+public:
 
     // Called when a gameobject is given this component.
     //void Init(RenderComponent*);
@@ -23,11 +23,22 @@ class AnimationComponent: public BaseComponent {
     void StopAnimation(std::string animName);
     bool IsPlaying(std::string animName);
 
+    // Makes the given bone be transformed by the given matrix from its builtin/rig/T-pose position.
+        // Priority controls whether animations will override this or not.
+    void SetBoneBindSpaceTransformMatrix(unsigned boneId, glm::mat4x4 transform, float priority);
+    void SetBoneBindSpaceTransformMatrix(std::string boneName, glm::mat4x4 transform, float priority);
+    // Makes the given bone be transformed by the given matrix from the mesh origin.
+        // Priority controls whether animations will override this or not.
+    //void SetBoneModelSpaceTransformMatrix(unsigned boneId, glm::mat4x4 transform, int priority);
+
+    // Undoes SetBoneSpaceTransformMatrix()/SetBoneModelSpaceTransformMatrix() for the given boneId.
+    void ClearBoneMatrix(unsigned boneId);
+
     AnimationComponent(const AnimationComponent&) = delete;
     AnimationComponent(RenderComponent*);
     ~AnimationComponent();
 
-    private:
+private:
     friend class GraphicsEngine;
 
     struct PlayingAnimation {
@@ -36,9 +47,15 @@ class AnimationComponent: public BaseComponent {
         bool looped;
     };
 
+    struct BoneOverride {
+        glm::mat4x4 offset;
+        float priority;
+        unsigned boneId;
+    };
+
     std::vector<PlayingAnimation> currentlyPlaying;
 
-    
+    std::vector<BoneOverride> overrides;
 
     const RenderComponent* renderComponent;
     std::shared_ptr<Mesh> mesh;

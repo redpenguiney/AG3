@@ -57,9 +57,8 @@ defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, Shad
 
      
     defaultGuiMaterial = Material::New(MaterialCreateParams{ .textureParams = {}, .type = Texture::Texture2D, .shader = ShaderProgram::New("../shaders/gui_vertex.glsl", "../shaders/gui_fragment.glsl", false, false), .depthMask = false}).second;
-    defaultGuiMaterial->ignorePostProc = true;
+    //defaultGuiMaterial->depthTestFunc = DepthTestMode::Disabled;
     defaultBillboardGuiMaterial = Material::New(MaterialCreateParams{ {}, Texture::Texture2D,  ShaderProgram::New("../shaders/gui_billboard_vertex.glsl", "../shaders/gui_fragment.glsl", true, false), nullptr, true, true }).second;
-    defaultBillboardGuiMaterial->ignorePostProc = true;
     //skyboxShaderProgram = ShaderProgram::New("../shaders/skybox_vertex.glsl", "../shaders/skybox_fragment.glsl");
     
     crummyDebugShader = ShaderProgram::New("../shaders/debug_axis_vertex.glsl", "../shaders/debug_simple_fragment.glsl", false, false);
@@ -76,24 +75,20 @@ defaultMaterial(Material::New(MaterialCreateParams{ {}, Texture::Texture2D, Shad
     // }
     // std::cout << "\n";
 
-    defaultMaterial->shader->Uniform("envLightDirection", glm::normalize(-glm::vec3(0.9, -1, 0.8)));
-    defaultMaterial->shader->Uniform("envLightColor", glm::vec3(237.f/255, 213.f/255, 158.f/255));
-    defaultMaterial->shader->Uniform("envLightDiffuse", 0.9f);
-    defaultMaterial->shader->Uniform("envLightAmbient", 0.4f);
-    defaultMaterial->shader->Uniform("envLightSpecular", 0.0f);
+    
 
     //DebugLogInfo("Default material name is ", defaultMaterial->id);
 
     // must supply our own shader here because material constructor can't fetch default from graphics engine because we're still making the graphics engine!
-    //auto pair = Material::New({ .textureParams = {TextureCreateParams({TextureSource("../textures/error_texture.bmp")}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D, .shader = defaultShaderProgram  });
-    errorMaterial = defaultMaterial; // pair.second;
-    errorMaterialTextureZ = 0.0;  //pair.first;
+    auto pair = Material::New({ .textureParams = {TextureCreateParams({TextureSource("../textures/error_texture.bmp")}, Texture::TextureUsage::ColorMap)}, .type = Texture::TextureType::Texture2D, .shader = defaultMaterial->shader  });
+    errorMaterial = pair.second;
+    errorMaterialTextureZ = pair.first;
 
     // the skybox's z-coord is hardcoded to 1 so it's not drawn over anything, but depth buffer is all 1 by default so this makes skybox able to be drawn
     //glDepthFunc(GL_LEQUAL); 
 
     // tell opengl how to do transparency
-    //glEnable(GL_BLEND);
+    glEnable(GL_BLEND);
     //glBlendEquation(GL_FUNC_ADD); // this is default
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     //glEnable(GL_ALPHA_TEST);
@@ -360,8 +355,8 @@ void GraphicsEngine::RenderScene(float dt) {
     //glDisable(GL_SCISSOR_TEST);
     //glClear( GL_DEPTH_BUFFER_BIT);
     
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
     DrawWorld();
 
     // Debugging stuff
@@ -503,7 +498,7 @@ void GraphicsEngine::DrawWorld()
 {
     //glEnable(GL_DEPTH_TEST); // stuff near the camera should be drawn over stuff far from the camera
     glEnable(GL_CULL_FACE); // backface culling
-
+    //glDisable(GL_CULL_FACE);
     //if (wireframeDrawing) {
     //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //}
@@ -571,7 +566,9 @@ void GraphicsEngine::DrawWorld()
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &lastVaoId);
     
     for (Meshpool::DrawCommandBuffer* command : sortedDrawCommands) {
-        //if (command->pool->vaoId != lastVaoId) {
+
+        if (!command->material->abstract) {
+            //if (command->pool->vaoId != lastVaoId) {
             lastVaoId = command->pool->vaoId;
             glBindVertexArray(command->pool->vaoId);
             command->pool->indices.Bind();
@@ -579,9 +576,12 @@ void GraphicsEngine::DrawWorld()
                 command->pool->bones->BindBase(Meshpool::BONE_BUFFER_BINDING);
                 command->pool->boneOffsetBuffer->BindBase(Meshpool::BONE_OFFSET_BUFFER_BINDING);
             }
-        //}
-        
-        command->Draw();
+            //}
+            command->Draw();
+        }
+        else {
+            command->material->Use();
+        }
     }
 }
 
@@ -698,18 +698,18 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
 
         auto& tuple = *it;
         auto& animComp = std::get<0>(tuple);
-    //     // TODO: this will redundantly send identity matrices for every bone when something isn't getting animated. Difficult to fix bc triple buffering, prob not big deal anyways.
-    //     // TOOD: FRUSTRUM culling would actually be big brain here.
+        // TODO: this will redundantly send identity matrices for every bone when something isn't getting animated. Difficult to fix bc triple buffering, prob not big deal anyways.
+        // TODO: FRUSTRUM culling would actually be big brain here.
 
-        Assert(animComp->mesh->bones.has_value());
-        std::vector<glm::mat4x4> boneOffsets;
+        std::vector<glm::mat4x4> boneOffsets; // each transform is relative to the bone's parent if it has one
         std::vector<float> bonePriorities;
         boneOffsets.resize(animComp->mesh->bones->size());
         bonePriorities.resize(animComp->mesh->bones->size()); // priority of the animation controlling this bone, so we know which animations override which
         for (unsigned int index = 0; index < animComp->mesh->bones->size(); index++) {
-            boneOffsets[index] = glm::identity<glm::mat4x4>();
+            boneOffsets[index] = animComp->mesh->bones.value()[index].baseBonePosition;
             bonePriorities[index] = -INFINITY;
         }
+
 
         for (unsigned int index = 0; index < animComp->currentlyPlaying.size(); index++) {
             auto & animation = animComp->currentlyPlaying.at(index);
@@ -731,7 +731,7 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
 
                         auto transform = animation.anim->BoneTransformAtTime(bone.id, animation.playbackPosition);
                         if (transform.has_value()) {
-                            boneOffsets[bone.id] = animation.anim->BoneTransformAtTime(bone.id, animation.playbackPosition).value(); //todo: interpolating with looped
+                            boneOffsets[bone.id] = *transform; //todo: interpolating with looped
                         }
                         
                     }
@@ -742,10 +742,53 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
             }
         }
 
-        //for (auto& offset : boneOffsets) {
-        //DebugLogInfo("Putting bone at ", glm::to_string(boneOffsets.at(0)));
-        //}
-        SetBoneState(*animComp->renderComponent, (unsigned)animComp->mesh->bones->size(), boneOffsets.data());
+        for (auto & override : animComp->overrides) {
+            if (override.priority > bonePriorities[override.boneId]) {
+                boneOffsets[override.boneId] = override.offset;
+                bonePriorities[override.boneId] = override.priority;
+            }
+        }
+
+        // we combine the relative-to-parent bone transforms to get the final ones we send to the GPU
+        std::vector<glm::mat4x4> finalBoneOffsets;
+        /*finalBoneOffsets.resize(boneOffsets.size(), glm::identity<glm::mat4x4>());
+
+        std::function<void(unsigned, glm::mat4x4)> inheritBoneTransforms;
+        inheritBoneTransforms = [&](unsigned index, glm::mat4x4 parentTransform) {
+            const Bone& bone = animComp->mesh->bones.value()[index];
+
+            auto finalBoneTransform = boneOffsets[index] * parentTransform;
+            finalBoneOffsets[index] = finalBoneTransform * bone.inverseBindTransform;
+
+            for (unsigned i : bone.childrenBoneIndices) {
+                inheritBoneTransforms(i, finalBoneTransform);
+            }
+        };
+        inheritBoneTransforms(animComp->mesh->rootBoneId, glm::identity<glm::mat4x4>());*/
+        
+        for (unsigned boneI = 0; boneI < boneOffsets.size(); boneI++) {
+
+
+            const Bone& bone = animComp->mesh->bones.value()[boneI];
+
+            auto transform = boneOffsets[boneI];
+            auto currentB = &bone;
+            while (currentB->parentIndex != -1) {
+                currentB = &animComp->mesh->bones.value()[currentB->parentIndex];
+                transform = transform * boneOffsets[currentB->id];
+            }
+            // inverseBindTransform puts the bone back at the origin of the mesh, and then transform moves it to the correct animated position of the bone.
+                // the same transformation shall be applied to the vertices of the mesh.
+            transform = transform * bone.inverseBindTransform;
+
+            finalBoneOffsets.push_back(transform);
+            //finalBoneOffsets.push_back(glm::identity<glm::mat4>());
+        }
+
+
+        
+
+        SetBoneState(*animComp->renderComponent, (unsigned)animComp->mesh->bones->size(), finalBoneOffsets.data());
     }
 
     

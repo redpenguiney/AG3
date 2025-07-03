@@ -18,7 +18,7 @@ void WorldProgressBar::SetProgress(float newProgress) {
 }
 
 WorldProgressBar::WorldProgressBar(glm::dvec3 initialPos) {
-	root = std::make_shared<Gui>(false, std::make_pair(-1, GraphicsEngine::Get().defaultBillboardGuiMaterial), std::nullopt, Gui::BillboardGuiInfo{ .scaleWithDistance = true }, false);
+	root = std::make_shared<Gui>(GuiCreateParams{ .guiMaterial = GraphicsEngine::Get().defaultBillboardGuiMaterial, .billboardInfo = Gui::BillboardGuiInfo{.scaleWithDistance = true }, .overrideDrawOrder = false });
 	root->rgba = { 0, 0, 0, 1 };
 
 	root->offsetPos = { 0, 0 };
@@ -30,7 +30,7 @@ WorldProgressBar::WorldProgressBar(glm::dvec3 initialPos) {
 
 	root->childBehaviour = GuiChildBehaviour::Relative;
 
-	bar = std::make_shared<Gui>(false, std::make_pair(-1, GraphicsEngine::Get().defaultBillboardGuiMaterial), std::nullopt, std::nullopt, false);
+	bar = std::make_shared<Gui>(GuiCreateParams{ .guiMaterial = GraphicsEngine::Get().defaultBillboardGuiMaterial, .billboardInfo = Gui::BillboardGuiInfo{.scaleWithDistance = true }, .overrideDrawOrder = false });
 	bar->rgba = { 0, 1, 0, 1 };
 	bar->zLevel = 0.0;
 	 

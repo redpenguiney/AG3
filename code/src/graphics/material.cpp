@@ -30,7 +30,6 @@ Material::Material(const Material& original):
     scissoringEnabled(original.scissoringEnabled),
     scissorCorner1(original.scissorCorner1),
     scissorCorner2(original.scissorCorner2),
-    ignorePostProc(original.ignorePostProc),
     baseTextureZ(original.baseTextureZ)
 
 {
@@ -120,13 +119,15 @@ scissorCorner2()
 
 // TODO: static variables that prevent redundant setting of gl state for stuff like blending and depth test/mask
 void Material::Use() {
+    inputProvider.onBindingFunc(this, shader);
+
     for (auto& t : textures->textures) {
         if (t.has_value()) {
             t->Use();
         }
     }
 
-    inputProvider.onBindingFunc(this, shader);
+    
 
     if (scissoringEnabled) {
         glEnable(GL_SCISSOR_TEST);
@@ -149,7 +150,7 @@ void Material::Use() {
     }
 }
 
-// TODO: this is bad. Awful.
+// TODO: this is bad. Awful. Also when would you even call this???
 void Material::Unbind() {
     glDepthMask(GL_TRUE);
     glEnable(GL_DEPTH_TEST);

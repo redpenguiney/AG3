@@ -14,16 +14,22 @@ class Framebuffer {
     ~Framebuffer();
 
     // Binds the framebuffer, causing all drawing operations to be drawn onto this framebuffer until Bind() is called on another framebuffer, or Unbind() is called.
+    // The nth fragment shader output will write to the nth framebuffer attachment.
     void Bind();
 
-    // Provide a color for each attachment in textureAttachments.
+    // Binds the framebuffer, causing all drawing operations to be drawn onto this framebuffer until Bind() is called on another framebuffer, or Unbind() is called.
+    // The nth fragment shader output will write to the attachmentIndices[n]th framebuffer attachment. Not all attachments need to be used.
+    // Do not pass duplicate attachments.
+    void Bind(std::vector<size_t> attachmentIndices);
+
+    // Provide a color for each attachment that is currently being drawn to, in the order implied by the attachmentIndices called to Bind() if provided, or otherwise for every texture attachment.
     // For each attachment, the color channels should be in the correct range (integers in [0, 255] for 8 bit rgb, for example) but this isn't enforced.
         // Pass vec4(-1, -1, -1, -1) to not clear that attachment.
-    // WARNING: calls Bind().
+    // Framebuffer MUST already be bound or this will error.
     void Clear(std::vector<glm::vec4> clearColors);
 
     // Clears the depth renderbuffer (erroring if it doesn't exist)
-    // WARNING: calls Bind().
+    // Framebuffer MUST already be bound or this will error.
     void ClearDepthRenderbuffer();
 
     // Unbinds whatever framebuffer is currently bound, so that all drawing operations are drawn on the window.
@@ -40,9 +46,13 @@ class Framebuffer {
     // TOOD: other binding locations
     static inline int currentlyBound = 0; 
 
+    // indices of the textureAttachments that are currently being used as a draw buffer (being drawn to)
+    static inline std::vector<size_t> currentDrawBuffers = {};
+
     GLuint glFramebufferId;
     const GLenum bindingLocation; // TODO, currently always GL_FRAMEBUFFER
 
+    // the attachment (e.g GL_COLOR_ATTACHMENT0) corresponding to each element of textureAttachments
     std::vector<GLenum> colorAttachmentNames = {};
 
     // std::optional<unsigned int> colorRenderbufferId; i don't think we actually want this?

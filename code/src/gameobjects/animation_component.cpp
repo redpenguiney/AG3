@@ -1,12 +1,23 @@
 #include "animation_component.hpp"
 #include "graphics/mesh.hpp"
 
-AnimationComponent::AnimationComponent(RenderComponent* comp): 
-    renderComponent(comp) 
+void AnimationComponent::ClearBoneMatrix(unsigned boneId) {
+    for (unsigned i = 0; i < overrides.size(); i++) {
+        if (overrides[i].boneId == boneId) {
+            overrides[i] = overrides.back();
+            overrides.pop_back();
+            return;
+        }
+    }
+}
+
+
+
+AnimationComponent::AnimationComponent(RenderComponent* comp):
+    renderComponent(comp) ,
+    mesh((Assert(comp != nullptr), Mesh::Get(comp->meshId)))
 {
     // DebugLogInfo("INITIALIZING ANIM COMP");
-    Assert(comp != nullptr);
-    mesh = Mesh::Get(comp->meshId);
     Assert(mesh->vertexFormat.supportsAnimation);
 
     currentlyPlaying = {};
@@ -19,6 +30,28 @@ bool AnimationComponent::IsPlaying(std::string animName) {
         }
     }
     return false;
+}
+
+void AnimationComponent::SetBoneBindSpaceTransformMatrix(unsigned boneId, glm::mat4x4 transform, float priority) {
+    for (auto & override : overrides) {
+        if (override.boneId == boneId) {
+            override.offset = transform;
+            override.priority = priority;
+            return;
+        }
+    }
+    overrides.push_back(BoneOverride{ .offset = transform, .priority = priority, .boneId = boneId });
+}
+
+void AnimationComponent::SetBoneBindSpaceTransformMatrix(std::string boneName, glm::mat4x4 transform, float priority) {
+    for (auto& b : mesh->bones.value()) {
+        if (b.name == boneName) {
+            SetBoneBindSpaceTransformMatrix(b.id, transform, priority);
+            return;
+        }
+    }
+    DebugLogError("Couldn\'t find bone ", boneName);
+    Assert(false); 
 }
 
 void AnimationComponent::PlayAnimation(std::string animName, bool looped) {
@@ -37,6 +70,6 @@ void AnimationComponent::StopAnimation(std::string animName) {
 
 AnimationComponent::~AnimationComponent() {
     renderComponent = nullptr;
-    mesh = nullptr;
+    //mesh = nullptr;
     currentlyPlaying.clear();
 }

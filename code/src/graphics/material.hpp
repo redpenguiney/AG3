@@ -99,7 +99,8 @@ public:
     // For pretty much everything this should be set to true.
     bool depthMaskEnabled;
 
-    bool ignorePostProc = false; // if true, stuff with this shader will be rendered after postprocessing (on top of the screen quad)
+    // abstract materials don't actually draw anything; they're used simply to issue arbitrary rendering commands at arbitrary points in the rendering process.
+    bool abstract = false;
 
     // Determines whether (and if so, how) fragments (pixels) of a rendered object will read from the depth buffer to decide whether they are obscured.
     // Doesn't affet whether rendering will WRITE to the depth buffer, however; that's what depthMaskEnabled is about.

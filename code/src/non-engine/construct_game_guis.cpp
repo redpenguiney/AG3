@@ -283,7 +283,7 @@ void MakeGameMenu() {
     static std::shared_ptr<Gui> currentConstructionTab = nullptr;
     //static std::vector<std::unique_ptr<Event<InputObject>::Connection>> connections;
 
-    auto constructionFrame = std::make_shared<Gui>(false, std::nullopt);
+    auto constructionFrame = std::make_shared<Gui>(GuiCreateParams{});
     constructionGui.push_back(constructionFrame);
     
     constructionFrame->scalePos = { 0, 0 };
@@ -306,7 +306,8 @@ void MakeGameMenu() {
     
     int tabIndex = 0;
     for (auto& tabInfo : constructionTabs) {
-        auto tab = std::make_shared<Gui>(true, std::nullopt, MenuFont1<12>());
+        auto f = MenuFont1<12>();
+        auto tab = std::make_shared<Gui>(GuiCreateParams{ .textInfo = GuiFontInfo(f.second, f.first)});
         tab->GetTextInfo().leftMargin = -1000;
         tab->GetTextInfo().rightMargin = 1000;
         tab->GetTextInfo().horizontalAlignment = HorizontalAlignMode::Center;
@@ -355,7 +356,7 @@ void MakeGameMenu() {
                     ClearCurrentConstructionGhost();
                 }
 
-                auto buildingsList = std::make_shared<Gui>(false, std::nullopt);
+                auto buildingsList = std::make_shared<Gui>(GuiCreateParams{});
 
                 buildUiScrollAmt = 0;
 
@@ -372,7 +373,7 @@ void MakeGameMenu() {
                 
 
                 // To have scrolling, we clip all construction options against the rendered frame, but parent those options to an invisible gui we move up and down.
-                auto contents = std::make_shared<Gui>(false, std::nullopt);  
+                auto contents = std::make_shared<Gui>(GuiCreateParams {});
                 contents->rgba = { 0, 0, 0, 0 }; // TODO: might be good to just have an option to make the gui not have a rendercomponent at all
                 contents->SetParent(buildingsList.get());
                 contents->scaleSize = buildingsList->scaleSize;
@@ -393,7 +394,8 @@ void MakeGameMenu() {
 
                 int itemI = 0;
                 for (auto& item : tabInfo->items) {
-                    auto construction = std::make_shared<Gui>(true, std::nullopt, MenuFont1<12>(), std::nullopt, true);
+                    auto f = MenuFont1<12>();
+                    auto construction = std::make_shared<Gui>(GuiCreateParams {.textInfo = GuiFontInfo {f.second, f.first}, .clippingEnabled = true});
 
                     construction->scalePos = { 0, 0 };
                     //construction->offsetPos = { 8, 8 + p->GetPixelSize().y / 2 + p->GetPixelPos().y + TAB_ICON_SPACING };
@@ -530,7 +532,8 @@ void MakeMainMenu() {
     //auto& CR = ComponentRegistry::Get();
 
     //// don't take by reference bc vector reallocation invalidates references/reference to temporary
-    auto startGame = std::make_shared<Gui>(true, std::nullopt, MenuFont1<24>());
+    auto menuFont24 = MenuFont1<24>();
+    auto startGame = std::make_shared<Gui>(GuiCreateParams{ .textInfo = GuiFontInfo {menuFont24.second, menuFont24.first} });
     mainMenuGuis.push_back(startGame);
 
     startGame->rgba = { 0, 0, 1, 1 };

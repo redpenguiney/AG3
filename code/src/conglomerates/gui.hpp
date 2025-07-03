@@ -42,6 +42,8 @@ enum class GuiChildBehaviour {
     Grid 
 };
 
+struct GuiCreateParams;
+
 // Basically a wrapper for the transform and render components that handles stuff for you when doing gui.
 // Doesn't need to be super fast.
 // Everything this does, you could just do yourself with rendercomponents + transformcomponents if you want, all this does is call functions on/set values of render/transform components when UpdateGuiTransform()/UpdateGuiGraphics() is called.
@@ -127,7 +129,7 @@ public:
     // generally should be used with std::make_shared/shared_ptr, but most features will function even if you don't.
     // guiMaterial will default to the default gui material specified in GraphicsEngine if nullopt. 
     // if clippingEnabled, then clipTarget may be used and Gui::material will be set to a copy of guiMaterial (or the default material).
-    Gui(bool haveText, std::optional<std::pair<float, std::shared_ptr<Material>>> guiMaterial, std::optional<std::pair<float, std::shared_ptr<Material>>> fontMaterial = std::nullopt, std::optional<BillboardGuiInfo> billboardInfo = std::nullopt, bool clippingEnabled = false, bool overrideDrawOrder = true);
+    Gui(const GuiCreateParams& params);
 
     ~Gui();
 
@@ -254,4 +256,35 @@ private:
 
     // If not nullopt, will make the gui basically 3d
     std::optional<BillboardGuiInfo> billboardInfo;
+};
+
+struct GuiFontInfo {
+    // MUST be supplied.
+    std::shared_ptr<Material> fontMaterial;
+
+    // MUST be supplied.
+    float fontMaterialTextureLayer;
+
+    //GuiFontInfo(std::pair<float, std::shared_ptr<Material>>& pair) : fontMaterial(pair.second), fontMaterialTextureLayer(pair.first) {}
+};
+
+// Used to supply parameters to GUI construction.
+struct GuiCreateParams {
+
+    // if supplied, this gui will have text.
+    std::optional<GuiFontInfo> textInfo;
+
+    // if not supplied/nullptr, will use a default material.
+    std::shared_ptr<Material> guiMaterial = nullptr;
+    float guiMaterialTextureLayer = -1;
+
+    // if supplied, the gui will be a billboard gui, meaning it'll have a position in 3d space.
+    std::optional<Gui::BillboardGuiInfo> billboardInfo = std::nullopt;
+
+    // if true, one may specify bounds outside of which the gui's pixels will be clipped (useful for stuff like scrolling)
+    // if true, a copy of the supplied material(s) will be used by the gui instead of the original.
+    bool clippingEnabled = false;
+
+    // if true, the passed guiMaterial/fontMaterial will have their drawOrder automatically changed, ensuring gui is rendered properly and without postprocessing.
+    bool overrideDrawOrder = true;
 };

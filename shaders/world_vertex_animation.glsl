@@ -24,10 +24,10 @@ layout(location = 14) in vec4 weights;
 uniform mat4 perspective;
 uniform mat4 modelToLightSpace;
 
-layout(std140, binding = 1) readonly buffer boneSsbo {
+layout(std140, binding = 2) readonly buffer boneSsbo {
     mat4 finalBonesMatrices[];
 };
-layout(std140, binding = 2) readonly buffer boneOffsetSsbo {
+layout(std140, binding = 3) readonly buffer boneOffsetSsbo {
     uint boneBufferOffsets[];
 };
 
@@ -45,26 +45,32 @@ void main()
 {
     uint offset = 0; //boneBufferOffsets[(boneIds.x >> 16) + gl_InstanceID];
     ivec4 realBoneIds = boneIds;
-    // realBoneIds.x = realBoneIds.x & 0x0000FFFF;
+    //realBoneIds.x = realBoneIds.x & 0x0000FFFF;
     vec4 totalPosition = vec4(0.0f);
     for(int i = 0 ; i < 4 ; i++)
     {
-        if(realBoneIds[i] == -1) 
+        if(realBoneIds[i] == -1) {
+            if (i == 0) {
+                totalPosition = vec4(vertexPos,1.0f);
+                break; 
+            }
             continue;
-        if(realBoneIds[i] >= boneBufferOffsets.length()) 
-        {
-            totalPosition = vec4(vertexPos,1.0f);
-            break;
         }
-        //vec4 localPosition = finalBonesMatrices[boneIds[i] + offset] * vec4(vertexPos,1.0f);
-        mat4 m;
-        m[1] = vec4(1);
-        m[2] = vec4(3);
-        vec4 localPosition = m * vec4(vertexPos, 1.0f);
+        //if(realBoneIds[i] + offset >= finalBonesMatrices.length()) {
+        //    totalPosition = vec4(vertexPos,1.0f);
+        //    break;
+        //}
+        vec4 localPosition = finalBonesMatrices[realBoneIds[i] + offset] * vec4(vertexPos,1.0f);
+        //mat4 m;
+        //m[1] = vec4(1);
+        //m[2] = vec4(3);
+        //vec4 localPosition = m * vec4(vertexPos, 1.0f);
         totalPosition += localPosition * weights[i];
-        // vec3 localNormal = mat3(finalBonesMatrices[boneIds[i] + offset]) * norm;
+        // vec3 localNormal = mat3(finalBonesMatrices[realBoneIds[i] + offset]) * norm;
+        //totalPosition = vec4(vertexPos, 1.0f);
+        
     }
-
+    //totalPosition = vec4(vertexPos, 1.0f);
     gl_Position = modelMatrix * totalPosition;
     cameraToFragmentPosition = gl_Position.xyz;
     gl_Position = perspective * gl_Position;
@@ -73,10 +79,14 @@ void main()
     fragmentNormal = normalize(normalMatrix * vertexNormal);
     fragmentTexCoords = vec3(textureXY, textureZ);
     //lightSpaceCoords = modelToLightSpace * model * vec4(vertexPos, 1.0);
-
+    //fragmentColor = vec4(textureXY, 1, 1);
     vec3 T = normalize(vec3(modelMatrix * vec4(aTangent,   0.0)));
     vec3 B = cross(fragmentNormal, T);
     TBNmatrix = mat3(T, B, fragmentNormal);
     cameraToFragmentInTangentSpace = TBNmatrix * (cameraToFragmentPosition);
+
+    //if (realBoneIds.x != 4 && realBoneIds.y != 4 && realBoneIds.z != 4 && realBoneIds.w != 4) {
+    //    fragmentColor = vec4(0, 0, 0, 1);
+    //}
 }          
 

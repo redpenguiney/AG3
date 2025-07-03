@@ -44,5 +44,6 @@ void main()
     vec3 B = cross(fragmentNormal, T);
     TBNmatrix = mat3(T, B, fragmentNormal);
     cameraToFragmentInTangentSpace = TBNmatrix * (cameraToFragmentPosition);
+
 }          
 

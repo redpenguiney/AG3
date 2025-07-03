@@ -9,6 +9,25 @@ BasicRenderer& BasicRenderer::Setup(std::shared_ptr<ShaderProgram> postProcShade
     return renderer;
 }
 
+std::shared_ptr<Material> GetTMat() {
+    auto transparentMaterial = Material::Copy(GraphicsEngine::Get().defaultMaterial);
+    transparentMaterial->depthMaskEnabled = false;
+    transparentMaterial->drawOrder = BasicRenderer::TRANSPARENT_DRAW_ORDER;
+    transparentMaterial->shader = ShaderProgram::New("../shaders/world_vertex.glsl", "../shaders/world_fragment_translucent.glsl");
+
+    //transparentMaterial->depthTestFunc = DepthTestMode::Disabled;
+    transparentMaterial->blendingSrcFactor = { BlendFactorMode::One, BlendFactorMode::Zero, };
+    transparentMaterial->blendingDstFactor = { BlendFactorMode::One, BlendFactorMode::OneMinusSrcColor };
+
+    return transparentMaterial;
+}
+
+std::shared_ptr<Material>& BasicRenderer::GetDefaultTransparentMaterial()
+{
+    static auto mat = GetTMat();
+    return mat;
+}
+
 // XYZ, UV
 const std::vector<GLfloat> screenQuadVertices = {
     -1.0, -1.0, 0.0,   0.0, 0.0,
@@ -71,13 +90,18 @@ static void UpdateFramebuffer() {
     }
 }
 
+void BasicRenderer::AddShader(std::shared_ptr<ShaderProgram> shader) {
+    shaders.push_back(shader);
+
+    SetEnvironmentalLighting(currentLighting);
+}
+
 void BasicRenderer::PrepPostprocessing(Material* material, std::shared_ptr<ShaderProgram> _) {
     auto& BE = BasicRenderer::Setup();
 
     UpdateFramebuffer();
 
     // clearing depth/accum/reveal for purposes of the next frame; only the color is still needed, and next frame will paint it over assuming skybox exists
-    BE.mainFramebuffer->Clear({ {-1, -1, -1, -1 }, {0, 0, 0, 0}, { 1, 1, 1, 1 } });
     BE.mainFramebuffer->ClearDepthRenderbuffer();
    
     BE.mainFramebuffer->Unbind();
@@ -85,7 +109,7 @@ void BasicRenderer::PrepPostprocessing(Material* material, std::shared_ptr<Shade
 
    
 
-    DebugLogInfo("POSTPROC");
+    //DebugLogInfo("POSTPROC");
 }
 
 
@@ -95,38 +119,107 @@ static void PrepOITComposition(Material* material, std::shared_ptr<ShaderProgram
     UpdateFramebuffer();
 
     
-    BE.mainFramebuffer->Bind();
+    BE.mainFramebuffer->Bind({0,});
     BE.mainFramebuffer->textureAttachments[1].Use();
     BE.mainFramebuffer->textureAttachments[2].Use();
 
-    DebugLogInfo("OIT COMPOSITION.");
+    //DebugLogInfo("OIT COMPOSITION.");
 }
 
 void BasicRenderer::PrepNormalRendering(Material* material, std::shared_ptr<ShaderProgram> _) {
+    //DebugLogInfo("Normal mat.");
+}
+
+void BasicRenderer::PreRendering(Material*, std::shared_ptr<ShaderProgram>) {
     auto& BE = BasicRenderer::Setup();
 
     UpdateFramebuffer();
-    BE.mainFramebuffer->Bind();
+    BE.mainFramebuffer->Bind({ 0, });
+    BE.mainFramebuffer->Clear({ {0, 0, 0, 0 }, });
+    BE.mainFramebuffer->ClearDepthRenderbuffer();
+    //BE.mainFramebuffer->Clear({ {1, 1, 0, 1}, {-1, -1, -1, -1}, {-1, -1, -1, -1}});
+}
 
-    DebugLogInfo("Normal mat.");
-    
+void BasicRenderer::PreTransparentRendering(Material*, std::shared_ptr<ShaderProgram>) {
+    auto& BE = BasicRenderer::Setup();
+    BE.mainFramebuffer->Bind({ 1, 2 });
+    BE.mainFramebuffer->Clear({ { 0, 0, 0, 0 }, { 1, 1, 1, 1 } });
+}
+
+void BasicRenderer::SetEnvironmentalLighting(const EnvironmentalLighting& light) {
+    currentLighting = light;
+
+    for (int i = 0; i < shaders.size(); i++) {
+        auto& shader = shaders[i];
+        if (auto ptr = shader.lock()) {
+            ptr->Uniform("envLightDirection", light.dir);
+            ptr->Uniform("envLightColor", light.color);
+            ptr->Uniform("envLightDiffuse", light.diffuseStrength);
+            ptr->Uniform("envLightAmbient", light.ambientStrength);
+            ptr->Uniform("envLightSpecular", light.specularStrength);
+        }
+        else {
+            shaders[i] = shaders.back();
+            shaders.pop_back();
+            i--;
+        }
+    }
 }
 
 BasicRenderer::BasicRenderer(std::shared_ptr<ShaderProgram> postProcShader) {
+    GetDefaultTransparentMaterial();
+    SetEnvironmentalLighting(currentLighting);
+
     if (!postProcShader)
         postProcShader = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl", false, false);
 
     auto screenQuadMesh = Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .expectedCount = 2, .normalizeSize = false }));
 
     GraphicsEngine::Get().defaultMaterial->inputProvider = ShaderInputProvider(PrepNormalRendering);
+    //GraphicsEngine::Get().defaultMaterial->depthTestFunc = DepthTestMode::Disabled;
 
-    auto [_, oitCompositorMaterial] = Material::New(MaterialCreateParams{
+    shaders.push_back(GraphicsEngine::Get().defaultMaterial->shader);
+    shaders.push_back(GetDefaultTransparentMaterial()->shader);
+
+    auto [_, predrawMaterial] = Material::New(MaterialCreateParams{
+        .shader = nullptr,
+        .depthMask = true,
+        .requireUniqueTextureCollection = true,
+        .inputProvider = ShaderInputProvider(PreRendering),
+        .depthTestFunc = DepthTestMode::LEqual,
+        .blendingSrcFactor = { BlendFactorMode::SrcAlpha, },
+        .blendingDstFactor = { BlendFactorMode::OneMinusSrcAlpha, },
+        .drawOrder = PREDRAW_DRAW_ORDER,
+    });
+    predrawMaterial->abstract = true;
+    auto predrawParams = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
+    predrawParams.materialId = predrawMaterial->id;
+    predrawParams.meshId = screenQuadMesh->meshId;
+    auto preDraw = GameObject::New(predrawParams);
+
+    auto [____, predrawTransparentMaterial] = Material::New(MaterialCreateParams{
+        .shader = nullptr,
+        .depthMask = false,
+        .requireUniqueTextureCollection = true,
+        .inputProvider = ShaderInputProvider(PreTransparentRendering),
+        .depthTestFunc = DepthTestMode::LEqual,
+        .blendingSrcFactor = { BlendFactorMode::SrcAlpha, },
+        .blendingDstFactor = { BlendFactorMode::OneMinusSrcAlpha, },
+        .drawOrder = PREDRAW_TRANSPARENT_DRAW_ORDER,
+        });
+    predrawTransparentMaterial->abstract = true;
+    auto predrawTransparentParams = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
+    predrawTransparentParams.materialId = predrawTransparentMaterial->id;
+    predrawTransparentParams.meshId = screenQuadMesh->meshId;
+    auto preDrawTransparent = GameObject::New(predrawTransparentParams);
+
+    auto [__, oitCompositorMaterial] = Material::New(MaterialCreateParams{
         .shader = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/transparent_compositor_frag.glsl", false, false),
         .depthMask = false,
         .requireUniqueTextureCollection = true,
         .inputProvider = ShaderInputProvider(PrepOITComposition),
         .depthTestFunc = DepthTestMode::Disabled,
-        .blendingSrcFactor = { BlendFactorMode::SrcAlpha, }, // 2 other attachment handling???
+        .blendingSrcFactor = { BlendFactorMode::SrcAlpha, },
         .blendingDstFactor = { BlendFactorMode::OneMinusSrcAlpha, },
         .drawOrder = TRANSPARENT_COMPOSITION_DRAW_ORDER,
         
@@ -136,7 +229,7 @@ BasicRenderer::BasicRenderer(std::shared_ptr<ShaderProgram> postProcShader) {
     oitcParams.meshId = screenQuadMesh->meshId;
     auto oitCompositor = GameObject::New(oitcParams);
 
-    auto [__, ppsMaterial] = Material::New(MaterialCreateParams{
+    auto [___, ppsMaterial] = Material::New(MaterialCreateParams{
         .shader = postProcShader,
         .depthMask = false,
         .requireUniqueTextureCollection = true,

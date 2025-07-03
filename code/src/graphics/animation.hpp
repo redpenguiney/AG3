@@ -12,26 +12,37 @@ class Bone {
     unsigned int id; // what is actually used by shaders/etc, as well as the index of this bone in its mesh.
     
     std::vector<unsigned int> childrenBoneIndices; // indices into the mesh's bone vector
+    int parentIndex; // -1 if not there
 
-    glm::mat4x4 localBoneTransform; // TODO: figure out what this is
+    // mesh space to bone space (in bind pose)
+    glm::mat4x4 inverseBindTransform;
 
+    // where the bone is in the bind pose.
+    glm::mat4x4 baseBonePosition;
     
 };
 
 struct BoneKeyframe {
-    unsigned int boneIndex;
+    //unsigned int boneIndex;
     glm::vec3 translation;
     glm::vec3 scale;
     glm::quat rotation;
 
+    float timestamp;
     
 };
 
-struct AnimationKeyframe {
-    float timestamp; // in seconds from start of animation
-    
-    std::vector<BoneKeyframe> boneKeyframes;
+//struct AnimationKeyframe {
+//    float timestamp; // in seconds from start of animation
+//    
+//    std::vector<BoneKeyframe> boneKeyframes;
+//
+//};
 
+// Each Animation has a BoneAnimation for every bone it affects.
+struct BoneAnimation {
+    std::vector<BoneKeyframe> keyframes; // sorted from start to end. 
+    unsigned int boneIndex; // index of the bone this animation affects
 };
 
 // Max 2^15 bones per animation.
@@ -42,7 +53,7 @@ class Animation {
     float duration;
     float priority; // higher number = higher priority; can be negative
 
-    std::vector<AnimationKeyframe> keyframes; // sorted by timestamp, timestamp 0 at index 0
+    std::vector<BoneAnimation> boneAnimations; // one for every bone affected by the animation. In no particular order.
 
     // interpolates between keyframes.
     // this transform is relative to the bone's parent.
