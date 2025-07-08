@@ -115,7 +115,7 @@ void Window::Update() {
     glfwGetCursorPos(glfwWindow, &pos.x, &pos.y);
     // std::printf("Old mouse pos was %f %f\n", MOUSE_POS.x, MOUSE_POS.y);
     // std::printf("Now it at %f %f\n", pos.x, pos.y);
-    MOUSE_DELTA = pos - MOUSE_POS;
+    MOUSE_DELTA =  pos - MOUSE_POS;
     MOUSE_POS = pos;
 
     // fire callbacks/input events
@@ -149,6 +149,8 @@ void Window::SetMouseLocked(bool locked) {
     mouseLocked = locked;
     glfwSetInputMode(glfwWindow, GLFW_CURSOR, (locked) ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
+    // prevent mouse delta from going crazy when this is disabled
+    glfwGetCursorPos(glfwWindow, &MOUSE_POS.x, &MOUSE_POS.y);
 }
 
 InputObject::InputType glfwKeyToInputType(int key) {

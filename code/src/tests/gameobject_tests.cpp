@@ -490,7 +490,7 @@ void TestAnimation()
     auto mp = MeshCreateParams::Default();
     mp.normalizeSize = false;
  
-    auto stuff = Mesh::MultiFromFile("../models/test_anims.fbx", mp);
+    auto stuff = Mesh::MultiFromFile("../models/test_anims_2.fbx", mp);
     for (auto & ret : stuff) {
     //auto ret = stuff[1];
         ret.material->shader = animShader;
@@ -501,7 +501,7 @@ void TestAnimation()
         auto obj = GameObject::New(params);
         obj->RawGet<RenderComponent>()->SetTextureZ(ret.material != nullptr ? ret.materialZ : brickTextureZ);
         obj->RawGet<RenderComponent>()->SetColor({1, 1, 1, 1});
-        obj->RawGet<TransformComponent>()->SetPos(glm::vec3(5, 3, 5) + ret.posOffset);
+        obj->RawGet<TransformComponent>()->SetPos(glm::vec3(0, 0, 13) + ret.posOffset);
         obj->RawGet<TransformComponent>()->SetScl(ret.mesh->originalSize);
         
         //obj->RawGet<AnimationComponent>()->PlayAnimation(ret.mesh->animations->front().name, true);
@@ -511,15 +511,16 @@ void TestAnimation()
         if (ret.mesh->bones) {
             for (auto& b : ret.mesh->bones.value()) {
                 if (b.parentIndex == -1) continue;
-                DebugLogInfo("Bone ", b.name, " inherits ", ret.mesh->bones.value()[b.parentIndex].name, " and translates from root by ", b.baseBonePosition[3]);
+                DebugLogInfo("Bone ", b.name, " (", b.id, ") inherits ", ret.mesh->bones.value()[b.parentIndex].name);
+                //DebugLogInfo("Bone ", b.name, " (", b.id, ")");
             }
         }
 
-        GraphicsEngine::Get().preRenderEvent->Connect([obj](float dt) {  
+        GraphicsEngine::Get().preRenderEvent->Connect([obj, m=ret.mesh->bones.value()[7]](float dt) {
             double y = sin((double)GraphicsEngine::Get().frameId * 0.01);
             //DebugLogInfo(y);
             //y = 1;
-            obj->RawGet<AnimationComponent>()->SetBoneBindSpaceTransformMatrix("mixamorig:LeftShoulder", glm::translate(glm::vec3(y, 0, 0)), 1000);
+            obj->RawGet<AnimationComponent>()->SetBoneBindSpaceTransformMatrix("mixamorig:LeftShoulder", glm::translate(glm::vec3(y, 0, 0)) * m.baseBonePosition, 1000);
         });
     }
 }

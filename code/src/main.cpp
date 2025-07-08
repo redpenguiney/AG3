@@ -217,7 +217,7 @@ int main(int numArgs, const char *argPtrs[]) {
         BaseEvent::FlushEventQueue();
         LUA.PreRenderCallbacks();
 
-        GE.RenderScene((float)elapsedTime);
+        GE.RenderScene(physicsPaused ? 0.0f : (float)elapsedTime);
 
         // TODO: unsure about placement of flip buffers? 
         // i think this yields until GPU done drawing and image on screen

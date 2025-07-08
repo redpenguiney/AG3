@@ -37,11 +37,9 @@ std::optional<glm::mat4x4> Animation::BoneTransformAtTime(unsigned int boneId, f
             const auto & prevKeyframe = boneAnim->keyframes[i - 1];
 
             float interpolationFactor = (time - prevKeyframe.timestamp) / (keyframe.timestamp - prevKeyframe.timestamp);
-            glm::vec3 interpolatedPos = (1 - interpolationFactor) * prevKeyframe.translation + keyframe.translation * interpolationFactor;
-            glm::vec3 interpolatedScl = (1 - interpolationFactor) * prevKeyframe.scale + keyframe.scale * interpolationFactor;
-            glm::quat interpolatedRot = glm::slerp(prevKeyframe.rotation, keyframe.rotation, interpolationFactor);
-            
-
+            glm::vec3 interpolatedPos = glm::mix(prevKeyframe.translation, keyframe.translation, interpolationFactor);
+            glm::vec3 interpolatedScl = glm::mix(prevKeyframe.scale, keyframe.scale, interpolationFactor);
+            glm::quat interpolatedRot = glm::normalize(glm::slerp(prevKeyframe.rotation, keyframe.rotation, interpolationFactor)); // TODO: normalizing necessary?
 
             auto localMat = glm::translate(glm::identity<glm::mat4x4>(), interpolatedPos)
                 * glm::toMat4(interpolatedRot)

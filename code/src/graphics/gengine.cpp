@@ -751,39 +751,39 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
 
         // we combine the relative-to-parent bone transforms to get the final ones we send to the GPU
         std::vector<glm::mat4x4> finalBoneOffsets;
-        /*finalBoneOffsets.resize(boneOffsets.size(), glm::identity<glm::mat4x4>());
+        finalBoneOffsets.resize(boneOffsets.size(), glm::identity<glm::mat4x4>());
 
         std::function<void(unsigned, glm::mat4x4)> inheritBoneTransforms;
         inheritBoneTransforms = [&](unsigned index, glm::mat4x4 parentTransform) {
             const Bone& bone = animComp->mesh->bones.value()[index];
 
-            auto finalBoneTransform = boneOffsets[index] * parentTransform;
+            auto finalBoneTransform = parentTransform * boneOffsets[index];
             finalBoneOffsets[index] = finalBoneTransform * bone.inverseBindTransform;
 
             for (unsigned i : bone.childrenBoneIndices) {
                 inheritBoneTransforms(i, finalBoneTransform);
             }
         };
-        inheritBoneTransforms(animComp->mesh->rootBoneId, glm::identity<glm::mat4x4>());*/
+        inheritBoneTransforms(animComp->mesh->rootBoneId, glm::identity<glm::mat4x4>());
         
-        for (unsigned boneI = 0; boneI < boneOffsets.size(); boneI++) {
+        //for (unsigned boneI = 0; boneI < boneOffsets.size(); boneI++) {
 
 
-            const Bone& bone = animComp->mesh->bones.value()[boneI];
+        //    const Bone& bone = animComp->mesh->bones.value()[boneI];
 
-            auto transform = boneOffsets[boneI];
-            auto currentB = &bone;
-            while (currentB->parentIndex != -1) {
-                currentB = &animComp->mesh->bones.value()[currentB->parentIndex];
-                transform = transform * boneOffsets[currentB->id];
-            }
-            // inverseBindTransform puts the bone back at the origin of the mesh, and then transform moves it to the correct animated position of the bone.
-                // the same transformation shall be applied to the vertices of the mesh.
-            transform = transform * bone.inverseBindTransform;
+        //    auto transform = boneOffsets[boneI];
+        //    auto currentB = &bone;
+        //    while (currentB->parentIndex != -1) {
+        //        currentB = &animComp->mesh->bones.value()[currentB->parentIndex];
+        //        transform = transform * boneOffsets[currentB->id];
+        //    }
+        //    // inverseBindTransform puts the bone back at the origin of the mesh, and then transform moves it to the correct animated position of the bone.
+        //        // the same transformation shall be applied to the vertices of the mesh.
+        //    transform = transform * bone.inverseBindTransform;
 
-            finalBoneOffsets.push_back(transform);
-            //finalBoneOffsets.push_back(glm::identity<glm::mat4>());
-        }
+        //    finalBoneOffsets.push_back(transform);
+        //    //finalBoneOffsets.push_back(glm::identity<glm::mat4>());
+        //}
 
 
         

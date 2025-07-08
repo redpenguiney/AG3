@@ -335,8 +335,8 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
                     .id = boneIndex,
                     .childrenBoneIndices = {}, // done later
                     .parentIndex = -1, // done later
-                    .inverseBindTransform = AssimpMatrixToGLM(bone->mOffsetMatrix),                    
-                    //.baseBonePosition = done later 
+                    .inverseBindTransform = AssimpMatrixToGLM(bone->mOffsetMatrix),
+                    .baseBonePosition = glm::inverse(AssimpMatrixToGLM(bone->mOffsetMatrix))
                 });
 
 
@@ -360,22 +360,31 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
                         //DebugLogInfo("Wrote weight ", weight.mWeight, " and id ", boneIndex, " to ", boneIdIndex + numBonesAffectingThisVertex);
                     }
                     else {  // if there's already 4, we'll see if there's one with less weight than this one, and if so replace that one
-                        // TODO: this isn't great when more than 4 bones because doesn't make sure it adds up to 1
+                        
+
                         for (unsigned int vertexWeightIndex = 0; vertexWeightIndex < 4; vertexWeightIndex++) {
                             if (vertices[boneWeightIndex + vertexWeightIndex] < weight.mWeight) {
                                 vertices[boneIdIndex + vertexWeightIndex] = reinterpret_cast<const float&>((const int&)(boneIndex));
                                 vertices[boneWeightIndex + vertexWeightIndex] = weight.mWeight;
+                                break;
                             }
                         }
+
+                        // Then, we renormalize weights so they all add up to 1 exactly.
+                        float totalWeight = 0;
+                        for (unsigned int vertexWeightIndex = 0; vertexWeightIndex < 4; vertexWeightIndex++) 
+                            totalWeight += vertices[boneWeightIndex + vertexWeightIndex];
+                        for (unsigned int vertexWeightIndex = 0; vertexWeightIndex < 4; vertexWeightIndex++)
+                            totalWeight /= totalWeight;
                     }
 
                 }
             }
 
-            auto findBoneParent = [&](aiBone* bone, glm::mat4x4& nodeTransform) -> int {
+            auto findBoneParent = [&](aiBone* bone) -> int {
                 auto currentNode = bone->mNode;
 
-                nodeTransform = AssimpMatrixToGLM(currentNode->mTransformation) * nodeTransform;
+                
 
                 while (currentNode && currentNode != meshNode) {
 
@@ -400,8 +409,11 @@ std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const Me
                 // Find bone children/parent and the bone's transform in the bind pose
                 glm::mat4x4 bindPoseTransform = glm::identity<glm::mat4x4>();
 
-                int parent = findBoneParent(bone, bindPoseTransform);
-                bones.value()[boneIndex].baseBonePosition = bindPoseTransform;
+                int parent = findBoneParent(bone);
+
+                if (parent != -1) bindPoseTransform = bones.value()[parent].inverseBindTransform * glm::inverse(bones.value()[boneIndex].inverseBindTransform);
+
+                bones.value()[boneIndex].baseBonePosition =/* glm::inverse(bones.value()[boneIndex].inverseBindTransform);*/ bindPoseTransform;
                 if (parent == -1) {
                     Assert(rootBoneIndex == -1);
                     rootBoneIndex = boneIndex;

@@ -85,7 +85,7 @@ void main()
     TBNmatrix = mat3(T, B, fragmentNormal);
     cameraToFragmentInTangentSpace = TBNmatrix * (cameraToFragmentPosition);
 
-    //if (realBoneIds.x != 4 && realBoneIds.y != 4 && realBoneIds.z != 4 && realBoneIds.w != 4) {
+    //if (realBoneIds.x != 7 && realBoneIds.y != 7 && realBoneIds.z != 7 && realBoneIds.w != 7) {
     //    fragmentColor = vec4(0, 0, 0, 1);
     //}
 }          
