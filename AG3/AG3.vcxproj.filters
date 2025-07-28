@@ -300,6 +300,12 @@
     <ClCompile Include="..\code\src\conglomerates\basic_renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\code\src\tests\physics_tests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\code\src\conglomerates\highlight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\code\src\events\base_event.hpp">
@@ -591,6 +597,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\code\src\conglomerates\basic_renderer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\code\src\tests\physics_test.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\code\src\conglomerates\highlight.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

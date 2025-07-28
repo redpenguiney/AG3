@@ -36,6 +36,7 @@
 #include "non-engine/game.hpp"
 #include <tests/gameobject_tests.hpp>
 #include "tests/graphics_test.hpp"
+#include "tests/physics_test.hpp"
 
 //#include "FastNoise/FastNoise.h"
 
@@ -99,6 +100,7 @@ int main(int numArgs, const char *argPtrs[]) {
     DebugLogInfo("Calling GameInit().");
     //GameInit();
     TestGraphics();
+    //TestPhysics();
     //GE.SetDebugFreecamEnabled(true);
 
     //TestGrassFloor();

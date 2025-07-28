@@ -334,6 +334,61 @@ void TestVoxelTerrain()
 
         DebugLogInfo("CHUNK HAS ", glm::to_string(terrainMesh->originalSize), " size, nverts = ", terrainMesh->vertices.size(), " elapsed = ", Time() - cstart);
     }
+}
+
+void TestPit() {
+
+    auto m = CubeMesh();
+    auto [brickTextureZ, brickMaterial] = BrickMaterial();
+
+    GameobjectCreateParams wallParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
+    wallParams.meshId = m->meshId;
+    wallParams.materialId = brickMaterial->id;
+
+    int SIZE = 24;
+
+    auto wall1 = GameObject::New(wallParams);
+    wall1->Get<TransformComponent>()->SetPos({ SIZE/2, 4, 0 });
+    wall1->Get<TransformComponent>()->SetRot(glm::vec3{ 0, 0, 0.0 });
+    wall1->Get<ColliderComponent>()->elasticity = 1.0;
+    wall1->Get<TransformComponent>()->SetScl({ 1, 8, SIZE });
+    wall1->Get<RenderComponent>()->SetColor({ 1, 1, 1, 1 });
+    wall1->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
+    wall1->name = "wall";
+
+    auto wall2 = GameObject::New(wallParams);
+    wall2->Get<TransformComponent>()->SetPos({ 0, 4, SIZE / 2 });
+    wall2->Get<TransformComponent>()->SetRot(glm::vec3{ 0, 0, 0.0 });
+    wall2->Get<ColliderComponent>()->elasticity = 1.0;
+    wall2->Get<TransformComponent>()->SetScl({ SIZE, 8, 1 });
+    wall2->Get<RenderComponent>()->SetColor({ 1, 1, 1, 1 });
+    wall2->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
+    wall2->name = "wall";
+    auto wall3 = GameObject::New(wallParams);
+    wall3->Get<TransformComponent>()->SetPos({ -SIZE / 2, 4, 0 });
+    wall3->Get<TransformComponent>()->SetRot(glm::vec3{ 0, 0, 0.0 });
+    wall3->Get<ColliderComponent>()->elasticity = 1.0;
+    wall3->Get<TransformComponent>()->SetScl({ 1, 8, SIZE });
+    wall3->Get<RenderComponent>()->SetColor({ 1, 1, 1, 1 });
+    wall3->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
+    wall3->name = "wall";
+    auto wall4 = GameObject::New(wallParams);
+    wall4->Get<TransformComponent>()->SetPos({ 0, 4, -SIZE / 2 });
+    wall4->Get<TransformComponent>()->SetRot(glm::vec3{ 0, 0, 0.0 });
+    wall4->Get<ColliderComponent>()->elasticity = 1.0;
+    wall4->Get<TransformComponent>()->SetScl({ SIZE, 8, 1 });
+    wall4->Get<RenderComponent>()->SetColor({ 1, 1, 1, 1 });
+    wall4->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
+    wall4->name = "wall";
+
+    auto floor = GameObject::New(wallParams);
+    floor->Get<TransformComponent>()->SetPos({ 0, -1, 0 });
+    floor->Get<TransformComponent>()->SetRot(glm::vec3{ 0, 0, 0.0 });
+    floor->Get<ColliderComponent>()->elasticity = 1.0;
+    floor->Get<TransformComponent>()->SetScl({ SIZE, 2, SIZE });
+    floor->Get<RenderComponent>()->SetColor({ 0, 1, 0, 1 });
+    floor->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
+    floor->name = "wall";
 
 }
 
@@ -490,37 +545,41 @@ void TestAnimation()
     auto mp = MeshCreateParams::Default();
     mp.normalizeSize = false;
  
-    auto stuff = Mesh::MultiFromFile("../models/test_anims_2.fbx", mp);
-    for (auto & ret : stuff) {
-    //auto ret = stuff[1];
-        ret.material->shader = animShader;
-        GameobjectCreateParams params({ComponentBitIndex::Transform, ComponentBitIndex::Animation, ComponentBitIndex::Render});
-        params.meshId = ret.mesh->meshId;
-        params.materialId = ret.material != nullptr ? ret.material->id : brickMaterial->id;
-        //params.shaderId = animShader->shaderProgramId;
-        auto obj = GameObject::New(params);
-        obj->RawGet<RenderComponent>()->SetTextureZ(ret.material != nullptr ? ret.materialZ : brickTextureZ);
-        obj->RawGet<RenderComponent>()->SetColor({1, 1, 1, 1});
-        obj->RawGet<TransformComponent>()->SetPos(glm::vec3(0, 0, 13) + ret.posOffset);
-        obj->RawGet<TransformComponent>()->SetScl(ret.mesh->originalSize);
-        
-        //obj->RawGet<AnimationComponent>()->PlayAnimation(ret.mesh->animations->front().name, true);
+    for (int x = 0; x < 4; x++) {
+        auto stuff = Mesh::MultiFromFile("../models/test_anims_2.fbx", mp);
+        for (auto& ret : stuff) {
+            //auto ret = stuff[0]; {
+            ret.material->shader = animShader;
+            GameobjectCreateParams params({ ComponentBitIndex::Transform, ComponentBitIndex::Animation, ComponentBitIndex::Render });
+            params.meshId = ret.mesh->meshId;
+            params.materialId = ret.material != nullptr ? ret.material->id : brickMaterial->id;
+            //params.shaderId = animShader->shaderProgramId;
+            auto obj = GameObject::New(params);
+            obj->RawGet<RenderComponent>()->SetTextureZ(ret.material != nullptr ? ret.materialZ : brickTextureZ);
+            obj->RawGet<RenderComponent>()->SetColor({ 1, 1, 1, 1 });
+            obj->RawGet<TransformComponent>()->SetPos(glm::vec3(x * 2, 0, 13) + ret.posOffset);
+            obj->RawGet<TransformComponent>()->SetScl(ret.mesh->originalSize);
 
-        //obj->RawGet<AnimationComponent>()->SetBoneBindSpaceTransformMatrix("mixamorig:Neck", glm::translate(glm::vec3(0, 1, 0)), 1000);
+            obj->RawGet<AnimationComponent>()->PlayAnimation(ret.mesh->animations->front().name, true);
 
-        if (ret.mesh->bones) {
-            for (auto& b : ret.mesh->bones.value()) {
-                if (b.parentIndex == -1) continue;
-                DebugLogInfo("Bone ", b.name, " (", b.id, ") inherits ", ret.mesh->bones.value()[b.parentIndex].name);
-                //DebugLogInfo("Bone ", b.name, " (", b.id, ")");
+            //obj->RawGet<AnimationComponent>()->SetBoneBindSpaceTransformMatrix("mixamorig:Neck", glm::translate(glm::vec3(0, 1, 0)), 1000);
+
+            if (ret.mesh->bones) {
+                for (auto& b : ret.mesh->bones.value()) {
+                    if (b.parentIndex == -1) continue;
+                    DebugLogInfo("Bone ", b.name, " (", b.id, ") inherits ", ret.mesh->bones.value()[b.parentIndex].name);
+                    //DebugLogInfo("Bone ", b.name, " (", b.id, ")");
+                }
             }
-        }
 
-        GraphicsEngine::Get().preRenderEvent->Connect([obj, m=ret.mesh->bones.value()[7]](float dt) {
-            double y = sin((double)GraphicsEngine::Get().frameId * 0.01);
-            //DebugLogInfo(y);
-            //y = 1;
-            obj->RawGet<AnimationComponent>()->SetBoneBindSpaceTransformMatrix("mixamorig:LeftShoulder", glm::translate(glm::vec3(y, 0, 0)) * m.baseBonePosition, 1000);
-        });
+            GraphicsEngine::Get().preRenderEvent->Connect([obj, m = ret.mesh->bones.value()[7]](float dt) {
+                double y = sin((double)GraphicsEngine::Get().frameId * 0.01);
+                //DebugLogInfo(y);
+                //y = 1;
+                //obj->RawGet<AnimationComponent>()->SetBoneBindSpaceTransformMatrix("mixamorig:LeftShoulder", glm::translate(glm::vec3(y, 0, 0)) * m.baseBonePosition, 1000);
+                });
+        }
     }
+
+    
 }

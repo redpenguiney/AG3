@@ -349,7 +349,7 @@ World::TerrainIds::TerrainIds()
     TREE = RegisterFurnitureData({
         .displayName = "Anomalous tree",
         .gameobjectMaker = [](glm::ivec2 pos, std::vector<std::shared_ptr<GameObject>>& objects) {
-            static auto vec = Mesh::MultiFromFile("../models/tree.fbx");
+            static auto vec = Mesh::MultiFromFile("../models/tree.fbx", MeshCreateParams::Default(), MeshImportParams {.combineMeshes = false});
             static auto leavesMaterial = BasicRenderer::GetDefaultTransparentMaterial();
 
             auto d = GameobjectCreateParams({ ComponentBitIndex::Render, ComponentBitIndex::Transform });
@@ -357,6 +357,7 @@ World::TerrainIds::TerrainIds()
             constexpr double SCL_FACTOR = 0.1;
             int i = 0;
             for (auto& ret : vec) {
+
                 d.meshId = ret.mesh->meshId;
                 auto dAlpha = d;
                 dAlpha.materialId = leavesMaterial->id;

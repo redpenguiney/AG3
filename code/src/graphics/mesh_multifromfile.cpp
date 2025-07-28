@@ -110,13 +110,17 @@ glm::quat AssimpQuatToGLM(aiQuaternion q) {
 
 // TODO: animation processing especially is probably hecka slow.
 // TODO: i have my doubts on how well different vertex formats are handled
-std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const MeshCreateParams& params) {
+std::vector<Mesh::MeshRet> Mesh::MultiFromFile(const std::string& path, const MeshCreateParams& params, const MeshImportParams& importParams) {
+
+    auto flags = aiProcess_GlobalScale | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_ImproveCacheLocality | aiProcess_OptimizeGraph | aiProcess_PopulateArmatureData;
+    if (importParams.combineMeshes) flags |= aiProcess_OptimizeMeshes;
+
     //static Assimp::Importer importer;
     //const aiScene* scene = importer.ReadFileFromMemory(nullptr, 0, 0, nullptr);
     //const aiScene* scene = importer.ReadFile(path, aiProcess_OptimizeMeshes  | aiProcess_GlobalScale | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
     //importer.SetPropertyBool(AI_CONFIG_FBX_CONVERT_TO_M, true);
     //aiSetImportPropertyInteger()
-    const aiScene* scene = aiImportFile(path.c_str(), aiProcess_OptimizeMeshes | aiProcess_GlobalScale | aiProcess_FlipUVs | aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_ImproveCacheLocality | aiProcess_OptimizeGraph | aiProcess_PopulateArmatureData);
+    const aiScene* scene = aiImportFile(path.c_str(), flags);
     if (scene == nullptr || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode || !scene->HasMeshes()) {
         aiReleaseImport(scene);
         DebugLogError("Mesh::MultiFromFile() failed to load ", path, " because ", aiGetErrorString());

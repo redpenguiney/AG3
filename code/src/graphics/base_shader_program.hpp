@@ -16,6 +16,8 @@ class Shader {
 
     GLuint shaderId;
 
+    std::string path;
+
     // keys are (relative) filepaths, values are file contents (after PreprocessFile() has run on them, so #$INCLUDE$s have already been resolved)
     // useful for inlcuding the same file by different shaders
     static inline std::unordered_map<std::string, std::string> fileCache;
@@ -42,6 +44,7 @@ class BaseShaderProgram {
     void Uniform(std::string uniformName, float fval);
     void Uniform(std::string uniformName, bool bval);
     void Uniform(std::string uniformName, unsigned int uval);
+    void Uniform(std::string uniformName, int ival);
 
     virtual ~BaseShaderProgram();
 

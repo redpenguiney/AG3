@@ -1,4 +1,4 @@
-#version 430 // TODO: version too high
+#version 460 // TODO: version too high
 // #extension GL_ARB_shading_language_include : require
 // #include "phong.glsl"
 
@@ -27,11 +27,13 @@ uniform mat4 modelToLightSpace;
 layout(std140, binding = 2) readonly buffer boneSsbo {
     mat4 finalBonesMatrices[];
 };
-layout(std140, binding = 3) readonly buffer boneOffsetSsbo {
-    uint boneBufferOffsets[];
-};
+//layout(std140, binding = 3) readonly buffer boneOffsetSsbo {
+//    uint boneBufferOffsets[];
+//};
 
 uniform bool normalMappingEnabled;
+uniform uint maxBones;
+uniform uint boneOffsetModifier; // TODO: JUST USE MULTIPLE BUFFERING FOR BONES
 
 out vec4 fragmentColor;
 out vec3 cameraToFragmentPosition;
@@ -43,9 +45,8 @@ out mat3 TBNmatrix; //TBN matrix is need to make normal mapping work when an obj
 
 void main()
 {
-    uint offset = 0; //boneBufferOffsets[(boneIds.x >> 16) + gl_InstanceID];
+    uint offset = (gl_BaseInstance + gl_InstanceID - boneOffsetModifier) * maxBones;
     ivec4 realBoneIds = boneIds;
-    //realBoneIds.x = realBoneIds.x & 0x0000FFFF;
     vec4 totalPosition = vec4(0.0f);
     for(int i = 0 ; i < 4 ; i++)
     {

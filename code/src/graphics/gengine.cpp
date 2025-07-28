@@ -574,7 +574,7 @@ void GraphicsEngine::DrawWorld()
             command->pool->indices.Bind();
             if (command->pool->bones.has_value()) {
                 command->pool->bones->BindBase(Meshpool::BONE_BUFFER_BINDING);
-                command->pool->boneOffsetBuffer->BindBase(Meshpool::BONE_OFFSET_BUFFER_BINDING);
+                //command->pool->boneOffsetBuffer->BindBase(Meshpool::BONE_OFFSET_BUFFER_BINDING);
             }
             //}
             command->Draw();

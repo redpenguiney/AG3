@@ -210,7 +210,7 @@ public: // GraphicsEngine needs to access these to draw.
     std::optional<BufferedBuffer> bones;
 
     // if the mesh/material combo supports animations, stores offsets into the bone buffer for each object
-    std::optional<BufferedBuffer> boneOffsetBuffer;
+    //std::optional<BufferedBuffer> boneOffsetBuffer;
 
 private:
 

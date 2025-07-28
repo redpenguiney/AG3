@@ -65,7 +65,9 @@ private:
 
 
 
-
+struct MeshImportParams {
+    bool combineMeshes = true;
+};
 
 
 // sets vertices/indices to contain the right stuff, not normalized. Doesn't actually make a mesh, sorry for dumb name.
@@ -183,13 +185,13 @@ class Mesh: public std::enable_shared_from_this<Mesh> {
         glm::quat rotOffset; // like posOffset for rotation; should be in radians.
     };
 
+    
+
     // Accepts most files (whatever assimp takes)
     // Creates meshes/materials for whatever the file needs (TODO: cache to avoid duplicate mats/meshes), and then returns those.
     // Each tuple contains a mesh, its material (WARNING: or nullptr if the mesh doesn't have a material), the textureZ, and an offset from the origin (so that a scene with many objects can be reassembled)
     // TODO: offset currently unimplemented bc kinda complicated
-    static std::vector<MeshRet> MultiFromFile(
-        const std::string& path, const MeshCreateParams& params = MeshCreateParams::Default()
-    );
+    static std::vector<MeshRet> MultiFromFile(const std::string& path, const MeshCreateParams& params = MeshCreateParams::Default(), const MeshImportParams& = MeshImportParams());
 
     // Creates a mesh for use in text/gui.
     // Modify the mesh with TextMeshFromText() to actually set text and what not.

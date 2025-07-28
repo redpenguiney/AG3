@@ -16,6 +16,7 @@ class BufferedBuffer {
     // lets stuff be read only without a getter
     const GLuint& bufferId = _bufferId;
     char* const& bufferData = _bufferData;
+    const GLint& currentBufferIndex = currentBuffer;
 
     // bufferCount is no buffering (1), double buffering (2) or triple buffering (3). or higher, i guess.
     BufferedBuffer(GLenum bindingLocation, const unsigned int bufferCount, GLuint initalSize);

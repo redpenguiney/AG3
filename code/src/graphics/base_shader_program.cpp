@@ -79,7 +79,9 @@ std::string Shader::GetInfoLog() {
     Assert(false);
 }
 
-Shader::Shader(const char* path, GLenum shaderType) {
+Shader::Shader(const char* path, GLenum shaderType):
+    path(path)
+{
     // Get string from file contents 
     std::string mainShaderSource = PreprocessFile(path);
     
@@ -206,6 +208,15 @@ void BaseShaderProgram::Uniform(std::string uniformName, unsigned int uval)
     };
     Use();
     glUniform1ui(uniform_locations.at(uniformName), uval);
+}
+
+void BaseShaderProgram::Uniform(std::string uniformName, int ival) {
+    if (uniform_locations.count(uniformName) == 0) {
+        uniform_locations[uniformName] = glGetUniformLocation(programId, uniformName.c_str());
+        //Assert(uniform_locations[uniformName] != -1); // verify that the uniform name exists
+    };
+    Use();
+    glUniform1i(uniform_locations.at(uniformName), ival);
 }
 
 void BaseShaderProgram::Use() {

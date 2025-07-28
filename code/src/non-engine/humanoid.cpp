@@ -58,14 +58,14 @@ void Humanoid::Think(float dt)
 			if (utility > bestTaskUtility) {
 				bestTaskUtility = utility;
 				bestTaskIndex = currentTaskIndex;
-				DebugLogInfo("Better P found");
+				//DebugLogInfo("Better P found");
 			}
 		}
 	}
 
 	if (currentTask && oldTaskIndex != bestTaskIndex) {
 		currentTask->Interrupt();
-		DebugLogInfo("Interrupted ", currentTask.get());
+		//DebugLogInfo("Interrupted ", currentTask.get());
 		if (scheduler.availableTaskIndices.empty()) {
 			scheduler.tasks.push_back(std::move(currentTask));
 		}
@@ -81,14 +81,14 @@ void Humanoid::Think(float dt)
 		}
 		else {
 			currentTask = std::move(scheduler.tasks[bestTaskIndex]);
-			DebugLogInfo("Commencing new task ", currentTask.get());
+			//DebugLogInfo("Commencing new task ", currentTask.get());
 		}
 	
-	DebugLogInfo("Doing task ", currentTask.get());
+	//DebugLogInfo("Doing task ", currentTask.get());
 	if (currentTask)
 		if (currentTask->Progress(*this, dt)) { // then we finished the task (or it's no longer valid)
 			currentTask = nullptr; // destroy the task since it's done or invalid
-			DebugLogInfo("WE're DONE HERE");
+			//DebugLogInfo("WE're DONE HERE");
 		}
 		//DebugLogInfo("PRogress task");
 

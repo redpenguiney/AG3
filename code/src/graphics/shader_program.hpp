@@ -47,9 +47,7 @@ class ShaderProgram: public BaseShaderProgram {
 
     ~ShaderProgram();
 
-    
-
-    
+    std::string GetVertexSourcePath();
 
     private:
 

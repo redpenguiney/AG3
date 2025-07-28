@@ -22,7 +22,7 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
     instances(GL_ARRAY_BUFFER, INSTANCED_VERTEX_BUFFERING_FACTOR, 0),
     drawCommands(),
     bones( std::nullopt),
-    boneOffsetBuffer(std::nullopt),
+    //boneOffsetBuffer(std::nullopt),
 
     vaoId(0),
 
@@ -40,7 +40,7 @@ Meshpool::Meshpool(const MeshVertexFormat& meshVertexFormat) :
 
     if (format.supportsAnimation) {
         bones.emplace(GL_SHADER_STORAGE_BUFFER, 1, 0);
-        boneOffsetBuffer.emplace(GL_SHADER_STORAGE_BUFFER, 1, 0);
+        //boneOffsetBuffer.emplace(GL_SHADER_STORAGE_BUFFER, 1, 0);
     }
 }
 
@@ -330,12 +330,12 @@ void Meshpool::SetBoneState(const DrawHandle& handle, CheckedUint nBones, glm::m
     Assert(format.supportsAnimation);
         
     Assert(format.maxBones >= nBones.value);
-    glm::mat4x4* bonesLocation = (glm::mat4x4*)(bones->Data() + handle.instanceSlot * sizeof(glm::mat4x4));
+    glm::mat4x4* bonesLocation = (glm::mat4x4*)(bones->Data() + handle.instanceSlot * format.maxBones * sizeof(glm::mat4x4));
     
     // make sure we don't segfault 
     Assert(handle.instanceSlot < currentInstanceCapacity);
     Assert(handle.meshIndex < currentVertexCapacity);
-    Assert((char*)bonesLocation <= bones->Data() + (sizeof(glm::mat4x4) * currentInstanceCapacity));
+    Assert((char*)bonesLocation <= bones->Data() + (sizeof(glm::mat4x4) * format.maxBones * currentInstanceCapacity));
     Assert((char*)bonesLocation >= bones->Data());
     
     // copy in bone transforms
@@ -438,7 +438,7 @@ void Meshpool::Commit() {
     
     if (bones) {
         bones->Commit();
-        boneOffsetBuffer->Commit();
+        //boneOffsetBuffer->Commit();
     }
 }
 
@@ -453,7 +453,7 @@ void Meshpool::FlipBuffers()
     }
     if (bones) {
         bones->Flip();
-        boneOffsetBuffer->Flip();
+        //boneOffsetBuffer->Flip();
     }
 }
 
@@ -585,6 +585,14 @@ void Meshpool::DrawCommandBuffer::Draw() {
     shader->Uniform("vertexColorEnabled", pool->format.attributes.color.has_value());
     shader->Uniform("shaderTime", GraphicsEngine::Get().shaderTime); // skybox needs done seperately bruh
 
+    if (pool->format.supportsAnimation) {
+        shader->Uniform("maxBones", pool->format.maxBones);
+        DebugLogInfo("Modified by ");
+        shader->Uniform("boneOffsetModifier", pool->instances.GetOffset() / pool->instanceSize);
+    }
+
+    
+
     if (shader->useClusteredLighting) {
         shader->Uniform("pointLightCount", GraphicsEngine::Get().pointLightCount);
         shader->Uniform("spotLightCount", GraphicsEngine::Get().spotLightCount);
@@ -664,7 +672,7 @@ void Meshpool::ExpandInstanceCapacity()
     instances.Reallocate(currentInstanceCapacity * instanceSize);
     if (format.supportsAnimation) {
         bones->Reallocate(currentInstanceCapacity * sizeof(glm::mat4x4) * format.maxBones);
-        boneOffsetBuffer->Reallocate(currentInstanceCapacity * sizeof(GLuint));
+        //boneOffsetBuffer->Reallocate(currentInstanceCapacity * sizeof(GLuint));
     }
 
     // Associate data with the vao and describe format of instanced data

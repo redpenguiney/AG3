@@ -56,6 +56,10 @@ ShaderProgram::~ShaderProgram() {
     //glDeleteProgram(programId);
 }
 
+std::string ShaderProgram::GetVertexSourcePath() {
+    return vertex.path;
+}
+
 
 
 

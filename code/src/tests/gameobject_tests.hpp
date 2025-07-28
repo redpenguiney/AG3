@@ -24,6 +24,8 @@ void TestBrickWall();
 void TestGrassFloor();
 void TestVoxelTerrain();
 
+void TestPit();
+
 void TestSpinningSpotlight();
 void TestStationaryPointlight();
 
