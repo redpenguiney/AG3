@@ -20,12 +20,33 @@ void HighlightHandler::AddHighlight(std::shared_ptr<GameObject> object, float ou
 	}
 
 	if (!highlightMaterial) {
+		//DebugLogInfo("Creating new outline material for vertex shader ", vertexSource.c_str());
+
 		MaterialCreateParams params;
 		params.depthMask = false;
 		params.depthTestFunc = DepthTestMode::Disabled;
 		params.inputProvider = HighlightHandler::GeometryPassInputProviderFunc;
 		params.shader = ShaderProgram::New(vertexSource.c_str(), "../shaders/highlight_fragment.glsl", true, false);
+		params.allowAppendaton = false;
+		params.requireUniqueTextureCollection = true;
+		highlightMaterial = Material::New(params).second;
+		geometryMaterials.push_back(highlightMaterial);
 	}
+
+	// create outline object 
+	auto meshId = object->RawGet<RenderComponent>()->meshId;
+	auto objParams = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
+	objParams.meshId = meshId;
+	objParams.materialId = highlightMaterial->id;
+
+	auto obj = GameObject::New(objParams);
+	obj->name = "__HIGHLIGHT__";
+	obj->RawGet<TransformComponent>()->SetParent(*object->RawGet<TransformComponent>());
+	obj->RawGet<TransformComponent>()->SetPos(object->RawGet<TransformComponent>()->Position());
+	obj->RawGet<TransformComponent>()->SetScl(object->RawGet<TransformComponent>()->Scale());
+	obj->RawGet<TransformComponent>()->SetRot(object->RawGet<TransformComponent>()->Rotation());
+	obj->Destroy();
+	highlights[object] = obj;
 }
 
 HighlightHandler::HighlightHandler() {
@@ -55,8 +76,27 @@ HighlightHandler::HighlightHandler() {
 		};
 	updateFramebuffer({ 0, 0 }, { GraphicsEngine::Get().window.width, GraphicsEngine::Get().window.height });
 	GraphicsEngine::Get().window.onWindowResize->Connect(updateFramebuffer);
+
+	GraphicsEngine::Get().preRenderEvent->Connect([this](float dt) {
+		(void)dt;
+
+		for (auto it = highlights.begin(); it != highlights.end(); it++) {
+
+			auto& [obj, highlight] = *it;
+
+			if (obj.expired()) // then the object we were highlighting no longer exists
+				it = highlights.erase(it);
+			else {
+
+			}
+		}
+	});
 }
 
 HighlightHandler::~HighlightHandler() {
 
+}
+
+void HighlightHandler::GeometryPassInputProviderFunc(Material*, std::shared_ptr<ShaderProgram>) {
+	HighlightHandler::Get().highlightFramebuffer->Bind({0, 1});
 }

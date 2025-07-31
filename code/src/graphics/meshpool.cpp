@@ -587,7 +587,7 @@ void Meshpool::DrawCommandBuffer::Draw() {
 
     if (pool->format.supportsAnimation) {
         shader->Uniform("maxBones", pool->format.maxBones);
-        DebugLogInfo("Modified by ");
+        //DebugLogInfo("Modified by ");
         shader->Uniform("boneOffsetModifier", pool->instances.GetOffset() / pool->instanceSize);
     }
 

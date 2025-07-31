@@ -2,6 +2,7 @@
 #include "gameobjects/gameobject.hpp"
 #include "gameobject_tests.hpp"
 #include <conglomerates/basic_renderer.hpp>
+#include <conglomerates/highlight.hpp>
 
 
 void TransparentHandler(Material*, std::shared_ptr<ShaderProgram>) {
@@ -54,6 +55,8 @@ void TestGraphics() {
 		color[i] = 1;
 		g->RawGet<RenderComponent>()->SetColor(color);
 		g->RawGet<RenderComponent>()->SetTextureZ(-1);
+
+		HighlightHandler::Get().AddHighlight(g, 5, { 1, 1, 1 });
 	}
 
 	for (int i = 0; i < 10; i++) {
