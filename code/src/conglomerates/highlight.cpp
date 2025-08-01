@@ -27,6 +27,7 @@ void HighlightHandler::AddHighlight(std::shared_ptr<GameObject> object, float ou
 		params.depthTestFunc = DepthTestMode::Disabled;
 		params.inputProvider = HighlightHandler::GeometryPassInputProviderFunc;
 		params.shader = ShaderProgram::New(vertexSource.c_str(), "../shaders/highlight_fragment.glsl", true, false);
+		params.blendingEnabled = false;
 		params.allowAppendaton = false;
 		params.requireUniqueTextureCollection = true;
 		highlightMaterial = Material::New(params).second;
@@ -99,4 +100,9 @@ HighlightHandler::~HighlightHandler() {
 
 void HighlightHandler::GeometryPassInputProviderFunc(Material*, std::shared_ptr<ShaderProgram>) {
 	HighlightHandler::Get().highlightFramebuffer->Bind({0, 1});
+}
+
+template<float stepSize>
+void HighlightHandler::JumpFloodPassInputProviderFunc(Material*, std::shared_ptr<ShaderProgram> shader) {
+	shader->Uniform("stepSize", stepSize);
 }

@@ -45,11 +45,14 @@ private:
 	//std::shared_ptr<Material> uvMaskingMaterial;
 
 	// postprocessing-quad materials; multiple of them because jumpflood requires roughly log2(outline_width) passes
+	// first is size1, 
 	std::vector<std::shared_ptr<Material>> jumpFloodMaterial;
 
 	// used to put finished outline on screen
 	std::shared_ptr<Material> presentationMaterial;
 
 	static void GeometryPassInputProviderFunc(Material*, std::shared_ptr<ShaderProgram>);
+
+	template<float stepSize>
 	static void JumpFloodPassInputProviderFunc(Material*, std::shared_ptr<ShaderProgram>);
 };
