@@ -5,6 +5,7 @@
 #include "debug/log.hpp"
 #include <memory>
 #include "debug/assert.hpp"
+#include <tuple>
 
 // Events of various kinds are triggered by various parts of the AG3 engine (input events, collision events, etc.).
 // You can connect functions to those events to make code run when an event is fired, as well as fire custom events.

@@ -28,38 +28,6 @@ std::shared_ptr<Material>& BasicRenderer::GetDefaultTransparentMaterial()
     return mat;
 }
 
-// XYZ, UV
-const std::vector<GLfloat> screenQuadVertices = {
-    -1.0, -1.0, 0.0,   0.0, 0.0,
-    -1.0,  1.0, 0.0,   0.0, 1.0,
-     1.0, -1.0, 0.0,   1.0, 0.0,
-     1.0,  1.0, 0.0,   1.0, 1.0,
-};
-
-MeshVertexFormat screenQuadVertexFormat = MeshVertexFormat({
-    .position = {{
-        .nFloats = 3,
-        .instanced = false
-    }},
-    .textureUV = {{
-        .nFloats = 2,
-        .instanced = false
-    }},
-    .modelMatrix = {{
-        .nFloats = 16,
-        .instanced = true
-    }},
-    .normalMatrix = {{
-        .nFloats = 9,
-        .instanced = true
-    }}
-});
-
-const std::vector<GLuint> screenQuadIndices = {
-    0, 2, 1,
-    1, 2, 3
-};
-
 // Makes sure the framebuffer is the right size (in case they resized window or smtg).
 static void UpdateFramebuffer() {
     auto& BE = BasicRenderer::Setup();
@@ -173,8 +141,6 @@ BasicRenderer::BasicRenderer(std::shared_ptr<ShaderProgram> postProcShader) {
     if (!postProcShader)
         postProcShader = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/postproc_fragment.glsl", false, false);
 
-    auto screenQuadMesh = Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .expectedCount = 2, .normalizeSize = false }));
-
     GraphicsEngine::Get().defaultMaterial->inputProvider = ShaderInputProvider(PrepNormalRendering);
     //GraphicsEngine::Get().defaultMaterial->depthTestFunc = DepthTestMode::Disabled;
 
@@ -194,7 +160,7 @@ BasicRenderer::BasicRenderer(std::shared_ptr<ShaderProgram> postProcShader) {
     predrawMaterial->abstract = true;
     auto predrawParams = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
     predrawParams.materialId = predrawMaterial->id;
-    predrawParams.meshId = screenQuadMesh->meshId;
+    predrawParams.meshId = Mesh::ScreenQuad()->meshId;
     auto preDraw = GameObject::New(predrawParams);
 
     auto [____, predrawTransparentMaterial] = Material::New(MaterialCreateParams{
@@ -210,7 +176,7 @@ BasicRenderer::BasicRenderer(std::shared_ptr<ShaderProgram> postProcShader) {
     predrawTransparentMaterial->abstract = true;
     auto predrawTransparentParams = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
     predrawTransparentParams.materialId = predrawTransparentMaterial->id;
-    predrawTransparentParams.meshId = screenQuadMesh->meshId;
+    predrawTransparentParams.meshId = Mesh::ScreenQuad()->meshId;
     auto preDrawTransparent = GameObject::New(predrawTransparentParams);
 
     auto [__, oitCompositorMaterial] = Material::New(MaterialCreateParams{
@@ -226,7 +192,7 @@ BasicRenderer::BasicRenderer(std::shared_ptr<ShaderProgram> postProcShader) {
     });
     auto oitcParams = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
     oitcParams.materialId = oitCompositorMaterial->id;
-    oitcParams.meshId = screenQuadMesh->meshId;
+    oitcParams.meshId = Mesh::ScreenQuad()->meshId;
     auto oitCompositor = GameObject::New(oitcParams);
 
     auto [___, ppsMaterial] = Material::New(MaterialCreateParams{
@@ -238,7 +204,7 @@ BasicRenderer::BasicRenderer(std::shared_ptr<ShaderProgram> postProcShader) {
         .drawOrder = POSTPROC_DRAW_ORDER,
     });
     auto ppsqParams = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
-    ppsqParams.meshId = screenQuadMesh->meshId;
+    ppsqParams.meshId = Mesh::ScreenQuad()->meshId;
     ppsqParams.materialId = ppsMaterial->id;
     auto postProcScreenQuad = GameObject::New(ppsqParams);
 

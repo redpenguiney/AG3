@@ -35,28 +35,28 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MegaFast|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
@@ -64,14 +64,14 @@
     <EnableFuzzer>false</EnableFuzzer>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MegaFast|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -84,23 +84,45 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\shared_build_settings.props" />
+    <Import Project="..\debug_build.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\shared_build_settings.props" />
+    <Import Project="..\release_build.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='MegaFast|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\shared_build_settings.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\shared_build_settings.props" />
+    <Import Project="..\debug_build.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\shared_build_settings.props" />
+    <Import Project="..\release_build.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='MegaFast|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\shared_build_settings.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MegaFast|Win32'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
   </PropertyGroup>
@@ -126,6 +148,11 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalIncludeDirectories>C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\external_headers;C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization />
+      <IntrinsicFunctions />
+      <FavorSizeOrSpeed />
+      <OmitFramePointers />
+      <WholeProgramOptimization />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,7 +174,12 @@
       <AdditionalIncludeDirectories>C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\external_headers;C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <FavorSizeOrSpeed>
+      </FavorSizeOrSpeed>
+      <Optimization />
+      <IntrinsicFunctions />
+      <OmitFramePointers />
+      <WholeProgramOptimization />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -161,7 +193,8 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <IntrinsicFunctions>
+      </IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>SOL_ALL_SAFETIES_ON;GLM_ENABLE_EXPERIMENTAL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -171,6 +204,10 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalIncludeDirectories>C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\external_headers;C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization />
+      <FavorSizeOrSpeed />
+      <OmitFramePointers />
+      <WholeProgramOptimization />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -192,6 +229,10 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalIncludeDirectories>$(ProjectDir)/../code/src;code/src;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization />
+      <IntrinsicFunctions />
+      <FavorSizeOrSpeed />
+      <WholeProgramOptimization />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -214,6 +255,10 @@
       <AdditionalIncludeDirectories>$(ProjectDir)/../code/src;code/src;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <Optimization />
+      <IntrinsicFunctions />
+      <FavorSizeOrSpeed />
+      <WholeProgramOptimization />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -227,7 +272,8 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <IntrinsicFunctions>
+      </IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>SOL_ALL_SAFETIES_ON;GLM_ENABLE_EXPERIMENTAL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -237,6 +283,9 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalIncludeDirectories>C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\external_headers;C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\code\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization />
+      <FavorSizeOrSpeed />
+      <WholeProgramOptimization />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -317,26 +366,6 @@
     <ClCompile Include="..\code\src\network\client.cpp" />
     <ClCompile Include="..\code\src\network\network.cpp" />
     <ClCompile Include="..\code\src\network\protocol.cpp" />
-    <ClCompile Include="..\code\src\non-engine\ai\pathfinding.cpp" />
-    <ClCompile Include="..\code\src\non-engine\ai\tasks_impl.cpp" />
-    <ClCompile Include="..\code\src\non-engine\ai\team.cpp" />
-    <ClCompile Include="..\code\src\non-engine\ai\schedule.cpp" />
-    <ClCompile Include="..\code\src\non-engine\ai\tasks.cpp" />
-    <ClCompile Include="..\code\src\non-engine\attribute.cpp" />
-    <ClCompile Include="..\code\src\non-engine\chunk.cpp" />
-    <ClCompile Include="..\code\src\non-engine\construct_game_guis.cpp" />
-    <ClCompile Include="..\code\src\non-engine\creature.cpp" />
-    <ClCompile Include="..\code\src\non-engine\entity.cpp" />
-    <ClCompile Include="..\code\src\non-engine\game.cpp" />
-    <ClCompile Include="..\code\src\non-engine\health.cpp" />
-    <ClCompile Include="..\code\src\non-engine\humanoid.cpp" />
-    <ClCompile Include="..\code\src\non-engine\modifier.cpp" />
-    <ClCompile Include="..\code\src\non-engine\tile_chunk.cpp" />
-    <ClCompile Include="..\code\src\non-engine\tile_data.cpp" />
-    <ClCompile Include="..\code\src\non-engine\ui_helpers.cpp" />
-    <ClCompile Include="..\code\src\non-engine\world.cpp" />
-    <ClCompile Include="..\code\src\non-engine\worldgen.cpp" />
-    <ClCompile Include="..\code\src\non-engine\world_loader.cpp" />
     <ClCompile Include="..\code\src\physics\gjk.cpp" />
     <ClCompile Include="..\code\src\physics\mesh_simplification.cpp" />
     <ClCompile Include="..\code\src\physics\pengine.cpp" />
@@ -350,6 +379,7 @@
     <ClCompile Include="..\code\src\utility\tree.cpp" />
     <ClCompile Include="..\code\src\utility\uint.cpp" />
     <ClCompile Include="..\code\src\utility\utility.cpp" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\code\src\asset_loader\base_asset_loader.hpp" />
@@ -409,26 +439,7 @@
     <ClInclude Include="..\code\src\network\client.hpp" />
     <ClInclude Include="..\code\src\network\network.hpp" />
     <ClInclude Include="..\code\src\network\protocol.hpp" />
-    <ClInclude Include="..\code\src\non-engine\ai\tasks_impl.hpp" />
-    <ClInclude Include="..\code\src\non-engine\ai\team.hpp" />
     <ClInclude Include="..\code\src\non-engine\ai\schedule.hpp" />
-    <ClInclude Include="..\code\src\non-engine\ai\tasks.hpp" />
-    <ClInclude Include="..\code\src\non-engine\attribute.hpp" />
-    <ClInclude Include="..\code\src\non-engine\chunk.hpp" />
-    <ClInclude Include="..\code\src\non-engine\construct_game_guis.hpp" />
-    <ClInclude Include="..\code\src\non-engine\creature.hpp" />
-    <ClInclude Include="..\code\src\non-engine\entity.hpp" />
-    <ClInclude Include="..\code\src\non-engine\game.hpp" />
-    <ClInclude Include="..\code\src\non-engine\health.hpp" />
-    <ClInclude Include="..\code\src\non-engine\humanoid.hpp" />
-    <ClInclude Include="..\code\src\non-engine\injury.hpp" />
-    <ClInclude Include="..\code\src\non-engine\modifier.hpp" />
-    <ClInclude Include="..\code\src\non-engine\player.hpp" />
-    <ClInclude Include="..\code\src\non-engine\tile_chunk.hpp" />
-    <ClInclude Include="..\code\src\non-engine\tile_data.hpp" />
-    <ClInclude Include="..\code\src\non-engine\ui_helpers.hpp" />
-    <ClInclude Include="..\code\src\non-engine\world.hpp" />
-    <ClInclude Include="..\code\src\non-engine\worldgen.hpp" />
     <ClInclude Include="..\code\src\physics\aabb.hpp" />
     <ClInclude Include="..\code\src\physics\gjk.hpp" />
     <ClInclude Include="..\code\src\physics\pengine.hpp" />
@@ -445,6 +456,9 @@
     <ClInclude Include="..\code\src\utility\triangle_intersection.hpp" />
     <ClInclude Include="..\code\src\utility\uint.hpp" />
     <ClInclude Include="..\code\src\utility\utility.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="AG3.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

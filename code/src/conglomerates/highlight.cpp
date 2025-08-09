@@ -25,11 +25,12 @@ void HighlightHandler::AddHighlight(std::shared_ptr<GameObject> object, float ou
 		MaterialCreateParams params;
 		params.depthMask = false;
 		params.depthTestFunc = DepthTestMode::Disabled;
-		params.inputProvider = HighlightHandler::GeometryPassInputProviderFunc;
+		params.inputProvider = ShaderInputProvider(HighlightHandler::GeometryPassInputProviderFunc);
 		params.shader = ShaderProgram::New(vertexSource.c_str(), "../shaders/highlight_fragment.glsl", true, false);
 		params.blendingEnabled = false;
 		params.allowAppendaton = false;
 		params.requireUniqueTextureCollection = true;
+		//params.drawOrder = GEOMETRY_DRAW_ORDER
 		highlightMaterial = Material::New(params).second;
 		geometryMaterials.push_back(highlightMaterial);
 	}
@@ -48,6 +49,32 @@ void HighlightHandler::AddHighlight(std::shared_ptr<GameObject> object, float ou
 	obj->RawGet<TransformComponent>()->SetRot(object->RawGet<TransformComponent>()->Rotation());
 	obj->Destroy();
 	highlights[object] = obj;
+}
+
+void HighlightHandler::RemoveHightlight(std::shared_ptr<GameObject> object){
+	Assert(highlights.contains(object));
+	highlights.erase(object);
+}
+
+template <float stepSize, bool writeSecond, bool clear>
+std::shared_ptr<Material> HighlightHandler::MakeJumpFloodPass(int passIndex) {
+	MaterialCreateParams params{
+		.depthMask = false,
+		.requireUniqueTextureCollection = false,
+		.allowAppendaton = false,
+		.inputProvider = ShaderInputProvider(HighlightHandler::JumpFloodPassInputProviderFunc<stepSize, writeSecond, clear>),
+		.depthTestFunc = DepthTestMode::Disabled,
+		.drawOrder = HighlightHandler::JUMP0_DRAW_ORDER + passIndex,
+	};
+
+	auto mat = Material::New(params);
+
+	GameobjectCreateParams goParams({ ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO });
+	goParams.materialId = mat.second->id;
+	goParams.meshId = Mesh::ScreenQuad()->meshId;
+	GameObject::New(goParams);
+
+	return mat.second;
 }
 
 HighlightHandler::HighlightHandler() {
@@ -71,7 +98,8 @@ HighlightHandler::HighlightHandler() {
 			geometryTextureParams.format = Texture::Grayscale_8Bit;
 			geometryTextureParams.wrappingBehaviour = Texture::WrapClampToEdge;
 
-			highlightFramebuffer.emplace(newSize.x, newSize.y, std::vector{ colorTextureParams, geometryTextureParams }, true);
+			highlightFramebuffer.emplace(newSize.x, newSize.y, std::vector{ colorTextureParams, geometryTextureParams }, false);
+			highlightFramebuffer2.emplace(newSize.x, newSize.y, std::vector{ colorTextureParams, }, false);
 		}
 
 		};
@@ -79,6 +107,7 @@ HighlightHandler::HighlightHandler() {
 	GraphicsEngine::Get().window.onWindowResize->Connect(updateFramebuffer);
 
 	GraphicsEngine::Get().preRenderEvent->Connect([this](float dt) {
+
 		(void)dt;
 
 		for (auto it = highlights.begin(); it != highlights.end(); it++) {
@@ -92,6 +121,31 @@ HighlightHandler::HighlightHandler() {
 			}
 		}
 	});
+
+	// create jump flood passes
+	jumpFloodMaterials.push_back(MakeJumpFloodPass<16.0f, true, true>(0));
+	jumpFloodMaterials.push_back(MakeJumpFloodPass<8.0f, false>(1));
+	jumpFloodMaterials.push_back(MakeJumpFloodPass<4.0f, true>(2));
+	jumpFloodMaterials.push_back(MakeJumpFloodPass<2.0f, false>(3));
+	jumpFloodMaterials.push_back(MakeJumpFloodPass<1.0f, true>(4));
+	jumpFloodMaterials.push_back(MakeJumpFloodPass<1.0f, false>(5)); 
+	// NOTE: last pass should be false (write output to first framebuffer). presentation pass takes final output from there.
+
+	// create presentation pass
+	MaterialCreateParams presentationParams = {
+		.shader = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/highlight_present_fragment.glsl"),
+		.requireUniqueTextureCollection = false,
+		.allowAppendaton = false,
+		.drawOrder = PRESENTATION_DRAW_ORDER,
+	};
+
+	presentationMaterial = Material::New(presentationParams).second;
+
+	GameobjectCreateParams goParams({ ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO });
+	goParams.materialId = presentationMaterial->id;
+	goParams.meshId = Mesh::ScreenQuad()->meshId;
+
+	auto presentationQuad = GameObject::New(goParams);
 }
 
 HighlightHandler::~HighlightHandler() {
@@ -102,7 +156,26 @@ void HighlightHandler::GeometryPassInputProviderFunc(Material*, std::shared_ptr<
 	HighlightHandler::Get().highlightFramebuffer->Bind({0, 1});
 }
 
-template<float stepSize>
+template<float stepSize, bool useSecond, bool clear>
 void HighlightHandler::JumpFloodPassInputProviderFunc(Material*, std::shared_ptr<ShaderProgram> shader) {
+	auto& writeFramebuffer = useSecond ? HighlightHandler::Get().highlightFramebuffer2 : HighlightHandler::Get().highlightFramebuffer;
+	auto& readFramebuffer = useSecond ? HighlightHandler::Get().highlightFramebuffer : HighlightHandler::Get().highlightFramebuffer2;
+	
 	shader->Uniform("stepSize", stepSize);
+	shader->Uniform("screenSize", glm::vec2(HighlightHandler::Get().highlightFramebuffer->width, HighlightHandler::Get().highlightFramebuffer->height));
+
+	writeFramebuffer->Bind({ 0 });
+	if (clear) {
+		if (useSecond) {
+			writeFramebuffer->Clear({ {0, 0, 0, 0 }, });
+		}
+		else {
+			writeFramebuffer->Clear({ {0, 0, 0, 0}, });
+		}
+	}
+	readFramebuffer->textureAttachments[0].Use();	
+}
+
+void HighlightHandler::PresentationPassInputProvider(Material*, std::shared_ptr<ShaderProgram> shader) {
+	HighlightHandler::Get().highlightFramebuffer->textureAttachments[0].Use();
 }

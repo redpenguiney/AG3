@@ -116,6 +116,7 @@ void Gui::Init()
 
     // create a thing that clears the depth buffer before drawing gui
     auto depthClearerMat = Material::New(MaterialCreateParams{ .inputProvider = ShaderInputProvider(ClearDepthBuffer), .drawOrder = GUI_DRAW_ORDER - 1 });
+    depthClearerMat.second->abstract = true;
     auto depthClearGoParams = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
     depthClearGoParams.materialId = depthClearerMat.second->id;
     depthClearGoParams.meshId = Mesh::Empty()->meshId;

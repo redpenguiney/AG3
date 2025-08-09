@@ -54,6 +54,44 @@ typename std::vector<T>::reference vectorAtExpanding(unsigned int index, std::ve
     return vector.at(index);
 }
 
+// XYZ, UV
+const std::vector<GLfloat> screenQuadVertices = {
+    -1.0, -1.0, 0.0,   0.0, 0.0,
+    -1.0,  1.0, 0.0,   0.0, 1.0,
+     1.0, -1.0, 0.0,   1.0, 0.0,
+     1.0,  1.0, 0.0,   1.0, 1.0,
+};
+
+MeshVertexFormat screenQuadVertexFormat = MeshVertexFormat({
+    .position = {{
+        .nFloats = 3,
+        .instanced = false
+    }},
+    .textureUV = {{
+        .nFloats = 2,
+        .instanced = false
+    }},
+    .modelMatrix = {{
+        .nFloats = 16,
+        .instanced = true
+    }},
+    .normalMatrix = {{
+        .nFloats = 9,
+        .instanced = true
+    }}
+    });
+
+const std::vector<GLuint> screenQuadIndices = {
+    0, 2, 1,
+    1, 2, 3
+};
+
+std::shared_ptr<Mesh> Mesh::ScreenQuad()
+{
+    static auto screenQuadMesh = Mesh::New(RawMeshProvider(screenQuadVertices, screenQuadIndices, MeshCreateParams{ .meshVertexFormat = screenQuadVertexFormat, .expectedCount = 16, .normalizeSize = false }));
+    return screenQuadMesh;
+}
+
 bool Mesh::IsValidForGameObject(unsigned int meshId) {
     return MeshGlobals::Get().LOADED_MESHES.count(meshId) && MeshGlobals::Get().LOADED_MESHES.at(meshId)->instancedVertexSize > 0;
 }

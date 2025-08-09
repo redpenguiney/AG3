@@ -41,6 +41,7 @@ class BaseShaderProgram {
     void Uniform(std::string uniformName, glm::mat4x4 matrix, bool transposeMatrix = false);
     void Uniform(std::string uniformName, glm::vec4 vec);
     void Uniform(std::string uniformName, glm::vec3 vec);
+    void Uniform(std::string uniformName, glm::vec2 vec);
     void Uniform(std::string uniformName, float fval);
     void Uniform(std::string uniformName, bool bval);
     void Uniform(std::string uniformName, unsigned int uval);

@@ -126,6 +126,9 @@ class Mesh: public std::enable_shared_from_this<Mesh> {
     // returns a square for gui meshes
     static std::shared_ptr<Mesh> Square();
 
+    // returns quad covering screen suitable for postprocessing
+    static std::shared_ptr<Mesh> ScreenQuad();
+
     static bool IsValidForGameObject(unsigned int meshId);
     static std::shared_ptr<Mesh>& Get(unsigned int meshId);
 

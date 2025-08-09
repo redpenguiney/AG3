@@ -182,6 +182,15 @@ void BaseShaderProgram::Uniform(std::string uniformName, glm::vec3 vec) {
     glUniform3fv(uniform_locations.at(uniformName), 1, &vec.x);
 }
 
+void BaseShaderProgram::Uniform(std::string uniformName, glm::vec2 vec) {
+    if (uniform_locations.count(uniformName) == 0) {
+        uniform_locations[uniformName] = glGetUniformLocation(programId, uniformName.c_str());
+        //Assert(uniform_locations[uniformName] != -1); // verify that the uniform name exists
+    };
+    Use();
+    glUniform2fv(uniform_locations.at(uniformName), 1, &vec.x);
+}
+
 void BaseShaderProgram::Uniform(std::string uniformName, float fval) {
     if (uniform_locations.count(uniformName) == 0) {
         uniform_locations[uniformName] = glGetUniformLocation(programId, uniformName.c_str());

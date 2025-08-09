@@ -2,6 +2,7 @@
 #include <functional>
 #include <memory>
 #include <array>
+#include <vector>
 
 constexpr int NUM_WORK_GROUPS = 16;
 
