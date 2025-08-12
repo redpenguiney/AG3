@@ -11,6 +11,9 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
+void GameInit() {}
+void GameClose() {}
+
 namespace TG3
 {
 	TEST_CLASS(TG3)
@@ -147,8 +150,8 @@ namespace TG3
 			Assert::IsTrue(SAS.Query(AABB({ 6, 6, 6 }, { 12, 12, 24 })).size() == 0);
 		}
 
-		TEST_METHOD(TestTransparency) {
+		/*TEST_METHOD(TestTransparency) {
 
-		}
+		}*/
 	};
 }

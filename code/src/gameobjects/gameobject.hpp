@@ -229,6 +229,8 @@ private:
 		// int argument is there to specify that we're overloading postfix, not prefix; doesn't do anything
 		void operator++(int) {
 
+			next:
+
 			//DebugLogInfo("Postfix");
 			objectIndex++;
 			if (objectIndex == ComponentPool::COMPONENTS_PER_PAGE) {
@@ -257,7 +259,7 @@ private:
 			// check if the object we're now on is in use, or if we should skip it
 			// objects in use have their first sizeof(uint8_t) bytes set to nullptr
 			if (*currentLiveChecker != nullptr && Valid()) { // need to make sure we aren't going past end of iterator though or we'll just postfix forever until stack oveflow
-				(*this)++;
+				goto next; // https://discord.com/channels/883158832757481492/883158832757481495/1404148687294431423
 			}
 		}
 

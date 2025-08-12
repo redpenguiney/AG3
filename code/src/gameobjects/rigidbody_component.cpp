@@ -71,7 +71,7 @@ float RigidbodyComponent::InverseMomentOfInertiaAroundAxis(const TransformCompon
 
     //TODO: this makes me sad performance-wise
     //if the inertia on an axis is infinite but the local-space axis is 0, 0*inf is nan which is no good so we just make it 0 which produces expected result. 
-    for (unsigned int i = 0; i < glm::vec3::length(); i++) {
+    for (unsigned int i = 0; i < 3; i++) {
         if (std::isnan(inertiaAxis[i])) {
             inertiaAxis[i] = 0;
         }

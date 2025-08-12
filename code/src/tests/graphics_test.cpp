@@ -56,7 +56,7 @@ void TestGraphics() {
 		g->RawGet<RenderComponent>()->SetColor(color);
 		g->RawGet<RenderComponent>()->SetTextureZ(-1);
 
-		HighlightHandler::Get().AddHighlight(g, 5, { 1, 1, 1 });
+		//HighlightHandler::Get().AddHighlight(g, 5, { 1, 1, 1 });
 	}
 
 	for (int i = 0; i < 10; i++) {
