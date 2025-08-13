@@ -188,39 +188,42 @@ public:
     //Image GetImage();
 
 //private:
-    const std::variant<std::string, std::shared_ptr<Image>> imageData;
+    std::variant<std::string, std::shared_ptr<Image>> imageData;
 };
 
 struct TextureCreateParams {
     // Unless creating cubemap, size must = 1.
     // If it is a cubemap, it goes Right,Left,Top,Bottom,Back,Front
-    const std::vector<TextureSource> textureSources; 
+    std::vector<TextureSource> textureSources; 
 
     // how texture data is stored on the GPU; RGB, RGBA, grayscale for things like heightmaps, etc.
     // NOT how it is stored within the file, we automatically determine that.
-    Texture::TextureFormat format;
+    Texture::TextureFormat format = Texture::Auto_8Bit;;
 
     // whether texture is for color, normals, specular, etc.
-    const Texture::TextureUsage usage;
+    Texture::TextureUsage usage;
 
     // what happens when a shader tries to sample outside the texture's area, whether the texture tiles or does something else
-    Texture::TextureWrappingBehaviour wrappingBehaviour;
+    Texture::TextureWrappingBehaviour wrappingBehaviour = Texture::WrapTiled;
 
     // when a pixel on the screen occupies multiple pixels on a texture, this is how it comes up with a final texture to use.
-    Texture::TextureFilteringBehaviour filteringBehaviour;
+    Texture::TextureFilteringBehaviour filteringBehaviour = Texture::LinearTextureFiltering;
 
     // whether a texture uses mipmaps and if so, how it interpolates between them (if at all)
-    Texture::TextureMipmapBehaviour mipmapBehaviour;
+    Texture::TextureMipmapBehaviour mipmapBehaviour = Texture::LinearMipmapInterpolation;
 
-    Texture::TextureMipmapGeneration mipmapGenerationMethod;
+    Texture::TextureMipmapGeneration mipmapGenerationMethod = Texture::GlGenerate;
 
     std::optional<std::shared_ptr<TextureAtlas>> mipmapAtlas = std::nullopt; // May NOT be nullptr. Only used for mipmap generation (depending on mipmapGenerationMethod).
 
     TextureCreateParams(const std::vector<TextureSource>& imagePaths, const Texture::TextureUsage usage);
 
+    //TextureCreateParams(const TextureCreateParams&) = default;
+    //TextureCreateParams& operator=(const TextureCreateParams&) = default;
+
     // TextureCreateParams does NOT own the aiScene*. Pass it if the texture path came from assimp (for support for textures embedded in a fbx/dae/etc.)
     // Used for textures embedded in a model file like .fbx 
     const aiScene* scene = nullptr;
 
-    unsigned int fontHeight; // font width is automatically calculated
+    unsigned int fontHeight = 48; // font width is automatically calculated
 };

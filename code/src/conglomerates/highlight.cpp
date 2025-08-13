@@ -30,7 +30,7 @@ void HighlightHandler::AddHighlight(std::shared_ptr<GameObject> object, float ou
 		params.blendingEnabled = false;
 		params.allowAppendaton = false;
 		params.requireUniqueTextureCollection = true;
-		//params.drawOrder = GEOMETRY_DRAW_ORDER
+		params.drawOrder = GEOMETRY_DRAW_ORDER;
 		highlightMaterial = Material::New(params).second;
 		geometryMaterials.push_back(highlightMaterial);
 	}
@@ -60,13 +60,15 @@ template <float stepSize, bool writeSecond, bool clear>
 std::shared_ptr<Material> HighlightHandler::MakeJumpFloodPass(int passIndex) {
 	MaterialCreateParams params{
 		.depthMask = false,
-		.requireUniqueTextureCollection = false,
+		.requireUniqueTextureCollection = true,
 		.allowAppendaton = false,
 		.inputProvider = ShaderInputProvider(HighlightHandler::JumpFloodPassInputProviderFunc<stepSize, writeSecond, clear>),
 		.depthTestFunc = DepthTestMode::Disabled,
 		.drawOrder = HighlightHandler::JUMP0_DRAW_ORDER + passIndex,
 	};
-
+	params.textureParams = {};
+	params.shader = ShaderProgram::New("../shaders/jump_flood_vertex.glsl", "../shaders/jump_flood_fragment.glsl");
+	
 	auto mat = Material::New(params);
 
 	GameobjectCreateParams goParams({ ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO });

@@ -67,6 +67,11 @@ void TestGraphics() {
 		g->RawGet<RenderComponent>()->SetTextureZ(-1);
 	}
 
+	auto highlightSphere = GameObject::New(sphereParams);
+	highlightSphere->RawGet<TransformComponent>()->SetPos({-3, 1, -4 });
+	highlightSphere->RawGet<RenderComponent>()->SetColor(glm::dvec4{ 1, 1, 1, 1 });
+	HighlightHandler::Get().AddHighlight(highlightSphere, 5, { 1, 1, 1 });
+
 	GraphicsEngine::Get().GetWindow().inputDown->Connect([cubeParams, sphereParams](InputObject io) {
 		if (io.input == InputObject::One) {
 			if (cubes.size() > 0) {

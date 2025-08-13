@@ -821,15 +821,7 @@ void Texture::ConfigTexture(const TextureCreateParams& params) {
 TextureCreateParams::TextureCreateParams(const std::vector<TextureSource>& imagePaths, const Texture::TextureUsage texUsage):
     textureSources(imagePaths),
     usage(texUsage)
-{
-    format = Texture::Auto_8Bit;
-
-    wrappingBehaviour = Texture::WrapTiled;
-    mipmapBehaviour = Texture::LinearMipmapInterpolation;
-    filteringBehaviour = Texture::LinearTextureFiltering;
-    mipmapGenerationMethod = Texture::GlGenerate;
-    
-    fontHeight = 48;
+{   
 }
 
 TextureSource::TextureSource(std::string imagePath): imageData(imagePath)
