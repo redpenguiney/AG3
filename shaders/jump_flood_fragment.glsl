@@ -30,16 +30,16 @@ void main() {
     vec2 jumpDist = round(stepSize) / screenSize;
 
     vec3 curr = vec3(1,1,9999999);
-    //curr = jump(curr, TexCoords, jumpDist * vec2( 0,  0)); // cc
-    //curr = jump(curr, TexCoords, jumpDist * vec2( 0, +1)); // nn
-    //curr = jump(curr, TexCoords, jumpDist * vec2(+1, +1)); // ne
-    //curr = jump(curr, TexCoords, jumpDist * vec2(+1,  0)); // ee
-    //curr = jump(curr, TexCoords, jumpDist * vec2(+1, -1)); // se
-    //curr = jump(curr, TexCoords, jumpDist * vec2( 0, -1)); // ss
-    //curr = jump(curr, TexCoords, jumpDist * vec2(-1, -1)); // sw
-    //curr = jump(curr, TexCoords, jumpDist * vec2(-1,  0)); // ww
-    //curr = jump(curr, TexCoords, jumpDist * vec2(-1, +1)); // nw
+    curr = jump(curr, TexCoords, jumpDist * vec2( 0,  0)); // cc
+    curr = jump(curr, TexCoords, jumpDist * vec2( 0, +1)); // nn
+    curr = jump(curr, TexCoords, jumpDist * vec2(+1, +1)); // ne
+    curr = jump(curr, TexCoords, jumpDist * vec2(+1,  0)); // ee
+    curr = jump(curr, TexCoords, jumpDist * vec2(+1, -1)); // se
+    curr = jump(curr, TexCoords, jumpDist * vec2( 0, -1)); // ss
+    curr = jump(curr, TexCoords, jumpDist * vec2(-1, -1)); // sw
+    curr = jump(curr, TexCoords, jumpDist * vec2(-1,  0)); // ww
+    curr = jump(curr, TexCoords, jumpDist * vec2(-1, +1)); // nw
 
-    Output = vec4(curr.x, curr.y, 0, 1);
+    Output = vec4(curr.xy, 0, 1);
     
 }

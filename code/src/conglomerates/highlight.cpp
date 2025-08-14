@@ -2,6 +2,10 @@
 #include "graphics/gengine.hpp"
 #include "gameobjects/gameobject.hpp"
 
+void HighlightHandler::SetTargetFramebuffer(Framebuffer* target) {
+	presentationTarget = target;
+}
+
 HighlightHandler& HighlightHandler::Get() {
 	static HighlightHandler handler;
 	return handler;
@@ -138,7 +142,9 @@ HighlightHandler::HighlightHandler() {
 		.shader = ShaderProgram::New("../shaders/postproc_vertex.glsl", "../shaders/highlight_present_fragment.glsl"),
 		.requireUniqueTextureCollection = false,
 		.allowAppendaton = false,
+		.inputProvider = ShaderInputProvider(HighlightHandler::PresentationPassInputProvider),
 		.drawOrder = PRESENTATION_DRAW_ORDER,
+		
 	};
 
 	presentationMaterial = Material::New(presentationParams).second;
@@ -154,8 +160,9 @@ HighlightHandler::~HighlightHandler() {
 
 }
 
-void HighlightHandler::GeometryPassInputProviderFunc(Material*, std::shared_ptr<ShaderProgram>) {
+void HighlightHandler::GeometryPassInputProviderFunc(Material*, std::shared_ptr<ShaderProgram> shader) {
 	HighlightHandler::Get().highlightFramebuffer->Bind({0, 1});
+	shader->Uniform("screenSize", glm::vec2(HighlightHandler::Get().highlightFramebuffer->width, HighlightHandler::Get().highlightFramebuffer->height));
 }
 
 template<float stepSize, bool useSecond, bool clear>
@@ -166,7 +173,6 @@ void HighlightHandler::JumpFloodPassInputProviderFunc(Material*, std::shared_ptr
 	shader->Uniform("stepSize", stepSize);
 	shader->Uniform("screenSize", glm::vec2(HighlightHandler::Get().highlightFramebuffer->width, HighlightHandler::Get().highlightFramebuffer->height));
 
-	writeFramebuffer->Bind({ 0 });
 	if (clear) {
 		if (useSecond) {
 			writeFramebuffer->Clear({ {0, 0, 0, 0 }, });
@@ -175,9 +181,18 @@ void HighlightHandler::JumpFloodPassInputProviderFunc(Material*, std::shared_ptr
 			writeFramebuffer->Clear({ {0, 0, 0, 0}, });
 		}
 	}
+	else {
+		writeFramebuffer->Bind({ 0 });
+	}
 	readFramebuffer->textureAttachments[0].Use();	
 }
 
 void HighlightHandler::PresentationPassInputProvider(Material*, std::shared_ptr<ShaderProgram> shader) {
+	if (HighlightHandler::Get().presentationTarget) {
+		HighlightHandler::Get().presentationTarget->Bind();
+	}
+	else {
+		Framebuffer::Unbind();
+	}
 	HighlightHandler::Get().highlightFramebuffer->textureAttachments[0].Use();
 }

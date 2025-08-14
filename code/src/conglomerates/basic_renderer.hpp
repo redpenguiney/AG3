@@ -17,7 +17,7 @@ public:
 	static const int PREDRAW_TRANSPARENT_DRAW_ORDER = 1000;
 	static const int TRANSPARENT_DRAW_ORDER = 1500;
 	static const int TRANSPARENT_COMPOSITION_DRAW_ORDER = 2000;
-	static const int POSTPROC_DRAW_ORDER = 2500; // use a number bigger than this to make something skip postprocessing
+	static const int POSTPROC_DRAW_ORDER = 3000; // use a number bigger than this to make something skip postprocessing
 	static const int PREDRAW_DRAW_ORDER = -1000000;
 
 	// Call once before rendering begins.

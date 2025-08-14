@@ -70,8 +70,8 @@ void BasicRenderer::PrepPostprocessing(Material* material, std::shared_ptr<Shade
     UpdateFramebuffer();
 
     // clearing depth/accum/reveal for purposes of the next frame; only the color is still needed, and next frame will paint it over assuming skybox exists
+    BE.mainFramebuffer->Bind(); // TODO: we should try to clear the framebuffer without an unneccesary binding by doing it after the last time the mainframebuffer is drawn to. Gonna need to set up the draw queue system first.
     BE.mainFramebuffer->ClearDepthRenderbuffer();
-   
     BE.mainFramebuffer->Unbind();
     BE.mainFramebuffer->textureAttachments[0].Use();
 

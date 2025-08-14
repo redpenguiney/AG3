@@ -19,6 +19,9 @@ public:
 	const static inline int JUMP0_DRAW_ORDER = 5051;
 	const static inline int PRESENTATION_DRAW_ORDER = 5100;
 
+	// Pointer must be valid for the whole lifetime of HighlightHandler, or replaced with nullptr when it becomes invalid.
+	// If nullptr, it will be drawn to the default framebuffer (aka the screen).
+	void SetTargetFramebuffer(Framebuffer* target);
 	static HighlightHandler& Get();
 	
 	// FYI, will give the object an extra child transform named "__HIGHLIGHT__". 
@@ -30,6 +33,8 @@ private:
 
 	HighlightHandler();
 	~HighlightHandler();
+
+	Framebuffer* presentationTarget = nullptr;
 
 	// key is gameobject with a highlight, value is gameobject storing the highlight rendercomponent.
 	// map instead of unordered_map bc can't hash weak_ptr :(
