@@ -128,6 +128,16 @@ HighlightHandler::HighlightHandler() {
 		}
 	});
 
+	preJumpflood = Material::New(MaterialCreateParams{
+		.inputProvider = ShaderInputProvider(PreJumpFloodInputProviderFunc),
+		.drawOrder = JUMP0_DRAW_ORDER-1
+		}).second;
+	preJumpflood->abstract = true;
+	auto goparams = GameobjectCreateParams ({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
+	goparams.materialId = preJumpflood->id;
+	goparams.meshId = Mesh::ScreenQuad()->meshId;
+	GameObject::New(goparams);
+
 	// create jump flood passes
 	jumpFloodMaterials.push_back(MakeJumpFloodPass<16.0f, true, true>(0));
 	jumpFloodMaterials.push_back(MakeJumpFloodPass<8.0f, false>(1));
@@ -165,6 +175,11 @@ void HighlightHandler::GeometryPassInputProviderFunc(Material*, std::shared_ptr<
 	shader->Uniform("screenSize", glm::vec2(HighlightHandler::Get().highlightFramebuffer->width, HighlightHandler::Get().highlightFramebuffer->height));
 }
 
+void HighlightHandler::PreJumpFloodInputProviderFunc(Material*, std::shared_ptr<ShaderProgram>) {
+	HighlightHandler::Get().highlightFramebuffer->Bind();
+	HighlightHandler::Get().highlightFramebuffer->Clear({ {0, 0, 0, 0}, {0, 0, 0, 0} });
+}
+
 template<float stepSize, bool useSecond, bool clear>
 void HighlightHandler::JumpFloodPassInputProviderFunc(Material*, std::shared_ptr<ShaderProgram> shader) {
 	auto& writeFramebuffer = useSecond ? HighlightHandler::Get().highlightFramebuffer2 : HighlightHandler::Get().highlightFramebuffer;
@@ -174,6 +189,7 @@ void HighlightHandler::JumpFloodPassInputProviderFunc(Material*, std::shared_ptr
 	shader->Uniform("screenSize", glm::vec2(HighlightHandler::Get().highlightFramebuffer->width, HighlightHandler::Get().highlightFramebuffer->height));
 
 	if (clear) {
+		writeFramebuffer->Bind({ 0 });
 		if (useSecond) {
 			writeFramebuffer->Clear({ {0, 0, 0, 0 }, });
 		}
