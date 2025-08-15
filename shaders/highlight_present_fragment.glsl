@@ -7,7 +7,8 @@ layout(binding=0) uniform sampler2D outline; // note: this syntax not ok until o
 
 void main() {
 	vec4 result = texture(outline, TexCoords);
-	//if (result.xy == vec2(0, 0))
-		//discard;
-	FragColor = result;
+	float dist = result.z;
+	if (dist <= 0.0f || dist > 2.0f)
+		discard;
+	FragColor = vec4(1, 1, 1, 1);
 }

@@ -5,7 +5,7 @@
 #include <tuple>
 #include <cmath>
 
-// Portable socket wrapper used to transfer data over the network.
+// Portable socket wrapper used to transfer data over the network via UDP.
 class Socket {
 	public:
 	// the recieving port on this machine.
@@ -14,7 +14,7 @@ class Socket {
 	// if no ipToListenTo, will listen to all incoming ips (what you would want for a server).
 	// port is assigned to localPort.
 	// bufferSize is how much data this socket can hold before Recieve() must be called to avoid dropping data.
-	Socket(std::optional<std::string> ipToListenTo, int port = 49000, unsigned int bufferSize = pow(2, 16));
+	Socket(std::optional<std::string> ipToListenTo, int port = 49000, unsigned int bufferSize = pow(2, 20));
 	~Socket();
 	Socket(const Socket&) = delete;
 

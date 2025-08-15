@@ -130,7 +130,7 @@ HighlightHandler::HighlightHandler() {
 
 	preJumpflood = Material::New(MaterialCreateParams{
 		.inputProvider = ShaderInputProvider(PreJumpFloodInputProviderFunc),
-		.drawOrder = JUMP0_DRAW_ORDER-1
+		.drawOrder = GEOMETRY_DRAW_ORDER-1
 		}).second;
 	preJumpflood->abstract = true;
 	auto goparams = GameobjectCreateParams ({ ComponentBitIndex::Transform, ComponentBitIndex::Render });
@@ -141,10 +141,10 @@ HighlightHandler::HighlightHandler() {
 	// create jump flood passes
 	jumpFloodMaterials.push_back(MakeJumpFloodPass<16.0f, true, true>(0));
 	jumpFloodMaterials.push_back(MakeJumpFloodPass<8.0f, false>(1));
-	//jumpFloodMaterials.push_back(MakeJumpFloodPass<4.0f, true>(2));
-	//jumpFloodMaterials.push_back(MakeJumpFloodPass<2.0f, false>(3));
-	//jumpFloodMaterials.push_back(MakeJumpFloodPass<1.0f, true>(4));
-	//jumpFloodMaterials.push_back(MakeJumpFloodPass<1.0f, false>(5)); 
+	jumpFloodMaterials.push_back(MakeJumpFloodPass<4.0f, true>(2));
+	jumpFloodMaterials.push_back(MakeJumpFloodPass<2.0f, false>(3));
+	jumpFloodMaterials.push_back(MakeJumpFloodPass<1.0f, true>(4));
+	jumpFloodMaterials.push_back(MakeJumpFloodPass<1.0f, false>(5)); 
 	// NOTE: last pass should be false (write output to first framebuffer). presentation pass takes final output from there.
 
 	// create presentation pass
