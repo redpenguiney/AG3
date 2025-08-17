@@ -19,8 +19,9 @@ enum class ConnectionFailureReason {
 // This singleton class is in charge of multiplayer stuff.
 // Everyone is either a server or a client (or offline).
 // Also, you can just directly use the sockets defined in protocol.hpp if your use case requires a less generic, fine-tuned networking method.
+	// This is primarily for networking specifically chosen gameobjects.
 class NetworkingEngine {
-	public:
+public:
 
 	const std::vector<Client>& GetClientList();
 
@@ -33,10 +34,14 @@ class NetworkingEngine {
 	// Aborts if current network status is Server or Client - can't host if you're already hosting/connected to a server.
 	void Host(int port = 49000);
 
-	// Kicks the specified client from the server. Must be hosting.
-	void Kick(const Client& client);
+	// Stops hosting a server, calling Kick() for any currently connected clients. Must be Server.
+	// Automatically called by destructor if Server.
+	void Unhost();
 
-	// Disconnects from the current server, changing network status to offline. Must be client.
+	// Kicks the specified client from the server. Must be Server.
+	void Kick(const Client& client, std::string reason);
+
+	// Disconnects from the current server, changing network status to offline. Must be Client.
 	void Disconnect();
 
 	// Sets network status to Client and asynchronously tries to connect to the given server ip/port. 
@@ -46,7 +51,7 @@ class NetworkingEngine {
 		// If successful, server will begin syncing stuff with the client.
 	void Connect(std::string ipAddress, int port = 49000, float timeout = 4.0f);
 
-	// Call every frame (when not offline). Dispatches and recieves/handles network events.
+	// Call every frame (when not offline). Dispatches and recieves/handles network events that networkThread prepared for us.
 	void Update();
 
 	struct ConnectionAttemptResult {
@@ -65,17 +70,30 @@ class NetworkingEngine {
 	// By default, it will let anyone connect.
 	std::optional<std::function<std::pair<bool, std::optional<std::string>>(std::string ipAddress, int port)>> connectionRequestHandler;
 
-	private:
+private:
+
+	struct Connection {
+		Client client;
+
+		std::atomic<Socket> socket;
+	};
+
+	void NetworkThreadLoop();
+		
+	std::atomic<bool> shutdownNetworkThreadFlag;
+
+	// We have a thread continuously handling network events if not offline.
+	std::thread networkThread;
 
 	NetworkStatus status;
 
 	// empty on client.
 	// on server: all the client <-> server connections
-	std::vector < std::pair<Client, Socket> > activeConnections;
+	std::vector < Connection > activeConnections;
 
 	// on client: client <-> server socket.
 	// on server: socket used for letting newcomers in.
-	std::optional< Socket > serverSocket;
+	std::atomic< Socket > serverSocket;
 
 	NetworkingEngine();
 };

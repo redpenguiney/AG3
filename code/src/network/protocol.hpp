@@ -25,10 +25,16 @@ class Socket {
 	// Literally uses raw UDP to send the requested packet over the network. Absolutely no guarantee if the packet will reach its destination.
 	void Send(std::string address, int port, const void* data, unsigned int nBytes);
 
+	struct Packet {
+		const void* data;
+		unsigned int dataNBytes;
+		std::string ipOfOrigin;
+	};
+
 	// Returns a pointer + length in bytes to whatever data the socket has recieved since Recieve() was last called. NOTE: this must be called frequently, or excess data will be discarded.
 	// If size is 0, no data has been recieved.
-	// Do not use the returned pointer after the socket's destruction.
-	std::pair<const void*, unsigned int> Recieve();
+	// The returned packet's data becomes invalid after the next time Recieve() is called or upon socket destruction.
+	Packet Recieve();
 
 	private:
 
