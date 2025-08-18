@@ -1,13 +1,36 @@
 #pragma once
 #include <string>
 #include <optional>
-#include <boost/asio.hpp>
 #include <tuple>
 #include <cmath>
+#include <vector>
+
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#define WINDOWS
+#define WIN32_LEAN_AND_MEAN 
+#endif
+
+#ifdef WINDOWS
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#error unsupported platform
+#endif
+
+class SocketConnectionException : public std::exception {
+public:
+	SocketConnectionException(std::string error) : std::exception(error.c_str()) {}
+};
+
+class SocketException : public std::exception {
+public:
+	SocketException(std::string error) : std::exception(error.c_str()) {}
+};
 
 // Portable socket wrapper used to transfer data over the network via UDP.
 class Socket {
-	public:
+public:
+
 	// the recieving port on this machine.
 	const int localPort;
 
@@ -34,15 +57,27 @@ class Socket {
 	// Returns a pointer + length in bytes to whatever data the socket has recieved since Recieve() was last called. NOTE: this must be called frequently, or excess data will be discarded.
 	// If size is 0, no data has been recieved.
 	// The returned packet's data becomes invalid after the next time Recieve() is called or upon socket destruction.
-	Packet Recieve();
+	std::vector<Packet> Recieve();
+
+private:
+
+#ifdef WINDOWS
+	SOCKET winsocket;
+#endif
+
+	class SocketInitializer {
+	public:
+		static void EnsureSocketsInitialized();
+
+		SocketInitializer();
+		~SocketInitializer();
 
 	private:
-
-	static boost::asio::io_service ioService;
+		WSADATA wsaData;
+	};
 
 	std::optional<std::string> ipToListenTo;
-	boost::asio::ip::udp::socket socket;
-	void* recievedBuffer;
+	uint8_t* recievedBuffer;
 	const unsigned int bufferLen;
 };
 

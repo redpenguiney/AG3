@@ -35,8 +35,18 @@ namespace PacketStructs {
     struct CompleteConnectionHandshake {
         PacketType type;
     };
+
+    struct AckArray {
+        PacketType type;
+        uint16_t packets[];
+    };
 };
 
+
+const std::vector<Client>& NetworkingEngine::GetClientList()
+{
+    return {};
+}
 
 NetworkingEngine& NetworkingEngine::Get()
 {
@@ -54,11 +64,8 @@ void NetworkingEngine::Host(int port) {
     status = NetworkStatus::Server;
     
     // open socket and let anyone use it
-    serverSocket.emplace(Socket(std::nullopt, port));
-    
-    // start network thread
-    shutdownNetworkThreadFlag.store(false);
-    networkThread = std::thread(NetworkThreadLoop);
+    serverSocket.emplace(std::nullopt, port);
+
 }
 
 void NetworkingEngine::Unhost(){
@@ -69,21 +76,14 @@ void NetworkingEngine::Unhost(){
         Kick(clients[i], "Default server shutdown message.");
     }
 
-    shutdownNetworkThreadFlag.store(true);
-    networkThread.join();
-
     status = NetworkStatus::Offline;
 }
 
-void NetworkingEngine::NetworkThreadLoop() {
-    while (shutdownNetworkThreadFlag.load() != true) {
-        // Get incoming connection requests
-        auto [data, dataLen] = serverSocket.load().Recieve();
-    
+void NetworkingEngine::Kick(const Client& client, std::string reason) {
+
 }
 
-void NetworkingEngine::Connect(std::string ipAddress, int port, float timeout)
-{
+void NetworkingEngine::Connect(std::string ipAddress, int port, float timeout) {
     Assert(status == NetworkStatus::Offline);
     status = NetworkStatus::Client;
 
@@ -94,7 +94,12 @@ void NetworkingEngine::Update(){
     if (status == NetworkStatus::Offline)
         return;
 
+    // Handle connection requests
+    if (status == NetworkStatus::Server) {
+        auto packets = serverSocket->Recieve();
+        
 
+    }
 }
 
 NetworkingEngine::NetworkingEngine():

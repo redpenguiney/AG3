@@ -2,6 +2,7 @@
 #include "client.hpp"
 #include "events/event.hpp"
 #include "protocol.hpp"
+#include <mutex>
 
 // Describes what the process is doing networkwise - hosting a server? being connected to one? or neither?
 enum class NetworkStatus {
@@ -51,7 +52,7 @@ public:
 		// If successful, server will begin syncing stuff with the client.
 	void Connect(std::string ipAddress, int port = 49000, float timeout = 4.0f);
 
-	// Call every frame (when not offline). Dispatches and recieves/handles network events that networkThread prepared for us.
+	// Call every frame (when not offline). Dispatches and recieves/handles network events.
 	void Update();
 
 	struct ConnectionAttemptResult {
@@ -75,15 +76,8 @@ private:
 	struct Connection {
 		Client client;
 
-		std::atomic<Socket> socket;
+		Socket socket;
 	};
-
-	void NetworkThreadLoop();
-		
-	std::atomic<bool> shutdownNetworkThreadFlag;
-
-	// We have a thread continuously handling network events if not offline.
-	std::thread networkThread;
 
 	NetworkStatus status;
 
@@ -93,7 +87,7 @@ private:
 
 	// on client: client <-> server socket.
 	// on server: socket used for letting newcomers in.
-	std::atomic< Socket > serverSocket;
+	std::optional<Socket> serverSocket;
 
 	NetworkingEngine();
 };
