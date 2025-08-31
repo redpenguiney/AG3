@@ -46,7 +46,7 @@ public:
 
 	// nBytes must not exceed MAX_PACKET_SIZE.
 	// Literally uses raw UDP to send the requested packet over the network. Absolutely no guarantee if the packet will reach its destination.
-	void Send(std::string address, int port, const void* data, unsigned int nBytes);
+	void Send(std::string address, int port, void* data, unsigned int nBytes);
 
 	struct Packet {
 		const void* data;
