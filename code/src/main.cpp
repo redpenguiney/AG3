@@ -37,6 +37,7 @@
 #include <tests/gameobject_tests.hpp>
 #include "tests/graphics_test.hpp"
 #include "tests/physics_test.hpp"
+#include <network/network.hpp>
 
 //#include "FastNoise/FastNoise.h"
 
@@ -70,6 +71,11 @@ static void TerminateHandler() {
 }
 
 int main(int numArgs, const char *argPtrs[]) {
+
+    std::vector<std::string> args;
+    for (int i = 0; i < numArgs; i++) {
+        args.emplace_back(argPtrs[i]);
+    }
     
     DebugLogInfo("Main function reached.");
 
@@ -83,6 +89,7 @@ int main(int numArgs, const char *argPtrs[]) {
     auto& AE = AudioEngine::Get();
     auto& SAS = SpatialAccelerationStructure::Get();
     auto& LUA = LuaHandler::Get();
+    auto& NE = NetworkingEngine::Get();
 
     atexit(RecordSingletonClosing);
 
@@ -98,7 +105,7 @@ int main(int numArgs, const char *argPtrs[]) {
     Gui::Init();
 
     DebugLogInfo("Calling GameInit().");
-    GameInit();
+    GameInit(args);
     //TestGraphics();
     //TestPhysics();
     //GE.SetDebugFreecamEnabled(true);
@@ -177,6 +184,8 @@ int main(int numArgs, const char *argPtrs[]) {
         
         // printf("Processing events.\n");
         GE.window.Update(); // window/input event processing
+
+        NE.Update(elapsedTime);
 
         BaseEvent::FlushEventQueue();
         LUA.OnFrameBegin();

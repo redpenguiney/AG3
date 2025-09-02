@@ -11,7 +11,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-void GameInit() {}
+void GameInit(std::vector<std::string> args) {}
 void GameClose() {}
 
 namespace TG3

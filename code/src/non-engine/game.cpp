@@ -34,7 +34,7 @@
 
 constexpr int WORLD_ZOOM_NAME = 2000;
 
-void GameInit()
+void GameInit(std::vector<std::string> args)
 {
     auto& GE = GraphicsEngine::Get();
     auto& PE = PhysicsEngine::Get();

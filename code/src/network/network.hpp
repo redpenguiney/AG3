@@ -2,12 +2,12 @@
 #include "client.hpp"
 #include "events/event.hpp"
 #include "protocol.hpp"
-#include <mutex>
 
 // Describes what the process is doing networkwise - hosting a server? being connected to one? or neither?
 enum class NetworkStatus {
 	Server, // the networking engine is hosting a server. 
-	Client, // the networking engine is connected/connecting to a server.
+	Client, // the networking engine is connected to a server.
+	ClientConnecting, // the networking engine is attempting to connect to a server.
 	Offline // networking engine is currently neither hosting nor being connected to a server. IT MAY STILL be communicating over the internet (i.e. to matchmaking servers).
 };
 
@@ -17,6 +17,8 @@ enum class ConnectionFailureReason {
 	ServerRejected, // we successfully connected to the server, but they didn't want us :(
 };
 
+std::pair<bool, std::optional<std::string>> DefaultConnectionRequestHandler(std::string ipAddress, int port);
+
 // This singleton class is in charge of multiplayer stuff.
 // Everyone is either a server or a client (or offline).
 // Also, you can just directly use the sockets defined in protocol.hpp if your use case requires a less generic, fine-tuned networking method.
@@ -24,7 +26,7 @@ enum class ConnectionFailureReason {
 class NetworkingEngine {
 public:
 
-	const std::vector<Client>& GetClientList();
+	const std::vector<std::shared_ptr<Client>>& GetClientList();
 
 	static NetworkingEngine& Get();
 
@@ -40,20 +42,24 @@ public:
 	void Unhost();
 
 	// Kicks the specified client from the server. Must be Server.
-	void Kick(const Client& client, std::string reason);
+	void Kick(std::shared_ptr<Client>& client, std::string reason);
 
-	// Disconnects from the current server, changing network status to offline. Must be Client.
+	// Disconnects from the current server, changing network status to offline. Must be Client or ClientConnecting (which would cancel the connection attempt).
 	void Disconnect();
 
-	// Sets network status to Client and asynchronously tries to connect to the given server ip/port. 
+	// Sets network status to ClientConnecting and asynchronously tries to connect to the given server ip/port. 
 	// Aborts if already connected or hosting.
 	// Will fire OnConnectionAttemptComplete on completion regardless of success.
-		// If successful, network status will remain Client, otherwise it will return to Offline. 
+		// If successful, network status will change to Client, otherwise it will return to Offline. 
 		// If successful, server will begin syncing stuff with the client.
-	void Connect(std::string ipAddress, int port = 49000, float timeout = 4.0f);
+	void Connect(std::string address, int serverPort = 49000, int localPort = 49001, float timeoutPerTry = 0.5f, unsigned maxTries = 10);
 
 	// Call every frame (when not offline). Dispatches and recieves/handles network events.
-	void Update();
+	// dt should be time since Update() was last called.
+	void Update(float dt);
+
+	// Returns nullptr if no connected client with given info
+	std::shared_ptr<Client> GetClient(std::string address, int port);
 
 	struct ConnectionAttemptResult {
 		bool successful; // true if the networking engine is now successfully connected to the requested server.
@@ -69,9 +75,18 @@ public:
 	// A function that the server will call to decide whether to let a potential client connect. Should return <true, nullopt> if the client is allowed to join, or <false, reason> if they are not. 
 	// the returned reason must be less than ~400 characters because i don't want to have to use multiple packets for this.
 	// By default, it will let anyone connect.
-	std::optional<std::function<std::pair<bool, std::optional<std::string>>(std::string ipAddress, int port)>> connectionRequestHandler;
+	std::function<std::pair<bool, std::optional<std::string>>(std::string ipAddress, int port)> connectionRequestHandler = DefaultConnectionRequestHandler;
+
+
 
 private:
+
+	std::vector<std::shared_ptr<Client>> clients;
+
+	float timeUntilConnectionAttemptTimeout = -1.0f;
+	float connectionAttemptTimeout = -1.0f;
+	int connectionAttemptsRemaining = -1;
+	std::string targetConnectionIp = "";
 
 	struct Connection {
 		Client client;

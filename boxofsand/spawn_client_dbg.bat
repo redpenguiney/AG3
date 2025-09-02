@@ -1,0 +1,1 @@
+..\AG3\x64\Debug\boxofsand.exe --client

@@ -5,26 +5,24 @@
 #include <cmath>
 #include <vector>
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-#define WINDOWS
-#define WIN32_LEAN_AND_MEAN 
-#endif
+#include <boost/asio.hpp>
 
-#ifdef WINDOWS
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#error unsupported platform
-#endif
 
-class SocketConnectionException : public std::exception {
-public:
-	SocketConnectionException(std::string error) : std::exception(error.c_str()) {}
-};
 
 class SocketException : public std::exception {
 public:
 	SocketException(std::string error) : std::exception(error.c_str()) {}
+};
+
+class SocketConnectionException : public SocketException {
+public:
+	SocketConnectionException(std::string error) : SocketException(error.c_str()) {}
+};
+
+// Thrown if you make a socket with an invalid address.
+class SocketAddressResolvingException : public SocketException {
+public:
+	SocketAddressResolvingException(std::string error) : SocketException(error.c_str()) {}
 };
 
 // Portable socket wrapper used to transfer data over the network via UDP.
@@ -34,10 +32,14 @@ public:
 	// the recieving port on this machine.
 	const int localPort;
 
-	// if no ipToListenTo, will listen to all incoming ips (what you would want for a server).
-	// port is assigned to localPort.
+	// Creates a socket bound to the given port which will only listen to and send to the given address:destPort.
+	// port is assigned to localPort. 
 	// bufferSize is how much data this socket can hold before Recieve() must be called to avoid dropping data.
-	Socket(std::optional<std::string> ipToListenTo, int port = 49000, unsigned int bufferSize = pow(2, 20));
+	Socket(std::string address, int destPort, int localPort = 49000, unsigned int recvBufferCapacity = pow(2, 16));
+
+	// Creates a socket bound to the given port which can send to and recieve from any address.
+	Socket(int localPort = 49000, unsigned int recvBufferCapacity = pow(2, 16));
+
 	~Socket();
 	Socket(const Socket&) = delete;
 
@@ -47,37 +49,46 @@ public:
 	// nBytes must not exceed MAX_PACKET_SIZE.
 	// Literally uses raw UDP to send the requested packet over the network. Absolutely no guarantee if the packet will reach its destination.
 	void Send(std::string address, int port, void* data, unsigned int nBytes);
+	void Send(void* data, unsigned int nBytes);
 
 	struct Packet {
-		const void* data;
-		unsigned int dataNBytes;
-		std::string ipOfOrigin;
+		std::vector<uint8_t> data;
+		std::string originAddress;
+		int originPort;
 	};
 
 	// Returns a pointer + length in bytes to whatever data the socket has recieved since Recieve() was last called. NOTE: this must be called frequently, or excess data will be discarded.
 	// If size is 0, no data has been recieved.
-	// The returned packet's data becomes invalid after the next time Recieve() is called or upon socket destruction.
 	std::vector<Packet> Recieve();
 
 private:
 
-#ifdef WINDOWS
-	SOCKET winsocket;
-#endif
-
-	class SocketInitializer {
+	class SocketGlobals {
 	public:
-		static void EnsureSocketsInitialized();
+		static SocketGlobals& Get();
 
-		SocketInitializer();
-		~SocketInitializer();
+		boost::asio::ip::udp::endpoint GetEndpoint(std::string address, int port);
 
-	private:
-		WSADATA wsaData;
+		SocketGlobals();
+		~SocketGlobals();
+
+
+
+		boost::asio::io_service ioService;
+		boost::asio::ip::udp::resolver ioResolver;
+
 	};
 
 	std::optional<std::string> ipToListenTo;
+	std::optional<int> portToListenTo;
 	uint8_t* recievedBuffer;
-	const unsigned int bufferLen;
+	const unsigned int bufferCapacity;
+
+	boost::asio::ip::udp::socket socket;
+
+	friend void InitSocketGlobals();
 };
 
+// Used to ensure correct destruction order for SocketGlobals compared to other singletons.
+// Does nothing if already initialized.
+void InitSocketGlobals();

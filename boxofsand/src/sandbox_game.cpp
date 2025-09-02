@@ -3,95 +3,91 @@
 #include <graphics/gengine.hpp>
 #include <network/network.hpp>
 
-#include "WinSock2.h"
+//#include "WinSock2.h"
+#include "boost/asio.hpp"
+#include <tests/graphics_test.hpp>
 
-void GameInit() {
+
+void GameInit(std::vector<std::string> args) {
 	DebugLogInfo("SANDBOXING? MORE LIKE SANDBAGGING!");
 
-	BasicRenderer::Setup();
-	GraphicsEngine::Get().SetDebugFreecamEnabled(true);
-
-	//NetworkingEngine::Get().Host();
-
-	auto ip = "127.0.0.1"; //"10.154.72.197"; // "192.168.0.1"
-
-    sockaddr_in dest;
-    sockaddr_in local;
-    WSAData data;
-    WSAStartup(MAKEWORD(2, 2), &data);
-
-	local.sin_family = AF_INET;
-    inet_pton(AF_INET, "10.154.72.96", &local.sin_addr.s_addr);
-    local.sin_port = htons(49000);
-
-    dest.sin_family = AF_INET;
-    //inet_pton(AF_INET, ip, &dest.sin_addr.s_addr);
-	dest.sin_addr.s_addr = INADDR_LOOPBACK;
-    dest.sin_port = htons(49001);
-
-	SOCKET s1 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	int bindSuccess1 = bind(s1, (sockaddr*)&local, sizeof(local));
-	if (bindSuccess1 == SOCKET_ERROR) {
-		DebugLogInfo("Failure1 ", WSAGetLastError());
-		Assert(false);
+	bool is_server = true;
+	bool headless = false;
+	for (auto& arg : args) {
+		if (arg == "--headless")
+			headless = true;
+		else if (arg == "--client")
+			is_server = false;
 	}
 
-	
-
-	//std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-	local.sin_port = 49001;
-	SOCKET s2 = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	int bindSuccess2 = bind(s2, (sockaddr*)&local, sizeof(local));
-	if (bindSuccess2 == SOCKET_ERROR) {
-		DebugLogInfo("Failure2 ", WSAGetLastError());
-		Assert(false);
+	if (!headless) {
+		BasicRenderer::Setup();
+		GraphicsEngine::Get().SetDebugFreecamEnabled(true);
 	}
 
-	auto pkt = "oh noes";
-	auto sentCount = sendto(s1, pkt, strlen(pkt), 0, (sockaddr*)&dest, sizeof(dest));
+	//is_server = !is_server;
 
-	if (sentCount == SOCKET_ERROR) {
-		DebugLogInfo("FailureSend ", WSAGetLastError());
-		Assert(false);
+	if (is_server) {
+		NetworkingEngine::Get().Host();
+
+		//TestGraphics();
+
+		/*Socket* server = new Socket(49000);
+
+
+		GraphicsEngine::Get().preRenderEvent->Connect([server](float dt) {
+			auto packets = server->Recieve();
+			DebugLogInfo("GOT ", packets.size());
+		});		*/	
 	}
 	else {
-		DebugLogInfo("SENT ", sentCount);
+		NetworkingEngine::Get().Connect("127.0.0.1");
+		
+		/*Socket* client = new Socket("127.0.0.1", 49000, 49001);
+		GraphicsEngine::Get().preRenderEvent->Connect([client](float dt) {
+			char data[3] = "HI";
+			client->Send(data, 3);
+		});*/
 	}
+	//using namespace boost::asio;
 
-	/*unsigned long NOBLOCK = 1;
-	int error2 = ioctlsocket(s2, FIONBIO, &NOBLOCK);
-	if (error2 == SOCKET_ERROR) {
-		DebugLogInfo("FailureNOBLOCK2 ", WSAGetLastError());
-		Assert(false);
-	}*/
+	//io_service ioService;
 
-	sockaddr_in recvaddr;
-	int size = sizeof(recvaddr);
-	char buffer[1000];
-	auto recvCount = recvfrom(s2, buffer, 1000, 0, (sockaddr*)&recvaddr, &size);
+	//ip::udp::resolver ioResolver(ioService);
+	//ip::udp::resolver::query localhostQuery(ip::udp::v4(), "127.0.0.1", "49001");
+	//ip::udp::endpoint result = *ioResolver.resolve(localhostQuery);
 
-	DebugLogInfo("CODE ", WSAGetLastError());
-	Assert(recvCount != -1);
-	
-	closesocket(s1);
-	closesocket(s2);
+	//ip::udp::socket socket1(ioService, ip::udp::endpoint(ip::udp::v4(), 49000));
+	//ip::udp::socket socket2(ioService, ip::udp::endpoint(ip::udp::v4(), 49001));
+	//socket2.non_blocking(true);
 
-    WSACleanup();
+	//boost::system::error_code err;
+	//socket1.send_to(buffer("HI!"), result, 0, err);
+
+	//std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	//
+	//char recv_buffer[1000] = { '\0' };
+	////recv_buffer[999] = '\0';
+	//ip::udp::endpoint sender;
+	//boost::system::error_code err2;
+	//socket2.receive_from(buffer(recv_buffer, 999), sender, 0, err2);
+
+	//DebugLogInfo("RECIEVED ", recv_buffer)
+
+	//Socket server(49000);
+	//Socket client("127.0.0.1", 49000, 49001);
 
 
-	/*Socket server(std::nullopt, 49000);
-	Socket client(ip, 49001);
-
-
-	for (int i = 0; i < 5; i++) {
-		char data[3] = "HI";
-		server.Send(ip, 49001, data, 3);
-		DebugLogInfo("SENT");
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-		auto packets = client.Recieve();
-		DebugLogInfo("GOT ", packets.size());
-	}*/
+	//for (int i = 0; i < 5; i++) {
+	//	char data[3] = "HI";
+	//	//server.Send("127.0.0.1", 49001, data, 3);
+	//	client.Send(data, 3);
+	//	DebugLogInfo("SENT");
+	//	std::this_thread::sleep_for(std::chrono::seconds(1));
+	//	//auto packets = client.Recieve();
+	//	auto packets = server.Recieve();
+	//	DebugLogInfo("GOT ", packets.size());
+	//}
 }
 
 void GameClose() {}
