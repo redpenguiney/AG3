@@ -25,6 +25,8 @@ std::pair<bool, std::optional<std::string>> DefaultConnectionRequestHandler(std:
 	// This is primarily for networking specifically chosen gameobjects.
 class NetworkingEngine {
 public:
+	float RESEND_PACKET_TIME = 2.0f;
+	float TIMEOUT_TIME = 30.0f;
 
 	const std::vector<std::shared_ptr<Client>>& GetClientList();
 
@@ -54,7 +56,7 @@ public:
 		// If successful, server will begin syncing stuff with the client.
 	void Connect(std::string address, int serverPort = 49000, int localPort = 49001, float timeoutPerTry = 0.5f, unsigned maxTries = 10);
 
-	// Call every frame (when not offline). Dispatches and recieves/handles network events.
+	// Call every frame. Dispatches and recieves/handles network events.
 	// dt should be time since Update() was last called.
 	void Update(float dt);
 
@@ -77,9 +79,17 @@ public:
 	// By default, it will let anyone connect.
 	std::function<std::pair<bool, std::optional<std::string>>(std::string ipAddress, int port)> connectionRequestHandler = DefaultConnectionRequestHandler;
 
+	void SendDataReliable(void* data, size_t nBytes, Client& destination);
 
+	// nBytes must be <=500
+	void SendData(void* data, size_t nBytes, Client& destination);
 
 private:
+
+	void HandleAck(Socket::Packet& packet);
+
+	// Also times out connections.
+	void ResendUnackedMessages();
 
 	std::vector<std::shared_ptr<Client>> clients;
 
@@ -88,20 +98,13 @@ private:
 	int connectionAttemptsRemaining = -1;
 	std::string targetConnectionIp = "";
 
-	struct Connection {
-		Client client;
-
-		Socket socket;
-	};
-
 	NetworkStatus status;
 
-	// empty on client.
-	// on server: all the client <-> server connections
-	std::vector < Connection > activeConnections;
+	// empty on server.
+	// on client, info about connection with the server.
+	std::optional<ConnectionInfo> connection;
 
-	// on client: client <-> server socket.
-	// on server: socket used for letting newcomers in.
+	// client <-> server socket.
 	std::optional<Socket> serverSocket;
 
 	NetworkingEngine();

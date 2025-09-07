@@ -1,5 +1,6 @@
 #include "protocol.hpp"
 #include <debug/assert.hpp>
+#include <utility/utility.hpp>
 
 using namespace boost::asio;
 
@@ -83,6 +84,8 @@ std::vector<Socket::Packet> Socket::Recieve() {
 
 	std::vector<Packet> packets;
 
+	auto timestamp = Time();
+
 	while (true) {
 		ip::udp::endpoint sender_endpoint;
 
@@ -93,13 +96,14 @@ std::vector<Socket::Packet> Socket::Recieve() {
 			newPacket.originAddress = sender_endpoint.address().to_string();
 			newPacket.originPort = sender_endpoint.port();
 			newPacket.data.assign(recievedBuffer, recievedBuffer + len);
+			newPacket.timestamp = timestamp;
 			packets.push_back(newPacket);
 		}
 		else if (err.value() == boost::system::errc::operation_would_block || err.value() == 10035) { // then no more data to recieve at the moment
 			return packets;
 		}
 		else if (err.value() == 10054) { // IDK, https://stackoverflow.com/questions/34242622/windows-udp-sockets-recvfrom-fails-with-error-10054
-			DebugLogInfo("10054");
+			DebugLogInfo("WARNING 10054");
 			return packets;
 		}
 		else {
