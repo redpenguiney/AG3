@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include "protocol.hpp"
 
 using AckId = uint32_t;
 
@@ -12,6 +13,7 @@ struct PendingAck {
     void* payload; // FREED ON PendingAck DESTRUCTION
     const unsigned payloadNBytes;
 
+    // takes ownership of payload
     PendingAck(const AckId id, double timestamp, void* data, unsigned dataSize) : ackId(id), sentTimestamp(timestamp), payload(data), payloadNBytes(dataSize) {}
     PendingAck(const PendingAck&) = delete;
     PendingAck(PendingAck&& old) noexcept: 
@@ -22,17 +24,47 @@ struct PendingAck {
     {
         old.payload = nullptr;
     }
+    PendingAck& operator=(PendingAck&&) {
+        return *this;
+    }
     ~PendingAck() { free(payload); }
 };
 
-struct ConnectionInfo {
+struct LongMessageReconstruction {
+    std::vector<std::vector<uint8_t>> packets;
+    unsigned numPackets;
+    AckId firstPacketId;
+};
+
+class ConnectionInfo {
+public:
     double lastMessageTime; // since epoch
     bool completedHandshake = false;
 
     std::vector<PendingAck> pendingAcks;
 
+    // where long messages that have not been fully transmitted to the local machine are stored.
+    // key is ackId of first packet
+    std::unordered_map<AckId, LongMessageReconstruction> wipLongMessages;
+
     AckId nextAckId = 0;
     AckId GetAvailableAckId();
+
+    void AckData(AckId ackId);
+    // Returns the data to send. Free the given void*'s when you're finished.
+    std::vector<std::pair<void*, size_t>> FlushAcksToSend();
+    void ExpireRecievedPackets();
+    bool AlreadyRecievedPacket(AckId ackId);
+
+private:
+    std::vector<AckId> acksToSend;
+
+    // If someone we're connected to doesn't get our ack, they'll resend the data which is bad.
+    // Value is the time of recieving
+    std::unordered_map<AckId, double> recievedPackets;
+
+    // How long we remember ackIds for recieved packets 
+    static constexpr double PACKET_EXPIRATION_TIME = 300.0f;
 };
 
 class Client {

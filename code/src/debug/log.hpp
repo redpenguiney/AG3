@@ -6,11 +6,15 @@
 
 // visual studio is dumb and doesn't let you see the result of std::cout unless you use OutputDebugStringA().
 class dbg_stream_for_cout: public std::stringbuf {
-    public:
+public:
+    dbg_stream_for_cout();
     ~dbg_stream_for_cout();
     int sync();
+private:
+    
 };
 inline dbg_stream_for_cout dbg_printstream;
+inline std::basic_streambuf<char>* original_cout_buf = std::cout.rdbuf();
 #endif
 
 void TestPrint();

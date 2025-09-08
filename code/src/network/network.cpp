@@ -1,77 +1,7 @@
 #include "network.hpp"
 #include "debug/assert.hpp"
 #include <utility/utility.hpp>
-
-// PROTOCOL listed here.
-// Type of packets the engine sends.
-enum class PacketType : uint8_t {
-    // connection types
-    ConnectionRequest = 0, // format: 8 bit packet type followed by the client's 16 bit port. Called by client, to which server should respond with ConnectionRequestResponse
-    ConnectionRequestResponse = 1, // format: 8 bit packet type, 8 bit bool (true if connection accepted, false if not), NOT-null-terminated string if connection was not accepted. Called by server in response to ConnectionRequest. Client will acknowledge this with CompleteConnectionHandshake to complete the connection.
-    CompleteConnectionHandshake = 2, //  format: 8 bit packet type. Called by client in response to ConnectionRequestHandshakeResponse.
-    //TerminateConnection = 3, // format: 8 bit packet type, then optional non-null terminated string with reason. Used by server to tell a client they have been kicked/dropped, or for a client to request being kicked/dropped.
-
-    // data transmission types
-    SendShort = 4, // format: 8 bit packet type followed by the data. Reciever of the data will not acknowledge. Data must fit within 1 packet.
-    SendShortAck = 5, // format: 8 bit packet type, then 16 bit packet id, followed by the data. Reciever of the data SHOULD acknowledge - this packet may be repeatedly sent until the sender recieves acknowledgement. Data must fit within 1 packet.
-    LongMessage = 6, // format: 8 bit packet type, then 16 bit packet id, then 16 bit packet id of first packet in long message, then 16 bit num of packets in long message. Reciever should acknowledge.
-
-    // ack types
-    AckArray = 7, // format : 8 bit packet type, then array of 16 bit packet ids that have been confirmed/acknowledged to be recieved. 
- 
-};
-
-namespace PacketStructs {
-#pragma pack(push, 1)
-    struct ConnectionRequest {
-        PacketType type = PacketType::ConnectionRequest;
-    };
-    struct ConnectionRequestResponse {
-        PacketType type;
-        uint8_t connectionAccepted;
-        //uint16_t messageLen;
-        char rejectionReason[];
-
-        ConnectionRequestResponse() = delete;
-    };
-    struct CompleteConnectionHandshake {
-        PacketType type = PacketType::CompleteConnectionHandshake;
-    };
-
-    struct AckArray {
-        PacketType type = PacketType::AckArray;
-        AckId packets[];
-
-        AckArray() = delete;
-    };
-
-    struct ShortMessage {
-        PacketType type = PacketType::SendShort;
-        uint8_t data[];
-
-        ShortMessage() = delete;
-    };
-
-    struct ShortMessageReliable {
-        PacketType type = PacketType::SendShortAck;
-        AckId ackId;
-        uint8_t data[];
-
-        ShortMessageReliable() = delete;
-    };
-
-    struct LongMessage {
-        PacketType type = PacketType::LongMessage;
-        uint16_t offset; // firstPacketAckId + offset = ackId of this packet
-        AckId firstPacketAckId;
-        uint16_t numPackets;
-        uint8_t data[];
-
-        LongMessage() = delete;
-    };
-#pragma pack(pop)
-};
-
+#include "packet_types.hpp"
 
 const std::vector<std::shared_ptr<Client>>& NetworkingEngine::GetClientList()
 {
@@ -154,21 +84,22 @@ void NetworkingEngine::Update(float dt){
     if (status == NetworkStatus::Offline)
         return;
 
+    auto time = Time();
+
     // Handle connection requests
     if (status == NetworkStatus::Server) {
         auto packets = serverSocket->Recieve();
 
         for (auto& p : packets) {
             Assert(p.data.size() > 0);
-            auto packetType = (PacketType*)p.data.data();
-
+            auto packetType = (uint8_t*)p.data.data();
+            bool isUserdata = (*packetType & 0b10000000) != 0;
+            *packetType &= 0b01111111;
             if (*packetType == PacketType::ConnectionRequest) {
-                // Make sure client isn't already connected
-                if (GetClient(p.originAddress, p.originPort)) continue;
 
-                auto [accepted, reason] = connectionRequestHandler(p.originAddress, p.originPort);
-
-                if (accepted) {
+                // Make sure client isn't already connected; 
+                // in this case they didn't hear that they were accepted so we just want to resend the message
+                if (GetClient(p.originAddress, p.originPort)) {
                     size_t size = sizeof(PacketStructs::ConnectionRequestResponse);
                     auto response = static_cast<PacketStructs::ConnectionRequestResponse*>(malloc(size));
 
@@ -176,28 +107,46 @@ void NetworkingEngine::Update(float dt){
                     response->connectionAccepted = true;
 
                     serverSocket->Send(p.originAddress, p.originPort, response, size);
-
-
-                    DebugLogInfo("Accepted new client (awaiting handshake).");
-
-                    auto newClient = Client::New(false, false, p.originPort, p.originAddress);
-                    newClient->connection = ConnectionInfo{
-                        .lastMessageTime = p.timestamp,
-                        .completedHandshake = false
-                    };
+                    free(response);
                 }
                 else {
-                    std::string rejectionReason = reason.value_or("");
+                    auto [accepted, reason] = connectionRequestHandler(p.originAddress, p.originPort);
 
-                    size_t size = sizeof(PacketStructs::ConnectionRequestResponse) + rejectionReason.length();
-                    auto response = static_cast<PacketStructs::ConnectionRequestResponse*>(malloc(size));
-                
-                    response->type = PacketType::ConnectionRequestResponse;
-                    response->connectionAccepted = false;
-                    memcpy(response + 1, rejectionReason.c_str(), rejectionReason.length());
+                    if (accepted) {
+                        size_t size = sizeof(PacketStructs::ConnectionRequestResponse);
+                        auto response = static_cast<PacketStructs::ConnectionRequestResponse*>(malloc(size));
 
-                    serverSocket->Send(p.originAddress, p.originPort, response, size);
+                        response->type = PacketType::ConnectionRequestResponse;
+                        response->connectionAccepted = true;
+
+                        serverSocket->Send(p.originAddress, p.originPort, response, size);
+
+
+                        DebugLogInfo("Accepted new client (awaiting handshake).");
+
+                        auto newClient = Client::New(false, false, p.originPort, p.originAddress);
+                        newClient->connection = ConnectionInfo();
+                        newClient->connection->lastMessageTime = p.timestamp;
+                        newClient->connection->completedHandshake = false;
+                        //newClient->connection->pendingAcks.push_back(PendingAck(newClient->connection->GetAvailableAckId(), time, response, size));
+                        clients.push_back(newClient);
+                        free(response);
+                    }
+                    else {
+                        std::string rejectionReason = reason.value_or("");
+
+                        size_t size = sizeof(PacketStructs::ConnectionRequestResponse) + rejectionReason.length();
+                        auto response = static_cast<PacketStructs::ConnectionRequestResponse*>(malloc(size));
+
+                        response->type = PacketType::ConnectionRequestResponse;
+                        response->connectionAccepted = false;
+                        memcpy(response + 1, rejectionReason.c_str(), rejectionReason.length());
+
+                        serverSocket->Send(p.originAddress, p.originPort, response, size);
+                        free(response);
+                    }
                 }
+                
             }
             else if (*packetType == PacketType::CompleteConnectionHandshake) {
 
@@ -210,9 +159,28 @@ void NetworkingEngine::Update(float dt){
                 client->connection->lastMessageTime = p.timestamp;
 
             }
+            else if (*packetType == PacketType::AckArray) {
+                auto client = GetClient(p.originAddress, p.originPort);
+                ProcessAckArray(client, std::bit_cast<AckId*>(packetType + 1), (p.data.size() - 1) / 4);
+            }
+            else if (*packetType == PacketType::SendShort) {
+                auto client = GetClient(p.originAddress, p.originPort);
+                ProcessShortMessage(client, packetType + 1, p.data.size() - 1, isUserdata);
+            }
+            else if (*packetType == PacketType::SendShortAck) {
+                auto client = GetClient(p.originAddress, p.originPort);
+                auto msg = (PacketStructs::ShortMessageReliable*)p.data.data();
+                ProcessShortMessageReliable(client, msg->ackId, msg->data, p.data.size() - sizeof(PacketStructs::ShortMessageReliable), isUserdata);
+            }
+            else if (*packetType == PacketType::LongMessage) {
+                auto client = GetClient(p.originAddress, p.originPort);
+                auto msg = (PacketStructs::LongMessage*)p.data.data();
+                ProcessLongMessageFragment(client, msg->firstPacketAckId, msg->offset, msg->numPackets, msg->data, p.data.size() - sizeof(PacketStructs::LongMessage), isUserdata);
+            }
         }
 
         ResendUnackedMessages();
+        AckMessages();
     }
     else if (status == NetworkStatus::ClientConnecting) {
         auto packets = serverSocket->Recieve();
@@ -221,7 +189,9 @@ void NetworkingEngine::Update(float dt){
 
             if (p.originAddress != targetConnectionIp) continue;
 
-            auto packetType = (PacketType*)p.data.data();
+            auto packetType = (uint8_t*)p.data.data();
+            bool isUserdata = (*packetType & 0b10000000) != 0;
+            *packetType &= 0b01111111;
             if (*packetType == PacketType::ConnectionRequestResponse) {
                 if (p.data.size() < 2) continue; 
                 auto connectionAccepted = *(bool*)(p.data.data() + 1);
@@ -259,40 +229,50 @@ void NetworkingEngine::Update(float dt){
                     PacketStructs::CompleteConnectionHandshake handshake;
                     serverSocket->Send(&handshake, sizeof(handshake));
 
-                    connection = ConnectionInfo{
-                        .lastMessageTime = p.timestamp,
-                        .completedHandshake = true,
+                    DebugLogInfo("Client connection to server successful.");
+
+                    ConnectionAttemptResult result{
+                        .successful = true,
+                        .failureReason = std::nullopt,
+                        .failureMessage = std::nullopt
                     };
+                    status = NetworkStatus::Client;
+                    onConnectionAttemptComplete->Fire(result);
 
                     clients.push_back(Client::New(true, false, p.originPort, p.originAddress));
+                    clients.back()->connection = ConnectionInfo();
+                    clients.back()->connection->lastMessageTime = p.timestamp;
+                    clients.back()->connection->completedHandshake = true;
                 }
             }
         }
 
-        timeUntilConnectionAttemptTimeout -= dt;
-        if (timeUntilConnectionAttemptTimeout < 0) {
-            DebugLogInfo("Connection attempt timed out.");
-            connectionAttemptsRemaining--;
+        if (timeUntilConnectionAttemptTimeout != -1) {
+            timeUntilConnectionAttemptTimeout -= dt;
+            if (timeUntilConnectionAttemptTimeout < 0) {
+                DebugLogInfo("Connection attempt timed out.");
+                connectionAttemptsRemaining--;
 
-            if (connectionAttemptsRemaining < 0) {
-                ConnectionAttemptResult result{
-                    .successful = false,
-                    .failureReason = ConnectionFailureReason::TimedOut,
-                    .failureMessage = std::nullopt
-                };
-                onConnectionAttemptComplete->Fire(result);
+                if (connectionAttemptsRemaining < 0) {
+                    ConnectionAttemptResult result{
+                        .successful = false,
+                        .failureReason = ConnectionFailureReason::TimedOut,
+                        .failureMessage = std::nullopt
+                    };
+                    onConnectionAttemptComplete->Fire(result);
 
-                status = NetworkStatus::Offline;
+                    status = NetworkStatus::Offline;
 
-                timeUntilConnectionAttemptTimeout = -1.0f;
-                connectionAttemptTimeout = -1.0f;
-                connectionAttemptsRemaining = -1;
-            }
-            else {
-                timeUntilConnectionAttemptTimeout = connectionAttemptTimeout;
+                    timeUntilConnectionAttemptTimeout = -1.0f;
+                    connectionAttemptTimeout = -1.0f;
+                    connectionAttemptsRemaining = -1;
+                }
+                else {
+                    timeUntilConnectionAttemptTimeout = connectionAttemptTimeout;
 
-                PacketStructs::ConnectionRequest request;
-                serverSocket->Send(&request, sizeof(request));
+                    PacketStructs::ConnectionRequest request;
+                    serverSocket->Send(&request, sizeof(request));
+                }
             }
         }
     }
@@ -303,16 +283,35 @@ void NetworkingEngine::Update(float dt){
 
             if (p.originAddress != targetConnectionIp) continue;
 
-            auto packetType = (PacketType*)p.data.data();
+            auto packetType = (uint8_t*)p.data.data();
+            bool isUserdata = (*packetType & 0b10000000) != 0;
+            *packetType &= 0b01111111;
             if (*packetType == PacketType::ConnectionRequestResponse) {
                 // If this happens, then the server already said we can join but then didn't recieve our last CompleteConnectionHandshake packet, so we'll send it again.
                 PacketStructs::CompleteConnectionHandshake handshake;
                 serverSocket->Send(&handshake, sizeof(handshake));
             }
-           
+            else if (*packetType == PacketType::AckArray) {
+                auto client = GetClient(p.originAddress, p.originPort);
+                ProcessAckArray(client, std::bit_cast<AckId*>(packetType + 1), (p.data.size() - 1) / 4);
+            }
+            else if (*packetType == PacketType::SendShort) {
+                auto client = GetClient(p.originAddress, p.originPort);
+                ProcessShortMessage(client, packetType + 1, p.data.size() - 1, isUserdata);
+            }
+            else if (*packetType == PacketType::SendShortAck) {
+                auto client = GetClient(p.originAddress, p.originPort);
+                ProcessShortMessageReliable(client, *std::bit_cast<AckId*>(packetType + 1), p.data.data() + 5, p.data.size() - 5, isUserdata);
+            }
+            else if (*packetType == PacketType::LongMessage) {
+                auto client = GetClient(p.originAddress, p.originPort);
+                auto msg = (PacketStructs::LongMessage*)p.data.data();
+                ProcessLongMessageFragment(client, msg->firstPacketAckId, msg->offset, msg->numPackets, msg->data, p.data.size() - sizeof(PacketStructs::LongMessage), isUserdata);
+            }
         }
 
         ResendUnackedMessages();
+        AckMessages();
     }
 }
 
@@ -325,29 +324,62 @@ std::shared_ptr<Client> NetworkingEngine::GetClient(std::string address, int por
     return nullptr;
 }
 
-void NetworkingEngine::SendDataReliable(void* data, size_t nBytes, Client& destination)
+void NetworkingEngine::SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination) {
+    ImplSendDataReliable(data, nBytes, destination, true);
+}
+
+void NetworkingEngine::SendDataReliable(void* data, size_t nBytes) {
+    Assert(status == NetworkStatus::Client);
+    for (auto& c : clients) {
+        if (c->isServer) {
+            SendDataReliable(data, nBytes, c);
+            return;
+        }
+    }
+}
+
+void NetworkingEngine::SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination){
+    ImplSendData(data, nBytes, destination, true);
+}
+
+void NetworkingEngine::SendData(void* data, size_t nBytes) {
+    Assert(status == NetworkStatus::Client);
+    for (auto& c : clients) {
+        if (c->isServer) {
+            SendData(data, nBytes, c);
+            return;
+        }
+    }
+}
+
+void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata)
 {
-    Assert(!destination.isLocalMachine);
+    Assert(!destination->isLocalMachine);
     if (status == NetworkStatus::Client) {
-        Assert(destination.isServer);
+        Assert(destination->isServer);
     }
     else Assert(status == NetworkStatus::Server);
-    Assert(destination.connection);
+    Assert(destination->connection);
     if (nBytes <= 500) {
         PacketStructs::ShortMessageReliable* packet = (PacketStructs::ShortMessageReliable*)malloc(nBytes + sizeof(PacketStructs::ShortMessageReliable));
         packet->type = PacketType::SendShortAck;
-        packet->ackId = destination.connection->GetAvailableAckId();
+        if (isUserdata)
+            packet->type |= 0b10000000;
+        packet->ackId = destination->connection->GetAvailableAckId();
 
         void* payload = malloc(nBytes);
         memcpy(payload, data, nBytes);
 
-        destination.connection->pendingAcks.emplace_back(packet->ackId, Time(), payload, nBytes);
-        memcpy(packet + sizeof(packet), data, nBytes);
+        destination->connection->pendingAcks.emplace_back(packet->ackId, Time(), payload, nBytes);
+        memcpy((uint8_t*)packet + sizeof(PacketStructs::ShortMessageReliable), data, nBytes);
         serverSocket->Send(packet, nBytes + sizeof(PacketStructs::ShortMessageReliable));
+
+        free(packet);
+        // don't free payload
     }
     else {
         uint16_t i = 0;
-        AckId firstAck = destination.connection->GetAvailableAckId();
+        AckId firstAck = destination->connection->GetAvailableAckId();
         auto t = Time();
         while (nBytes > 0) {
             unsigned amtToSend = nBytes > 500 ? 500 : nBytes;
@@ -358,31 +390,39 @@ void NetworkingEngine::SendDataReliable(void* data, size_t nBytes, Client& desti
             void* payload = malloc(amtToSend);
             memcpy(payload, data, amtToSend);
 
-            destination.connection->pendingAcks.emplace_back(firstAck + i, t, payload, amtToSend);
+            destination->connection->pendingAcks.emplace_back(firstAck + i, t, payload, amtToSend);
 
             packet->type = PacketType::LongMessage;
+            if (isUserdata)
+                packet->type |= 0b10000000;
             packet->offset = i++;
             packet->firstPacketAckId = firstAck;
            
-            memcpy(packet + sizeof(packet), data, amtToSend);
+            memcpy((uint8_t*)packet + sizeof(PacketStructs::LongMessage), data, amtToSend);
             data = (uint8_t*)data + amtToSend;
             serverSocket->Send(packet, amtToSend + sizeof(PacketStructs::LongMessage));
+
+            free(packet);
         }
     }
 }
 
-void NetworkingEngine::SendData(void* data, size_t nBytes, Client& destination) {
+void NetworkingEngine::ImplSendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata) {
     Assert(nBytes <= 500);
-    Assert(!destination.isLocalMachine);
+    Assert(!destination->isLocalMachine);
     if (status == NetworkStatus::Client) {
-        Assert(destination.isServer);
+        Assert(destination->isServer);
     }
     else Assert(status == NetworkStatus::Server);
 
     PacketStructs::ShortMessage* packet = (PacketStructs::ShortMessage*)malloc(nBytes + sizeof(PacketStructs::ShortMessage));
     packet->type = PacketType::SendShort;
+    if (isUserdata)
+        packet->type |= 0b10000000;
     memcpy(packet + sizeof(packet->type), data, nBytes);
     serverSocket->Send(packet, nBytes + sizeof(PacketStructs::ShortMessage));
+
+    free(packet);
 }
 
 void NetworkingEngine::HandleAck(Socket::Packet& p) {
@@ -391,7 +431,8 @@ void NetworkingEngine::HandleAck(Socket::Packet& p) {
     client->connection->lastMessageTime = p.timestamp;
 
     Assert(p.data.size() > sizeof(PacketStructs::AckArray));
-    auto packetType = (PacketType*)p.data.data();
+    auto packetType = (uint8_t*)p.data.data();
+    *packetType &= 0b01111111;
     Assert(*packetType = PacketType::AckArray);
     unsigned nPackets = p.data.size() - sizeof(PacketStructs::AckArray);
   
@@ -409,34 +450,142 @@ void NetworkingEngine::HandleAck(Socket::Packet& p) {
 
 void NetworkingEngine::ResendUnackedMessages() {
     auto t = Time();
-    for (auto it = clients.begin(); it != clients.end(); it++) {
-        auto& c = *it;
+    for (unsigned i = 0; i < clients.size(); i++) {
+        auto& c = clients.at(i);
         if (!c->connection) continue;
 
         for (auto& ack : c->connection->pendingAcks) {
             if (ack.sentTimestamp + RESEND_PACKET_TIME < t) {
                 
                 ack.sentTimestamp = t;
+
+                DebugLogInfo("Resending unacked ", ack.payloadNBytes, " bytes.");
+
+                // resend message
+                if (status == NetworkStatus::Server)
+                    serverSocket->Send(c->address, c->port, ack.payload, ack.payloadNBytes);
+                else
+                    serverSocket->Send(ack.payload, ack.payloadNBytes);
             }
         }
 
         if (c->connection->lastMessageTime + TIMEOUT_TIME < t) {
             // Drop connection
             if (c->isServer) {
+                DebugLogInfo("Server non-responsive. Disconnecting.")
                 Disconnect();
+                return;
             }
             else {
+                DebugLogInfo("Client non-responsive. Removing them.")
                 // TODO: do more?
-                it = clients.erase(it);
+                clients[i] = clients.back();
+                clients.pop_back();
+                i--;
             }
         }
 
     }
 }
 
+void NetworkingEngine::AckMessages() {
+    for (auto& c : clients) {
+        if (c->connection) {
+            auto packets = c->connection->FlushAcksToSend();
+            
+            for (auto& p : packets) {
+                if (status == NetworkStatus::Client)
+                    serverSocket->Send(p.first, p.second);
+                else
+                    serverSocket->Send(c->address, c->port, p.first, p.second);
+                free(p.first);
+            }
+
+            c->connection->ExpireRecievedPackets();
+        }
+    }
+}
+
+void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, AckId* acks, unsigned nAcks) {
+    Assert(client && client->connection);
+    DebugLogInfo("Handling ackarray with ", nAcks, " acks");
+    for (unsigned i = 0; i < nAcks; i++) {
+        for (unsigned int j = 0; j < client->connection->pendingAcks.size(); j++) {
+            if (client->connection->pendingAcks[j].ackId == acks[i]) {
+                client->connection->pendingAcks[j] = std::move(client->connection->pendingAcks.back());
+                client->connection->pendingAcks.pop_back();
+                break;
+            }
+        }
+    }
+}
+
+void NetworkingEngine::ProcessShortMessage(std::shared_ptr<Client>& client, uint8_t* data, unsigned nBytes, bool isUserdata) {
+    if (isUserdata) {
+        NetworkUserdata userdata {};
+        userdata.data.assign(data, data + nBytes);
+        userdata.reliable = false;
+        onUserdataRecieved->Fire(userdata);
+    }
+    else {
+
+    }
+}
+
+void NetworkingEngine::ProcessShortMessageReliable(std::shared_ptr<Client>& client, AckId ackId, uint8_t* data, unsigned nBytes, bool isUserdata) {
+    Assert(client && client->connection);
+
+    if (client->connection->AlreadyRecievedPacket(ackId)) return;
+
+    client->connection->AckData(ackId);
+
+    if (isUserdata) {
+
+        NetworkUserdata userdata{};
+        userdata.data.assign(data, data + nBytes);
+        userdata.reliable = true;
+        onUserdataRecieved->Fire(userdata);
+
+    }
+    else {
+
+    }
+}
+
+void NetworkingEngine::ProcessLongMessageFragment(std::shared_ptr<Client>& client, AckId firstAckId, uint16_t idOffset, uint16_t nPackets, uint8_t* data, unsigned nBytes, bool isUserdata) {
+    Assert(client && client->connection);
+    AckId ackId = firstAckId + idOffset;
+
+    if (client->connection->AlreadyRecievedPacket(ackId)) return;
+
+    client->connection->AckData(ackId);
+    
+    if (!client->connection->wipLongMessages.contains(firstAckId)) {
+        client->connection->wipLongMessages[firstAckId].firstPacketId = firstAckId;
+        client->connection->wipLongMessages[firstAckId].numPackets = nPackets;   
+    }
+    std::vector<uint8_t> niceData;
+    niceData.assign(data, data + nBytes);
+    client->connection->wipLongMessages[firstAckId].packets.push_back(niceData);
+    if (client->connection->wipLongMessages[firstAckId].packets.size() == nPackets) {
+        if (isUserdata) {
+            NetworkUserdata userdata;
+            userdata.reliable = true;
+            for (auto& pkt : client->connection->wipLongMessages[firstAckId].packets)
+                userdata.data.insert(userdata.data.end(), pkt.begin(), pkt.end());
+            client->connection->wipLongMessages.erase(firstAckId);
+            onUserdataRecieved->Fire(userdata);
+        }
+        else {
+
+        }
+    }
+}
+
 NetworkingEngine::NetworkingEngine():
     onConnectionAttemptComplete(Event<ConnectionAttemptResult>::New()),
-    onInitialSyncComplete(Event<>::New())
+    onInitialSyncComplete(Event<>::New()),
+    onUserdataRecieved(Event<NetworkUserdata>::New())
 {
     status = NetworkStatus::Offline;
     serverSocket = std::nullopt;

@@ -30,6 +30,11 @@ void GameInit(std::vector<std::string> args) {
 	if (is_server) {
 		NetworkingEngine::Get().Host();
 
+		NetworkingEngine::Get().onUserdataRecieved->Connect([](NetworkUserdata userdata) {
+			std::string messagestr((const char*)userdata.data.data(), userdata.data.size());
+			DebugLogInfo("RECIEVED FROM CLIENT (", userdata.reliable, " ", userdata.data.size(), "): first ", (int)messagestr[0], " ", messagestr);
+		});
+
 		//TestGraphics();
 
 		/*Socket* server = new Socket(49000);
@@ -42,7 +47,21 @@ void GameInit(std::vector<std::string> args) {
 	}
 	else {
 		NetworkingEngine::Get().Connect("127.0.0.1");
-		
+
+		NetworkingEngine::Get().onConnectionAttemptComplete->Connect([](NetworkingEngine::ConnectionAttemptResult result) {
+			Assert(result.successful);
+			//char str[] = "POOPLESNOOT";
+
+			//char str[] = ""
+			std::ifstream file("../resources/bee_move_script.txt");
+			std::stringstream buffer;
+			buffer << file.rdbuf();
+			std::string str = buffer.str();
+			Assert(str.size() > 0);
+			NetworkingEngine::Get().SendDataReliable(str.data(), str.size());
+			DebugLogInfo("SENT ", str.size());
+		});
+
 		/*Socket* client = new Socket("127.0.0.1", 49000, 49001);
 		GraphicsEngine::Get().preRenderEvent->Connect([client](float dt) {
 			char data[3] = "HI";

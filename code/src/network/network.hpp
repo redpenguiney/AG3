@@ -17,6 +17,14 @@ enum class ConnectionFailureReason {
 	ServerRejected, // we successfully connected to the server, but they didn't want us :(
 };
 
+// Struct for recieving user-specified data over the network.
+struct NetworkUserdata {
+	std::vector<uint8_t> data;
+	bool reliable;
+};
+
+
+
 std::pair<bool, std::optional<std::string>> DefaultConnectionRequestHandler(std::string ipAddress, int port);
 
 // This singleton class is in charge of multiplayer stuff.
@@ -71,27 +79,55 @@ public:
 
 	std::shared_ptr<Event<ConnectionAttemptResult>> onConnectionAttemptComplete;
 
+	// Fired on both client and server.
+	//std::shared_ptr < Event<std::shared_ptr<Client>>> onNewClient;
+
 	// fired on client when server has finished syncing all of its stuff with the client.
 	std::shared_ptr<Event<>> onInitialSyncComplete;
+
+	// fired on client when data from SendData()/SendDataReliable() arrives
+	std::shared_ptr<Event<NetworkUserdata>> onUserdataRecieved;
 
 	// A function that the server will call to decide whether to let a potential client connect. Should return <true, nullopt> if the client is allowed to join, or <false, reason> if they are not. 
 	// the returned reason must be less than ~400 characters because i don't want to have to use multiple packets for this.
 	// By default, it will let anyone connect.
 	std::function<std::pair<bool, std::optional<std::string>>(std::string ipAddress, int port)> connectionRequestHandler = DefaultConnectionRequestHandler;
 
-	void SendDataReliable(void* data, size_t nBytes, Client& destination);
+	void SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination);
+
+	// Sends data to server. Client only.
+	void SendDataReliable(void* data, size_t nBytes);
 
 	// nBytes must be <=500
-	void SendData(void* data, size_t nBytes, Client& destination);
+	void SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination);
+
+	// Sends data to server. Client only.
+	void SendData(void* data, size_t nBytes);
 
 private:
+
+	void ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata);
+
+	// nBytes must be <=500
+	void ImplSendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata);
 
 	void HandleAck(Socket::Packet& packet);
 
 	// Also times out connections.
 	void ResendUnackedMessages();
+	
+	void AckMessages();
+
+	void ProcessAckArray(std::shared_ptr<Client>& client, AckId* acks, unsigned nAcks);
+	void ProcessShortMessage(std::shared_ptr<Client>& client, uint8_t* data, unsigned nBytes, bool isUserdata);
+	void ProcessShortMessageReliable(std::shared_ptr<Client>& client, AckId ackId, uint8_t* data, unsigned nBytes, bool isUserdata);
+	void ProcessLongMessageFragment(std::shared_ptr<Client>& client, AckId firstAckId, uint16_t idOffset, uint16_t nPackets, uint8_t* data, unsigned nBytes,  bool isUserdata);
+
+	
 
 	std::vector<std::shared_ptr<Client>> clients;
+
+	
 
 	float timeUntilConnectionAttemptTimeout = -1.0f;
 	float connectionAttemptTimeout = -1.0f;
@@ -99,10 +135,6 @@ private:
 	std::string targetConnectionIp = "";
 
 	NetworkStatus status;
-
-	// empty on server.
-	// on client, info about connection with the server.
-	std::optional<ConnectionInfo> connection;
 
 	// client <-> server socket.
 	std::optional<Socket> serverSocket;
