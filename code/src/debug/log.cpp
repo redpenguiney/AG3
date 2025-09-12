@@ -17,6 +17,10 @@ int dbg_stream_for_cout::sync()
     return 0;
 }
 
+dbg_stream_for_cout::dbg_stream_for_cout()
+{
+}
+
 dbg_stream_for_cout::~dbg_stream_for_cout() {
     sync(); 
 }

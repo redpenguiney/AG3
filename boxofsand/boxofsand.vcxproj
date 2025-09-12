@@ -138,12 +138,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\character.cpp" />
     <ClCompile Include="src\sandbox_game.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AG3\AG3.vcxproj">
       <Project>{e0588bfe-718e-448c-af53-2615647914d8}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\character.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

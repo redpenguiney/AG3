@@ -32,7 +32,7 @@ void GameInit(std::vector<std::string> args) {
 
 		NetworkingEngine::Get().onUserdataRecieved->Connect([](NetworkUserdata userdata) {
 			std::string messagestr((const char*)userdata.data.data(), userdata.data.size());
-			DebugLogInfo("RECIEVED FROM CLIENT (", userdata.reliable, " ", userdata.data.size(), "): first ", (int)messagestr[0], " ", messagestr);
+			DebugLogInfo("RECIEVED FROM CLIENT (", userdata.reliable, " ", userdata.data.size(), "): first ", (int)messagestr[0], " "/*, messagestr*/);
 		});
 
 		//TestGraphics();

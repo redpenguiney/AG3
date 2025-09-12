@@ -34,7 +34,6 @@ void ConnectionInfo::AckData(AckId ackId) {
 
 std::vector<std::pair<void*, size_t>> ConnectionInfo::FlushAcksToSend() {
     std::vector<std::pair<void*, size_t>> packets;
-    if (!acksToSend.empty()) DebugLogInfo("There are ", acksToSend.size(), " inbound packets to acknowledge.");
     while (!acksToSend.empty()) {
         unsigned nAcks = std::min(acksToSend.size(), 500 / sizeof(AckId));
         auto acks = (PacketStructs::AckArray*)malloc(sizeof(PacketStructs::AckArray) + nAcks * 4);

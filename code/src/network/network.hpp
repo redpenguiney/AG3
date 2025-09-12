@@ -23,7 +23,13 @@ struct NetworkUserdata {
 	bool reliable;
 };
 
+struct TransformSyncData {
+	glm::dvec3 lastSyncedTransform;
+	glm::quat lastSyncedRot;
+	std::shared_ptr<Client> owner;
+};
 
+class TransformComponent;
 
 std::pair<bool, std::optional<std::string>> DefaultConnectionRequestHandler(std::string ipAddress, int port);
 
@@ -103,6 +109,10 @@ public:
 
 	// Sends data to server. Client only.
 	void SendData(void* data, size_t nBytes);
+
+	// Sets the network owner of a given gameobject's transform to the given client (which could be the server).
+	// Server only.
+	void SetNetworkOwner(TransformComponent* transform, std::shared_ptr<Client> client);
 
 private:
 

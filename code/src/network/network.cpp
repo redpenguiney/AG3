@@ -379,7 +379,8 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
     }
     else {
         uint16_t i = 0;
-        AckId firstAck = destination->connection->GetAvailableAckId();
+        AckId firstAck = UINT32_MAX;
+        uint16_t numPackets = (nBytes + 499) / 500;
         auto t = Time();
         while (nBytes > 0) {
             unsigned amtToSend = nBytes > 500 ? 500 : nBytes;
@@ -390,13 +391,17 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
             void* payload = malloc(amtToSend);
             memcpy(payload, data, amtToSend);
 
-            destination->connection->pendingAcks.emplace_back(firstAck + i, t, payload, amtToSend);
+            auto ackId = destination->connection->GetAvailableAckId();
+            if (firstAck == UINT32_MAX) firstAck = ackId;
+            destination->connection->pendingAcks.emplace_back(ackId, t, payload, amtToSend);
+            //DebugLogInfo("PendingAck ", ackId);
 
             packet->type = PacketType::LongMessage;
             if (isUserdata)
                 packet->type |= 0b10000000;
             packet->offset = i++;
             packet->firstPacketAckId = firstAck;
+            packet->numPackets = numPackets;
            
             memcpy((uint8_t*)packet + sizeof(PacketStructs::LongMessage), data, amtToSend);
             data = (uint8_t*)data + amtToSend;
@@ -404,6 +409,9 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
 
             free(packet);
         }
+
+        Assert(i == numPackets);
+        //DebugLogInfo("LONGDATA SENT IN ", i, " PACKET");
     }
 }
 
@@ -492,7 +500,7 @@ void NetworkingEngine::AckMessages() {
     for (auto& c : clients) {
         if (c->connection) {
             auto packets = c->connection->FlushAcksToSend();
-            
+            if (!packets.empty()) DebugLogInfo("There are ", packets.size(), " inbound packets to acknowledge.");
             for (auto& p : packets) {
                 if (status == NetworkStatus::Client)
                     serverSocket->Send(p.first, p.second);
@@ -509,13 +517,34 @@ void NetworkingEngine::AckMessages() {
 void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, AckId* acks, unsigned nAcks) {
     Assert(client && client->connection);
     DebugLogInfo("Handling ackarray with ", nAcks, " acks");
+    //DebugLogInfo("We're currently waiting for: ");
+    for (auto it = client->connection->pendingAcks.begin(); it != client->connection->pendingAcks.end(); it++) DebugLogInfo(it->ackId);
+    
     for (unsigned i = 0; i < nAcks; i++) {
         for (unsigned int j = 0; j < client->connection->pendingAcks.size(); j++) {
+            //DebugLogInfo("Considering ", client->connection->pendingAcks[j].ackId);
             if (client->connection->pendingAcks[j].ackId == acks[i]) {
+                //DebugLogInfo("Found ackId ", acks[i], " will be replaced with ", client->connection->pendingAcks.back().ackId);
                 client->connection->pendingAcks[j] = std::move(client->connection->pendingAcks.back());
                 client->connection->pendingAcks.pop_back();
-                break;
+                Assert(client->connection->pendingAcks[j].ackId != acks[i]);
+                goto found;
             }
+        }
+        /*for (auto it = client->connection->pendingAcks.begin(); it != client->connection->pendingAcks.end(); it++) {
+            if (it->ackId == acks[i]) {
+                DebugLogInfo("Recieved ack for ", it->ackId);
+                client->connection->pendingAcks.erase(it);
+
+                goto found;
+            }
+        }*/
+        DebugLogInfo("Unrecognized ackId from inbound ackarray: ", acks[i]);
+
+        found:;
+
+        for (unsigned j = 0; j < client->connection->pendingAcks.size(); j++) {
+            Assert(client->connection->pendingAcks[j].ackId != acks[i]);
         }
     }
 }
@@ -556,11 +585,14 @@ void NetworkingEngine::ProcessLongMessageFragment(std::shared_ptr<Client>& clien
     Assert(client && client->connection);
     AckId ackId = firstAckId + idOffset;
 
+    //DebugLogInfo("Got long message fragment ", idOffset + 1, "/", nPackets);
+
     if (client->connection->AlreadyRecievedPacket(ackId)) return;
 
     client->connection->AckData(ackId);
     
     if (!client->connection->wipLongMessages.contains(firstAckId)) {
+        DebugLogInfo("Recieving new long message with ", nPackets, " fragments.");
         client->connection->wipLongMessages[firstAckId].firstPacketId = firstAckId;
         client->connection->wipLongMessages[firstAckId].numPackets = nPackets;   
     }
@@ -574,6 +606,7 @@ void NetworkingEngine::ProcessLongMessageFragment(std::shared_ptr<Client>& clien
             for (auto& pkt : client->connection->wipLongMessages[firstAckId].packets)
                 userdata.data.insert(userdata.data.end(), pkt.begin(), pkt.end());
             client->connection->wipLongMessages.erase(firstAckId);
+            DebugLogInfo("Long message with ", nPackets, " fragments completed.");
             onUserdataRecieved->Fire(userdata);
         }
         else {

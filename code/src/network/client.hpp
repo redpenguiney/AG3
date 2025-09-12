@@ -8,10 +8,10 @@
 using AckId = uint32_t;
 
 struct PendingAck {
-    const AckId ackId;
+    AckId ackId;
     double sentTimestamp;
     void* payload; // FREED ON PendingAck DESTRUCTION
-    const unsigned payloadNBytes;
+    unsigned payloadNBytes;
 
     // takes ownership of payload
     PendingAck(const AckId id, double timestamp, void* data, unsigned dataSize) : ackId(id), sentTimestamp(timestamp), payload(data), payloadNBytes(dataSize) {}
@@ -22,9 +22,16 @@ struct PendingAck {
         payload(old.payload), 
         payloadNBytes(old.payloadNBytes) 
     {
+        old.ackId = UINT32_MAX;
         old.payload = nullptr;
     }
-    PendingAck& operator=(PendingAck&&) {
+    PendingAck& operator=(PendingAck&& rhs) {
+        ackId = rhs.ackId;
+        rhs.ackId = UINT32_MAX;
+        sentTimestamp = rhs.sentTimestamp;
+        payload = rhs.payload;
+        rhs.payload = nullptr;
+        payloadNBytes = rhs.payloadNBytes;
         return *this;
     }
     ~PendingAck() { free(payload); }
