@@ -7,6 +7,8 @@
 
 using NetworkTickId = uint16_t;
 
+using SyncId = uint32_t;
+
 // Describes what the process is doing networkwise - hosting a server? being connected to one? or neither?
 enum class NetworkStatus {
 	Server, // the networking engine is hosting a server. 
@@ -27,8 +29,15 @@ struct NetworkUserdata {
 	bool reliable;
 };
 
+struct TransformSyncData {
+	// if the owner is the local machine, then this is the last position we sent out. if not, it's undefined.
 struct TransformSyncSnapshot {
 	glm::dvec3 lastSyncedTransform;
+	// if the owner is the local machine, then this is the last rotation we sent out. if not, it's undefined.
+	glm::quat lastSyncedRotation;
+
+	float priorityAccumulator;
+
 	glm::quat lastSyncedRot;
 	NetworkTickId tick;
 };
@@ -37,6 +46,8 @@ struct TransformSyncData {
 	
 
 	std::shared_ptr<Client> owner;
+
+
 };
 
 class TransformComponent;
@@ -120,9 +131,13 @@ public:
 	// Sends data to server. Client only.
 	void SendData(void* data, size_t nBytes);
 
+	
+	void SyncObjectTransform(std::shared_ptr<GameObject> obj, SyncId name);
+
 	// Sets the network owner of a given gameobject's transform to the given client (which could be the server).
+	// Gameobject must have a transform and a rigidbody.
 	// Server only.
-	void SetNetworkOwner(TransformComponent* transform, std::shared_ptr<Client> client);
+	void SetNetworkOwner(std::shared_ptr<GameObject> obj, std::shared_ptr<Client> client);
 
 private:
 	// Synced transforms owned by the local machine. 
