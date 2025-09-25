@@ -615,6 +615,10 @@ void NetworkingEngine::ProcessLongMessageFragment(std::shared_ptr<Client>& clien
     }
 }
 
+void NetworkingEngine::SyncGameobjects() {
+    for (auto& objectSync: )
+}
+
 NetworkingEngine::NetworkingEngine():
     onConnectionAttemptComplete(Event<ConnectionAttemptResult>::New()),
     onInitialSyncComplete(Event<>::New()),

@@ -3,6 +3,10 @@
 #include "events/event.hpp"
 #include "protocol.hpp"
 
+#include <glm/vec3.hpp>
+
+using NetworkTickId = uint16_t;
+
 // Describes what the process is doing networkwise - hosting a server? being connected to one? or neither?
 enum class NetworkStatus {
 	Server, // the networking engine is hosting a server. 
@@ -23,9 +27,15 @@ struct NetworkUserdata {
 	bool reliable;
 };
 
-struct TransformSyncData {
+struct TransformSyncSnapshot {
 	glm::dvec3 lastSyncedTransform;
 	glm::quat lastSyncedRot;
+	NetworkTickId tick;
+};
+
+struct TransformSyncData {
+	
+
 	std::shared_ptr<Client> owner;
 };
 
@@ -115,6 +125,13 @@ public:
 	void SetNetworkOwner(TransformComponent* transform, std::shared_ptr<Client> client);
 
 private:
+	// Synced transforms owned by the local machine. 
+	// If Client, then we send them to server, if Server, we send them to everyone else.
+	std::vector<> ownedSyncedTransforms;
+
+	// Synced transforms NOT owned by the local machine.
+	// If Client, we just recieve from server, if Server, we not only recieve but also have to forward the data to other clients.
+	std::vector<> recievingSyncedTransforms;
 
 	void ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata);
 
@@ -133,7 +150,7 @@ private:
 	void ProcessShortMessageReliable(std::shared_ptr<Client>& client, AckId ackId, uint8_t* data, unsigned nBytes, bool isUserdata);
 	void ProcessLongMessageFragment(std::shared_ptr<Client>& client, AckId firstAckId, uint16_t idOffset, uint16_t nPackets, uint8_t* data, unsigned nBytes,  bool isUserdata);
 
-	
+	void SyncGameobjects();
 
 	std::vector<std::shared_ptr<Client>> clients;
 
@@ -145,7 +162,7 @@ private:
 	std::string targetConnectionIp = "";
 
 	NetworkStatus status;
-
+	
 	// client <-> server socket.
 	std::optional<Socket> serverSocket;
 

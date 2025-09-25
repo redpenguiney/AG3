@@ -91,4 +91,8 @@ private:
 
     // nullopt if isLocalMachine or the local machine is not directly connected to this client
     std::optional<ConnectionInfo> connection;
+
+    // To avoid jitter we hold sync packets in for a couple ticks.
+    std::vector<> syncJitterBuffer;
+
 };
