@@ -5,9 +5,7 @@
 
 #include <glm/vec3.hpp>
 
-using NetworkTickId = uint16_t;
 
-using SyncId = uint32_t;
 
 // Describes what the process is doing networkwise - hosting a server? being connected to one? or neither?
 enum class NetworkStatus {
@@ -29,27 +27,10 @@ struct NetworkUserdata {
 	bool reliable;
 };
 
-struct TransformSyncData {
-	// if the owner is the local machine, then this is the last position we sent out. if not, it's undefined.
-struct TransformSyncSnapshot {
-	glm::dvec3 lastSyncedTransform;
-	// if the owner is the local machine, then this is the last rotation we sent out. if not, it's undefined.
-	glm::quat lastSyncedRotation;
-
-	float priorityAccumulator;
-
-	glm::quat lastSyncedRot;
-	NetworkTickId tick;
-};
-
-struct TransformSyncData {
-	
-
-	std::shared_ptr<Client> owner;
 
 
-};
 
+class GameObject;
 class TransformComponent;
 
 std::pair<bool, std::optional<std::string>> DefaultConnectionRequestHandler(std::string ipAddress, int port);
@@ -95,6 +76,9 @@ public:
 	// dt should be time since Update() was last called.
 	void Update(float dt);
 
+	std::shared_ptr<Client> GetLocalMachine();
+	std::shared_ptr<Client> GetServer();
+
 	// Returns nullptr if no connected client with given info
 	std::shared_ptr<Client> GetClient(std::string address, int port);
 
@@ -111,6 +95,8 @@ public:
 
 	// fired on client when server has finished syncing all of its stuff with the client.
 	std::shared_ptr<Event<>> onInitialSyncComplete;
+
+	std::shared_ptr<Event<std::shared_ptr<Client>>> onNewClient;
 
 	// fired on client when data from SendData()/SendDataReliable() arrives
 	std::shared_ptr<Event<NetworkUserdata>> onUserdataRecieved;
@@ -131,8 +117,9 @@ public:
 	// Sends data to server. Client only.
 	void SendData(void* data, size_t nBytes);
 
-	
-	void SyncObjectTransform(std::shared_ptr<GameObject> obj, SyncId name);
+	// Informs the networking engine to sync this gameobject's transform using the given sync id.
+		// Defaults to Server being the owner.
+	void SyncObjectTransform(std::shared_ptr<GameObject> obj, SyncId name, bool ackSnapshots = true);
 
 	// Sets the network owner of a given gameobject's transform to the given client (which could be the server).
 	// Gameobject must have a transform and a rigidbody.
@@ -140,13 +127,6 @@ public:
 	void SetNetworkOwner(std::shared_ptr<GameObject> obj, std::shared_ptr<Client> client);
 
 private:
-	// Synced transforms owned by the local machine. 
-	// If Client, then we send them to server, if Server, we send them to everyone else.
-	std::vector<> ownedSyncedTransforms;
-
-	// Synced transforms NOT owned by the local machine.
-	// If Client, we just recieve from server, if Server, we not only recieve but also have to forward the data to other clients.
-	std::vector<> recievingSyncedTransforms;
 
 	void ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata);
 

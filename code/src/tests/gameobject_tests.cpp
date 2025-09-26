@@ -267,7 +267,7 @@ void TestBrickWall()
 
 }
 
-void TestGrassFloor()
+std::shared_ptr<GameObject> TestGrassFloor()
 {
     auto m = CubeMesh();
     auto [grassTextureZ, grassMaterial] = GrassMaterial();
@@ -285,6 +285,8 @@ void TestGrassFloor()
     floor->RawGet<RenderComponent>()->SetColor({ 0.5, 1, 0.5, 1.0 });
     floor->RawGet<RenderComponent>()->SetTextureZ(grassTextureZ);
     floor->name = "ah yes the floor here is made of floor";
+
+    return floor;
 }
 
 inline noise::module::Perlin perlinNoiseGenerator;

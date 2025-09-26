@@ -6,6 +6,7 @@
 
 class Mesh;
 class Material;
+class GameObject;
 
 void TestSkybox();
 
@@ -21,7 +22,7 @@ void MakeFPSTracker();
 void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool physics, glm::vec3 scale = {1, 1, 1});
 void TestSphere(int x, int y, int z, bool physics);
 void TestBrickWall();
-void TestGrassFloor();
+std::shared_ptr<GameObject> TestGrassFloor();
 void TestVoxelTerrain();
 
 void TestPit();

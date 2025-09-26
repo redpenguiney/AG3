@@ -20,8 +20,19 @@ namespace PacketType {
         // ack types
         AckArray = 7, // format : 8 bit packet type, then array of 16 bit packet ids that have been confirmed/acknowledged to be recieved. 
 
+        
+
     };
 }
+
+using AckId = uint32_t;
+//using NetworkTickId = uint16_t;
+using SyncId = uint32_t;
+
+struct TransformSync {
+    glm::dvec3 position;
+    glm::quat rotation;
+};
 
 namespace PacketStructs {
 #pragma pack(push, 1)
@@ -71,5 +82,11 @@ namespace PacketStructs {
 
         LongMessage() = delete;
     };
+
+    struct TransformSyncSnapshot {
+        TransformSync sync;
+        SyncId syncId;
+    };
+
 #pragma pack(pop)
 };

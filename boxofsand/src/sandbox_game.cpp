@@ -6,7 +6,9 @@
 //#include "WinSock2.h"
 #include "boost/asio.hpp"
 #include <tests/graphics_test.hpp>
+#include <tests/gameobject_tests.hpp>
 
+#include "gameobjects/gameobject.hpp"
 
 void GameInit(std::vector<std::string> args) {
 	DebugLogInfo("SANDBOXING? MORE LIKE SANDBAGGING!");
@@ -27,14 +29,19 @@ void GameInit(std::vector<std::string> args) {
 
 	//is_server = !is_server;
 
+	auto testObject = TestGrassFloor();
+
 	if (is_server) {
 		NetworkingEngine::Get().Host();
 
 		NetworkingEngine::Get().onUserdataRecieved->Connect([](NetworkUserdata userdata) {
 			std::string messagestr((const char*)userdata.data.data(), userdata.data.size());
 			DebugLogInfo("RECIEVED FROM CLIENT (", userdata.reliable, " ", userdata.data.size(), "): first ", (int)messagestr[0], " "/*, messagestr*/);
+
 		});
 
+		NetworkingEngine::Get().SyncObjectTransform(testObject, 1);
+		//NetworkingEngine::Get().onNewClient->Connect()
 		//TestGraphics();
 
 		/*Socket* server = new Socket(49000);
@@ -44,22 +51,31 @@ void GameInit(std::vector<std::string> args) {
 			auto packets = server->Recieve();
 			DebugLogInfo("GOT ", packets.size());
 		});		*/	
+
+		GraphicsEngine::Get().preRenderEvent->Connect([testObject](float dt) {
+			testObject->RawGet<TransformComponent>()->SetPos({ sin(dt / 50) * 100, 0, 0 });
+		});
 	}
 	else {
 		NetworkingEngine::Get().Connect("127.0.0.1");
 
-		NetworkingEngine::Get().onConnectionAttemptComplete->Connect([](NetworkingEngine::ConnectionAttemptResult result) {
+		NetworkingEngine::Get().onConnectionAttemptComplete->Connect([testObject](NetworkingEngine::ConnectionAttemptResult result) {
 			Assert(result.successful);
+
+			NetworkingEngine::Get().SyncObjectTransform(testObject, 1);
+
 			//char str[] = "POOPLESNOOT";
 
 			//char str[] = ""
-			std::ifstream file("../resources/bee_move_script.txt");
-			std::stringstream buffer;
-			buffer << file.rdbuf();
-			std::string str = buffer.str();
-			Assert(str.size() > 0);
-			NetworkingEngine::Get().SendDataReliable(str.data(), str.size());
-			DebugLogInfo("SENT ", str.size());
+			//std::ifstream file("../resources/bee_move_script.txt");
+			//std::stringstream buffer;
+			//buffer << file.rdbuf();
+			//std::string str = buffer.str();
+			//Assert(str.size() > 0);
+			//NetworkingEngine::Get().SendDataReliable(str.data(), str.size());
+			//DebugLogInfo("SENT ", str.size());
+
+	 
 		});
 
 		/*Socket* client = new Socket("127.0.0.1", 49000, 49001);

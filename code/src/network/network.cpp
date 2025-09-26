@@ -2,6 +2,7 @@
 #include "debug/assert.hpp"
 #include <utility/utility.hpp>
 #include "packet_types.hpp"
+#include "gameobjects/gameobject.hpp"
 
 const std::vector<std::shared_ptr<Client>>& NetworkingEngine::GetClientList()
 {
@@ -130,6 +131,9 @@ void NetworkingEngine::Update(float dt){
                         newClient->connection->completedHandshake = false;
                         //newClient->connection->pendingAcks.push_back(PendingAck(newClient->connection->GetAvailableAckId(), time, response, size));
                         clients.push_back(newClient);
+
+                        onNewClient->Fire(newClient);
+
                         free(response);
                     }
                     else {
@@ -315,6 +319,22 @@ void NetworkingEngine::Update(float dt){
     }
 }
 
+std::shared_ptr<Client> NetworkingEngine::GetLocalMachine()
+{
+    for (auto& c : clients) {
+        if (c->isLocalMachine) return c;
+    }
+    Assert(false);
+}
+
+std::shared_ptr<Client> NetworkingEngine::GetServer() {
+    Assert(status == NetworkStatus::Client);
+    for (auto& c : clients) {
+        if (c->isServer) return c;
+    }
+    Assert(false);
+}
+
 std::shared_ptr<Client> NetworkingEngine::GetClient(std::string address, int port) {
     for (auto& c : clients) {
         if (c->address == address && c->port == port) {
@@ -350,6 +370,26 @@ void NetworkingEngine::SendData(void* data, size_t nBytes) {
             return;
         }
     }
+}
+
+TransformSync GetNetworkTransform(std::shared_ptr<GameObject>& obj) {
+    auto transform = obj->RawGet<TransformComponent>();
+    return TransformSync{
+        .position = transform->Position(),
+        .rotation = transform->Rotation()
+    };
+}
+
+void NetworkingEngine::SyncObjectTransform(std::shared_ptr<GameObject> obj, SyncId name, bool ackSnapshots) {
+    auto client = GetLocalMachine();
+
+    Assert(client->ownedSyncedTransforms.contains(name) == false);
+    client->ownedSyncedTransforms[name] = TransformSyncInfo{
+        .lastSentTransform = GetNetworkTransform(obj),
+        .priorityAccumulator = INFINITY,
+        .ackTransformSnapshots = ackSnapshots,
+        .gameObject = obj
+    };
 }
 
 void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata)
@@ -577,7 +617,24 @@ void NetworkingEngine::ProcessShortMessageReliable(std::shared_ptr<Client>& clie
 
     }
     else {
+        Assert(nBytes > 0);
+        uint8_t type = data[0];
 
+        if (type == 201) { // then it's transform syncs
+            data++;
+            unsigned bytesLeft = nBytes - 1;
+            auto current = (PacketStructs::TransformSyncSnapshot*)data;
+
+            while (bytesLeft > sizeof(PacketStructs::TransformSyncSnapshot)) {
+                bytesLeft -= sizeof(PacketStructs::TransformSyncSnapshot);
+                auto id = current->syncId;
+                if (client->ownedSyncedTransforms.contains(id)) {
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetPos(current->sync.position);
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetRot(current->sync.rotation);
+                }
+                current++;
+            }
+        }
     }
 }
 
@@ -616,13 +673,56 @@ void NetworkingEngine::ProcessLongMessageFragment(std::shared_ptr<Client>& clien
 }
 
 void NetworkingEngine::SyncGameobjects() {
-    for (auto& objectSync: )
+    auto localMachine = GetLocalMachine();
+    
+    std::vector<std::shared_ptr<Client>> clientsToSyncWith;
+    if (status == NetworkStatus::Client) clientsToSyncWith.push_back(GetServer());
+    else {
+        for (auto& c : clients) {
+            if (!c->isLocalMachine) {
+                clientsToSyncWith.push_back(c);
+            }
+        }
+    }
+
+    constexpr unsigned SYNCS_PER_PACKET = Socket::MAX_PACKET_SIZE / sizeof(PacketStructs::TransformSyncSnapshot);
+
+    auto it = localMachine->ownedSyncedTransforms.begin();
+    void* packet = nullptr;
+    PacketStructs::TransformSyncSnapshot* current = nullptr;
+    unsigned i = 0;
+    while (it != localMachine->ownedSyncedTransforms.end()) {
+        if (!packet || i == SYNCS_PER_PACKET) {
+            if (packet) {
+                for (auto& c : clientsToSyncWith) {
+                    ImplSendDataReliable(packet, 1+SYNCS_PER_PACKET * sizeof(PacketStructs::TransformSyncSnapshot), c, false);
+                }
+                free(packet);
+            }
+
+            void* packet = malloc(1+SYNCS_PER_PACKET * sizeof(PacketStructs::TransformSyncSnapshot));
+            uint8_t magic_sync_number = 201;
+            memcpy(packet, &magic_sync_number, 1);
+            auto current = (PacketStructs::TransformSyncSnapshot*)((uint8_t*)packet+1);
+        }
+
+        PacketStructs::TransformSyncSnapshot snapshot{
+            .sync = GetNetworkTransform(it->second.gameObject)
+        };
+
+        memcpy(current, &snapshot, sizeof(snapshot));
+
+        current++;
+        i++;
+        it++;
+    }
 }
 
 NetworkingEngine::NetworkingEngine():
     onConnectionAttemptComplete(Event<ConnectionAttemptResult>::New()),
     onInitialSyncComplete(Event<>::New()),
-    onUserdataRecieved(Event<NetworkUserdata>::New())
+    onUserdataRecieved(Event<NetworkUserdata>::New()),
+    onNewClient(Event<std::shared_ptr<Client>>::New())
 {
     status = NetworkStatus::Offline;
     serverSocket = std::nullopt;

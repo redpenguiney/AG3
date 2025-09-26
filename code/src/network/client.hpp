@@ -4,8 +4,12 @@
 #include <memory>
 #include <vector>
 #include "protocol.hpp"
+#include <glm/ext/quaternion_float.hpp>
+#include "packet_types.hpp"
 
 using AckId = uint32_t;
+
+class GameObject;
 
 struct PendingAck {
     AckId ackId;
@@ -43,6 +47,20 @@ struct LongMessageReconstruction {
     AckId firstPacketId;
 };
 
+
+
+struct TransformSyncInfo {
+    // if the owner is the local machine, then this is the last transform we sent out. if not, it's undefined.
+    TransformSync lastSentTransform;
+
+    float priorityAccumulator;
+
+    // If an object is always in motion, no point wasting bandwidth on acks
+    bool ackTransformSnapshots = true;
+
+    std::shared_ptr<GameObject> gameObject;
+};
+
 class ConnectionInfo {
 public:
     double lastMessageTime; // since epoch
@@ -63,6 +81,8 @@ public:
     void ExpireRecievedPackets();
     bool AlreadyRecievedPacket(AckId ackId);
 
+    //void RecieveTransform(TransformSyncSnapshot snapshot);
+
 private:
     std::vector<AckId> acksToSend;
 
@@ -70,8 +90,14 @@ private:
     // Value is the time of recieving
     std::unordered_map<AckId, double> recievedPackets;
 
+    // To avoid jitter we hold sync packets in for a couple ticks.
+    //std::vector<TransformSyncSnapshot> syncJitterBuffer;
+
     // How long we remember ackIds for recieved packets 
     static constexpr double PACKET_EXPIRATION_TIME = 300.0f;
+
+    //static constexpr double JITTER_BUFFER_HOLD_TICKS = 
+
 };
 
 class Client {
@@ -92,7 +118,7 @@ private:
     // nullopt if isLocalMachine or the local machine is not directly connected to this client
     std::optional<ConnectionInfo> connection;
 
-    // To avoid jitter we hold sync packets in for a couple ticks.
-    std::vector<> syncJitterBuffer;
+    // will always be empty if the local machine is not directly connected to this client 
+    std::unordered_map<SyncId, TransformSyncInfo> ownedSyncedTransforms;
 
 };
