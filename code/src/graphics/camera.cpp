@@ -5,7 +5,7 @@
 #include "glm/gtx/string_cast.hpp"
 
 Camera::Camera() {
-    fieldOfView = 70;
+
 }
 
 

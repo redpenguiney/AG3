@@ -89,6 +89,8 @@ void NetworkingEngine::Update(float dt){
 
     // Handle connection requests
     if (status == NetworkStatus::Server) {
+        SyncGameobjects();
+
         auto packets = serverSocket->Recieve();
 
         for (auto& p : packets) {
@@ -281,6 +283,8 @@ void NetworkingEngine::Update(float dt){
         }
     }
     else if (status == NetworkStatus::Client) {
+        SyncGameobjects();
+
         auto packets = serverSocket->Recieve();
         for (auto& p : packets) {
             Assert(p.data.size() > 0);
@@ -390,6 +394,11 @@ void NetworkingEngine::SyncObjectTransform(std::shared_ptr<GameObject> obj, Sync
         .ackTransformSnapshots = ackSnapshots,
         .gameObject = obj
     };
+}
+
+void NetworkingEngine::SetNetworkOwner(std::shared_ptr<GameObject> obj, std::shared_ptr<Client> client) {
+
+    Assert(false); // TODO
 }
 
 void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata)
@@ -567,7 +576,6 @@ void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, AckId* a
                 //DebugLogInfo("Found ackId ", acks[i], " will be replaced with ", client->connection->pendingAcks.back().ackId);
                 client->connection->pendingAcks[j] = std::move(client->connection->pendingAcks.back());
                 client->connection->pendingAcks.pop_back();
-                Assert(client->connection->pendingAcks[j].ackId != acks[i]);
                 goto found;
             }
         }
@@ -604,6 +612,7 @@ void NetworkingEngine::ProcessShortMessage(std::shared_ptr<Client>& client, uint
 void NetworkingEngine::ProcessShortMessageReliable(std::shared_ptr<Client>& client, AckId ackId, uint8_t* data, unsigned nBytes, bool isUserdata) {
     Assert(client && client->connection);
 
+    DebugLogInfo("Short reliable recieved.");
     if (client->connection->AlreadyRecievedPacket(ackId)) return;
 
     client->connection->AckData(ackId);
@@ -621,6 +630,7 @@ void NetworkingEngine::ProcessShortMessageReliable(std::shared_ptr<Client>& clie
         uint8_t type = data[0];
 
         if (type == 201) { // then it's transform syncs
+            DebugLogInfo("Transform sync recieved;");
             data++;
             unsigned bytesLeft = nBytes - 1;
             auto current = (PacketStructs::TransformSyncSnapshot*)data;
@@ -679,11 +689,14 @@ void NetworkingEngine::SyncGameobjects() {
     if (status == NetworkStatus::Client) clientsToSyncWith.push_back(GetServer());
     else {
         for (auto& c : clients) {
-            if (!c->isLocalMachine) {
+            if (!c->isLocalMachine && c->connection && c->connection->completedHandshake) {
                 clientsToSyncWith.push_back(c);
             }
         }
     }
+
+    //DebugLogInfo(clientsToSyncWith.size(), " ", localMachine->ownedSyncedTransforms.size());
+    if (clientsToSyncWith.empty()) return;
 
     constexpr unsigned SYNCS_PER_PACKET = Socket::MAX_PACKET_SIZE / sizeof(PacketStructs::TransformSyncSnapshot);
 
@@ -691,23 +704,32 @@ void NetworkingEngine::SyncGameobjects() {
     void* packet = nullptr;
     PacketStructs::TransformSyncSnapshot* current = nullptr;
     unsigned i = 0;
-    while (it != localMachine->ownedSyncedTransforms.end()) {
-        if (!packet || i == SYNCS_PER_PACKET) {
+    while (true) {
+        if (!packet || i == SYNCS_PER_PACKET || it == localMachine->ownedSyncedTransforms.end()) {
             if (packet) {
                 for (auto& c : clientsToSyncWith) {
                     ImplSendDataReliable(packet, 1+SYNCS_PER_PACKET * sizeof(PacketStructs::TransformSyncSnapshot), c, false);
+                    DebugLogInfo("OK YAY");
                 }
                 free(packet);
             }
 
-            void* packet = malloc(1+SYNCS_PER_PACKET * sizeof(PacketStructs::TransformSyncSnapshot));
+            packet = malloc(1+SYNCS_PER_PACKET * sizeof(PacketStructs::TransformSyncSnapshot));
+            Assert(packet);
             uint8_t magic_sync_number = 201;
             memcpy(packet, &magic_sync_number, 1);
-            auto current = (PacketStructs::TransformSyncSnapshot*)((uint8_t*)packet+1);
+            current = (PacketStructs::TransformSyncSnapshot*)((uint8_t*)packet+1);
+
+            if (it == localMachine->ownedSyncedTransforms.end()) {
+                free(packet);
+                break;
+            }
         }
 
+
         PacketStructs::TransformSyncSnapshot snapshot{
-            .sync = GetNetworkTransform(it->second.gameObject)
+            .sync = GetNetworkTransform(it->second.gameObject),
+            .syncId = it->first
         };
 
         memcpy(current, &snapshot, sizeof(snapshot));

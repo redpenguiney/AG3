@@ -24,10 +24,11 @@ void GameInit(std::vector<std::string> args) {
 
 	if (!headless) {
 		BasicRenderer::Setup();
+		TestStationaryPointlight();
 		GraphicsEngine::Get().SetDebugFreecamEnabled(true);
 	}
 
-	//is_server = !is_server;
+	is_server = !is_server;
 
 	auto testObject = TestGrassFloor();
 
@@ -53,7 +54,8 @@ void GameInit(std::vector<std::string> args) {
 		});		*/	
 
 		GraphicsEngine::Get().preRenderEvent->Connect([testObject](float dt) {
-			testObject->RawGet<TransformComponent>()->SetPos({ sin(dt / 50) * 100, 0, 0 });
+			double x = sin(GraphicsEngine::Get().shaderTime / 10) * 100;
+			testObject->RawGet<TransformComponent>()->SetPos({x , 0, 0 });
 		});
 	}
 	else {

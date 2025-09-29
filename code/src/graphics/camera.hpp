@@ -1,9 +1,14 @@
-#include "glm/ext.hpp"
+#pragma once
+#include "glm/vec3.hpp"
+#include <glm/ext/quaternion_float.hpp>
+
+#undef near
+#undef far
 
 class Camera {
     public: 
     // in degrees
-    float fieldOfView;
+    float fieldOfView = 70.0f;
     float near = 0.1f;
     float far = 16384.0f;
     glm::dvec3 position;
