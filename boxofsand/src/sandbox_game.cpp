@@ -28,11 +28,13 @@ void GameInit(std::vector<std::string> args) {
 		GraphicsEngine::Get().SetDebugFreecamEnabled(true);
 	}
 
-	is_server = !is_server;
+	//is_server = !is_server;
 
 	auto testObject = TestGrassFloor();
 
 	if (is_server) {
+		TestSkybox();
+
 		NetworkingEngine::Get().Host();
 
 		NetworkingEngine::Get().onUserdataRecieved->Connect([](NetworkUserdata userdata) {

@@ -162,6 +162,7 @@ void NetworkingEngine::Update(float dt){
 
                 DebugLogInfo("Completed connection handshake.");
 
+                client->connection->completedHandshake = true;
                 client->connection->lastMessageTime = p.timestamp;
 
             }
@@ -332,7 +333,8 @@ std::shared_ptr<Client> NetworkingEngine::GetLocalMachine()
 }
 
 std::shared_ptr<Client> NetworkingEngine::GetServer() {
-    Assert(status == NetworkStatus::Client);
+    //Assert(status == NetworkStatus::Client);
+    //if (status == NetworkStatus::Server) return GetLocalMachine();
     for (auto& c : clients) {
         if (c->isServer) return c;
     }
@@ -385,10 +387,11 @@ TransformSync GetNetworkTransform(std::shared_ptr<GameObject>& obj) {
 }
 
 void NetworkingEngine::SyncObjectTransform(std::shared_ptr<GameObject> obj, SyncId name, bool ackSnapshots) {
-    auto client = GetLocalMachine();
+    //auto client = GetLocalMachine();
+    auto owner = GetServer();
 
-    Assert(client->ownedSyncedTransforms.contains(name) == false);
-    client->ownedSyncedTransforms[name] = TransformSyncInfo{
+    Assert(owner->ownedSyncedTransforms.contains(name) == false);
+    owner->ownedSyncedTransforms[name] = TransformSyncInfo{
         .lastSentTransform = GetNetworkTransform(obj),
         .priorityAccumulator = INFINITY,
         .ackTransformSnapshots = ackSnapshots,
@@ -630,7 +633,7 @@ void NetworkingEngine::ProcessShortMessageReliable(std::shared_ptr<Client>& clie
         uint8_t type = data[0];
 
         if (type == 201) { // then it's transform syncs
-            DebugLogInfo("Transform sync recieved;");
+            DebugLogInfo("Transform sync recieved; ", nBytes);
             data++;
             unsigned bytesLeft = nBytes - 1;
             auto current = (PacketStructs::TransformSyncSnapshot*)data;
@@ -639,8 +642,12 @@ void NetworkingEngine::ProcessShortMessageReliable(std::shared_ptr<Client>& clie
                 bytesLeft -= sizeof(PacketStructs::TransformSyncSnapshot);
                 auto id = current->syncId;
                 if (client->ownedSyncedTransforms.contains(id)) {
+                    DebugLogInfo("APplying transform ", id);
                     client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetPos(current->sync.position);
                     client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetRot(current->sync.rotation);
+                }
+                else {
+                    DebugLogInfo("Unrecognized transform sync name ", id);
                 }
                 current++;
             }
@@ -733,6 +740,7 @@ void NetworkingEngine::SyncGameobjects() {
         };
 
         memcpy(current, &snapshot, sizeof(snapshot));
+        DebugLogInfo("Prepared snapshot");
 
         current++;
         i++;
