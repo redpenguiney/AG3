@@ -53,12 +53,19 @@ struct TransformSyncInfo {
     // if the owner is the local machine, then this is the last transform we sent out. if not, it's undefined.
     TransformSync lastSentTransform;
 
+    // like lastSentTransform. Nullopt if no rigidbody.
+    std::optional<RigidbodySync> lastSentRigidbody;
+
     float priorityAccumulator;
 
-    // If an object is always in motion, no point wasting bandwidth on acks
+    // If an object is always in motion, then there's no point wasting bandwidth on acks since by the time it's resent that data will be irrelevant
     bool ackTransformSnapshots = true;
 
     std::shared_ptr<GameObject> gameObject;
+
+    // Network tick in here is on a different clock from the network engine, it's on the owner's clock.
+    // std::nullopt if we haven't recieved yet or if the owner is the local machine.
+    std::optional<NetworkTickId> recievedDataTick = std::nullopt;
 };
 
 class ConnectionInfo {
@@ -118,7 +125,9 @@ private:
     // nullopt if isLocalMachine or the local machine is not directly connected to this client
     std::optional<ConnectionInfo> connection;
 
-    // will always be empty if the local machine is not directly connected to this client 
+    // will always be empty if the local machine is not directly connected to this client.
+    // If the server is acting as a medium (like if a client owns an object but is sending the transform to other non-server 
+        // clients via the server), then the recieving clients will just think the server owns the object. 
     std::unordered_map<SyncId, TransformSyncInfo> ownedSyncedTransforms;
 
 };

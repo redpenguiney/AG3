@@ -55,10 +55,12 @@ void GameInit(std::vector<std::string> args) {
 			DebugLogInfo("GOT ", packets.size());
 		});		*/	
 
-		GraphicsEngine::Get().preRenderEvent->Connect([testObject](float dt) {
-			double x = sin(GraphicsEngine::Get().shaderTime / 10) * 100;
-			testObject->RawGet<TransformComponent>()->SetPos({x , 0, 0 });
-		});
+		//GraphicsEngine::Get().preRenderEvent->Connect([testObject](float dt) {
+			//double x = sin(GraphicsEngine::Get().shaderTime / 10) * 100;
+			//testObject->RawGet<TransformComponent>()->SetPos({x , 0, 0 });
+		//});
+
+		TestCubeArray({2, 2, 2 }, { 0, 0, 0 }, { 2, 2, 2 }, true, { 1, 1, 1 }, true);
 	}
 	else {
 		NetworkingEngine::Get().Connect("127.0.0.1");
@@ -79,7 +81,8 @@ void GameInit(std::vector<std::string> args) {
 			//NetworkingEngine::Get().SendDataReliable(str.data(), str.size());
 			//DebugLogInfo("SENT ", str.size());
 
-	 
+			TestCubeArray({ 3, 3, 3 }, { 4, 4, 4 }, { 2, 2, 2 }, true, { 1, 1, 1 }, true);
+
 		});
 
 		/*Socket* client = new Socket("127.0.0.1", 49000, 49001);
@@ -87,6 +90,8 @@ void GameInit(std::vector<std::string> args) {
 			char data[3] = "HI";
 			client->Send(data, 3);
 		});*/
+
+
 	}
 	//using namespace boost::asio;
 

@@ -4,7 +4,7 @@
 #include <physics/pengine.hpp>
 #include <conglomerates/gui.hpp>
 #include <conglomerates/skybox_factory.cpp>
-
+#include "network/network.hpp"
 #include "noise/noise.h"
 
 void TestSkybox() {
@@ -120,11 +120,13 @@ void MakeFPSTracker()
     });
 }
 
-void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool physics, glm::vec3 size)
+void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool physics, glm::vec3 size, bool networked)
 {
     auto m = CubeMesh();
 
     int nObjs = 0;
+
+    int syncId = 19999;
     for (unsigned x = 0; x < dim.x; x++) {
         for (unsigned y = 0; y < dim.y; y++) {
             for (unsigned z = 0; z < dim.z; z++) {
@@ -149,8 +151,13 @@ void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool phy
                 ////goWeakPtr = g;
                 //nObjs++;
 
+
                 if (physics) {
                     g->RawGet<RigidbodyComponent>()->SetMass(1.0, *g->RawGet<TransformComponent>());
+                }
+
+                if (networked) {
+                    NetworkingEngine::Get().SyncObjectTransform(g, syncId++, false);
                 }
 
     //            g->rigidbodyComponent->SetMass(5.0, *g->transformComponent);

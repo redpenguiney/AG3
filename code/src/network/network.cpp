@@ -87,6 +87,8 @@ void NetworkingEngine::Update(float dt){
 
     auto time = Time();
 
+    currentTick++;
+
     // Handle connection requests
     if (status == NetworkStatus::Server) {
         SyncGameobjects();
@@ -98,6 +100,11 @@ void NetworkingEngine::Update(float dt){
             auto packetType = (uint8_t*)p.data.data();
             bool isUserdata = (*packetType & 0b10000000) != 0;
             *packetType &= 0b01111111;
+
+            if (auto client = GetClient(p.originAddress, p.originPort)) {
+                client->connection->lastMessageTime = p.timestamp;
+            }
+
             if (*packetType == PacketType::ConnectionRequest) {
 
                 // Make sure client isn't already connected; 
@@ -292,6 +299,8 @@ void NetworkingEngine::Update(float dt){
 
             if (p.originAddress != targetConnectionIp) continue;
 
+            GetServer()->connection->lastMessageTime = p.timestamp;
+
             auto packetType = (uint8_t*)p.data.data();
             bool isUserdata = (*packetType & 0b10000000) != 0;
             *packetType &= 0b01111111;
@@ -330,6 +339,7 @@ std::shared_ptr<Client> NetworkingEngine::GetLocalMachine()
         if (c->isLocalMachine) return c;
     }
     Assert(false);
+    return nullptr;
 }
 
 std::shared_ptr<Client> NetworkingEngine::GetServer() {
@@ -339,6 +349,7 @@ std::shared_ptr<Client> NetworkingEngine::GetServer() {
         if (c->isServer) return c;
     }
     Assert(false);
+    return nullptr;
 }
 
 std::shared_ptr<Client> NetworkingEngine::GetClient(std::string address, int port) {
@@ -386,6 +397,14 @@ TransformSync GetNetworkTransform(std::shared_ptr<GameObject>& obj) {
     };
 }
 
+RigidbodySync GetNetworkRigidbody(std::shared_ptr<GameObject>& obj) {
+    auto rigidbody = obj->RawGet<RigidbodyComponent>();
+    return RigidbodySync {
+        .velocity = rigidbody->velocity,
+        .angularVelocity = rigidbody->angularVelocity
+    };
+}
+
 void NetworkingEngine::SyncObjectTransform(std::shared_ptr<GameObject> obj, SyncId name, bool ackSnapshots) {
     //auto client = GetLocalMachine();
     auto owner = GetServer();
@@ -393,6 +412,7 @@ void NetworkingEngine::SyncObjectTransform(std::shared_ptr<GameObject> obj, Sync
     Assert(owner->ownedSyncedTransforms.contains(name) == false);
     owner->ownedSyncedTransforms[name] = TransformSyncInfo{
         .lastSentTransform = GetNetworkTransform(obj),
+        .lastSentRigidbody = obj->MaybeRawGet<RigidbodyComponent>() ? std::optional(GetNetworkRigidbody(obj)) : std::nullopt,
         .priorityAccumulator = INFINITY,
         .ackTransformSnapshots = ackSnapshots,
         .gameObject = obj
@@ -407,7 +427,7 @@ void NetworkingEngine::SetNetworkOwner(std::shared_ptr<GameObject> obj, std::sha
 void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata)
 {
     Assert(!destination->isLocalMachine);
-    if (status == NetworkStatus::Client) {
+    if (status == NetworkStatus::Client || status == NetworkStatus::ClientConnecting) {
         Assert(destination->isServer);
     }
     else Assert(status == NetworkStatus::Server);
@@ -424,8 +444,12 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
 
         destination->connection->pendingAcks.emplace_back(packet->ackId, Time(), payload, nBytes);
         memcpy((uint8_t*)packet + sizeof(PacketStructs::ShortMessageReliable), data, nBytes);
-        serverSocket->Send(packet, nBytes + sizeof(PacketStructs::ShortMessageReliable));
-
+        if (status == NetworkStatus::Client || status == NetworkStatus::ClientConnecting) {
+            serverSocket->Send(packet, nBytes + sizeof(PacketStructs::ShortMessageReliable));
+        }
+        else {
+            serverSocket->Send(destination->address, destination->port, packet, nBytes + sizeof(PacketStructs::ShortMessageReliable));
+        }
         free(packet);
         // don't free payload
     }
@@ -457,8 +481,12 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
            
             memcpy((uint8_t*)packet + sizeof(PacketStructs::LongMessage), data, amtToSend);
             data = (uint8_t*)data + amtToSend;
-            serverSocket->Send(packet, amtToSend + sizeof(PacketStructs::LongMessage));
-
+            if (status == NetworkStatus::Client || status == NetworkStatus::ClientConnecting) {
+                serverSocket->Send(packet, amtToSend + sizeof(PacketStructs::LongMessage));
+            }
+            else {
+                serverSocket->Send(destination->address, destination->port, packet, amtToSend + sizeof(PacketStructs::LongMessage));
+            }
             free(packet);
         }
 
@@ -470,7 +498,7 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
 void NetworkingEngine::ImplSendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata) {
     Assert(nBytes <= 500);
     Assert(!destination->isLocalMachine);
-    if (status == NetworkStatus::Client) {
+    if (status == NetworkStatus::Client || status == NetworkStatus::ClientConnecting) {
         Assert(destination->isServer);
     }
     else Assert(status == NetworkStatus::Server);
@@ -480,8 +508,13 @@ void NetworkingEngine::ImplSendData(void* data, size_t nBytes, std::shared_ptr<C
     if (isUserdata)
         packet->type |= 0b10000000;
     memcpy(packet + sizeof(packet->type), data, nBytes);
-    serverSocket->Send(packet, nBytes + sizeof(PacketStructs::ShortMessage));
 
+    if (status == NetworkStatus::Client || status == NetworkStatus::ClientConnecting) {
+        serverSocket->Send(packet, nBytes + sizeof(PacketStructs::ShortMessage));
+    }
+    else {
+        serverSocket->Send(destination->address, destination->port, packet, nBytes + sizeof(PacketStructs::ShortMessage));
+    }
     free(packet);
 }
 
@@ -608,7 +641,16 @@ void NetworkingEngine::ProcessShortMessage(std::shared_ptr<Client>& client, uint
         onUserdataRecieved->Fire(userdata);
     }
     else {
+        Assert(nBytes > 0);
+        uint8_t type = data[0];
 
+        if (type == TRANSFORM_SYNC_PACKET_IDENTIFIER) { // then it's transform syncs
+            HandleTransformSyncPacket(client, reinterpret_cast<PacketStructs::TransformSyncPacket*>(data), (nBytes - sizeof(PacketStructs::TransformSyncPacket)) / sizeof(PacketStructs::TransformSyncSnapshot));
+
+        }
+        else if (type == RIGIDBODY_SYNC_PACKET_IDENTIFIER) {
+            HandleRigidbodySyncPacket(client, reinterpret_cast<PacketStructs::RigidbodySyncPacket*>(data), (nBytes - sizeof(PacketStructs::RigidbodySyncPacket)) / sizeof(PacketStructs::RigidbodySyncSnapshot));
+        }
     }
 }
 
@@ -631,26 +673,12 @@ void NetworkingEngine::ProcessShortMessageReliable(std::shared_ptr<Client>& clie
     else {
         Assert(nBytes > 0);
         uint8_t type = data[0];
-
-        if (type == 201) { // then it's transform syncs
-            DebugLogInfo("Transform sync recieved; ", nBytes);
-            data++;
-            unsigned bytesLeft = nBytes - 1;
-            auto current = (PacketStructs::TransformSyncSnapshot*)data;
-
-            while (bytesLeft > sizeof(PacketStructs::TransformSyncSnapshot)) {
-                bytesLeft -= sizeof(PacketStructs::TransformSyncSnapshot);
-                auto id = current->syncId;
-                if (client->ownedSyncedTransforms.contains(id)) {
-                    DebugLogInfo("APplying transform ", id);
-                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetPos(current->sync.position);
-                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetRot(current->sync.rotation);
-                }
-                else {
-                    DebugLogInfo("Unrecognized transform sync name ", id);
-                }
-                current++;
-            }
+        if (type == TRANSFORM_SYNC_PACKET_IDENTIFIER) { // then it's transform syncs
+            HandleTransformSyncPacket(client, reinterpret_cast<PacketStructs::TransformSyncPacket*>(data), (nBytes - sizeof(PacketStructs::TransformSyncPacket)) / sizeof(PacketStructs::TransformSyncSnapshot));
+            
+        }
+        else if (type == RIGIDBODY_SYNC_PACKET_IDENTIFIER) {
+            HandleRigidbodySyncPacket(client, reinterpret_cast<PacketStructs::RigidbodySyncPacket*>(data), (nBytes - sizeof(PacketStructs::RigidbodySyncPacket)) / sizeof(PacketStructs::RigidbodySyncSnapshot));
         }
     }
 }
@@ -705,46 +733,261 @@ void NetworkingEngine::SyncGameobjects() {
     //DebugLogInfo(clientsToSyncWith.size(), " ", localMachine->ownedSyncedTransforms.size());
     if (clientsToSyncWith.empty()) return;
 
-    constexpr unsigned SYNCS_PER_PACKET = Socket::MAX_PACKET_SIZE / sizeof(PacketStructs::TransformSyncSnapshot);
+    unsigned maxPacketsPerFrame = 512; // TODO: SET DYNAMICALLY BASED ON INTELLIGENT CRITERIA
+
+    constexpr unsigned TRANSFORM_SYNCS_PER_PACKET = Socket::MAX_PACKET_SIZE / sizeof(PacketStructs::TransformSyncSnapshot);
+    constexpr unsigned RIGIDBODY_SYNCS_PER_PACKET = Socket::MAX_PACKET_SIZE / sizeof(PacketStructs::RigidbodySyncSnapshot);
+    size_t transformPacketSize = sizeof(PacketStructs::TransformSyncPacket) + TRANSFORM_SYNCS_PER_PACKET * sizeof(PacketStructs::TransformSyncSnapshot);
+    size_t rigidbodyPacketSize = sizeof(PacketStructs::RigidbodySyncPacket) + RIGIDBODY_SYNCS_PER_PACKET * sizeof(PacketStructs::RigidbodySyncSnapshot);
 
     auto it = localMachine->ownedSyncedTransforms.begin();
-    void* packet = nullptr;
-    PacketStructs::TransformSyncSnapshot* current = nullptr;
-    unsigned i = 0;
-    while (true) {
-        if (!packet || i == SYNCS_PER_PACKET || it == localMachine->ownedSyncedTransforms.end()) {
-            if (packet) {
-                for (auto& c : clientsToSyncWith) {
-                    ImplSendDataReliable(packet, 1+SYNCS_PER_PACKET * sizeof(PacketStructs::TransformSyncSnapshot), c, false);
-                    DebugLogInfo("OK YAY");
-                }
-                free(packet);
+
+    void* ackedTransformPacket = nullptr;
+    void* transformPacket = nullptr;
+    void* ackedRigidbodyPacket = nullptr;
+    void* rigidbodyPacket = nullptr;
+
+    unsigned nAckedTransforms = 0;
+    unsigned nTransforms = 0;
+    unsigned nAckedRigidbodies = 0;
+    unsigned nRigidbodies = 0;
+
+    for (auto& [syncId, syncInfo] : localMachine->ownedSyncedTransforms) {
+        if (syncInfo.ackTransformSnapshots && syncInfo.lastSentRigidbody.has_value()) {
+            if (!ackedRigidbodyPacket) {
+                ackedRigidbodyPacket = malloc(rigidbodyPacketSize);
+                Assert(ackedRigidbodyPacket);
+                ((PacketStructs::RigidbodySyncPacket*)ackedRigidbodyPacket)->identifier = RIGIDBODY_SYNC_PACKET_IDENTIFIER;
+                ((PacketStructs::RigidbodySyncPacket*)ackedRigidbodyPacket)->tick = currentTick;
+
             }
 
-            packet = malloc(1+SYNCS_PER_PACKET * sizeof(PacketStructs::TransformSyncSnapshot));
-            Assert(packet);
-            uint8_t magic_sync_number = 201;
-            memcpy(packet, &magic_sync_number, 1);
-            current = (PacketStructs::TransformSyncSnapshot*)((uint8_t*)packet+1);
+            PacketStructs::RigidbodySyncSnapshot snapshot{
+            .transform = GetNetworkTransform(it->second.gameObject),
+            .rigidbody = GetNetworkRigidbody(it->second.gameObject),
+            .syncId = it->first,
+            };
 
-            if (it == localMachine->ownedSyncedTransforms.end()) {
-                free(packet);
-                break;
+            memcpy(reinterpret_cast<uint8_t*>(ackedRigidbodyPacket) + sizeof(PacketStructs::RigidbodySyncPacket) + nAckedRigidbodies * sizeof(PacketStructs::RigidbodySyncSnapshot), &snapshot, sizeof(snapshot));
+            nAckedRigidbodies++;
+
+            if (nAckedRigidbodies == RIGIDBODY_SYNCS_PER_PACKET) {
+                for (auto& c : clientsToSyncWith) {
+                    ImplSendDataReliable(ackedRigidbodyPacket, rigidbodyPacketSize, c, false);
+                }
+
+                free(ackedRigidbodyPacket);
+                ackedRigidbodyPacket = nullptr;
+                nAckedRigidbodies = 0;
+            }
+        }
+        else if (syncInfo.ackTransformSnapshots) {
+            if (!ackedTransformPacket) {
+                ackedTransformPacket = malloc(transformPacketSize);
+                Assert(ackedTransformPacket);
+                ((PacketStructs::TransformSyncPacket*)ackedTransformPacket)->identifier = TRANSFORM_SYNC_PACKET_IDENTIFIER;
+                ((PacketStructs::TransformSyncPacket*)ackedTransformPacket)->tick = currentTick;
+            }
+
+            PacketStructs::TransformSyncSnapshot snapshot{
+            .transform = GetNetworkTransform(it->second.gameObject),
+            .syncId = it->first,
+            };
+
+            memcpy(reinterpret_cast<uint8_t*>(ackedTransformPacket) + sizeof(PacketStructs::TransformSyncPacket) + nAckedTransforms * sizeof(PacketStructs::TransformSyncSnapshot), &snapshot, sizeof(snapshot));
+            nAckedTransforms++;
+
+            if (nAckedTransforms == TRANSFORM_SYNCS_PER_PACKET) {
+                for (auto& c : clientsToSyncWith) {
+                    ImplSendDataReliable(ackedTransformPacket, transformPacketSize, c, false);
+                }
+
+                free(ackedTransformPacket);
+                ackedTransformPacket = nullptr;
+                nAckedTransforms = 0;
+            }
+        }
+        else if (syncInfo.lastSentRigidbody.has_value()) {
+            if (!rigidbodyPacket) {
+                rigidbodyPacket = malloc(rigidbodyPacketSize);
+                Assert(rigidbodyPacket);
+                ((PacketStructs::RigidbodySyncPacket*)rigidbodyPacket)->identifier = RIGIDBODY_SYNC_PACKET_IDENTIFIER;
+                ((PacketStructs::RigidbodySyncPacket*)rigidbodyPacket)->tick = currentTick;
+            }
+
+            PacketStructs::RigidbodySyncSnapshot snapshot{
+            .transform = GetNetworkTransform(it->second.gameObject),
+            .rigidbody = GetNetworkRigidbody(it->second.gameObject),
+            .syncId = it->first,
+            };
+
+            memcpy(reinterpret_cast<uint8_t*>(rigidbodyPacket) + sizeof(PacketStructs::RigidbodySyncPacket) + nRigidbodies * sizeof(PacketStructs::RigidbodySyncSnapshot), &snapshot, sizeof(snapshot));
+            nRigidbodies++;
+
+            if (nRigidbodies == RIGIDBODY_SYNCS_PER_PACKET) {
+                for (auto& c : clientsToSyncWith) {
+                    ImplSendDataReliable(rigidbodyPacket, rigidbodyPacketSize, c, false);
+                }
+
+                free(rigidbodyPacket);
+                rigidbodyPacket = nullptr;
+                nRigidbodies = 0;
+            }
+        }
+        else {
+            if (!transformPacket) {
+                transformPacket = malloc(transformPacketSize);
+                Assert(transformPacket);
+                ((PacketStructs::TransformSyncPacket*)transformPacket)->identifier = TRANSFORM_SYNC_PACKET_IDENTIFIER;
+                ((PacketStructs::TransformSyncPacket*)transformPacket)->tick = currentTick;
+            }
+
+            PacketStructs::TransformSyncSnapshot snapshot{
+            .transform = GetNetworkTransform(it->second.gameObject),
+            .syncId = it->first,
+            };
+
+            memcpy(reinterpret_cast<uint8_t*>(transformPacket) + sizeof(PacketStructs::TransformSyncPacket) * nTransforms * sizeof(PacketStructs::TransformSyncSnapshot), &snapshot, sizeof(snapshot));
+            nTransforms++;
+
+            if (nTransforms == TRANSFORM_SYNCS_PER_PACKET) {
+                for (auto& c : clientsToSyncWith) {
+                    ImplSendData(transformPacket, transformPacketSize, c, false);
+                }
+
+                free(transformPacket);
+                transformPacket = nullptr;
+                nTransforms = 0;
             }
         }
 
 
-        PacketStructs::TransformSyncSnapshot snapshot{
-            .sync = GetNetworkTransform(it->second.gameObject),
-            .syncId = it->first
-        };
+        //PacketStructs::TransformSyncSnapshot snapshot{
+            //.transform = GetNetworkTransform(it->second.gameObject),
+            //.syncId = it->first
+        //};
 
-        memcpy(current, &snapshot, sizeof(snapshot));
-        DebugLogInfo("Prepared snapshot");
+        //memcpy(current, &snapshot, sizeof(snapshot));
+        //DebugLogInfo("Prepared snapshot");
 
-        current++;
-        i++;
-        it++;
+        //current++;
+        //i++;
+        //it++;
+    }
+
+    if (ackedRigidbodyPacket) {
+        for (unsigned i = nAckedRigidbodies; i < RIGIDBODY_SYNCS_PER_PACKET; i++) {
+            memset(reinterpret_cast<uint8_t*>(ackedRigidbodyPacket) + sizeof(PacketStructs::RigidbodySyncPacket) * nAckedRigidbodies * sizeof(PacketStructs::RigidbodySyncSnapshot), 0, sizeof(PacketStructs::RigidbodySyncSnapshot));
+        }
+
+        for (auto& c : clientsToSyncWith) {
+            ImplSendDataReliable(ackedRigidbodyPacket, rigidbodyPacketSize, c, false);
+        }
+
+        free(ackedRigidbodyPacket);
+    }
+
+    if (rigidbodyPacket) {
+        for (unsigned i = nRigidbodies; i < RIGIDBODY_SYNCS_PER_PACKET; i++) {
+            memset(reinterpret_cast<uint8_t*>(rigidbodyPacket) + sizeof(PacketStructs::RigidbodySyncPacket) * nRigidbodies * sizeof(PacketStructs::RigidbodySyncSnapshot), 0, sizeof(PacketStructs::RigidbodySyncSnapshot));
+        }
+
+        for (auto& c : clientsToSyncWith) {
+            ImplSendDataReliable(rigidbodyPacket, rigidbodyPacketSize, c, false);
+        }
+
+        free(rigidbodyPacket);
+    }
+
+    if (ackedTransformPacket) {
+        for (unsigned i = nAckedTransforms; i < TRANSFORM_SYNCS_PER_PACKET; i++) {
+            memset(reinterpret_cast<uint8_t*>(ackedTransformPacket) + sizeof(PacketStructs::TransformSyncPacket) * nAckedTransforms * sizeof(PacketStructs::TransformSyncSnapshot), 0, sizeof(PacketStructs::TransformSyncSnapshot));
+        }
+
+        for (auto& c : clientsToSyncWith) {
+            ImplSendDataReliable(ackedTransformPacket, transformPacketSize, c, false);
+        }
+
+        free(ackedTransformPacket);
+    }
+
+    if (transformPacket) {
+        for (unsigned i = nAckedRigidbodies; i < TRANSFORM_SYNCS_PER_PACKET; i++) {
+            memset(reinterpret_cast<uint8_t*>(transformPacket) + sizeof(PacketStructs::TransformSyncPacket) * nTransforms * sizeof(PacketStructs::TransformSyncSnapshot), 0, sizeof(PacketStructs::TransformSyncSnapshot));
+        }
+
+        for (auto& c : clientsToSyncWith) {
+            ImplSendDataReliable(transformPacket, transformPacketSize, c, false);
+        }
+
+        free(transformPacket);
+    }
+}
+
+bool TickIsNewer(NetworkTickId previous, NetworkTickId maybeLater) {
+    return maybeLater - previous < UINT16_MAX / 4;
+}
+
+void NetworkingEngine::HandleTransformSyncPacket(std::shared_ptr<Client>& client, PacketStructs::TransformSyncPacket* packet, unsigned nSnapshots) {
+    DebugLogInfo("Transform sync recieved; ", nSnapshots);
+    
+    for (unsigned i = 0; i < nSnapshots; i++) {
+        auto id = packet->snapshots[i].syncId;
+        if (client->ownedSyncedTransforms.contains(id)) {
+            if (!std::isfinite(packet->snapshots[i].transform.position.x) || !std::isfinite(packet->snapshots[i].transform.position.y) || !std::isfinite(packet->snapshots[i].transform.position.z) || glm::length(packet->snapshots[i].transform.rotation) < 0.001) {
+                DebugLogInfo("Recieved invalid network transform ", id);
+            }
+            else {
+                DebugLogInfo("Applying transform ", id);
+
+                if (!client->ownedSyncedTransforms[id].recievedDataTick || TickIsNewer(*client->ownedSyncedTransforms[id].recievedDataTick, packet->tick)) {
+                    client->ownedSyncedTransforms[id].recievedDataTick = packet->tick;
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetPos(packet->snapshots[i].transform.position);
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetRot(packet->snapshots[i].transform.rotation);
+                }
+                else DebugLogInfo(" Transform sync ", id, " was outdated ");
+            }
+        }
+        else {
+            DebugLogInfo("Unrecognized transform sync name ", id);
+        }
+    }
+}
+
+void NetworkingEngine::HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, PacketStructs::RigidbodySyncPacket* packet, unsigned nSnapshots) {
+    DebugLogInfo("Rigidbody sync recieved; ", nSnapshots);
+
+    for (unsigned i = 0; i < nSnapshots; i++) {
+        auto id = packet->snapshots[i].syncId;
+        if (client->ownedSyncedTransforms.contains(id) && client->ownedSyncedTransforms[id].lastSentRigidbody) {
+            if (!std::isfinite(packet->snapshots[i].transform.position.x) 
+                || !std::isfinite(packet->snapshots[i].transform.position.y)
+                || !std::isfinite(packet->snapshots[i].transform.position.z) 
+                || !std::isfinite(packet->snapshots[i].rigidbody.velocity.x)
+                || !std::isfinite(packet->snapshots[i].rigidbody.velocity.y)
+                || !std::isfinite(packet->snapshots[i].rigidbody.velocity.z)
+                || !std::isfinite(packet->snapshots[i].rigidbody.angularVelocity.x)
+                || !std::isfinite(packet->snapshots[i].rigidbody.angularVelocity.y)
+                || !std::isfinite(packet->snapshots[i].rigidbody.angularVelocity.z)
+                || glm::length(packet->snapshots[i].transform.rotation) < 0.001) {
+                DebugLogInfo("Recieved invalid network rigidbody", id);
+            }
+            else {
+                DebugLogInfo("Applying rigidbody sync ", id);
+
+                if (!client->ownedSyncedTransforms[id].recievedDataTick || TickIsNewer(*client->ownedSyncedTransforms[id].recievedDataTick, packet->tick)) {
+                    client->ownedSyncedTransforms[id].recievedDataTick = packet->tick;
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetPos(packet->snapshots[i].transform.position);
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetRot(packet->snapshots[i].transform.rotation);
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<RigidbodyComponent>()->velocity = packet->snapshots[i].rigidbody.velocity;
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<RigidbodyComponent>()->angularVelocity = packet->snapshots[i].rigidbody.angularVelocity;
+                }
+                else DebugLogInfo(" Rigidbody sync ", id, " was outdated ");
+            }
+        }
+        else {
+            DebugLogInfo("Unrecognized rigidbody sync name ", id);
+        }
     }
 }
 
@@ -756,6 +999,7 @@ NetworkingEngine::NetworkingEngine():
 {
     status = NetworkStatus::Offline;
     serverSocket = std::nullopt;
+    currentTick = 0;
 }
 
 std::pair<bool, std::optional<std::string>> DefaultConnectionRequestHandler(std::string ipAddress, int port) {

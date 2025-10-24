@@ -26,12 +26,22 @@ namespace PacketType {
 }
 
 using AckId = uint32_t;
-//using NetworkTickId = uint16_t;
+using NetworkTickId = uint16_t;
 using SyncId = uint32_t;
+
+constexpr uint8_t TRANSFORM_SYNC_PACKET_IDENTIFIER = 201;
+constexpr uint8_t RIGIDBODY_SYNC_PACKET_IDENTIFIER = 202;
 
 struct TransformSync {
     glm::dvec3 position;
     glm::quat rotation;
+};
+
+struct RigidbodySync {
+    // note that rigidbodies actually use a dvec3 for velocity. 
+    // TODO: If we cared, we would quantize all synced rigidbodies to prevent rounding from creating a server-client discrepancy.
+    glm::vec3 velocity; 
+    glm::vec3 angularVelocity;
 };
 
 namespace PacketStructs {
@@ -84,8 +94,35 @@ namespace PacketStructs {
     };
 
     struct TransformSyncSnapshot {
-        TransformSync sync;
+        TransformSync transform;
         SyncId syncId;
+    };
+
+    struct TransformSyncPacket {
+        uint8_t identifier;
+        
+        // It's necessary to let recievers know which order the snapshots were sent in, so that they apply the most recent snapshot they have (packets can arrive out of order).
+        NetworkTickId tick;
+        TransformSyncSnapshot snapshots[];
+
+        TransformSyncPacket() = delete;
+    };
+
+    struct RigidbodySyncSnapshot {
+
+        TransformSync transform;
+        RigidbodySync rigidbody;
+        SyncId syncId;
+    };
+
+    struct RigidbodySyncPacket {
+        uint8_t identifier;
+
+        // It's necessary to let recievers know which order the snapshots were sent in, so that they apply the most recent snapshot they have (packets can arrive out of order).
+        NetworkTickId tick;
+        RigidbodySyncSnapshot snapshots[];
+
+        RigidbodySyncPacket() = delete;
     };
 
 #pragma pack(pop)

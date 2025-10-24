@@ -19,7 +19,7 @@ std::pair<float, std::shared_ptr<Material>> ArialFont(int size = 16);
 // leaks memory
 void MakeFPSTracker();
 
-void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool physics, glm::vec3 scale = {1, 1, 1});
+void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool physics, glm::vec3 scale = {1, 1, 1}, bool networked = false);
 void TestSphere(int x, int y, int z, bool physics);
 void TestBrickWall();
 std::shared_ptr<GameObject> TestGrassFloor();

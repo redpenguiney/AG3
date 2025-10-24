@@ -127,6 +127,8 @@ public:
 	void SetNetworkOwner(std::shared_ptr<GameObject> obj, std::shared_ptr<Client> client);
 
 private:
+	// Used for specifying an order to packets when sending them. Doesn't correspond to the ticks of recieved packets.
+	NetworkTickId currentTick;
 
 	void ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata);
 
@@ -146,6 +148,9 @@ private:
 	void ProcessLongMessageFragment(std::shared_ptr<Client>& client, AckId firstAckId, uint16_t idOffset, uint16_t nPackets, uint8_t* data, unsigned nBytes,  bool isUserdata);
 
 	void SyncGameobjects();
+
+	void HandleTransformSyncPacket(std::shared_ptr<Client>& client, PacketStructs::TransformSyncPacket*, unsigned nSnapshots);
+	void HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, PacketStructs::RigidbodySyncPacket*, unsigned nSnapshots);
 
 	std::vector<std::shared_ptr<Client>> clients;
 

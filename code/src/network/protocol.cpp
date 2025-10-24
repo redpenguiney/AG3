@@ -69,13 +69,25 @@ Socket::Socket(int localPort, unsigned int recvBufferCapacity):
 
 
 void Socket::Send(std::string address, int port, void* data, unsigned int nBytes) {
-	DebugLogInfo("Sending () ", nBytes);
-	socket.send_to(buffer(data, nBytes), SocketGlobals::Get().GetEndpoint(address, port), 0);
+	try {
+		DebugLogInfo("Sending () ", nBytes);
+		socket.send_to(buffer(data, nBytes), SocketGlobals::Get().GetEndpoint(address, port), 0);
+	}
+	catch (std::exception& e) {
+		DebugLogInfo("Boost socket error ", e.what());
+		Assert(false);
+	}
 }
 
 void Socket::Send(void* data, unsigned int nBytes) {
-	DebugLogInfo("Sending ", nBytes);
-	socket.send(buffer(data, nBytes), 0);
+	try {
+		DebugLogInfo("Sending ", nBytes);
+		socket.send(buffer(data, nBytes), 0);
+	}
+	catch (std::exception& e) {
+		DebugLogInfo("Boost socket error ", e.what());
+		Assert(false);
+	}
 }
 
 // TODO: ENDIANNESS
