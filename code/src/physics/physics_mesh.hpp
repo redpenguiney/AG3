@@ -38,7 +38,7 @@ class PhysicsMesh {
     // const unsigned int physMeshId;
 
     struct ConvexMesh {
-        // Raycasting wants triangles
+        // Raycasting wants triangles. TODO: MAKE THEM IN CLOCKWISE ORDER.
         std::vector<std::array<glm::vec3, 3>> triangles;
 
         // Some collision algorithms (SAT contact points namely) rely on having polygonal faces instead of a bunch of triangles.

@@ -70,7 +70,7 @@ Socket::Socket(int localPort, unsigned int recvBufferCapacity):
 
 void Socket::Send(std::string address, int port, void* data, unsigned int nBytes) {
 	try {
-		DebugLogInfo("Sending () ", nBytes);
+		//DebugLogInfo("Sending () ", nBytes);
 		socket.send_to(buffer(data, nBytes), SocketGlobals::Get().GetEndpoint(address, port), 0);
 	}
 	catch (std::exception& e) {
@@ -81,7 +81,7 @@ void Socket::Send(std::string address, int port, void* data, unsigned int nBytes
 
 void Socket::Send(void* data, unsigned int nBytes) {
 	try {
-		DebugLogInfo("Sending ", nBytes);
+		//DebugLogInfo("Sending ", nBytes);
 		socket.send(buffer(data, nBytes), 0);
 	}
 	catch (std::exception& e) {

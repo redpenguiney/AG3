@@ -9,6 +9,7 @@
 #include <tests/gameobject_tests.hpp>
 
 #include "gameobjects/gameobject.hpp"
+#include <physics/raycast.hpp>
 
 void GameInit(std::vector<std::string> args) {
 	DebugLogInfo("SANDBOXING? MORE LIKE SANDBAGGING!");
@@ -26,6 +27,7 @@ void GameInit(std::vector<std::string> args) {
 		BasicRenderer::Setup();
 		TestStationaryPointlight();
 		GraphicsEngine::Get().SetDebugFreecamEnabled(true);
+		GraphicsEngine::Get().GetDebugFreecamCamera().position = { 0, 5, 10 };
 	}
 
 	//is_server = !is_server;
@@ -43,7 +45,7 @@ void GameInit(std::vector<std::string> args) {
 
 		});
 
-		NetworkingEngine::Get().SyncObjectTransform(testObject, 1);
+		//NetworkingEngine::Get().SyncObjectTransform(testObject, 1);
 		//NetworkingEngine::Get().onNewClient->Connect()
 		//TestGraphics();
 
@@ -60,15 +62,33 @@ void GameInit(std::vector<std::string> args) {
 			//testObject->RawGet<TransformComponent>()->SetPos({x , 0, 0 });
 		//});
 
-		TestCubeArray({2, 2, 2 }, { 0, 0, 0 }, { 2, 2, 2 }, true, { 1, 1, 1 }, true);
+		TestCubeArray({3, 3, 3 }, { 0, 8, 0 }, { 2, 2, 2 }, true, { 1, 1, 1 }, true);
+
+		//GraphicsEngine::Get().window.inputDown->Connect([](InputObject input) {
+	 //   if (input.input == InputObject::LMB) {
+		//	auto lookVector = LookVector(glm::radians(GraphicsEngine::Get().debugFreecamPitch), glm::radians(GraphicsEngine::Get().debugFreecamYaw));
+	 //       auto castResult = Raycast(GraphicsEngine::Get().GetDebugFreecamCamera().position, lookVector);
+		//	//DebugPlacePointOnPosition(GraphicsEngine::Get().GetDebugFreecamCamera().position + lookVector * 2.0);
+	 //       if (castResult.hitObject != nullptr) {
+		//		//DebugPlacePointOnPosition(castResult.hitPoint);
+	 //           if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RigidbodyComponent>()) {
+		//			//DebugLogInfo(castResult.hitNormal);
+	 //               castResult.hitObject->RawGet<RigidbodyComponent>()->velocity += castResult.hitNormal * 2.0;
+	 //               //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
+	 //           }
+	 //       }
+
+	 //   }
+	 //   });
 	}
 	else {
 		NetworkingEngine::Get().Connect("127.0.0.1");
+		//NetworkingEngine::Get().Connect("162.226.172.240");
 
 		NetworkingEngine::Get().onConnectionAttemptComplete->Connect([testObject](NetworkingEngine::ConnectionAttemptResult result) {
 			Assert(result.successful);
 
-			NetworkingEngine::Get().SyncObjectTransform(testObject, 1);
+			//NetworkingEngine::Get().SyncObjectTransform(testObject, 1);
 
 			//char str[] = "POOPLESNOOT";
 
@@ -81,7 +101,7 @@ void GameInit(std::vector<std::string> args) {
 			//NetworkingEngine::Get().SendDataReliable(str.data(), str.size());
 			//DebugLogInfo("SENT ", str.size());
 
-			TestCubeArray({ 3, 3, 3 }, { 4, 4, 4 }, { 2, 2, 2 }, true, { 1, 1, 1 }, true);
+			TestCubeArray({ 3, 3, 3 }, { 0, 8, 0 }, { 2, 2, 2 }, true, { 1, 1, 1 }, true);
 
 		});
 
@@ -93,45 +113,8 @@ void GameInit(std::vector<std::string> args) {
 
 
 	}
-	//using namespace boost::asio;
+	
 
-	//io_service ioService;
-
-	//ip::udp::resolver ioResolver(ioService);
-	//ip::udp::resolver::query localhostQuery(ip::udp::v4(), "127.0.0.1", "49001");
-	//ip::udp::endpoint result = *ioResolver.resolve(localhostQuery);
-
-	//ip::udp::socket socket1(ioService, ip::udp::endpoint(ip::udp::v4(), 49000));
-	//ip::udp::socket socket2(ioService, ip::udp::endpoint(ip::udp::v4(), 49001));
-	//socket2.non_blocking(true);
-
-	//boost::system::error_code err;
-	//socket1.send_to(buffer("HI!"), result, 0, err);
-
-	//std::this_thread::sleep_for(std::chrono::milliseconds(500));
-	//
-	//char recv_buffer[1000] = { '\0' };
-	////recv_buffer[999] = '\0';
-	//ip::udp::endpoint sender;
-	//boost::system::error_code err2;
-	//socket2.receive_from(buffer(recv_buffer, 999), sender, 0, err2);
-
-	//DebugLogInfo("RECIEVED ", recv_buffer)
-
-	//Socket server(49000);
-	//Socket client("127.0.0.1", 49000, 49001);
-
-
-	//for (int i = 0; i < 5; i++) {
-	//	char data[3] = "HI";
-	//	//server.Send("127.0.0.1", 49001, data, 3);
-	//	client.Send(data, 3);
-	//	DebugLogInfo("SENT");
-	//	std::this_thread::sleep_for(std::chrono::seconds(1));
-	//	//auto packets = client.Recieve();
-	//	auto packets = server.Recieve();
-	//	DebugLogInfo("GOT ", packets.size());
-	//}
 }
 
 void GameClose() {}

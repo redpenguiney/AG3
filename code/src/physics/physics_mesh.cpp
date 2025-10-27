@@ -145,32 +145,55 @@ std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(const std::s
         }
         faceCenter /= face.second.size();
 
-        const auto r = face.second.at(0) - faceCenter; // use an arbitrary vector as the twelve o’clock reference
-        const auto p = cross(r, faceCenter);
+        //const auto r = face.second.at(0) - faceCenter; // use an arbitrary vector as the twelve o’clock reference
+        //const auto p = cross(r, face.first); // TODO: was faceCenter, switched it because faceCenter could plausibly be a zero vector
 
-        std::sort(face.second.begin(), face.second.end(), [&faceCenter, &p, &r](const glm::vec3 &v1, const glm::vec3&v2) {
-            
-            // stolen from https://stackoverflow.com/questions/47949485/sorting-a-list-of-3d-points-in-clockwise-order
-            // the sort function should return true if v1 is clockwise from v2 around the center of the face.
+        //std::sort(face.second.begin(), face.second.end(), [&faceCenter, &p, &r](const glm::vec3 &v1, const glm::vec3&v2) {
+        //    
+        //    // stolen from https://stackoverflow.com/questions/47949485/sorting-a-list-of-3d-points-in-clockwise-order
+        //    // the sort function should return true if v1 is clockwise from v2 around the center of the face.
 
-            auto u1 = v1 - faceCenter;
-            auto u2 = v2 - faceCenter;
-            auto h1 = glm::dot(u1, p);
-            auto h2 = glm::dot(u2, p);
+        //    auto u1 = v1 - faceCenter;
+        //    auto u2 = v2 - faceCenter;
+        //    auto h1 = glm::dot(u1, p);
+        //    auto h2 = glm::dot(u2, p);
 
-            if (h2 <= 0 && h1 > 0) {
-                return false;
-            }
-            else if( h1 <= 0 && h2 > 0) {
-                return true;
-            }
-            else if (h1 == 0 && h2 == 0) {
-                return (glm::dot(u1, r) > 0 && glm::dot(u2, r) < 0);
-            }
-            else {
-                return (glm::dot(glm::cross(u1, u2), faceCenter) > 0);
-            }
-                    
+        //    if (h2 <= 0 && h1 > 0) {
+        //        return false;
+        //    }
+        //    else if( h1 <= 0 && h2 > 0) {
+        //        return true;
+        //    }
+        //    else if (h1 == 0 && h2 == 0) {
+        //        return (glm::dot(u1, r) > 0 && glm::dot(u2, r) < 0);
+        //    }
+        //    else {
+        //        return (glm::dot(glm::cross(u1, u2), faceCenter) > 0);
+        //    }
+        //            
+        //});
+
+        std::sort(face.second.begin(), face.second.end(), [&](const glm::vec3& v1, const glm::vec3& v2) {
+            return glm::dot(face.first, glm::cross(v1 - faceCenter, v2 - faceCenter)) > 0;
+        });
+    }
+
+    // Likewise, triangle vertices need to be in clockwise order for raycasting.
+    for (auto& tri : triangles) {
+        auto faceCenter = glm::vec3(0, 0, 0);
+        for (auto& v : tri) faceCenter += v;
+        faceCenter /= 3.0f;
+
+        auto normal = glm::cross(tri[2] - tri[1], tri[2] - tri[0]);
+        // make sure normal always points outward
+        double distance = glm::dot(normal, tri[0]);
+        if (distance < 0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
+            normal *= -1;
+            distance *= -1;
+        }
+
+        std::sort(tri.begin(), tri.end(), [&](const glm::vec3& v1, const glm::vec3& v2) {
+            return glm::dot(normal, glm::cross(v1 - faceCenter, v2 - faceCenter)) > 0;
         });
     }
 

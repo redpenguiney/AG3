@@ -4,6 +4,8 @@
 #include "packet_types.hpp"
 #include "gameobjects/gameobject.hpp"
 
+// TODO: this file has memory leaks in it. I know it does. 
+
 const std::vector<std::shared_ptr<Client>>& NetworkingEngine::GetClientList()
 {
     return clients;
@@ -132,7 +134,7 @@ void NetworkingEngine::Update(float dt){
                         serverSocket->Send(p.originAddress, p.originPort, response, size);
 
 
-                        DebugLogInfo("Accepted new client (awaiting handshake).");
+                        //DebugLogInfo("Accepted new client (awaiting handshake).");
 
                         auto newClient = Client::New(false, false, p.originPort, p.originAddress);
                         newClient->connection = ConnectionInfo();
@@ -167,7 +169,7 @@ void NetworkingEngine::Update(float dt){
 
                 if (!client) continue; 
 
-                DebugLogInfo("Completed connection handshake.");
+                //DebugLogInfo("Completed connection handshake.");
 
                 client->connection->completedHandshake = true;
                 client->connection->lastMessageTime = p.timestamp;
@@ -243,7 +245,7 @@ void NetworkingEngine::Update(float dt){
                     PacketStructs::CompleteConnectionHandshake handshake;
                     serverSocket->Send(&handshake, sizeof(handshake));
 
-                    DebugLogInfo("Client connection to server successful.");
+                    //DebugLogInfo("Client connection to server successful.");
 
                     ConnectionAttemptResult result{
                         .successful = true,
@@ -264,7 +266,7 @@ void NetworkingEngine::Update(float dt){
         if (timeUntilConnectionAttemptTimeout != -1) {
             timeUntilConnectionAttemptTimeout -= dt;
             if (timeUntilConnectionAttemptTimeout < 0) {
-                DebugLogInfo("Connection attempt timed out.");
+                //DebugLogInfo("Connection attempt timed out.");
                 connectionAttemptsRemaining--;
 
                 if (connectionAttemptsRemaining < 0) {
@@ -361,29 +363,39 @@ std::shared_ptr<Client> NetworkingEngine::GetClient(std::string address, int por
     return nullptr;
 }
 
-void NetworkingEngine::SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination) {
-    ImplSendDataReliable(data, nBytes, destination, true);
+void NetworkingEngine::SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, UserdataFormatName format) {
+    void* dataWithFormatIdentifier = malloc(nBytes + sizeof(UserdataFormatName));
+    Assert(dataWithFormatIdentifier);
+    memcpy(dataWithFormatIdentifier, &format, sizeof(UserdataFormatName));
+    memcpy(reinterpret_cast<uint8_t*>(dataWithFormatIdentifier) + sizeof(UserdataFormatName), data, nBytes);
+    ImplSendDataReliable(dataWithFormatIdentifier, nBytes + sizeof(UserdataFormatName), destination, true);
+    free(dataWithFormatIdentifier);
 }
 
-void NetworkingEngine::SendDataReliable(void* data, size_t nBytes) {
+void NetworkingEngine::SendDataReliable(void* data, size_t nBytes, UserdataFormatName format) {
     Assert(status == NetworkStatus::Client);
     for (auto& c : clients) {
         if (c->isServer) {
-            SendDataReliable(data, nBytes, c);
+            SendDataReliable(data, nBytes, c, format);
             return;
         }
     }
 }
 
-void NetworkingEngine::SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination){
-    ImplSendData(data, nBytes, destination, true);
+void NetworkingEngine::SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, UserdataFormatName format){
+    void* dataWithFormatIdentifier = malloc(nBytes + sizeof(UserdataFormatName));
+    Assert(dataWithFormatIdentifier);
+    memcpy(dataWithFormatIdentifier, &format, sizeof(UserdataFormatName));
+    memcpy(reinterpret_cast<uint8_t*>(dataWithFormatIdentifier) + sizeof(UserdataFormatName), data, nBytes);
+    ImplSendData(dataWithFormatIdentifier, nBytes+sizeof(UserdataFormatName), destination, true);
+    free(dataWithFormatIdentifier);
 }
 
-void NetworkingEngine::SendData(void* data, size_t nBytes) {
+void NetworkingEngine::SendData(void* data, size_t nBytes, UserdataFormatName format) {
     Assert(status == NetworkStatus::Client);
     for (auto& c : clients) {
         if (c->isServer) {
-            SendData(data, nBytes, c);
+            SendData(data, nBytes, c, format);
             return;
         }
     }
@@ -408,6 +420,8 @@ RigidbodySync GetNetworkRigidbody(std::shared_ptr<GameObject>& obj) {
 void NetworkingEngine::SyncObjectTransform(std::shared_ptr<GameObject> obj, SyncId name, bool ackSnapshots) {
     //auto client = GetLocalMachine();
     auto owner = GetServer();
+
+    Assert(name != 0); // reserved
 
     Assert(owner->ownedSyncedTransforms.contains(name) == false);
     owner->ownedSyncedTransforms[name] = TransformSyncInfo{
@@ -552,7 +566,7 @@ void NetworkingEngine::ResendUnackedMessages() {
                 
                 ack.sentTimestamp = t;
 
-                DebugLogInfo("Resending unacked ", ack.payloadNBytes, " bytes.");
+                //DebugLogInfo("Resending unacked ", ack.payloadNBytes, " bytes.");
 
                 // resend message
                 if (status == NetworkStatus::Server)
@@ -585,7 +599,7 @@ void NetworkingEngine::AckMessages() {
     for (auto& c : clients) {
         if (c->connection) {
             auto packets = c->connection->FlushAcksToSend();
-            if (!packets.empty()) DebugLogInfo("There are ", packets.size(), " inbound packets to acknowledge.");
+            //if (!packets.empty()) DebugLogInfo("There are ", packets.size(), " inbound packets to acknowledge.");
             for (auto& p : packets) {
                 if (status == NetworkStatus::Client)
                     serverSocket->Send(p.first, p.second);
@@ -601,7 +615,7 @@ void NetworkingEngine::AckMessages() {
 
 void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, AckId* acks, unsigned nAcks) {
     Assert(client && client->connection);
-    DebugLogInfo("Handling ackarray with ", nAcks, " acks");
+    //DebugLogInfo("Handling ackarray with ", nAcks, " acks");
     //DebugLogInfo("We're currently waiting for: ");
     for (auto it = client->connection->pendingAcks.begin(); it != client->connection->pendingAcks.end(); it++) DebugLogInfo(it->ackId);
     
@@ -635,10 +649,20 @@ void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, AckId* a
 
 void NetworkingEngine::ProcessShortMessage(std::shared_ptr<Client>& client, uint8_t* data, unsigned nBytes, bool isUserdata) {
     if (isUserdata) {
-        NetworkUserdata userdata {};
-        userdata.data.assign(data, data + nBytes);
-        userdata.reliable = false;
-        onUserdataRecieved->Fire(userdata);
+        Assert(nBytes >= sizeof(UserdataFormatName));
+        uint16_t formatName = *reinterpret_cast<uint16_t*>(data);
+        if (formatName == 0) {
+            NetworkUserdata userdata{};
+            userdata.sender = client;
+            userdata.data.assign(data + sizeof(UserdataFormatName), data + nBytes - sizeof(UserdataFormatName));
+            userdata.reliable = false;
+            onUserdataRecieved->Fire(userdata);
+        }
+        else {
+            if (!formattedUserdataEvents.contains(formatName))
+                DebugLogInfo("Unrecognized userdata format name ", formatName);
+            formattedUserdataEvents[formatName](client, data + sizeof(UserdataFormatName), nBytes - sizeof(UserdataFormatName));
+        }
     }
     else {
         Assert(nBytes > 0);
@@ -657,18 +681,26 @@ void NetworkingEngine::ProcessShortMessage(std::shared_ptr<Client>& client, uint
 void NetworkingEngine::ProcessShortMessageReliable(std::shared_ptr<Client>& client, AckId ackId, uint8_t* data, unsigned nBytes, bool isUserdata) {
     Assert(client && client->connection);
 
-    DebugLogInfo("Short reliable recieved.");
+    //DebugLogInfo("Short reliable recieved.");
     if (client->connection->AlreadyRecievedPacket(ackId)) return;
 
     client->connection->AckData(ackId);
 
     if (isUserdata) {
-
-        NetworkUserdata userdata{};
-        userdata.data.assign(data, data + nBytes);
-        userdata.reliable = true;
-        onUserdataRecieved->Fire(userdata);
-
+        Assert(nBytes >= sizeof(UserdataFormatName));
+        uint16_t formatName = *reinterpret_cast<uint16_t*>(data);
+        if (formatName == 0) {
+            NetworkUserdata userdata{};
+            userdata.sender = client;
+            userdata.data.assign(data + sizeof(UserdataFormatName), data + nBytes - sizeof(UserdataFormatName));
+            userdata.reliable = true;
+            onUserdataRecieved->Fire(userdata);
+        }
+        else {
+            if (!formattedUserdataEvents.contains(formatName))
+                DebugLogInfo("Unrecognized userdata format name ", formatName);
+            formattedUserdataEvents[formatName](client, data + sizeof(UserdataFormatName), nBytes - sizeof(UserdataFormatName));
+        }
     }
     else {
         Assert(nBytes > 0);
@@ -694,7 +726,7 @@ void NetworkingEngine::ProcessLongMessageFragment(std::shared_ptr<Client>& clien
     client->connection->AckData(ackId);
     
     if (!client->connection->wipLongMessages.contains(firstAckId)) {
-        DebugLogInfo("Recieving new long message with ", nPackets, " fragments.");
+        //DebugLogInfo("Recieving new long message with ", nPackets, " fragments.");
         client->connection->wipLongMessages[firstAckId].firstPacketId = firstAckId;
         client->connection->wipLongMessages[firstAckId].numPackets = nPackets;   
     }
@@ -703,17 +735,30 @@ void NetworkingEngine::ProcessLongMessageFragment(std::shared_ptr<Client>& clien
     client->connection->wipLongMessages[firstAckId].packets.push_back(niceData);
     if (client->connection->wipLongMessages[firstAckId].packets.size() == nPackets) {
         if (isUserdata) {
-            NetworkUserdata userdata;
-            userdata.reliable = true;
+            Assert(nBytes >= sizeof(UserdataFormatName));
+            uint16_t formatName = *reinterpret_cast<uint16_t*>(data);
+            std::vector<uint8_t> data;
             for (auto& pkt : client->connection->wipLongMessages[firstAckId].packets)
-                userdata.data.insert(userdata.data.end(), pkt.begin(), pkt.end());
-            client->connection->wipLongMessages.erase(firstAckId);
-            DebugLogInfo("Long message with ", nPackets, " fragments completed.");
-            onUserdataRecieved->Fire(userdata);
+                data.insert(data.end(), pkt.begin(), pkt.end());
+
+            if (formatName == 0) {
+                NetworkUserdata userdata{};
+                userdata.sender = client;
+                userdata.data = data;
+                userdata.reliable = true;
+                onUserdataRecieved->Fire(userdata);
+            }
+            else {
+                if (!formattedUserdataEvents.contains(formatName))
+                    DebugLogInfo("Unrecognized userdata format name ", formatName);
+                formattedUserdataEvents[formatName](client, data.data() + sizeof(UserdataFormatName), data.size() - sizeof(UserdataFormatName));
+            }   
         }
         else {
 
         }
+
+        client->connection->wipLongMessages.erase(firstAckId);
     }
 }
 
@@ -740,8 +785,6 @@ void NetworkingEngine::SyncGameobjects() {
     size_t transformPacketSize = sizeof(PacketStructs::TransformSyncPacket) + TRANSFORM_SYNCS_PER_PACKET * sizeof(PacketStructs::TransformSyncSnapshot);
     size_t rigidbodyPacketSize = sizeof(PacketStructs::RigidbodySyncPacket) + RIGIDBODY_SYNCS_PER_PACKET * sizeof(PacketStructs::RigidbodySyncSnapshot);
 
-    auto it = localMachine->ownedSyncedTransforms.begin();
-
     void* ackedTransformPacket = nullptr;
     void* transformPacket = nullptr;
     void* ackedRigidbodyPacket = nullptr;
@@ -763,9 +806,9 @@ void NetworkingEngine::SyncGameobjects() {
             }
 
             PacketStructs::RigidbodySyncSnapshot snapshot{
-            .transform = GetNetworkTransform(it->second.gameObject),
-            .rigidbody = GetNetworkRigidbody(it->second.gameObject),
-            .syncId = it->first,
+            .transform = GetNetworkTransform(syncInfo.gameObject),
+            .rigidbody = GetNetworkRigidbody(syncInfo.gameObject),
+            .syncId = syncId,
             };
 
             memcpy(reinterpret_cast<uint8_t*>(ackedRigidbodyPacket) + sizeof(PacketStructs::RigidbodySyncPacket) + nAckedRigidbodies * sizeof(PacketStructs::RigidbodySyncSnapshot), &snapshot, sizeof(snapshot));
@@ -790,8 +833,8 @@ void NetworkingEngine::SyncGameobjects() {
             }
 
             PacketStructs::TransformSyncSnapshot snapshot{
-            .transform = GetNetworkTransform(it->second.gameObject),
-            .syncId = it->first,
+            .transform = GetNetworkTransform(syncInfo.gameObject),
+            .syncId = syncId,
             };
 
             memcpy(reinterpret_cast<uint8_t*>(ackedTransformPacket) + sizeof(PacketStructs::TransformSyncPacket) + nAckedTransforms * sizeof(PacketStructs::TransformSyncSnapshot), &snapshot, sizeof(snapshot));
@@ -816,9 +859,9 @@ void NetworkingEngine::SyncGameobjects() {
             }
 
             PacketStructs::RigidbodySyncSnapshot snapshot{
-            .transform = GetNetworkTransform(it->second.gameObject),
-            .rigidbody = GetNetworkRigidbody(it->second.gameObject),
-            .syncId = it->first,
+            .transform = GetNetworkTransform(syncInfo.gameObject),
+            .rigidbody = GetNetworkRigidbody(syncInfo.gameObject),
+            .syncId = syncId,
             };
 
             memcpy(reinterpret_cast<uint8_t*>(rigidbodyPacket) + sizeof(PacketStructs::RigidbodySyncPacket) + nRigidbodies * sizeof(PacketStructs::RigidbodySyncSnapshot), &snapshot, sizeof(snapshot));
@@ -843,8 +886,8 @@ void NetworkingEngine::SyncGameobjects() {
             }
 
             PacketStructs::TransformSyncSnapshot snapshot{
-            .transform = GetNetworkTransform(it->second.gameObject),
-            .syncId = it->first,
+            .transform = GetNetworkTransform(syncInfo.gameObject),
+            .syncId = syncId,
             };
 
             memcpy(reinterpret_cast<uint8_t*>(transformPacket) + sizeof(PacketStructs::TransformSyncPacket) * nTransforms * sizeof(PacketStructs::TransformSyncSnapshot), &snapshot, sizeof(snapshot));
@@ -861,18 +904,6 @@ void NetworkingEngine::SyncGameobjects() {
             }
         }
 
-
-        //PacketStructs::TransformSyncSnapshot snapshot{
-            //.transform = GetNetworkTransform(it->second.gameObject),
-            //.syncId = it->first
-        //};
-
-        //memcpy(current, &snapshot, sizeof(snapshot));
-        //DebugLogInfo("Prepared snapshot");
-
-        //current++;
-        //i++;
-        //it++;
     }
 
     if (ackedRigidbodyPacket) {
@@ -929,7 +960,7 @@ bool TickIsNewer(NetworkTickId previous, NetworkTickId maybeLater) {
 }
 
 void NetworkingEngine::HandleTransformSyncPacket(std::shared_ptr<Client>& client, PacketStructs::TransformSyncPacket* packet, unsigned nSnapshots) {
-    DebugLogInfo("Transform sync recieved; ", nSnapshots);
+    //DebugLogInfo("Transform sync recieved; ", nSnapshots);
     
     for (unsigned i = 0; i < nSnapshots; i++) {
         auto id = packet->snapshots[i].syncId;
@@ -938,7 +969,7 @@ void NetworkingEngine::HandleTransformSyncPacket(std::shared_ptr<Client>& client
                 DebugLogInfo("Recieved invalid network transform ", id);
             }
             else {
-                DebugLogInfo("Applying transform ", id);
+                //DebugLogInfo("Applying transform ", id);
 
                 if (!client->ownedSyncedTransforms[id].recievedDataTick || TickIsNewer(*client->ownedSyncedTransforms[id].recievedDataTick, packet->tick)) {
                     client->ownedSyncedTransforms[id].recievedDataTick = packet->tick;
@@ -948,14 +979,14 @@ void NetworkingEngine::HandleTransformSyncPacket(std::shared_ptr<Client>& client
                 else DebugLogInfo(" Transform sync ", id, " was outdated ");
             }
         }
-        else {
+        else if (id != 0) {
             DebugLogInfo("Unrecognized transform sync name ", id);
         }
     }
 }
 
 void NetworkingEngine::HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, PacketStructs::RigidbodySyncPacket* packet, unsigned nSnapshots) {
-    DebugLogInfo("Rigidbody sync recieved; ", nSnapshots);
+    //DebugLogInfo("Rigidbody sync packet recieved with ", nSnapshots, " snapshots");
 
     for (unsigned i = 0; i < nSnapshots; i++) {
         auto id = packet->snapshots[i].syncId;
@@ -973,7 +1004,7 @@ void NetworkingEngine::HandleRigidbodySyncPacket(std::shared_ptr<Client>& client
                 DebugLogInfo("Recieved invalid network rigidbody", id);
             }
             else {
-                DebugLogInfo("Applying rigidbody sync ", id);
+                //DebugLogInfo("Applying rigidbody sync ", id);
 
                 if (!client->ownedSyncedTransforms[id].recievedDataTick || TickIsNewer(*client->ownedSyncedTransforms[id].recievedDataTick, packet->tick)) {
                     client->ownedSyncedTransforms[id].recievedDataTick = packet->tick;
@@ -985,7 +1016,7 @@ void NetworkingEngine::HandleRigidbodySyncPacket(std::shared_ptr<Client>& client
                 else DebugLogInfo(" Rigidbody sync ", id, " was outdated ");
             }
         }
-        else {
+        else if (id != 0) {
             DebugLogInfo("Unrecognized rigidbody sync name ", id);
         }
     }

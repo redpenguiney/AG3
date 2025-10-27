@@ -23,6 +23,7 @@ enum class ConnectionFailureReason {
 
 // Struct for recieving user-specified data over the network.
 struct NetworkUserdata {
+	std::shared_ptr<Client> sender;
 	std::vector<uint8_t> data;
 	bool reliable;
 };
@@ -32,6 +33,9 @@ struct NetworkUserdata {
 
 class GameObject;
 class TransformComponent;
+
+// May not be 0 (which is used for unformatted userdata)
+using UserdataFormatName = uint16_t;
 
 std::pair<bool, std::optional<std::string>> DefaultConnectionRequestHandler(std::string ipAddress, int port);
 
@@ -90,15 +94,13 @@ public:
 
 	std::shared_ptr<Event<ConnectionAttemptResult>> onConnectionAttemptComplete;
 
-	// Fired on both client and server.
-	//std::shared_ptr < Event<std::shared_ptr<Client>>> onNewClient;
-
 	// fired on client when server has finished syncing all of its stuff with the client.
 	std::shared_ptr<Event<>> onInitialSyncComplete;
 
+	// Only fired on server.
 	std::shared_ptr<Event<std::shared_ptr<Client>>> onNewClient;
 
-	// fired on client when data from SendData()/SendDataReliable() arrives
+	// fired when data from SendData()/SendDataReliable() arrives
 	std::shared_ptr<Event<NetworkUserdata>> onUserdataRecieved;
 
 	// A function that the server will call to decide whether to let a potential client connect. Should return <true, nullopt> if the client is allowed to join, or <false, reason> if they are not. 
@@ -106,16 +108,16 @@ public:
 	// By default, it will let anyone connect.
 	std::function<std::pair<bool, std::optional<std::string>>(std::string ipAddress, int port)> connectionRequestHandler = DefaultConnectionRequestHandler;
 
-	void SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination);
+	void SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, UserdataFormatName format = 0);
 
 	// Sends data to server. Client only.
-	void SendDataReliable(void* data, size_t nBytes);
+	void SendDataReliable(void* data, size_t nBytes, UserdataFormatName format = 0);
 
 	// nBytes must be <=500
-	void SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination);
+	void SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, UserdataFormatName format = 0);
 
 	// Sends data to server. Client only.
-	void SendData(void* data, size_t nBytes);
+	void SendData(void* data, size_t nBytes, UserdataFormatName format = 0);
 
 	// Informs the networking engine to sync this gameobject's transform using the given sync id.
 		// Defaults to Server being the owner.
@@ -126,7 +128,18 @@ public:
 	// Server only.
 	void SetNetworkOwner(std::shared_ptr<GameObject> obj, std::shared_ptr<Client> client);
 
+	template <class ... Types>
+	std::shared_ptr<Event<std::shared_ptr<Client>, Types...>> GetFormattedUserdataRecievedEvent(UserdataFormatName name);
+
+	// It's stored via shared_ptr so the event itself won't be immediately destroyed.
+	// However, calling this will immediately stop the event from being fired by recieved formatted data with the corresponding format name.
+	// An event is subsequently created with the same name/template types will be a wholly unrelated event instance which must be connected to once again. 
+	void DestroyFormattedUserdataRecievedEvent(UserdataFormatName name);
+
 private:
+	// We store lambdas/functions that store and fire the events to handle the different types. 
+	std::unordered_map<UserdataFormatName, std::function<void(std::shared_ptr<Client>, uint8_t*, unsigned int)>> formattedUserdataEvents;
+
 	// Used for specifying an order to packets when sending them. Doesn't correspond to the ticks of recieved packets.
 	NetworkTickId currentTick;
 
@@ -168,3 +181,15 @@ private:
 
 	NetworkingEngine();
 };
+
+template<class ...Types>
+inline std::shared_ptr<Event<std::shared_ptr<Client>, Types...>> NetworkingEngine::GetFormattedUserdataRecievedEvent(UserdataFormatName name)
+{
+	auto event = std::shared_ptr<Event<std::shared_ptr<Client>, Types...>>();
+
+	auto delegate = [event](std::shared_ptr<Client>, uint8_t* data, unsigned nBytes) {
+
+	};
+
+	formattedUserdataEvents[name] = delegate;
+}

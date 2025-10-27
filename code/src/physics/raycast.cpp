@@ -51,16 +51,8 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction, CollisionLayerSet
                 auto normal = GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
                 
                 
-                // TODO rework physics_mesh.cpp so that triangles have clockwise winding; in the meantime we have to check normals because sometimes they backwards
-                // TODO i thought i already did?
-                
-                // making normals always face away from the center of the mesh is an awful idea, what was I on?
-                //if (glm::dot(normal, trianglePoints[0] - obj->Get<TransformComponent>()->Position()) < 0) { 
-                    //normal *= -1;
-                //}
-
-                // backface culling so that we hit the right triangle (TODO: NEED CLOCKWISE WINDING FIRST)
-                //if (glm::dot(normal, direction) < 0) { // works according to https://en.wikipedia.org/wiki/Back-face_culling
+                // backface culling so that we hit the right triangle; relies on clockwise vertex winding
+                if (glm::dot(normal, direction) < 0) { // works according to https://en.wikipedia.org/wiki/Back-face_culling
                     //std::cout << "Passed backface culling.\n";
                     // std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f, the normal is %f %f %f\n.", trianglePoints[0][0], trianglePoints[0][1], trianglePoints[0][2], trianglePoints[1][0], trianglePoints[1][1], trianglePoints[1][2], trianglePoints[2][0], trianglePoints[2][1], trianglePoints[2][2], normal.x, normal.y, normal.z);
                     glm::dvec3 intersectionPoint;
@@ -69,9 +61,10 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction, CollisionLayerSet
                     if (IsTriangleColliding(origin, direction, trianglePoints[0], trianglePoints[1], trianglePoints[2], intersectionPoint)) {
                         //std::cout << "Ray intersects object at " << obj << " named " << obj->name << "\n";
                         hitTriangles.push_back({.hitPoint = intersectionPoint, .hitNormal = normal, .hitObject = obj});
-                        goto foundTriangle;
+                        // because the mesh is convex, the ray will only pass through two points on the mesh, and one of those will be removed by backface culling.
+                        goto foundTriangle; 
                     }
-                //}
+                }
                 
             }
 
@@ -86,12 +79,14 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction, CollisionLayerSet
         return RaycastResult {.hitObject = nullptr};
     }
     else { // else go through them to decide which triangle was hit first and return that one
+        //DebugLogInfo("Ray hit ", hitTriangles.size());
+        
         // closest hit point is first hit triangle
         double closestDistance = FLT_MAX;
         RaycastResult bestResult;
         for (auto & result: hitTriangles) {
             double distance = glm::length2(origin - result.hitPoint);
-            // std::cout << "Considering object normal " << glm::to_string(result.hitNormal) << " named " << result.hitObject->name << " with distance " << distance << " vs closest " << closestDistance << "\n";
+            //DebugLogInfo("Considering object normal ",result.hitNormal, " named ", result.hitObject->name, " with distance ", distance, " vs closest ", closestDistance);
             if (distance < closestDistance) {
                 closestDistance = distance;
                 bestResult = result;

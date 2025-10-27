@@ -126,7 +126,7 @@ void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool phy
 
     int nObjs = 0;
 
-    int syncId = 19999;
+    SyncId syncId = 19999;
     for (unsigned x = 0; x < dim.x; x++) {
         for (unsigned y = 0; y < dim.y; y++) {
             for (unsigned z = 0; z < dim.z; z++) {

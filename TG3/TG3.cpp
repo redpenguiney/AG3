@@ -8,11 +8,39 @@
 #include <vector>
 #include <filesystem>
 #include <tests/gameobject_tests.hpp>
+#include <physics/raycast.hpp>
 
-using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+#include <Windows.h>
 
 void GameInit(std::vector<std::string> args) {}
 void GameClose() {}
+
+void FixCWD() {
+	try {
+		std::filesystem::current_path(std::filesystem::current_path().concat("\\..\\.."));
+	}
+	catch (std::exception& e) {
+		DebugLogInfo(e.what());
+		abort();
+	}
+}
+
+namespace Microsoft
+{
+	namespace VisualStudio
+	{
+		namespace CppUnitTestFramework
+		{
+			template<> static std::wstring ToString<glm::dvec3>(const class glm::dvec3& t) { 
+				std::string s = glm::to_string(t);
+				std::wstring ws(s.begin(), s.end());
+				return ws;
+			}
+		}
+	}
+}
+using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+
 
 namespace TG3
 {
@@ -114,13 +142,8 @@ namespace TG3
 		}
 
 		TEST_METHOD(TestSAS1) {
-			try {
-				std::filesystem::current_path(std::filesystem::current_path().concat("\\..\\.."));
-			}
-			catch (std::exception& e) {
-				DebugLogInfo(e.what());
-				abort();
-			}
+			FixCWD();
+
 			auto& SAS = SpatialAccelerationStructure::Get();
 
 			std::array<std::array<std::array<std::shared_ptr<GameObject>, 8>, 8>, 8> arr;
@@ -148,6 +171,38 @@ namespace TG3
 
 			SAS.Update();
 			Assert::IsTrue(SAS.Query(AABB({ 6, 6, 6 }, { 12, 12, 24 })).size() == 0);
+		}
+
+		TEST_METHOD(TestRaycasting) {
+			FixCWD();
+
+			auto mesh = CubeMesh();
+
+			auto params = GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Collider });
+			params.meshId = mesh->meshId;
+			auto g = GameObject::New(params);
+			g->RawGet<TransformComponent>()->SetPos(glm::dvec3{ 0, 0, 0 });
+
+			auto up = Raycast({ 0, -2, 0 }, { 0, 1, 0 });
+			auto down = Raycast({ 0, 2, 0 }, { 0, -1, 0 });
+			auto left = Raycast({ -2, 0, 0 }, { 1, 0, 0 });
+			auto right = Raycast({ 2, 0, 0 }, { -1, 0, 0 });
+			auto forward = Raycast({ 0, 0, -2 }, { 0, 0, 1 });
+			auto back = Raycast({ 0, 0, 2 }, { 0, 0, -1 });
+
+			Assert::IsTrue(up.hitObject == g);
+			Assert::IsTrue(down.hitObject == g);
+			Assert::IsTrue(left.hitObject == g);
+			Assert::IsTrue(right.hitObject == g);
+			Assert::IsTrue(forward.hitObject == g);
+			Assert::IsTrue(back.hitObject == g);
+			Assert::IsTrue(glm::dot(up.hitNormal, glm::dvec3{0, -1, 0}) > 0.999);
+			Assert::IsTrue(glm::dot(down.hitNormal, glm::dvec3{ 0, 1, 0 }) > 0.999);
+			Assert::IsTrue(glm::dot(left.hitNormal, glm::dvec3{ -1, 0, 0 }) > 0.999);
+			Assert::IsTrue(glm::dot(right.hitNormal, glm::dvec3{ 1, 0, 0 }) > 0.999);
+			Assert::IsTrue(glm::dot(forward.hitNormal, glm::dvec3{ 0, 0, -1 }) > 0.999);
+			Assert::IsTrue(glm::dot(back.hitNormal, glm::dvec3{ 0, 0, 1 }) > 0.999);
+
 		}
 
 		/*TEST_METHOD(TestTransparency) {
