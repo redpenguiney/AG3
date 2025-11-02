@@ -363,39 +363,29 @@ std::shared_ptr<Client> NetworkingEngine::GetClient(std::string address, int por
     return nullptr;
 }
 
-void NetworkingEngine::SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, UserdataFormatName format) {
-    void* dataWithFormatIdentifier = malloc(nBytes + sizeof(UserdataFormatName));
-    Assert(dataWithFormatIdentifier);
-    memcpy(dataWithFormatIdentifier, &format, sizeof(UserdataFormatName));
-    memcpy(reinterpret_cast<uint8_t*>(dataWithFormatIdentifier) + sizeof(UserdataFormatName), data, nBytes);
-    ImplSendDataReliable(dataWithFormatIdentifier, nBytes + sizeof(UserdataFormatName), destination, true);
-    free(dataWithFormatIdentifier);
+void NetworkingEngine::SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination) {
+    ImplSendDataReliable(data, nBytes, destination, true);
 }
 
-void NetworkingEngine::SendDataReliable(void* data, size_t nBytes, UserdataFormatName format) {
+void NetworkingEngine::SendDataReliable(void* data, size_t nBytes) {
     Assert(status == NetworkStatus::Client);
     for (auto& c : clients) {
         if (c->isServer) {
-            SendDataReliable(data, nBytes, c, format);
+            SendDataReliable(data, nBytes, c);
             return;
         }
     }
 }
 
-void NetworkingEngine::SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, UserdataFormatName format){
-    void* dataWithFormatIdentifier = malloc(nBytes + sizeof(UserdataFormatName));
-    Assert(dataWithFormatIdentifier);
-    memcpy(dataWithFormatIdentifier, &format, sizeof(UserdataFormatName));
-    memcpy(reinterpret_cast<uint8_t*>(dataWithFormatIdentifier) + sizeof(UserdataFormatName), data, nBytes);
-    ImplSendData(dataWithFormatIdentifier, nBytes+sizeof(UserdataFormatName), destination, true);
-    free(dataWithFormatIdentifier);
+void NetworkingEngine::SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination){
+    ImplSendData(data, nBytes, destination, true);
 }
 
-void NetworkingEngine::SendData(void* data, size_t nBytes, UserdataFormatName format) {
+void NetworkingEngine::SendData(void* data, size_t nBytes) {
     Assert(status == NetworkStatus::Client);
     for (auto& c : clients) {
         if (c->isServer) {
-            SendData(data, nBytes, c, format);
+            SendData(data, nBytes, c);
             return;
         }
     }
@@ -438,7 +428,7 @@ void NetworkingEngine::SetNetworkOwner(std::shared_ptr<GameObject> obj, std::sha
     Assert(false); // TODO
 }
 
-void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata)
+void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata, UserdataFormatName format)
 {
     Assert(!destination->isLocalMachine);
     if (status == NetworkStatus::Client || status == NetworkStatus::ClientConnecting) {
@@ -446,23 +436,30 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
     }
     else Assert(status == NetworkStatus::Server);
     Assert(destination->connection);
+
+    size_t trueNBytes = nBytes;
+    if (isUserdata) trueNBytes += sizeof(UserdataFormatName);
+    size_t dataOffset = 0;
+    if (isUserdata) dataOffset = sizeof(UserdataFormatName);
+
     if (nBytes <= 500) {
-        PacketStructs::ShortMessageReliable* packet = (PacketStructs::ShortMessageReliable*)malloc(nBytes + sizeof(PacketStructs::ShortMessageReliable));
+        PacketStructs::ShortMessageReliable* packet = (PacketStructs::ShortMessageReliable*)malloc(trueNBytes + sizeof(PacketStructs::ShortMessageReliable));
         packet->type = PacketType::SendShortAck;
         if (isUserdata)
             packet->type |= 0b10000000;
         packet->ackId = destination->connection->GetAvailableAckId();
 
-        void* payload = malloc(nBytes);
-        memcpy(payload, data, nBytes);
+        void* payload = malloc(trueNBytes);
+        memcpy(payload, (uint8_t*)data + dataOffset, nBytes);
+        if (isUserdata) memcpy(payload, &format, sizeof(UserdataFormatName));
 
-        destination->connection->pendingAcks.emplace_back(packet->ackId, Time(), payload, nBytes);
-        memcpy((uint8_t*)packet + sizeof(PacketStructs::ShortMessageReliable), data, nBytes);
+        destination->connection->pendingAcks.emplace_back(packet->ackId, Time(), payload, trueNBytes);
+        memcpy((uint8_t*)packet + sizeof(PacketStructs::ShortMessageReliable), payload, trueNBytes);
         if (status == NetworkStatus::Client || status == NetworkStatus::ClientConnecting) {
-            serverSocket->Send(packet, nBytes + sizeof(PacketStructs::ShortMessageReliable));
+            serverSocket->Send(packet, trueNBytes + sizeof(PacketStructs::ShortMessageReliable));
         }
         else {
-            serverSocket->Send(destination->address, destination->port, packet, nBytes + sizeof(PacketStructs::ShortMessageReliable));
+            serverSocket->Send(destination->address, destination->port, packet, trueNBytes + sizeof(PacketStructs::ShortMessageReliable));
         }
         free(packet);
         // don't free payload
@@ -473,13 +470,14 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
         uint16_t numPackets = (nBytes + 499) / 500;
         auto t = Time();
         while (nBytes > 0) {
-            unsigned amtToSend = nBytes > 500 ? 500 : nBytes;
+            unsigned amtToSend = (nBytes) > 500 ? 500 : nBytes;
             nBytes -= amtToSend;
             
             PacketStructs::LongMessage* packet = (PacketStructs::LongMessage*)malloc(amtToSend + sizeof(PacketStructs::LongMessage));
             
             void* payload = malloc(amtToSend);
-            memcpy(payload, data, amtToSend);
+            memcpy(payload, (uint8_t*)data + dataOffset, amtToSend - dataOffset);
+            if (isUserdata) memcpy(payload, &format, sizeof(UserdataFormatName));
 
             auto ackId = destination->connection->GetAvailableAckId();
             if (firstAck == UINT32_MAX) firstAck = ackId;
@@ -493,8 +491,8 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
             packet->firstPacketAckId = firstAck;
             packet->numPackets = numPackets;
            
-            memcpy((uint8_t*)packet + sizeof(PacketStructs::LongMessage), data, amtToSend);
-            data = (uint8_t*)data + amtToSend;
+            memcpy((uint8_t*)packet + sizeof(PacketStructs::LongMessage), payload, amtToSend);
+            data = (uint8_t*)data + amtToSend - dataOffset;
             if (status == NetworkStatus::Client || status == NetworkStatus::ClientConnecting) {
                 serverSocket->Send(packet, amtToSend + sizeof(PacketStructs::LongMessage));
             }
@@ -509,7 +507,7 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
     }
 }
 
-void NetworkingEngine::ImplSendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata) {
+void NetworkingEngine::ImplSendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata, UserdataFormatName format) {
     Assert(nBytes <= 500);
     Assert(!destination->isLocalMachine);
     if (status == NetworkStatus::Client || status == NetworkStatus::ClientConnecting) {
@@ -517,17 +515,23 @@ void NetworkingEngine::ImplSendData(void* data, size_t nBytes, std::shared_ptr<C
     }
     else Assert(status == NetworkStatus::Server);
 
-    PacketStructs::ShortMessage* packet = (PacketStructs::ShortMessage*)malloc(nBytes + sizeof(PacketStructs::ShortMessage));
+    size_t trueNBytes = nBytes;
+    if (isUserdata) trueNBytes += sizeof(UserdataFormatName);
+    size_t dataOffset = 0;
+    if (isUserdata) dataOffset = sizeof(UserdataFormatName);
+
+    PacketStructs::ShortMessage* packet = (PacketStructs::ShortMessage*)malloc(trueNBytes + sizeof(PacketStructs::ShortMessage));
     packet->type = PacketType::SendShort;
     if (isUserdata)
         packet->type |= 0b10000000;
-    memcpy(packet + sizeof(packet->type), data, nBytes);
+    memcpy(packet + sizeof(PacketStructs::ShortMessage), &format, sizeof(UserdataFormatName));
+    memcpy(packet + dataOffset + sizeof(PacketStructs::ShortMessage), data, nBytes);
 
     if (status == NetworkStatus::Client || status == NetworkStatus::ClientConnecting) {
-        serverSocket->Send(packet, nBytes + sizeof(PacketStructs::ShortMessage));
+        serverSocket->Send(packet, trueNBytes + sizeof(PacketStructs::ShortMessage));
     }
     else {
-        serverSocket->Send(destination->address, destination->port, packet, nBytes + sizeof(PacketStructs::ShortMessage));
+        serverSocket->Send(destination->address, destination->port, packet, trueNBytes + sizeof(PacketStructs::ShortMessage));
     }
     free(packet);
 }

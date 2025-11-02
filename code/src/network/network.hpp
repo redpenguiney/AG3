@@ -108,16 +108,23 @@ public:
 	// By default, it will let anyone connect.
 	std::function<std::pair<bool, std::optional<std::string>>(std::string ipAddress, int port)> connectionRequestHandler = DefaultConnectionRequestHandler;
 
-	void SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, UserdataFormatName format = 0);
+	void SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination);
 
 	// Sends data to server. Client only.
-	void SendDataReliable(void* data, size_t nBytes, UserdataFormatName format = 0);
+	void SendDataReliable(void* data, size_t nBytes);
 
 	// nBytes must be <=500
-	void SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, UserdataFormatName format = 0);
+	void SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination);
 
 	// Sends data to server. Client only.
-	void SendData(void* data, size_t nBytes, UserdataFormatName format = 0);
+	void SendData(void* data, size_t nBytes);
+
+	template <class ... Types>
+	void SendFormattedUserdata(UserdataFormatName format, std::shared_ptr<Client> dest, bool reliable, Types...);
+
+	// Sends data to server. Client only.
+	template <class ... Types>
+	void SendFormattedUserdata(UserdataFormatName format, bool reliable, Types...);
 
 	// Informs the networking engine to sync this gameobject's transform using the given sync id.
 		// Defaults to Server being the owner.
@@ -143,10 +150,10 @@ private:
 	// Used for specifying an order to packets when sending them. Doesn't correspond to the ticks of recieved packets.
 	NetworkTickId currentTick;
 
-	void ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata);
+	void ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata, UserdataFormatName format = 0);
 
 	// nBytes must be <=500
-	void ImplSendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata);
+	void ImplSendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata, UserdataFormatName format = 0);
 
 	void HandleAck(Socket::Packet& packet);
 
@@ -183,12 +190,40 @@ private:
 };
 
 template<class ...Types>
+inline void NetworkingEngine::SendFormattedUserdata(UserdataFormatName format, std::shared_ptr<Client> dest, bool reliable, Types ... types) {
+	
+	std::tuple<Types...> serializedData = { (Serialize(types))... };
+
+	if (!reliable) Assert(sizeof(serializedData) <= 500);
+	
+	(memcpy((uint8_t*)data + sizeof(Types), &types, sizeof(Types)), ...);
+
+	if (reliable)
+		ImplSendDataReliable(serializedData, sizeof(serializedData), dest, true, format);
+	else
+		ImplSendData(serializedData, sizeof(serializedData), dest, true, format);
+
+}
+
+template<class ...Types>
+inline void NetworkingEngine::SendFormattedUserdata(UserdataFormatName format, bool reliable, Types ... data) {
+	Assert(status == NetworkStatus::Client);
+	for (auto& c : clients) {
+		if (c->isServer) {
+			SendFormattedUserdata(format, data...);
+			return;
+		}
+	}
+}
+
+template<class ...Types>
 inline std::shared_ptr<Event<std::shared_ptr<Client>, Types...>> NetworkingEngine::GetFormattedUserdataRecievedEvent(UserdataFormatName name)
 {
 	auto event = std::shared_ptr<Event<std::shared_ptr<Client>, Types...>>();
 
 	auto delegate = [event](std::shared_ptr<Client>, uint8_t* data, unsigned nBytes) {
-
+		std::tuple<Types...> 
+		event->Fire()
 	};
 
 	formattedUserdataEvents[name] = delegate;

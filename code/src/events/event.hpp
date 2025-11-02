@@ -102,6 +102,10 @@ public:
 			//DebugLogInfo("Adding ", typeid(decltype(this)).name(), "to queue");
 
 		ConnectableFunctionArgs tupledArgs = std::make_tuple(args...);
+		Fire(tupledArgs);
+	}
+
+	void Fire(ConnectableFunctionArgs tupledArgs) {
 		//eventInvocations->push_back(tupledArgs); 
 		std::weak_ptr<Event> e = dynamic_pointer_cast<Event>(weak_from_this().lock());
 		std::unique_ptr<BaseEventInvocation> p = std::unique_ptr<BaseEventInvocation>((BaseEventInvocation*)(new EventInvocation(tupledArgs, e)));
