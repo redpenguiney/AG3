@@ -2,7 +2,7 @@
 #include "client.hpp"
 #include "events/event.hpp"
 #include "protocol.hpp"
-
+#include "serialization.hpp"
 #include <glm/vec3.hpp>
 
 
@@ -140,7 +140,8 @@ public:
 
 	// It's stored via shared_ptr so the event itself won't be immediately destroyed.
 	// However, calling this will immediately stop the event from being fired by recieved formatted data with the corresponding format name.
-	// An event is subsequently created with the same name/template types will be a wholly unrelated event instance which must be connected to once again. 
+	// (Event destruction will never occur except on application exit/networking engine desturction if this method is not called!)
+	// An event subsequently created with the same name/template types will be a wholly unrelated event instance which must be connected to once again. 
 	void DestroyFormattedUserdataRecievedEvent(UserdataFormatName name);
 
 private:
@@ -192,12 +193,13 @@ private:
 template<class ...Types>
 inline void NetworkingEngine::SendFormattedUserdata(UserdataFormatName format, std::shared_ptr<Client> dest, bool reliable, Types ... types) {
 	
-	std::tuple<Types...> serializedData = { (Serialize(types))... };
+	size_t nBytes = (SerializedSize<Types>(types) + ...);
+	void* serializedData = malloc(nBytes);
+	void* current = serializedData;
+	(Serialize(types, current), ...);
 
 	if (!reliable) Assert(sizeof(serializedData) <= 500);
 	
-	(memcpy((uint8_t*)data + sizeof(Types), &types, sizeof(Types)), ...);
-
 	if (reliable)
 		ImplSendDataReliable(serializedData, sizeof(serializedData), dest, true, format);
 	else
@@ -210,21 +212,44 @@ inline void NetworkingEngine::SendFormattedUserdata(UserdataFormatName format, b
 	Assert(status == NetworkStatus::Client);
 	for (auto& c : clients) {
 		if (c->isServer) {
-			SendFormattedUserdata(format, data...);
+			SendFormattedUserdata(format, c, reliable, data...);
 			return;
 		}
+	}
+}
+
+template <size_t I, size_t End, class ...Types>
+void DeserializeToTuple(std::tuple<std::shared_ptr<Client>, Types...>& data, void*& src) {
+	std::get<I>(data) = Deserialize<typename std::tuple_element<I, std::tuple<std::shared_ptr<Client>, Types...>>::type>(src);
+	if constexpr (I + 1 < End) {
+		DeserializeToTuple<I + 1, End, Types...>(data, src);
 	}
 }
 
 template<class ...Types>
 inline std::shared_ptr<Event<std::shared_ptr<Client>, Types...>> NetworkingEngine::GetFormattedUserdataRecievedEvent(UserdataFormatName name)
 {
-	auto event = std::shared_ptr<Event<std::shared_ptr<Client>, Types...>>();
+	auto event = Event<std::shared_ptr<Client>, Types...>::New();
 
-	auto delegate = [event](std::shared_ptr<Client>, uint8_t* data, unsigned nBytes) {
-		std::tuple<Types...> 
-		event->Fire()
+	auto delegate = [event, name](std::shared_ptr<Client> client, uint8_t* data, unsigned nBytes) {
+		//size_t expectedSize = (SerializedSize<>??? + ...);
+		//if (expectedSize != nBytes) {
+			//DebugLogInfo("Recieved formatted userdata ", name, ", but size was ", nBytes, " rather than ", expectedSize, " bytes.");
+			//return;
+		//}
+		std::string o;
+		for (unsigned i = 0; i < nBytes; i++) o += std::to_string((int)data[i]) + " ";
+		DebugLogInfo("Deserializing input data ", o);
+		
+
+		void* voiddata = data;
+		std::tuple<std::shared_ptr<Client>, Types...> formattedData;
+		std::get<0>(formattedData) = client;
+		DeserializeToTuple<1, sizeof...(Types)+1, Types...>(formattedData, voiddata);
+		event->Fire(formattedData);
 	};
 
 	formattedUserdataEvents[name] = delegate;
+
+	return event;
 }

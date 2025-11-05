@@ -494,5 +494,8 @@
     <ClInclude Include="..\code\src\network\packet_types.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\code\src\network\serialization.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

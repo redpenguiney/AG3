@@ -45,6 +45,11 @@ void GameInit(std::vector<std::string> args) {
 
 		});
 
+		auto event = NetworkingEngine::Get().GetFormattedUserdataRecievedEvent<int, std::string, int>(100);
+		event->Connect([](std::shared_ptr<Client>, int x, std::string y, int z) {
+			DebugLogInfo("RECIEVED ", x, " ", y, " ", z);
+		});
+
 		//NetworkingEngine::Get().SyncObjectTransform(testObject, 1);
 		//NetworkingEngine::Get().onNewClient->Connect()
 		//TestGraphics();
@@ -103,6 +108,7 @@ void GameInit(std::vector<std::string> args) {
 
 			TestCubeArray({ 3, 3, 3 }, { 0, 8, 0 }, { 2, 2, 2 }, true, { 1, 1, 1 }, true);
 
+			NetworkingEngine::Get().SendFormattedUserdata<int, std::string, int>(100, true, 3, "pooplesnoot", 5);
 		});
 
 		/*Socket* client = new Socket("127.0.0.1", 49000, 49001);

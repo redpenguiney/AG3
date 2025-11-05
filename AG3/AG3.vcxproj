@@ -380,6 +380,7 @@
     <ClCompile Include="..\code\src\utility\uint.cpp" />
     <ClCompile Include="..\code\src\utility\utility.cpp" />
     <ClInclude Include="..\code\src\network\packet_types.hpp" />
+    <ClInclude Include="..\code\src\network\serialization.hpp" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
