@@ -30,14 +30,31 @@ void GameInit(std::vector<std::string> args) {
 		GraphicsEngine::Get().GetDebugFreecamCamera().position = { 0, 5, 10 };
 	}
 
-	//is_server = !is_server;
+	is_server = !is_server;
 
 	auto testObject = TestGrassFloor();
+
+	//uint8_t data[1000] = {0};
+	//void* current = data;
+	//Serialize(17, current);
+	//Serialize(std::string("bob"), current);
+
+	//data[999] = '\0';
+	//DebugLogInfo(data);
+
+	//current = data;
+	//int i = Deserialize<int>(current);
+	//std::string bob = Deserialize<std::string>(current);
+	//DebugLogInfo(bob, " ", i)
 
 	if (is_server) {
 		TestSkybox();
 
 		NetworkingEngine::Get().Host();
+
+		NetworkingEngine::Get().onNewClient->Connect([](auto newClient) {
+			NetworkingEngine::Get().SendFormattedUserdata<int, std::string, int>(100, newClient, true, 3, "pooplesnoot", 5);
+		});
 
 		NetworkingEngine::Get().onUserdataRecieved->Connect([](NetworkUserdata userdata) {
 			std::string messagestr((const char*)userdata.data.data(), userdata.data.size());
@@ -69,22 +86,22 @@ void GameInit(std::vector<std::string> args) {
 
 		TestCubeArray({3, 3, 3 }, { 0, 8, 0 }, { 2, 2, 2 }, true, { 1, 1, 1 }, true);
 
-		//GraphicsEngine::Get().window.inputDown->Connect([](InputObject input) {
-	 //   if (input.input == InputObject::LMB) {
-		//	auto lookVector = LookVector(glm::radians(GraphicsEngine::Get().debugFreecamPitch), glm::radians(GraphicsEngine::Get().debugFreecamYaw));
-	 //       auto castResult = Raycast(GraphicsEngine::Get().GetDebugFreecamCamera().position, lookVector);
-		//	//DebugPlacePointOnPosition(GraphicsEngine::Get().GetDebugFreecamCamera().position + lookVector * 2.0);
-	 //       if (castResult.hitObject != nullptr) {
-		//		//DebugPlacePointOnPosition(castResult.hitPoint);
-	 //           if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RigidbodyComponent>()) {
-		//			//DebugLogInfo(castResult.hitNormal);
-	 //               castResult.hitObject->RawGet<RigidbodyComponent>()->velocity += castResult.hitNormal * 2.0;
-	 //               //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
-	 //           }
-	 //       }
+		GraphicsEngine::Get().window.inputDown->Connect([](InputObject input) {
+	    if (input.input == InputObject::LMB) {
+			auto lookVector = LookVector(glm::radians(GraphicsEngine::Get().debugFreecamPitch), glm::radians(GraphicsEngine::Get().debugFreecamYaw));
+	        auto castResult = Raycast(GraphicsEngine::Get().GetDebugFreecamCamera().position, lookVector);
+			//DebugPlacePointOnPosition(GraphicsEngine::Get().GetDebugFreecamCamera().position + lookVector * 2.0);
+	        if (castResult.hitObject != nullptr) {
+				//DebugPlacePointOnPosition(castResult.hitPoint);
+	            if (castResult.hitObject != nullptr && castResult.hitObject->MaybeRawGet<RigidbodyComponent>()) {
+					//DebugLogInfo(castResult.hitNormal);
+	                castResult.hitObject->RawGet<RigidbodyComponent>()->velocity += castResult.hitNormal * 2.0;
+	                //castResult.hitObject->Get<TransformComponent>().SetPos(castResult.hitObject->Get<TransformComponent>().position + castResult.hitNormal * 0.02);
+	            }
+	        }
 
-	 //   }
-	 //   });
+	    }
+	    });
 	}
 	else {
 		NetworkingEngine::Get().Connect("127.0.0.1");

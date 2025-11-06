@@ -3,6 +3,9 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
+  <PropertyGroup Label="Configuration">
+    <EnableASAN>true</EnableASAN>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)/../code/src;code/src;src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

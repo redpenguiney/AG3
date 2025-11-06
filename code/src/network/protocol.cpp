@@ -115,7 +115,7 @@ std::vector<Socket::Packet> Socket::Recieve() {
 			return packets;
 		}
 		else if (err.value() == 10054) { // IDK, https://stackoverflow.com/questions/34242622/windows-udp-sockets-recvfrom-fails-with-error-10054
-			DebugLogInfo("WARNING 10054");
+			//DebugLogInfo("WARNING 10054");
 			return packets;
 		}
 		else {

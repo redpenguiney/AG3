@@ -5,6 +5,7 @@
 #include "gameobjects/gameobject.hpp"
 
 // TODO: this file has memory leaks in it. I know it does. 
+// TODO: we don't serialize anything except formatted data which is a big issue.
 
 const std::vector<std::shared_ptr<Client>>& NetworkingEngine::GetClientList()
 {
@@ -450,7 +451,7 @@ void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shar
         packet->ackId = destination->connection->GetAvailableAckId();
 
         void* payload = malloc(trueNBytes);
-        memcpy(payload, (uint8_t*)data + dataOffset, nBytes);
+        memcpy((uint8_t*)payload + dataOffset, data, nBytes);
         if (isUserdata) memcpy(payload, &format, sizeof(UserdataFormatName));
 
         destination->connection->pendingAcks.emplace_back(packet->ackId, Time(), payload, trueNBytes);
@@ -514,6 +515,10 @@ void NetworkingEngine::ImplSendData(void* data, size_t nBytes, std::shared_ptr<C
         Assert(destination->isServer);
     }
     else Assert(status == NetworkStatus::Server);
+
+    /*if (nBytes > 20 && *((uint8_t*)data + 20) == 0xcd) {
+        DebugLogInfo("Sending uninitialized.");
+    }*/
 
     size_t trueNBytes = nBytes;
     if (isUserdata) trueNBytes += sizeof(UserdataFormatName);
@@ -621,7 +626,9 @@ void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, AckId* a
     Assert(client && client->connection);
     //DebugLogInfo("Handling ackarray with ", nAcks, " acks");
     //DebugLogInfo("We're currently waiting for: ");
-    for (auto it = client->connection->pendingAcks.begin(); it != client->connection->pendingAcks.end(); it++) DebugLogInfo(it->ackId);
+    // for (auto it = client->connection->pendingAcks.begin(); it != client->connection->pendingAcks.end(); it++) {
+    //  DebugLogInfo(it->ackId);
+    // }
     
     for (unsigned i = 0; i < nAcks; i++) {
         for (unsigned int j = 0; j < client->connection->pendingAcks.size(); j++) {
@@ -641,17 +648,22 @@ void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, AckId* a
                 goto found;
             }
         }*/
-        DebugLogInfo("Unrecognized ackId from inbound ackarray: ", acks[i]);
+        //DebugLogInfo("Unrecognized ackId from inbound ackarray: ", acks[i]);
 
         found:;
 
-        for (unsigned j = 0; j < client->connection->pendingAcks.size(); j++) {
-            Assert(client->connection->pendingAcks[j].ackId != acks[i]);
-        }
+        //for (unsigned j = 0; j < client->connection->pendingAcks.size(); j++) {
+            //Assert(client->connection->pendingAcks[j].ackId != acks[i]);
+        //}
     }
 }
 
 void NetworkingEngine::ProcessShortMessage(std::shared_ptr<Client>& client, uint8_t* data, unsigned nBytes, bool isUserdata) {
+
+    if (nBytes > 20 && *((uint8_t*)data + 80) == 0xcd) {
+        DebugLogInfo("Recieving uninitialized.");
+    }
+
     if (isUserdata) {
         Assert(nBytes >= sizeof(UserdataFormatName));
         uint16_t formatName = *reinterpret_cast<uint16_t*>(data);
@@ -873,7 +885,7 @@ void NetworkingEngine::SyncGameobjects() {
 
             if (nRigidbodies == RIGIDBODY_SYNCS_PER_PACKET) {
                 for (auto& c : clientsToSyncWith) {
-                    ImplSendDataReliable(rigidbodyPacket, rigidbodyPacketSize, c, false);
+                    ImplSendData(rigidbodyPacket, rigidbodyPacketSize, c, false);
                 }
 
                 free(rigidbodyPacket);
@@ -928,7 +940,7 @@ void NetworkingEngine::SyncGameobjects() {
         }
 
         for (auto& c : clientsToSyncWith) {
-            ImplSendDataReliable(rigidbodyPacket, rigidbodyPacketSize, c, false);
+            ImplSendData(rigidbodyPacket, rigidbodyPacketSize, c, false);
         }
 
         free(rigidbodyPacket);
@@ -952,7 +964,7 @@ void NetworkingEngine::SyncGameobjects() {
         }
 
         for (auto& c : clientsToSyncWith) {
-            ImplSendDataReliable(transformPacket, transformPacketSize, c, false);
+            ImplSendData(transformPacket, transformPacketSize, c, false);
         }
 
         free(transformPacket);

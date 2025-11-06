@@ -195,15 +195,18 @@ inline void NetworkingEngine::SendFormattedUserdata(UserdataFormatName format, s
 	
 	size_t nBytes = (SerializedSize<Types>(types) + ...);
 	void* serializedData = malloc(nBytes);
+	std::string o;
+	for (unsigned i = 0; i < nBytes; i++) o += std::to_string((int)((uint8_t*)serializedData)[i]) + " ";
+	DebugLogInfo("Sending formatted userdata size ", nBytes, ": ", o);
 	void* current = serializedData;
 	(Serialize(types, current), ...);
 
 	if (!reliable) Assert(sizeof(serializedData) <= 500);
 	
 	if (reliable)
-		ImplSendDataReliable(serializedData, sizeof(serializedData), dest, true, format);
+		ImplSendDataReliable(serializedData, nBytes, dest, true, format);
 	else
-		ImplSendData(serializedData, sizeof(serializedData), dest, true, format);
+		ImplSendData(serializedData, nBytes, dest, true, format);
 
 }
 
@@ -219,10 +222,10 @@ inline void NetworkingEngine::SendFormattedUserdata(UserdataFormatName format, b
 }
 
 template <size_t I, size_t End, class ...Types>
-void DeserializeToTuple(std::tuple<std::shared_ptr<Client>, Types...>& data, void*& src) {
+void DeserializeToTuple(std::tuple<std::shared_ptr<Client>, Types...>& data, void*& src, unsigned nBytes) {
 	std::get<I>(data) = Deserialize<typename std::tuple_element<I, std::tuple<std::shared_ptr<Client>, Types...>>::type>(src);
 	if constexpr (I + 1 < End) {
-		DeserializeToTuple<I + 1, End, Types...>(data, src);
+		DeserializeToTuple<I + 1, End, Types...>(data, src, nBytes);
 	}
 }
 
@@ -232,20 +235,20 @@ inline std::shared_ptr<Event<std::shared_ptr<Client>, Types...>> NetworkingEngin
 	auto event = Event<std::shared_ptr<Client>, Types...>::New();
 
 	auto delegate = [event, name](std::shared_ptr<Client> client, uint8_t* data, unsigned nBytes) {
-		//size_t expectedSize = (SerializedSize<>??? + ...);
+		//size_t expectedSize = (SerializedSize<Types...>() + ...);
 		//if (expectedSize != nBytes) {
 			//DebugLogInfo("Recieved formatted userdata ", name, ", but size was ", nBytes, " rather than ", expectedSize, " bytes.");
 			//return;
 		//}
 		std::string o;
 		for (unsigned i = 0; i < nBytes; i++) o += std::to_string((int)data[i]) + " ";
-		DebugLogInfo("Deserializing input data ", o);
+		DebugLogInfo("Deserializing input data len ", nBytes, " ", o);
 		
 
 		void* voiddata = data;
 		std::tuple<std::shared_ptr<Client>, Types...> formattedData;
 		std::get<0>(formattedData) = client;
-		DeserializeToTuple<1, sizeof...(Types)+1, Types...>(formattedData, voiddata);
+		DeserializeToTuple<1, sizeof...(Types)+1, Types...>(formattedData, voiddata, nBytes);
 		event->Fire(formattedData);
 	};
 

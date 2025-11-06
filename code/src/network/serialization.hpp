@@ -128,6 +128,7 @@ inline std::string Deserialize(void*& src) {
     for (unsigned i = 0; i < size; i++) {
         retval += Deserialize<char>(src);
     }
+    //src = (uint8_t*)src + size; NO because Deserialize<char> does this for us.
     return retval;
 }
 

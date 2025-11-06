@@ -5,7 +5,7 @@
   <PropertyGroup />
   <PropertyGroup Label="Configuration">
     <EnableFuzzer>true</EnableFuzzer>
-    <EnableASAN>true</EnableASAN>
+    <EnableASAN>false</EnableASAN>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
