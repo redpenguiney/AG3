@@ -5,8 +5,6 @@
 #include "serialization.hpp"
 #include <glm/vec3.hpp>
 
-
-
 // Describes what the process is doing networkwise - hosting a server? being connected to one? or neither?
 enum class NetworkStatus {
 	Server, // the networking engine is hosting a server. 

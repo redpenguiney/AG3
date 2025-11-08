@@ -2,6 +2,8 @@
 
 // PROTOCOL listed here.
 
+// (We don't need to worry about serialized size since the types used are always the same size.)
+
 // Type of packets the engine sends.
 // Uppermost bit of this will set set to 1 if this packet is userdata, 0 if enginedata.
 namespace PacketType {

@@ -34,6 +34,14 @@ struct SerializedType<int> : public WrappedType<int32_t> {};
 template<>
 struct SerializedType<unsigned> : public WrappedType<uint32_t> {};
 template<>
+struct SerializedType<short> : public WrappedType<int16_t> {};
+template<>
+struct SerializedType<unsigned short> : public WrappedType<uint16_t> {};
+template<>
+struct SerializedType<int8_t> : public WrappedType<int8_t> {};
+template<>
+struct SerializedType<uint8_t> : public WrappedType<uint8_t> {};
+template<>
 struct SerializedType<char> : public WrappedType<unsigned char> {};
 
 template <typename T>
@@ -43,6 +51,8 @@ template <typename T>
 inline size_t SerializedSize(const T& val) { static_assert(false); }
 template <IsSerializablePrimitiveType T>
 inline size_t SerializedSize(const T& val) { return sizeof(SerializedType<T>::Type); }
+template <>
+inline size_t SerializedSize(const bool& val) { return sizeof(bool); }
 template <IsSerializablePrimitiveType T>
 inline size_t SerializedSize(const std::vector<T>& val) { return sizeof(SerializedType<unsigned>::Type) + sizeof(SerializedType<T>::Type) * val.size(); }
 template <IsSerializablePrimitiveType T, size_t ArrayLen>
@@ -84,6 +94,11 @@ inline void Serialize(T val, void*& dest) {
 	memcpy(dest, &v.val, sizeof(v.val));
     dest = (uint8_t*)dest + sizeof(v.val);
 }
+template <>
+inline void Serialize(bool val, void*& dest) {
+    if (val == true) Serialize<uint8_t>(1, dest);
+    else Serialize<uint8_t>(0, dest);
+}
 template <IsSerializablePrimitiveType T>
 inline void Serialize(std::vector<T> val, void*& dest) {
     Serialize<unsigned>(val.size(), dest);
@@ -119,6 +134,12 @@ inline T Deserialize(void*& src) {
 
     src = (uint8_t*)src + SerializedSize<T>(v);
     return v;
+}
+template <>
+inline bool Deserialize(void*& src) {
+    uint8_t v = Deserialize<uint8_t>(src);
+    if (v == 1) return true;
+    else return false;
 }
 template <>
 inline std::string Deserialize(void*& src) {

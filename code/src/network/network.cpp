@@ -79,6 +79,8 @@ void NetworkingEngine::Connect(std::string ipAddress, int destPort, int localPor
     serverSocket.emplace(ipAddress, destPort, localPort);
 
     PacketStructs::ConnectionRequest request;
+    void* dst = &request;
+    Serialize(request.type, dst);
     serverSocket->Send(&request, sizeof(request));
     connectionAttemptsRemaining--;
 }
@@ -115,9 +117,10 @@ void NetworkingEngine::Update(float dt){
                 if (GetClient(p.originAddress, p.originPort)) {
                     size_t size = sizeof(PacketStructs::ConnectionRequestResponse);
                     auto response = static_cast<PacketStructs::ConnectionRequestResponse*>(malloc(size));
-
+                    // We don't need to worry about serialization since the data is just one-byte unsigned integers
                     response->type = PacketType::ConnectionRequestResponse;
-                    response->connectionAccepted = true;
+                    uint8_t truth = 1;
+                    memcpy(&response->connectionAccepted, &truth, 1);
 
                     serverSocket->Send(p.originAddress, p.originPort, response, size);
                     free(response);
