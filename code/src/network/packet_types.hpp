@@ -54,7 +54,6 @@ namespace PacketStructs {
     struct ConnectionRequestResponse {
         uint8_t type;
         uint8_t connectionAccepted;
-        //uint16_t messageLen;
         char rejectionReason[];
 
         ConnectionRequestResponse() = delete;
@@ -129,3 +128,4 @@ namespace PacketStructs {
 
 #pragma pack(pop)
 };
+

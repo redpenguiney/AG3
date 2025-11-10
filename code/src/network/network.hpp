@@ -106,14 +106,18 @@ public:
 	// By default, it will let anyone connect.
 	std::function<std::pair<bool, std::optional<std::string>>(std::string ipAddress, int port)> connectionRequestHandler = DefaultConnectionRequestHandler;
 
+	// Danger: you must serialize data yourself.
 	void SendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination);
 
+	// Danger: you must serialize data yourself.
 	// Sends data to server. Client only.
 	void SendDataReliable(void* data, size_t nBytes);
 
+	// Danger: you must serialize data yourself.
 	// nBytes must be <=500
 	void SendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination);
 
+	// Danger: you must serialize data yourself.
 	// Sends data to server. Client only.
 	void SendData(void* data, size_t nBytes);
 
@@ -149,8 +153,10 @@ private:
 	// Used for specifying an order to packets when sending them. Doesn't correspond to the ticks of recieved packets.
 	NetworkTickId currentTick;
 
+	// Danger: you must serialize data yourself.
 	void ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata, UserdataFormatName format = 0);
 
+	// Danger: you must serialize data yourself.
 	// nBytes must be <=500
 	void ImplSendData(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata, UserdataFormatName format = 0);
 
@@ -161,15 +167,16 @@ private:
 	
 	void AckMessages();
 
-	void ProcessAckArray(std::shared_ptr<Client>& client, AckId* acks, unsigned nAcks);
-	void ProcessShortMessage(std::shared_ptr<Client>& client, uint8_t* data, unsigned nBytes, bool isUserdata);
+	void ProcessAckArray(std::shared_ptr<Client>& client, void* acks, unsigned nAcks);
+	void ProcessShortMessageUnreliable(std::shared_ptr<Client>& client, uint8_t* data, unsigned nBytes, bool isUserdata);
+	void ProcessShortMessage(std::shared_ptr<Client>& client, uint8_t* data, unsigned nBytes, bool isUserdata, bool isReliable);
 	void ProcessShortMessageReliable(std::shared_ptr<Client>& client, AckId ackId, uint8_t* data, unsigned nBytes, bool isUserdata);
 	void ProcessLongMessageFragment(std::shared_ptr<Client>& client, AckId firstAckId, uint16_t idOffset, uint16_t nPackets, uint8_t* data, unsigned nBytes,  bool isUserdata);
 
 	void SyncGameobjects();
 
-	void HandleTransformSyncPacket(std::shared_ptr<Client>& client, PacketStructs::TransformSyncPacket*, unsigned nSnapshots);
-	void HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, PacketStructs::RigidbodySyncPacket*, unsigned nSnapshots);
+	void HandleTransformSyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots);
+	void HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots);
 
 	std::vector<std::shared_ptr<Client>> clients;
 

@@ -2,6 +2,7 @@
 #include "packet_types.hpp"
 #include <debug/assert.hpp>
 #include <utility/utility.hpp>
+#include "serialization.hpp"
 
 std::shared_ptr<Client> Client::New(bool server, bool local, int port, std::string address)
 {
@@ -35,14 +36,17 @@ void ConnectionInfo::AckData(AckId ackId) {
 std::vector<std::pair<void*, size_t>> ConnectionInfo::FlushAcksToSend() {
     std::vector<std::pair<void*, size_t>> packets;
     while (!acksToSend.empty()) {
-        unsigned nAcks = std::min(acksToSend.size(), 500 / sizeof(AckId));
-        auto acks = (PacketStructs::AckArray*)malloc(sizeof(PacketStructs::AckArray) + nAcks * 4);
+        unsigned nAcks = std::min(acksToSend.size(), 500 / SerializedSize<AckId>());
 
-        acks->type = PacketType::AckArray;
-        memcpy(acks->packets, acksToSend.data() + acksToSend.size() - nAcks, nAcks * sizeof(AckId));
+        auto acks = (PacketStructs::AckArray*)malloc(SerializedSize<uint8_t>() + nAcks * SerializedSize<AckId>());
+        void* current = acks;
+        Serialize<uint8_t>(PacketType::AckArray, current);
+        for (auto it = acksToSend.begin() + acksToSend.size() - nAcks; it != acksToSend.end(); it++) {
+            Serialize<AckId>(*it, current);
+        }
         for (unsigned i = 0; i < nAcks; i++) acksToSend.pop_back();
 
-        packets.push_back(std::make_pair(acks, sizeof(PacketStructs::AckArray) + nAcks * 4));
+        packets.push_back(std::make_pair(acks, SerializedSize<uint8_t>() + nAcks * SerializedSize<AckId>()));
     }
 
     return packets;

@@ -79,8 +79,7 @@ void NetworkingEngine::Connect(std::string ipAddress, int destPort, int localPor
     serverSocket.emplace(ipAddress, destPort, localPort);
 
     PacketStructs::ConnectionRequest request;
-    void* dst = &request;
-    Serialize(request.type, dst);
+    // No serialization needed here for a single unsigned byte
     serverSocket->Send(&request, sizeof(request));
     connectionAttemptsRemaining--;
 }
@@ -102,15 +101,16 @@ void NetworkingEngine::Update(float dt){
 
         for (auto& p : packets) {
             Assert(p.data.size() > 0);
-            auto packetType = (uint8_t*)p.data.data();
-            bool isUserdata = (*packetType & 0b10000000) != 0;
-            *packetType &= 0b01111111;
+            void* current = p.data.data();
+            auto packetType = Deserialize<uint8_t>(current);
+            bool isUserdata = (packetType & 0b10000000) != 0;
+            packetType &= 0b01111111;
 
             if (auto client = GetClient(p.originAddress, p.originPort)) {
                 client->connection->lastMessageTime = p.timestamp;
             }
 
-            if (*packetType == PacketType::ConnectionRequest) {
+            if (packetType == PacketType::ConnectionRequest) {
 
                 // Make sure client isn't already connected; 
                 // in this case they didn't hear that they were accepted so we just want to resend the message
@@ -132,8 +132,10 @@ void NetworkingEngine::Update(float dt){
                         size_t size = sizeof(PacketStructs::ConnectionRequestResponse);
                         auto response = static_cast<PacketStructs::ConnectionRequestResponse*>(malloc(size));
 
+                        // We don't need to worry about serialization since the data is just one-byte unsigned integers
                         response->type = PacketType::ConnectionRequestResponse;
-                        response->connectionAccepted = true;
+                        uint8_t truth = 1;
+                        memcpy(&response->connectionAccepted, &truth, 1);
 
                         serverSocket->Send(p.originAddress, p.originPort, response, size);
 
@@ -154,6 +156,7 @@ void NetworkingEngine::Update(float dt){
                     else {
                         std::string rejectionReason = reason.value_or("");
 
+                        // We don't need to worry about serialization since the data is just one-byte unsigned integers and chars
                         size_t size = sizeof(PacketStructs::ConnectionRequestResponse) + rejectionReason.length();
                         auto response = static_cast<PacketStructs::ConnectionRequestResponse*>(malloc(size));
 
@@ -167,7 +170,7 @@ void NetworkingEngine::Update(float dt){
                 }
                 
             }
-            else if (*packetType == PacketType::CompleteConnectionHandshake) {
+            else if (packetType == PacketType::CompleteConnectionHandshake) {
 
                 auto client = GetClient(p.originAddress, p.originPort);
 
@@ -179,23 +182,27 @@ void NetworkingEngine::Update(float dt){
                 client->connection->lastMessageTime = p.timestamp;
 
             }
-            else if (*packetType == PacketType::AckArray) {
+            else if (packetType == PacketType::AckArray) {
                 auto client = GetClient(p.originAddress, p.originPort);
-                ProcessAckArray(client, std::bit_cast<AckId*>(packetType + 1), (p.data.size() - 1) / 4);
+                unsigned nAcks = (p.data.size() - SerializedSize<uint8_t>()) / SerializedSize<AckId>();
+                ProcessAckArray(client, current, nAcks);
             }
-            else if (*packetType == PacketType::SendShort) {
+            else if (packetType == PacketType::SendShort) {
                 auto client = GetClient(p.originAddress, p.originPort);
-                ProcessShortMessage(client, packetType + 1, p.data.size() - 1, isUserdata);
+                ProcessShortMessageUnreliable(client, (uint8_t*)current, p.data.size() - SerializedSize<uint8_t>(), isUserdata);
             }
-            else if (*packetType == PacketType::SendShortAck) {
+            else if (packetType == PacketType::SendShortAck) {
                 auto client = GetClient(p.originAddress, p.originPort);
-                auto msg = (PacketStructs::ShortMessageReliable*)p.data.data();
-                ProcessShortMessageReliable(client, msg->ackId, msg->data, p.data.size() - sizeof(PacketStructs::ShortMessageReliable), isUserdata);
+                AckId id = Deserialize<AckId>(current);
+
+                ProcessShortMessageReliable(client, id, (uint8_t*)current, p.data.size() + p.data.data() - current, isUserdata);
             }
-            else if (*packetType == PacketType::LongMessage) {
+            else if (packetType == PacketType::LongMessage) {
                 auto client = GetClient(p.originAddress, p.originPort);
-                auto msg = (PacketStructs::LongMessage*)p.data.data();
-                ProcessLongMessageFragment(client, msg->firstPacketAckId, msg->offset, msg->numPackets, msg->data, p.data.size() - sizeof(PacketStructs::LongMessage), isUserdata);
+                uint16_t offset = Deserialize<uint16_t>(current);
+                AckId first = Deserialize<AckId>(current);
+                uint16_t nPackets = Deserialize<uint16_t>(current);
+                ProcessLongMessageFragment(client, first, offset, nPackets, (uint8_t*)current, p.data.size() + p.data.data() - current, isUserdata);
             }
         }
 
@@ -209,10 +216,11 @@ void NetworkingEngine::Update(float dt){
 
             if (p.originAddress != targetConnectionIp) continue;
 
-            auto packetType = (uint8_t*)p.data.data();
-            bool isUserdata = (*packetType & 0b10000000) != 0;
-            *packetType &= 0b01111111;
-            if (*packetType == PacketType::ConnectionRequestResponse) {
+            void* current = p.data.data();
+            auto packetType = Deserialize<uint8_t>(current);
+            bool isUserdata = (packetType & 0b10000000) != 0;
+            packetType &= 0b01111111;
+            if (packetType == PacketType::ConnectionRequestResponse) {
                 if (p.data.size() < 2) continue; 
                 auto connectionAccepted = *(bool*)(p.data.data() + 1);
 
@@ -246,6 +254,7 @@ void NetworkingEngine::Update(float dt){
                     connectionAttemptTimeout = -1.0f;
                     connectionAttemptsRemaining = -1;
 
+                    // No serialization needed here for a single unsigned byte.
                     PacketStructs::CompleteConnectionHandshake handshake;
                     serverSocket->Send(&handshake, sizeof(handshake));
 
@@ -290,6 +299,7 @@ void NetworkingEngine::Update(float dt){
                 else {
                     timeUntilConnectionAttemptTimeout = connectionAttemptTimeout;
 
+                    // No serialization needed here for a single unsigned byte
                     PacketStructs::ConnectionRequest request;
                     serverSocket->Send(&request, sizeof(request));
                 }
@@ -307,30 +317,37 @@ void NetworkingEngine::Update(float dt){
 
             GetServer()->connection->lastMessageTime = p.timestamp;
 
-            auto packetType = (uint8_t*)p.data.data();
-            bool isUserdata = (*packetType & 0b10000000) != 0;
-            *packetType &= 0b01111111;
-            if (*packetType == PacketType::ConnectionRequestResponse) {
+            void* current = p.data.data();
+            auto packetType = Deserialize<uint8_t>(current);
+            bool isUserdata = (packetType & 0b10000000) != 0;
+            packetType &= 0b01111111;
+            if (packetType == PacketType::ConnectionRequestResponse) {
                 // If this happens, then the server already said we can join but then didn't recieve our last CompleteConnectionHandshake packet, so we'll send it again.
                 PacketStructs::CompleteConnectionHandshake handshake;
+                // No serialization needed here for a single unsigned byte
                 serverSocket->Send(&handshake, sizeof(handshake));
             }
-            else if (*packetType == PacketType::AckArray) {
+            else if (packetType == PacketType::AckArray) {
                 auto client = GetClient(p.originAddress, p.originPort);
-                ProcessAckArray(client, std::bit_cast<AckId*>(packetType + 1), (p.data.size() - 1) / 4);
+                unsigned nAcks = (p.data.size() - SerializedSize<uint8_t>()) / SerializedSize<AckId>();
+                ProcessAckArray(client, current, nAcks);
             }
-            else if (*packetType == PacketType::SendShort) {
+            else if (packetType == PacketType::SendShort) {
                 auto client = GetClient(p.originAddress, p.originPort);
-                ProcessShortMessage(client, packetType + 1, p.data.size() - 1, isUserdata);
+                ProcessShortMessageUnreliable(client, (uint8_t*)current, p.data.size() - SerializedSize<uint8_t>(), isUserdata);
             }
-            else if (*packetType == PacketType::SendShortAck) {
+            else if (packetType == PacketType::SendShortAck) {
                 auto client = GetClient(p.originAddress, p.originPort);
-                ProcessShortMessageReliable(client, *std::bit_cast<AckId*>(packetType + 1), p.data.data() + 5, p.data.size() - 5, isUserdata);
+                AckId id = Deserialize<AckId>(current);
+
+                ProcessShortMessageReliable(client, id, (uint8_t*)current, p.data.size() + p.data.data() - current, isUserdata);
             }
-            else if (*packetType == PacketType::LongMessage) {
+            else if (packetType == PacketType::LongMessage) {
                 auto client = GetClient(p.originAddress, p.originPort);
-                auto msg = (PacketStructs::LongMessage*)p.data.data();
-                ProcessLongMessageFragment(client, msg->firstPacketAckId, msg->offset, msg->numPackets, msg->data, p.data.size() - sizeof(PacketStructs::LongMessage), isUserdata);
+                uint16_t offset = Deserialize<uint16_t>(current);
+                AckId first = Deserialize<AckId>(current);
+                uint16_t nPackets = Deserialize<uint16_t>(current);
+                ProcessLongMessageFragment(client, first, offset, nPackets, (uint8_t*)current, p.data.size() + p.data.data() - current, isUserdata);
             }
         }
 
@@ -531,7 +548,8 @@ void NetworkingEngine::ImplSendData(void* data, size_t nBytes, std::shared_ptr<C
     PacketStructs::ShortMessage* packet = (PacketStructs::ShortMessage*)malloc(trueNBytes + sizeof(PacketStructs::ShortMessage));
     packet->type = PacketType::SendShort;
     if (isUserdata)
-        packet->type |= 0b10000000;
+        packet->type |= 0b10000000; // No serialization needed.
+    // TODO SERIALIZE USERDATAFORMAT    
     memcpy(packet + sizeof(PacketStructs::ShortMessage), &format, sizeof(UserdataFormatName));
     memcpy(packet + dataOffset + sizeof(PacketStructs::ShortMessage), data, nBytes);
 
@@ -625,7 +643,7 @@ void NetworkingEngine::AckMessages() {
     }
 }
 
-void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, AckId* acks, unsigned nAcks) {
+void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, void* acks, unsigned nAcks) {
     Assert(client && client->connection);
     //DebugLogInfo("Handling ackarray with ", nAcks, " acks");
     //DebugLogInfo("We're currently waiting for: ");
@@ -634,9 +652,10 @@ void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, AckId* a
     // }
     
     for (unsigned i = 0; i < nAcks; i++) {
+        AckId ack = Deserialize<AckId>(acks);
         for (unsigned int j = 0; j < client->connection->pendingAcks.size(); j++) {
             //DebugLogInfo("Considering ", client->connection->pendingAcks[j].ackId);
-            if (client->connection->pendingAcks[j].ackId == acks[i]) {
+            if (client->connection->pendingAcks[j].ackId == ack) {
                 //DebugLogInfo("Found ackId ", acks[i], " will be replaced with ", client->connection->pendingAcks.back().ackId);
                 client->connection->pendingAcks[j] = std::move(client->connection->pendingAcks.back());
                 client->connection->pendingAcks.pop_back();
@@ -661,11 +680,11 @@ void NetworkingEngine::ProcessAckArray(std::shared_ptr<Client>& client, AckId* a
     }
 }
 
-void NetworkingEngine::ProcessShortMessage(std::shared_ptr<Client>& client, uint8_t* data, unsigned nBytes, bool isUserdata) {
+void NetworkingEngine::ProcessShortMessage(std::shared_ptr<Client>& client, uint8_t* data, unsigned nBytes, bool isUserdata, bool isReliable) {
 
-    if (nBytes > 20 && *((uint8_t*)data + 80) == 0xcd) {
-        DebugLogInfo("Recieving uninitialized.");
-    }
+    //if (nBytes > 20 && *((uint8_t*)data + 80) == 0xcd) {
+    //    DebugLogInfo("Recieving uninitialized.");
+    //}
 
     if (isUserdata) {
         Assert(nBytes >= sizeof(UserdataFormatName));
@@ -688,13 +707,18 @@ void NetworkingEngine::ProcessShortMessage(std::shared_ptr<Client>& client, uint
         uint8_t type = data[0];
 
         if (type == TRANSFORM_SYNC_PACKET_IDENTIFIER) { // then it's transform syncs
-            HandleTransformSyncPacket(client, reinterpret_cast<PacketStructs::TransformSyncPacket*>(data), (nBytes - sizeof(PacketStructs::TransformSyncPacket)) / sizeof(PacketStructs::TransformSyncSnapshot));
+
+            HandleTransformSyncPacket(client, data+1, (nBytes - SerializedSize<PacketStructs::TransformSyncPacket>()) / SerializedSize<PacketStructs::TransformSyncSnapshot>());
 
         }
         else if (type == RIGIDBODY_SYNC_PACKET_IDENTIFIER) {
-            HandleRigidbodySyncPacket(client, reinterpret_cast<PacketStructs::RigidbodySyncPacket*>(data), (nBytes - sizeof(PacketStructs::RigidbodySyncPacket)) / sizeof(PacketStructs::RigidbodySyncSnapshot));
+            HandleRigidbodySyncPacket(client, data+1, (nBytes - SerializedSize<PacketStructs::RigidbodySyncPacket>()) / SerializedSize<PacketStructs::RigidbodySyncSnapshot>());
         }
     }
+}
+
+void NetworkingEngine::ProcessShortMessageUnreliable(std::shared_ptr<Client>& client, uint8_t* data, unsigned nBytes, bool isUserdata) {
+    ProcessShortMessage(client, data, nBytes, isUserdata, false);
 }
 
 void NetworkingEngine::ProcessShortMessageReliable(std::shared_ptr<Client>& client, AckId ackId, uint8_t* data, unsigned nBytes, bool isUserdata) {
@@ -705,33 +729,34 @@ void NetworkingEngine::ProcessShortMessageReliable(std::shared_ptr<Client>& clie
 
     client->connection->AckData(ackId);
 
-    if (isUserdata) {
-        Assert(nBytes >= sizeof(UserdataFormatName));
-        uint16_t formatName = *reinterpret_cast<uint16_t*>(data);
-        if (formatName == 0) {
-            NetworkUserdata userdata{};
-            userdata.sender = client;
-            userdata.data.assign(data + sizeof(UserdataFormatName), data + nBytes - sizeof(UserdataFormatName));
-            userdata.reliable = true;
-            onUserdataRecieved->Fire(userdata);
-        }
-        else {
-            if (!formattedUserdataEvents.contains(formatName))
-                DebugLogInfo("Unrecognized userdata format name ", formatName);
-            formattedUserdataEvents[formatName](client, data + sizeof(UserdataFormatName), nBytes - sizeof(UserdataFormatName));
-        }
-    }
-    else {
-        Assert(nBytes > 0);
-        uint8_t type = data[0];
-        if (type == TRANSFORM_SYNC_PACKET_IDENTIFIER) { // then it's transform syncs
-            HandleTransformSyncPacket(client, reinterpret_cast<PacketStructs::TransformSyncPacket*>(data), (nBytes - sizeof(PacketStructs::TransformSyncPacket)) / sizeof(PacketStructs::TransformSyncSnapshot));
-            
-        }
-        else if (type == RIGIDBODY_SYNC_PACKET_IDENTIFIER) {
-            HandleRigidbodySyncPacket(client, reinterpret_cast<PacketStructs::RigidbodySyncPacket*>(data), (nBytes - sizeof(PacketStructs::RigidbodySyncPacket)) / sizeof(PacketStructs::RigidbodySyncSnapshot));
-        }
-    }
+    ProcessShortMessage(client, data, nBytes, isUserdata, true);
+
+    //if (isUserdata) {
+    //    Assert(nBytes >= sizeof(UserdataFormatName));
+    //    uint16_t formatName = *reinterpret_cast<uint16_t*>(data);
+    //    if (formatName == 0) {
+    //        NetworkUserdata userdata{};
+    //        userdata.sender = client;
+    //        userdata.data.assign(data + sizeof(UserdataFormatName), data + nBytes - sizeof(UserdataFormatName));
+    //        userdata.reliable = true;
+    //        onUserdataRecieved->Fire(userdata);
+    //    }
+    //    else {
+    //        if (!formattedUserdataEvents.contains(formatName))
+    //            DebugLogInfo("Unrecognized userdata format name ", formatName);
+    //        formattedUserdataEvents[formatName](client, data + sizeof(UserdataFormatName), nBytes - sizeof(UserdataFormatName));
+    //    }
+    //}
+    //else {
+    //    Assert(nBytes > 0);
+    //    uint8_t type = data[0];
+    //    if (type == TRANSFORM_SYNC_PACKET_IDENTIFIER) { // then it's transform syncs
+    //        HandleTransformSyncPacket(client, data + 1, (nBytes - SerializedSize<PacketStructs::TransformSyncPacket>()) / SerializedSize<PacketStructs::TransformSyncSnapshot>());
+    //    }
+    //    else if (type == RIGIDBODY_SYNC_PACKET_IDENTIFIER) {
+    //        HandleRigidbodySyncPacket(client, data + 1, (nBytes - SerializedSize<PacketStructs::RigidbodySyncPacket>()) / SerializedSize<PacketStructs::RigidbodySyncSnapshot>());
+    //    }
+    //}
 }
 
 void NetworkingEngine::ProcessLongMessageFragment(std::shared_ptr<Client>& client, AckId firstAckId, uint16_t idOffset, uint16_t nPackets, uint8_t* data, unsigned nBytes, bool isUserdata) {
@@ -799,15 +824,19 @@ void NetworkingEngine::SyncGameobjects() {
 
     unsigned maxPacketsPerFrame = 512; // TODO: SET DYNAMICALLY BASED ON INTELLIGENT CRITERIA
 
-    constexpr unsigned TRANSFORM_SYNCS_PER_PACKET = Socket::MAX_PACKET_SIZE / sizeof(PacketStructs::TransformSyncSnapshot);
-    constexpr unsigned RIGIDBODY_SYNCS_PER_PACKET = Socket::MAX_PACKET_SIZE / sizeof(PacketStructs::RigidbodySyncSnapshot);
-    size_t transformPacketSize = sizeof(PacketStructs::TransformSyncPacket) + TRANSFORM_SYNCS_PER_PACKET * sizeof(PacketStructs::TransformSyncSnapshot);
-    size_t rigidbodyPacketSize = sizeof(PacketStructs::RigidbodySyncPacket) + RIGIDBODY_SYNCS_PER_PACKET * sizeof(PacketStructs::RigidbodySyncSnapshot);
+    unsigned TRANSFORM_SYNCS_PER_PACKET = Socket::MAX_PACKET_SIZE / SerializedSize<PacketStructs::TransformSyncSnapshot>();
+    unsigned RIGIDBODY_SYNCS_PER_PACKET = Socket::MAX_PACKET_SIZE / SerializedSize<PacketStructs::RigidbodySyncSnapshot>();
+    size_t transformPacketSize = sizeof(PacketStructs::TransformSyncPacket) + TRANSFORM_SYNCS_PER_PACKET * SerializedSize<PacketStructs::TransformSyncSnapshot>();
+    size_t rigidbodyPacketSize = sizeof(PacketStructs::RigidbodySyncPacket) + RIGIDBODY_SYNCS_PER_PACKET * SerializedSize<PacketStructs::RigidbodySyncSnapshot>();
 
     void* ackedTransformPacket = nullptr;
     void* transformPacket = nullptr;
     void* ackedRigidbodyPacket = nullptr;
     void* rigidbodyPacket = nullptr;
+    void* currentATP = ackedTransformPacket;
+    void* currentTP = transformPacket;
+    void* currentARP = ackedRigidbodyPacket;
+    void* currentRP = rigidbodyPacket;
 
     unsigned nAckedTransforms = 0;
     unsigned nTransforms = 0;
@@ -818,19 +847,17 @@ void NetworkingEngine::SyncGameobjects() {
         if (syncInfo.ackTransformSnapshots && syncInfo.lastSentRigidbody.has_value()) {
             if (!ackedRigidbodyPacket) {
                 ackedRigidbodyPacket = malloc(rigidbodyPacketSize);
+                currentARP = ackedRigidbodyPacket;
                 Assert(ackedRigidbodyPacket);
-                ((PacketStructs::RigidbodySyncPacket*)ackedRigidbodyPacket)->identifier = RIGIDBODY_SYNC_PACKET_IDENTIFIER;
-                ((PacketStructs::RigidbodySyncPacket*)ackedRigidbodyPacket)->tick = currentTick;
+                Serialize(RIGIDBODY_SYNC_PACKET_IDENTIFIER, currentARP);
+                Serialize(currentTick, currentARP);
+
 
             }
 
-            PacketStructs::RigidbodySyncSnapshot snapshot{
-            .transform = GetNetworkTransform(syncInfo.gameObject),
-            .rigidbody = GetNetworkRigidbody(syncInfo.gameObject),
-            .syncId = syncId,
-            };
-
-            memcpy(reinterpret_cast<uint8_t*>(ackedRigidbodyPacket) + sizeof(PacketStructs::RigidbodySyncPacket) + nAckedRigidbodies * sizeof(PacketStructs::RigidbodySyncSnapshot), &snapshot, sizeof(snapshot));
+            Serialize(GetNetworkTransform(syncInfo.gameObject), currentARP);
+            Serialize(GetNetworkRigidbody(syncInfo.gameObject), currentARP);
+            Serialize(syncId, currentARP);
             nAckedRigidbodies++;
 
             if (nAckedRigidbodies == RIGIDBODY_SYNCS_PER_PACKET) {
@@ -846,17 +873,14 @@ void NetworkingEngine::SyncGameobjects() {
         else if (syncInfo.ackTransformSnapshots) {
             if (!ackedTransformPacket) {
                 ackedTransformPacket = malloc(transformPacketSize);
+                currentATP = ackedTransformPacket;
                 Assert(ackedTransformPacket);
-                ((PacketStructs::TransformSyncPacket*)ackedTransformPacket)->identifier = TRANSFORM_SYNC_PACKET_IDENTIFIER;
-                ((PacketStructs::TransformSyncPacket*)ackedTransformPacket)->tick = currentTick;
+                Serialize(TRANSFORM_SYNC_PACKET_IDENTIFIER, currentATP);
+                Serialize(currentTick, currentATP);
             }
 
-            PacketStructs::TransformSyncSnapshot snapshot{
-            .transform = GetNetworkTransform(syncInfo.gameObject),
-            .syncId = syncId,
-            };
-
-            memcpy(reinterpret_cast<uint8_t*>(ackedTransformPacket) + sizeof(PacketStructs::TransformSyncPacket) + nAckedTransforms * sizeof(PacketStructs::TransformSyncSnapshot), &snapshot, sizeof(snapshot));
+            Serialize(GetNetworkTransform(syncInfo.gameObject), currentATP);
+            Serialize(syncId, currentATP);
             nAckedTransforms++;
 
             if (nAckedTransforms == TRANSFORM_SYNCS_PER_PACKET) {
@@ -872,18 +896,15 @@ void NetworkingEngine::SyncGameobjects() {
         else if (syncInfo.lastSentRigidbody.has_value()) {
             if (!rigidbodyPacket) {
                 rigidbodyPacket = malloc(rigidbodyPacketSize);
+                currentRP = rigidbodyPacket;
                 Assert(rigidbodyPacket);
-                ((PacketStructs::RigidbodySyncPacket*)rigidbodyPacket)->identifier = RIGIDBODY_SYNC_PACKET_IDENTIFIER;
-                ((PacketStructs::RigidbodySyncPacket*)rigidbodyPacket)->tick = currentTick;
+                Serialize(RIGIDBODY_SYNC_PACKET_IDENTIFIER, currentRP);
+                Serialize(currentTick, currentRP);
             }
 
-            PacketStructs::RigidbodySyncSnapshot snapshot{
-            .transform = GetNetworkTransform(syncInfo.gameObject),
-            .rigidbody = GetNetworkRigidbody(syncInfo.gameObject),
-            .syncId = syncId,
-            };
-
-            memcpy(reinterpret_cast<uint8_t*>(rigidbodyPacket) + sizeof(PacketStructs::RigidbodySyncPacket) + nRigidbodies * sizeof(PacketStructs::RigidbodySyncSnapshot), &snapshot, sizeof(snapshot));
+            Serialize(GetNetworkTransform(syncInfo.gameObject), currentRP);
+            Serialize(GetNetworkRigidbody(syncInfo.gameObject), currentRP);
+            Serialize(syncId, currentRP);
             nRigidbodies++;
 
             if (nRigidbodies == RIGIDBODY_SYNCS_PER_PACKET) {
@@ -899,17 +920,14 @@ void NetworkingEngine::SyncGameobjects() {
         else {
             if (!transformPacket) {
                 transformPacket = malloc(transformPacketSize);
+                currentTP = transformPacket;
                 Assert(transformPacket);
-                ((PacketStructs::TransformSyncPacket*)transformPacket)->identifier = TRANSFORM_SYNC_PACKET_IDENTIFIER;
-                ((PacketStructs::TransformSyncPacket*)transformPacket)->tick = currentTick;
+                Serialize(TRANSFORM_SYNC_PACKET_IDENTIFIER, currentTP);
+                Serialize(currentTick, currentTP);
             }
 
-            PacketStructs::TransformSyncSnapshot snapshot{
-            .transform = GetNetworkTransform(syncInfo.gameObject),
-            .syncId = syncId,
-            };
-
-            memcpy(reinterpret_cast<uint8_t*>(transformPacket) + sizeof(PacketStructs::TransformSyncPacket) * nTransforms * sizeof(PacketStructs::TransformSyncSnapshot), &snapshot, sizeof(snapshot));
+            Serialize(GetNetworkTransform(syncInfo.gameObject), currentTP);
+            Serialize(syncId, currentTP);
             nTransforms++;
 
             if (nTransforms == TRANSFORM_SYNCS_PER_PACKET) {
@@ -927,7 +945,8 @@ void NetworkingEngine::SyncGameobjects() {
 
     if (ackedRigidbodyPacket) {
         for (unsigned i = nAckedRigidbodies; i < RIGIDBODY_SYNCS_PER_PACKET; i++) {
-            memset(reinterpret_cast<uint8_t*>(ackedRigidbodyPacket) + sizeof(PacketStructs::RigidbodySyncPacket) * nAckedRigidbodies * sizeof(PacketStructs::RigidbodySyncSnapshot), 0, sizeof(PacketStructs::RigidbodySyncSnapshot));
+            memset(currentARP, 0, SerializedSize<PacketStructs::RigidbodySyncSnapshot>());
+            currentARP = (uint8_t*)currentARP + SerializedSize<PacketStructs::RigidbodySyncSnapshot>();
         }
 
         for (auto& c : clientsToSyncWith) {
@@ -939,7 +958,8 @@ void NetworkingEngine::SyncGameobjects() {
 
     if (rigidbodyPacket) {
         for (unsigned i = nRigidbodies; i < RIGIDBODY_SYNCS_PER_PACKET; i++) {
-            memset(reinterpret_cast<uint8_t*>(rigidbodyPacket) + sizeof(PacketStructs::RigidbodySyncPacket) * nRigidbodies * sizeof(PacketStructs::RigidbodySyncSnapshot), 0, sizeof(PacketStructs::RigidbodySyncSnapshot));
+            memset(currentRP, 0, SerializedSize<PacketStructs::RigidbodySyncSnapshot>());
+            currentRP = (uint8_t*)currentRP + SerializedSize<PacketStructs::RigidbodySyncSnapshot>();
         }
 
         for (auto& c : clientsToSyncWith) {
@@ -951,7 +971,8 @@ void NetworkingEngine::SyncGameobjects() {
 
     if (ackedTransformPacket) {
         for (unsigned i = nAckedTransforms; i < TRANSFORM_SYNCS_PER_PACKET; i++) {
-            memset(reinterpret_cast<uint8_t*>(ackedTransformPacket) + sizeof(PacketStructs::TransformSyncPacket) * nAckedTransforms * sizeof(PacketStructs::TransformSyncSnapshot), 0, sizeof(PacketStructs::TransformSyncSnapshot));
+            memset(currentATP, 0, SerializedSize<PacketStructs::TransformSyncSnapshot>());
+            currentATP = (uint8_t*)currentATP + SerializedSize<PacketStructs::TransformSyncSnapshot>();
         }
 
         for (auto& c : clientsToSyncWith) {
@@ -963,7 +984,8 @@ void NetworkingEngine::SyncGameobjects() {
 
     if (transformPacket) {
         for (unsigned i = nAckedRigidbodies; i < TRANSFORM_SYNCS_PER_PACKET; i++) {
-            memset(reinterpret_cast<uint8_t*>(transformPacket) + sizeof(PacketStructs::TransformSyncPacket) * nTransforms * sizeof(PacketStructs::TransformSyncSnapshot), 0, sizeof(PacketStructs::TransformSyncSnapshot));
+            memset(currentTP, 0, SerializedSize<PacketStructs::TransformSyncSnapshot>());
+            currentTP = (uint8_t*)currentTP + SerializedSize<PacketStructs::TransformSyncSnapshot>();
         }
 
         for (auto& c : clientsToSyncWith) {
@@ -978,22 +1000,24 @@ bool TickIsNewer(NetworkTickId previous, NetworkTickId maybeLater) {
     return maybeLater - previous < UINT16_MAX / 4;
 }
 
-void NetworkingEngine::HandleTransformSyncPacket(std::shared_ptr<Client>& client, PacketStructs::TransformSyncPacket* packet, unsigned nSnapshots) {
+void NetworkingEngine::HandleTransformSyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots) {
     //DebugLogInfo("Transform sync recieved; ", nSnapshots);
-    
+    NetworkTickId tick = Deserialize<NetworkTickId>(data);
+
     for (unsigned i = 0; i < nSnapshots; i++) {
-        auto id = packet->snapshots[i].syncId;
+        auto transform = Deserialize<TransformSync>(data);
+        auto id = Deserialize<SyncId>(data);
         if (client->ownedSyncedTransforms.contains(id)) {
-            if (!std::isfinite(packet->snapshots[i].transform.position.x) || !std::isfinite(packet->snapshots[i].transform.position.y) || !std::isfinite(packet->snapshots[i].transform.position.z) || glm::length(packet->snapshots[i].transform.rotation) < 0.001) {
+            if (!std::isfinite(transform.position.x) || !std::isfinite(transform.position.y) || !std::isfinite(transform.position.z) || glm::length(transform.rotation) < 0.001) {
                 DebugLogInfo("Recieved invalid network transform ", id);
             }
             else {
                 //DebugLogInfo("Applying transform ", id);
 
-                if (!client->ownedSyncedTransforms[id].recievedDataTick || TickIsNewer(*client->ownedSyncedTransforms[id].recievedDataTick, packet->tick)) {
-                    client->ownedSyncedTransforms[id].recievedDataTick = packet->tick;
-                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetPos(packet->snapshots[i].transform.position);
-                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetRot(packet->snapshots[i].transform.rotation);
+                if (!client->ownedSyncedTransforms[id].recievedDataTick || TickIsNewer(*client->ownedSyncedTransforms[id].recievedDataTick, tick)) {
+                    client->ownedSyncedTransforms[id].recievedDataTick = tick;
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetPos(transform.position);
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetRot(transform.rotation);
                 }
                 else DebugLogInfo(" Transform sync ", id, " was outdated ");
             }
@@ -1004,33 +1028,36 @@ void NetworkingEngine::HandleTransformSyncPacket(std::shared_ptr<Client>& client
     }
 }
 
-void NetworkingEngine::HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, PacketStructs::RigidbodySyncPacket* packet, unsigned nSnapshots) {
+void NetworkingEngine::HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots) {
     //DebugLogInfo("Rigidbody sync packet recieved with ", nSnapshots, " snapshots");
+    NetworkTickId tick = Deserialize<NetworkTickId>(data);
 
     for (unsigned i = 0; i < nSnapshots; i++) {
-        auto id = packet->snapshots[i].syncId;
+        auto transform = Deserialize<TransformSync>(data);
+        auto rigidbody = Deserialize<RigidbodySync>(data);
+        auto id = Deserialize<SyncId>(data);
         if (client->ownedSyncedTransforms.contains(id) && client->ownedSyncedTransforms[id].lastSentRigidbody) {
-            if (!std::isfinite(packet->snapshots[i].transform.position.x) 
-                || !std::isfinite(packet->snapshots[i].transform.position.y)
-                || !std::isfinite(packet->snapshots[i].transform.position.z) 
-                || !std::isfinite(packet->snapshots[i].rigidbody.velocity.x)
-                || !std::isfinite(packet->snapshots[i].rigidbody.velocity.y)
-                || !std::isfinite(packet->snapshots[i].rigidbody.velocity.z)
-                || !std::isfinite(packet->snapshots[i].rigidbody.angularVelocity.x)
-                || !std::isfinite(packet->snapshots[i].rigidbody.angularVelocity.y)
-                || !std::isfinite(packet->snapshots[i].rigidbody.angularVelocity.z)
-                || glm::length(packet->snapshots[i].transform.rotation) < 0.001) {
+            if (!std::isfinite(transform.position.x) 
+                || !std::isfinite(transform.position.y)
+                || !std::isfinite(transform.position.z) 
+                || !std::isfinite(rigidbody.velocity.x)
+                || !std::isfinite(rigidbody.velocity.y)
+                || !std::isfinite(rigidbody.velocity.z)
+                || !std::isfinite(rigidbody.angularVelocity.x)
+                || !std::isfinite(rigidbody.angularVelocity.y)
+                || !std::isfinite(rigidbody.angularVelocity.z)
+                || glm::length(transform.rotation) < 0.001) {
                 DebugLogInfo("Recieved invalid network rigidbody", id);
             }
             else {
-                //DebugLogInfo("Applying rigidbody sync ", id);
+                DebugLogInfo("Applying rigidbody sync ", id);
 
-                if (!client->ownedSyncedTransforms[id].recievedDataTick || TickIsNewer(*client->ownedSyncedTransforms[id].recievedDataTick, packet->tick)) {
-                    client->ownedSyncedTransforms[id].recievedDataTick = packet->tick;
-                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetPos(packet->snapshots[i].transform.position);
-                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetRot(packet->snapshots[i].transform.rotation);
-                    client->ownedSyncedTransforms[id].gameObject->RawGet<RigidbodyComponent>()->velocity = packet->snapshots[i].rigidbody.velocity;
-                    client->ownedSyncedTransforms[id].gameObject->RawGet<RigidbodyComponent>()->angularVelocity = packet->snapshots[i].rigidbody.angularVelocity;
+                if (!client->ownedSyncedTransforms[id].recievedDataTick || TickIsNewer(*client->ownedSyncedTransforms[id].recievedDataTick, tick)) {
+                    client->ownedSyncedTransforms[id].recievedDataTick = tick;
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetPos(transform.position);
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<TransformComponent>()->SetRot(transform.rotation);
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<RigidbodyComponent>()->velocity = rigidbody.velocity;
+                    client->ownedSyncedTransforms[id].gameObject->RawGet<RigidbodyComponent>()->angularVelocity = rigidbody.angularVelocity;
                 }
                 else DebugLogInfo(" Rigidbody sync ", id, " was outdated ");
             }
