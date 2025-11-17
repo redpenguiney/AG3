@@ -20,7 +20,7 @@ public:
 };
 
 // Will probably crash out if you stretch out the sphere. Might not; who knows!
-// Radius 0.5.
+// Radius 0.5. 
 class SphereMesh : public ConvexMesh {
 public:
     SphereMesh() {};
