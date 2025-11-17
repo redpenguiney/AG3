@@ -34,6 +34,7 @@ public:
 	std::optional<Framebuffer> mainFramebuffer;
 	
 	// tells the renderer this shader needs lighting data/etc.
+	// Does nothing if the shader was already added.
 	void AddShader(std::shared_ptr<ShaderProgram> shader);
 
 	static void PrepPostprocessing(Material* material, std::shared_ptr<ShaderProgram> _);

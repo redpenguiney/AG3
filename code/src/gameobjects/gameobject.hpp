@@ -97,8 +97,10 @@ private:
 // If you don't know what a gameobject is, no offense but maybe you shouldn't be reading this..
 class GameObject : public std::enable_shared_from_this<GameObject> {
 public:
-	// name is not used anywhere except for debugging and by the user; set as you please
-	std::string name;
+	// Gameobject name is only used for debugging purposes and whatever you use it for.
+	std::string Name();
+	// Gameobject name is only used for debugging purposes and whatever you use it for.
+	void Rename(const std::string& newName);
 
 	~GameObject();
 
@@ -361,6 +363,8 @@ private:
 	ComponentPool* const pool;
 	const int objectIndex;
 	const int page;
+
+	static inline std::unordered_map < GameObject*, std::string> namedGameobjects;
 
 	// unique_ptr so it doesn't memory leak
 	static inline std::unordered_map<std::bitset<N_COMPONENT_TYPES>, std::unique_ptr<ComponentPool>> COMPONENT_POOLS;

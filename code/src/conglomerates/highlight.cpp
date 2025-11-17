@@ -46,7 +46,7 @@ void HighlightHandler::AddHighlight(std::shared_ptr<GameObject> object, float ou
 	objParams.materialId = highlightMaterial->id;
 
 	auto obj = GameObject::New(objParams);
-	obj->name = "__HIGHLIGHT__";
+	//obj->name = "__HIGHLIGHT__";
 	obj->RawGet<TransformComponent>()->SetParent(*object->RawGet<TransformComponent>());
 	obj->RawGet<TransformComponent>()->SetPos(object->RawGet<TransformComponent>()->Position());
 	obj->RawGet<TransformComponent>()->SetScl(object->RawGet<TransformComponent>()->Scale());

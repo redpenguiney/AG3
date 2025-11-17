@@ -147,7 +147,7 @@ void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool phy
                 g->Get<TransformComponent>()->SetScl(size);
                 g->Get<RenderComponent>()->SetColor(glm::vec4(1, 1, 1, 1));
                 g->Get<RenderComponent>()->SetTextureZ(-1);
-                g->name = std::string("Gameobject #") + std::to_string(nObjs);
+                g->Rename(std::string("Gameobject #") + std::to_string(nObjs));
                 ////goWeakPtr = g;
                 //nObjs++;
 
@@ -212,7 +212,7 @@ void TestSphere(int x, int y, int z, bool physics)
     g->Get<TransformComponent>()->SetScl(glm::dvec3(1.0, 1.0, 1.0));
     g->Get<RenderComponent>()->SetColor(glm::vec4(1, 1, 1, 1));
     g->Get<RenderComponent>()->SetTextureZ(-1);
-    g->name = std::string("Sphereobject") ;
+    g->Rename(std::string("Sphereobject"));
     ////goWeakPtr = g;
     //nObjs++;
 
@@ -236,7 +236,7 @@ void TestBrickWall()
     wall1->Get<TransformComponent>()->SetScl({ 1, 8, 8 });
     wall1->Get<RenderComponent>()->SetColor({ 0, 1, 1, 1 });
     wall1->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
-    wall1->name = "wall";
+    wall1->Rename("wall");
     //{
 
     //    // auto wall2 = ComponentRegistry::NewGameObject(wallParams);
@@ -291,7 +291,7 @@ std::shared_ptr<GameObject> TestGrassFloor()
     floor->RawGet<TransformComponent>()->SetScl({ 10, 1, 10 });
     floor->RawGet<RenderComponent>()->SetColor({ 0.5, 1, 0.5, 1.0 });
     floor->RawGet<RenderComponent>()->SetTextureZ(grassTextureZ);
-    floor->name = "ah yes the floor here is made of floor";
+    floor->Rename("ah yes the floor here is made of floor");
 
     return floor;
 }
@@ -363,7 +363,7 @@ void TestPit() {
     wall1->Get<TransformComponent>()->SetScl({ 1, 8, SIZE });
     wall1->Get<RenderComponent>()->SetColor({ 1, 1, 1, 1 });
     wall1->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
-    wall1->name = "wall";
+    wall1->Rename("wall");
 
     auto wall2 = GameObject::New(wallParams);
     wall2->Get<TransformComponent>()->SetPos({ 0, 4, SIZE / 2 });
@@ -372,7 +372,7 @@ void TestPit() {
     wall2->Get<TransformComponent>()->SetScl({ SIZE, 8, 1 });
     wall2->Get<RenderComponent>()->SetColor({ 1, 1, 1, 1 });
     wall2->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
-    wall2->name = "wall";
+    wall2-> Rename("wall");
     auto wall3 = GameObject::New(wallParams);
     wall3->Get<TransformComponent>()->SetPos({ -SIZE / 2, 4, 0 });
     wall3->Get<TransformComponent>()->SetRot(glm::vec3{ 0, 0, 0.0 });
@@ -380,7 +380,7 @@ void TestPit() {
     wall3->Get<TransformComponent>()->SetScl({ 1, 8, SIZE });
     wall3->Get<RenderComponent>()->SetColor({ 1, 1, 1, 1 });
     wall3->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
-    wall3->name = "wall";
+    wall3->Rename("wall");
     auto wall4 = GameObject::New(wallParams);
     wall4->Get<TransformComponent>()->SetPos({ 0, 4, -SIZE / 2 });
     wall4->Get<TransformComponent>()->SetRot(glm::vec3{ 0, 0, 0.0 });
@@ -388,7 +388,7 @@ void TestPit() {
     wall4->Get<TransformComponent>()->SetScl({ SIZE, 8, 1 });
     wall4->Get<RenderComponent>()->SetColor({ 1, 1, 1, 1 });
     wall4->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
-    wall4->name = "wall";
+    wall4->Rename("wall");
 
     auto floor = GameObject::New(wallParams);
     floor->Get<TransformComponent>()->SetPos({ 0, -1, 0 });
@@ -397,7 +397,7 @@ void TestPit() {
     floor->Get<TransformComponent>()->SetScl({ SIZE, 2, SIZE });
     floor->Get<RenderComponent>()->SetColor({ 0, 1, 0, 1 });
     floor->Get<RenderComponent>()->SetTextureZ(brickTextureZ);
-    floor->name = "wall";
+    floor->Rename("floor");
 
 }
 

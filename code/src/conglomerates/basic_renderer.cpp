@@ -59,6 +59,9 @@ static void UpdateFramebuffer() {
 }
 
 void BasicRenderer::AddShader(std::shared_ptr<ShaderProgram> shader) {
+    for (auto& s : shaders) {
+        if (s.lock().get() == shader.get()) return;
+    }
     shaders.push_back(shader);
 
     SetEnvironmentalLighting(currentLighting);

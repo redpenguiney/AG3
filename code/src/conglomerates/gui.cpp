@@ -161,7 +161,7 @@ Gui::Gui(const GuiCreateParams& params):
 
     object = GameObject::New(objectParams);
 
-    object->name = "GuiObject";
+    //object->name = "GuiObject";
 
     guiScaleMode = ScaleXY;
     anchorPoint = {0, 0};
@@ -205,7 +205,7 @@ Gui::Gui(const GuiCreateParams& params):
             .fontMaterialLayer = params.textInfo->fontMaterialTextureLayer
         });
 
-        guiTextInfo->object->name = "GuiText";
+        //guiTextInfo->object->name = "GuiText";
 
     }
 

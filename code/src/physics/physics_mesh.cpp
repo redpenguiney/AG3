@@ -47,200 +47,17 @@ std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, unsig
     } 
 }
 
-
-
-// Returns a vector of ConvexMesh objects for a PhysicsMesh from the given Mesh. 
-// TODO: convex decomposition
-std::vector<PhysicsMesh::ConvexMesh> me_when_i_so_i_but_then_i_so_i(const std::shared_ptr<Mesh>& mesh, float simplifyThreshold, bool convexDecomposition) {
-    //Assert(!mesh->dynamic);
-    Assert(simplifyThreshold >= 1.0f);
-    // DebugLogInfo("Here we go. ", mesh->meshId);
-
-    // Graphics meshes contain extraneous data (UVs, colors, etc.) that isn't relevant to physics, so this function needs to get rid of that.
-    // This function also needs to take triangles with same normal and put them in same polygon to fill faces, and get edges.
-    std::vector<std::pair<glm::vec3, std::vector<glm::vec3>>> faces;
-    std::vector<std::array<glm::vec3, 3>> triangles;
-    std::vector<std::pair<glm::vec3, glm::vec3>> edges;
-
-    Assert(mesh->indices.size() % 3 == 0);
-    for (auto it = mesh->indices.begin(); it != mesh->indices.end();) {
-        
-        //auto itCopy = it;
-
-        auto vertexIndex1 = *(it++) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
-        auto vertexIndex2 =  *(it++) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
-        auto vertexIndex3 =  *(it++) * mesh->nonInstancedVertexSize/sizeof(GLfloat);
-
-        auto offset = mesh->vertexFormat.attributes.position->offset/sizeof(GLfloat);
-        glm::vec3 vertex1 = {mesh->vertices[vertexIndex1 + offset], mesh->vertices[vertexIndex1 + 1 + offset], mesh->vertices[vertexIndex1 + 2 + offset]};
-        glm::vec3 vertex2 = {mesh->vertices[vertexIndex2 + offset], mesh->vertices[vertexIndex2 + 1 + offset], mesh->vertices[vertexIndex2 + 2 + offset]};
-        glm::vec3 vertex3 = {mesh->vertices.at(vertexIndex3 + offset), mesh->vertices.at(vertexIndex3 + 1 + offset), mesh->vertices.at(vertexIndex3 + 2 + offset)};
-        
-        // DebugLogInfo("Vertices ", glm::to_string(vertex1), ",", glm::to_string(vertex2), ",", glm::to_string(vertex3));
-
-        auto normal = glm::cross(vertex1 - vertex2, vertex1 - vertex3);
-
-        // make sure normal always points outward
-        double distance = glm::dot(normal, vertex1);
-		if (distance < 0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
-			normal   *= -1;
-			distance *= -1;
-		}
-
-        // if we already started a face with this normal, add our nonduplicate vertices to it. 
-        bool foundFace = false;
-        for (auto & f: faces) {
-            if (glm::dot(f.first, normal) > 0.99f) { // this dot product check lets the normals be very slightly different (TODO: change threshold? do we even want threshold?)
-                foundFace = true;
-                // DebugLogInfo("Found second face with normal ", glm::to_string(normal));
-
-                bool containsVertex1 = false;
-                bool containsVertex2 = false;
-                bool containsVertex3 = false;
-                for (auto & v: f.second) {
-                    if (v == vertex1) {
-                        // DebugLogInfo("Face already has ", glm::to_string(v));
-                        containsVertex1 = true;
-                    }
-                    else if (v == vertex2) {
-                        // DebugLogInfo("Face already has ", glm::to_string(v));
-                        containsVertex2 = true;
-                    }
-                    else if (v == vertex3) {
-                        // DebugLogInfo("Face already has ", glm::to_string(v));
-                        containsVertex3 = true;
-                    }
-                }
-                
-                // DebugLogInfo("Before: f2 size = ", f.second.size());
-                if (!containsVertex1) {
-                    f.second.push_back(vertex1);
-                }
-                if (!containsVertex2) {
-                    f.second.push_back(vertex2);
-                }
-                if (!containsVertex3) {
-                    f.second.push_back(vertex3);
-                }
-                // DebugLogInfo("After: f2 size = ", f.second.size());
-
-                break; // break exits the inner loop
-            }
-        }
-        // if this is the first face we've found with this normal, create a new face.
-        if (!foundFace) {
-            faces.push_back({normal, {vertex1, vertex2, vertex3}});
-        }
-
-        // and of course add triangle to triangles vector
-        triangles.push_back({vertex1, vertex2, vertex3});
-    }
-
-    // Then, we need to sort each face's vertices so that they're in clockwise order, because SAT needs that too.
-    for (auto & face: faces) {
-        
-        auto faceCenter = glm::vec3(0, 0, 0);
-        for (auto & v: face.second) {
-            faceCenter += v;
-        }
-        faceCenter /= face.second.size();
-
-        //const auto r = face.second.at(0) - faceCenter; // use an arbitrary vector as the twelve o’clock reference
-        //const auto p = cross(r, face.first); // TODO: was faceCenter, switched it because faceCenter could plausibly be a zero vector
-
-        //std::sort(face.second.begin(), face.second.end(), [&faceCenter, &p, &r](const glm::vec3 &v1, const glm::vec3&v2) {
-        //    
-        //    // stolen from https://stackoverflow.com/questions/47949485/sorting-a-list-of-3d-points-in-clockwise-order
-        //    // the sort function should return true if v1 is clockwise from v2 around the center of the face.
-
-        //    auto u1 = v1 - faceCenter;
-        //    auto u2 = v2 - faceCenter;
-        //    auto h1 = glm::dot(u1, p);
-        //    auto h2 = glm::dot(u2, p);
-
-        //    if (h2 <= 0 && h1 > 0) {
-        //        return false;
-        //    }
-        //    else if( h1 <= 0 && h2 > 0) {
-        //        return true;
-        //    }
-        //    else if (h1 == 0 && h2 == 0) {
-        //        return (glm::dot(u1, r) > 0 && glm::dot(u2, r) < 0);
-        //    }
-        //    else {
-        //        return (glm::dot(glm::cross(u1, u2), faceCenter) > 0);
-        //    }
-        //            
-        //});
-
-        std::sort(face.second.begin(), face.second.end(), [&](const glm::vec3& v1, const glm::vec3& v2) {
-            return glm::dot(face.first, glm::cross(v1 - faceCenter, v2 - faceCenter)) > 0;
-        });
-    }
-
-    // Likewise, triangle vertices need to be in clockwise order for raycasting.
-    for (auto& tri : triangles) {
-        auto faceCenter = glm::vec3(0, 0, 0);
-        for (auto& v : tri) faceCenter += v;
-        faceCenter /= 3.0f;
-
-        auto normal = glm::cross(tri[2] - tri[1], tri[2] - tri[0]);
-        // make sure normal always points outward
-        double distance = glm::dot(normal, tri[0]);
-        if (distance < 0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
-            normal *= -1;
-            distance *= -1;
-        }
-
-        std::sort(tri.begin(), tri.end(), [&](const glm::vec3& v1, const glm::vec3& v2) {
-            return glm::dot(normal, glm::cross(v1 - faceCenter, v2 - faceCenter)) > 0;
-        });
-    }
-
-    // Then, we need to get edges of each face.
-    // We don't do this when iterating through triangles since we don't want (for example) the diagonal of a square face to be treated as an edge, plus we might (???) want edges in clockwise order too.
-    for (auto & f: faces) {
-        for (unsigned int i = 0; i < f.second.size(); i++) {
-            auto vertex1 = f.second[i];
-            auto vertex2 = f.second[(i + 1 == f.second.size() ? 0 : i + 1)]; // make sure we get the edge between the last vertex and the first vertex of the face
-            // check if this edge isn't already in the edges vector and if so add it
-            bool foundEdge = false;
-            for (auto & [a, b]: edges) {
-                // the order of a and b doesn't matter so we gotta check both combinations
-                if (a == vertex1 && b == vertex2) {foundEdge = true;}
-                if (a == vertex2 && b == vertex1) {foundEdge = true;}
-            }
-
-            if (!foundEdge) {
-                edges.emplace_back(vertex1, vertex2);
-            }
-        }
-        
-    }
-    
-    // std::cout << "Created physics mesh:\n";
-    // for (auto & f: faces) {
-    //     std::cout << "\tFace with normal " << glm::to_string(f.first) << " has vertices "; 
-    //     for (auto & v: f.second) {
-    //         std::cout << glm::to_string(v) << ", ";
-    //     }
-    //     std::cout << ".\n";
-    // }
-    // for (auto & e: edges) {
-    //     std::cout << "\tEdge " << glm::to_string(e.first) << " to " << glm::to_string(e.second) << ".\n";
-    // }
-    return {PhysicsMesh::ConvexMesh {.triangles = triangles, .faces = faces, .edges = edges}};
-}
-
 void PhysicsMesh::RefreshMesh()
 {
-    assert(origin != nullptr);
-    meshes = (me_when_i_so_i_but_then_i_so_i(origin, 1.0, false));
+    if (origin == nullptr) return;
+    meshes.clear();
+    auto newMeshes = ConvexTriangleMesh::FromMesh(origin, 0, false);
+    std::swap(newMeshes, meshes); // TODO
 }
 
 PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): 
     origin(mesh->dynamic ? mesh : nullptr), 
-    meshes(me_when_i_so_i_but_then_i_so_i(mesh, 1.0, false))
+    meshes()
 {
     
     //RefreshMesh();
@@ -291,28 +108,8 @@ glm::mat3x3 PhysicsMesh::CalculateLocalMomentOfInertia(glm::vec3 objectScale, fl
     // calculate volume of object (needed to calculate density which is needed to calculate moi)
     float volume = 0.0;
 
-    for (const auto & convexMesh: meshes) { // TODO: does this even work for concave things?
-        for (const auto & triangle: convexMesh.triangles) {
-            glm::vec3 p1 = triangle[0] * objectScale; 
-            glm::vec3 p2 = triangle[1] * objectScale; 
-            glm::vec3 p3 = triangle[2] * objectScale; 
-                
-            glm::vec3 triangleNormal = glm::cross(p2 - p1, p3 - p1);
-            
-            glm::vec3 triangleCentroid = (p1 + p2 + p3)/3.0f;
-            
-            // volume calc from https://math.stackexchange.com/questions/3616760/how-to-calculate-the-volume-of-tetrahedron-given-by-4-points
-            float tetrahedronVolume = TetrahedronVolume(p1, p2, p3, {1.0, 1.0, 1.0});
-            
-            float dot = glm::dot(triangleNormal, triangleCentroid); // We're checking if the triangle normal points towards the origin.
-            if (dot > 0.0) { // then the triangle's normal points away from the origin. 
-                volume += tetrahedronVolume;
-            }
-            else { // then the triangle normal points towards the origin (because mesh has concave bits) and we gotta negate all the values it calculates.
-                volume -= tetrahedronVolume;
-            }
-
-        }
+    for (const auto & convexMesh: meshes) {
+        volume += convexMesh->GetVolume(objectScale);
     }
 
     Assert(volume > 0);
@@ -323,37 +120,7 @@ glm::mat3x3 PhysicsMesh::CalculateLocalMomentOfInertia(glm::vec3 objectScale, fl
     float Ia = 0.0, Ib = 0.0, Ic = 0.0, Iap = 0.0, Ibp = 0.0, Icp = 0.0; // components of inertia tensor. i think.
 
     for (const auto & convexMesh: meshes) { // TODO: does this even work for concave things?
-        for (const auto & triangle: convexMesh.triangles) {
-            glm::vec3 p1 = triangle[0] * objectScale; 
-            glm::vec3 p2 = triangle[1] * objectScale; 
-            glm::vec3 p3 = triangle[2] * objectScale; 
-            
-            glm::vec3 triangleNormal = glm::cross(p2 - p1, p3 - p1);
-            
-            glm::vec3 triangleCentroid = (p1 + p2 + p3)/3.0f;
-            glm::vec3 tetrahedronCenterOfMass = (p1 + p2 + p3)/4.0f; // not bothering to add the origin for obvious reasons
-            
-            // volume calc from https://math.stackexchange.com/questions/3616760/how-to-calculate-the-volume-of-tetrahedron-given-by-4-points
-            float tetrahedronVolume = TetrahedronVolume(p1, p2, p3, {1.0, 1.0, 1.0});
-
-            float tetrahedronMass = tetrahedronVolume * density;
-
-            float dot = glm::dot(triangleNormal, triangleCentroid); // We're checking if the triangle normal points towards the origin.
-            if (dot < 0.0) { // then the triangle's normal points towards the origin and must be negated. 
-                tetrahedronMass *= -1;
-                tetrahedronVolume *= -1;
-            }
-
-            objectCenterOfMass += tetrahedronCenterOfMass * tetrahedronMass; // we'll divide it to get actual average at the end
-
-            // from 23:00 in the video i mentioned above
-            Ia += 6.0f * tetrahedronVolume * (ComputeInertiaMoment(p1, p2, p3, 1) + ComputeInertiaMoment(p1, p2, p3, 2));
-            Ib += 6.0f * tetrahedronVolume * (ComputeInertiaMoment(p1, p2, p3, 0) + ComputeInertiaMoment(p1, p2, p3, 2));
-            Ic += 6.0f * tetrahedronVolume * (ComputeInertiaMoment(p1, p2, p3, 0) + ComputeInertiaMoment(p1, p2, p3, 1));
-            Iap += 6.0f * tetrahedronVolume * ComputeInertiaProduct(p1, p2, p3, 1, 2);
-            Ibp += 6.0f * tetrahedronVolume * ComputeInertiaProduct(p1, p2, p3, 0, 1);
-            Icp += 6.0f * tetrahedronVolume * ComputeInertiaProduct(p1, p2, p3, 0, 2);
-        }
+        convexMesh->AddLocalMomentOfInertiaContribution(objectCenterOfMass, Ia, Ib, Ic, Iap, Ibp, Icp, objectScale, objectMass);
     }
 
     objectCenterOfMass /= objectMass;
@@ -372,4 +139,270 @@ glm::mat3x3 PhysicsMesh::CalculateLocalMomentOfInertia(glm::vec3 objectScale, fl
     };
 
     return inertiaTensor;
+}
+
+float ConvexTriangleMesh::GetVolume(glm::vec3 objectScale) { // this would actually work for a concave triangle mesh, too
+    float volume = 0;
+    for (const auto& triangle : triangles) {
+        glm::vec3 p1 = triangle[0] * objectScale;
+        glm::vec3 p2 = triangle[1] * objectScale;
+        glm::vec3 p3 = triangle[2] * objectScale;
+
+        glm::vec3 triangleNormal = glm::cross(p2 - p1, p3 - p1);
+
+        glm::vec3 triangleCentroid = (p1 + p2 + p3) / 3.0f;
+
+        // volume calc from https://math.stackexchange.com/questions/3616760/how-to-calculate-the-volume-of-tetrahedron-given-by-4-points
+        float tetrahedronVolume = TetrahedronVolume(p1, p2, p3, { 1.0, 1.0, 1.0 });
+
+        float dot = glm::dot(triangleNormal, triangleCentroid); // We're checking if the triangle normal points towards the origin.
+        if (dot > 0.0) { // then the triangle's normal points away from the origin. 
+            volume += tetrahedronVolume;
+        }
+        else { // then the triangle normal points towards the origin (because mesh has concave bits) and we gotta negate all the values it calculates.
+            volume -= tetrahedronVolume;
+        }
+    }
+    return volume;
+}
+
+void ConvexTriangleMesh::AddLocalMomentOfInertiaContribution(glm::vec3& centerOfMass, float& Ia, float& Ib, float& Ic, float& Iap, float& Ibp, float& Icp, glm::vec3 objectScale, float density) {
+    for (const auto& triangle : triangles) {
+        glm::vec3 p1 = triangle[0] * objectScale;
+        glm::vec3 p2 = triangle[1] * objectScale;
+        glm::vec3 p3 = triangle[2] * objectScale;
+
+        glm::vec3 triangleNormal = glm::cross(p2 - p1, p3 - p1);
+
+        glm::vec3 triangleCentroid = (p1 + p2 + p3) / 3.0f;
+        glm::vec3 tetrahedronCenterOfMass = (p1 + p2 + p3) / 4.0f; // not bothering to add the origin for obvious reasons
+
+        // volume calc from https://math.stackexchange.com/questions/3616760/how-to-calculate-the-volume-of-tetrahedron-given-by-4-points
+        float tetrahedronVolume = TetrahedronVolume(p1, p2, p3, { 1.0, 1.0, 1.0 });
+
+        float tetrahedronMass = tetrahedronVolume * density;
+
+        float dot = glm::dot(triangleNormal, triangleCentroid); // We're checking if the triangle normal points towards the origin.
+        if (dot < 0.0) { // then the triangle's normal points towards the origin and must be negated. 
+            tetrahedronMass *= -1;
+            tetrahedronVolume *= -1;
+        }
+
+        centerOfMass += tetrahedronCenterOfMass * tetrahedronMass; // we'll divide it to get actual average at the end
+
+        // from 23:00 in the video i mentioned above
+        Ia += 6.0f * tetrahedronVolume * (ComputeInertiaMoment(p1, p2, p3, 1) + ComputeInertiaMoment(p1, p2, p3, 2));
+        Ib += 6.0f * tetrahedronVolume * (ComputeInertiaMoment(p1, p2, p3, 0) + ComputeInertiaMoment(p1, p2, p3, 2));
+        Ic += 6.0f * tetrahedronVolume * (ComputeInertiaMoment(p1, p2, p3, 0) + ComputeInertiaMoment(p1, p2, p3, 1));
+        Iap += 6.0f * tetrahedronVolume * ComputeInertiaProduct(p1, p2, p3, 1, 2);
+        Ibp += 6.0f * tetrahedronVolume * ComputeInertiaProduct(p1, p2, p3, 0, 1);
+        Icp += 6.0f * tetrahedronVolume * ComputeInertiaProduct(p1, p2, p3, 0, 2);
+    }
+}
+
+ConvexTriangleMesh::ConvexTriangleMesh(
+    const std::vector<std::array<glm::vec3, 3>> triangles,
+    const std::vector<std::pair<glm::vec3, std::vector<glm::vec3>>> faces,
+    const std::vector<std::pair<glm::vec3, glm::vec3>> edges,
+    const std::vector<glm::vec3> vertices):
+    triangles(triangles),
+    faces(faces),
+    edges(edges),
+    vertices(vertices)
+{
+}
+
+std::vector<std::unique_ptr<ConvexMesh>> ConvexTriangleMesh::FromMesh(const std::shared_ptr<Mesh>& mesh, float simplifyThreshold, bool convexDecomposition)
+{
+    //Assert(!mesh->dynamic);
+    Assert(simplifyThreshold >= 1.0f);
+    // DebugLogInfo("Here we go. ", mesh->meshId);
+
+    // Graphics meshes contain extraneous data (UVs, colors, etc.) that isn't relevant to physics, so this function needs to get rid of that.
+    // This function also needs to take triangles with same normal and put them in same polygon to fill faces, and get edges.
+    std::vector<std::pair<glm::vec3, std::vector<glm::vec3>>> faces;
+    std::vector<std::array<glm::vec3, 3>> triangles;
+    std::vector<std::pair<glm::vec3, glm::vec3>> edges;
+
+    Assert(mesh->indices.size() % 3 == 0);
+    for (auto it = mesh->indices.begin(); it != mesh->indices.end();) {
+
+        //auto itCopy = it;
+
+        auto vertexIndex1 = *(it++) * mesh->nonInstancedVertexSize / sizeof(GLfloat);
+        auto vertexIndex2 = *(it++) * mesh->nonInstancedVertexSize / sizeof(GLfloat);
+        auto vertexIndex3 = *(it++) * mesh->nonInstancedVertexSize / sizeof(GLfloat);
+
+        auto offset = mesh->vertexFormat.attributes.position->offset / sizeof(GLfloat);
+        glm::vec3 vertex1 = { mesh->vertices[vertexIndex1 + offset], mesh->vertices[vertexIndex1 + 1 + offset], mesh->vertices[vertexIndex1 + 2 + offset] };
+        glm::vec3 vertex2 = { mesh->vertices[vertexIndex2 + offset], mesh->vertices[vertexIndex2 + 1 + offset], mesh->vertices[vertexIndex2 + 2 + offset] };
+        glm::vec3 vertex3 = { mesh->vertices.at(vertexIndex3 + offset), mesh->vertices.at(vertexIndex3 + 1 + offset), mesh->vertices.at(vertexIndex3 + 2 + offset) };
+
+        // DebugLogInfo("Vertices ", glm::to_string(vertex1), ",", glm::to_string(vertex2), ",", glm::to_string(vertex3));
+
+        auto normal = glm::cross(vertex1 - vertex2, vertex1 - vertex3);
+
+        // make sure normal always points outward
+        double distance = glm::dot(normal, vertex1);
+        if (distance < 0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
+            normal *= -1;
+            distance *= -1;
+        }
+
+        // if we already started a face with this normal, add our nonduplicate vertices to it. 
+        bool foundFace = false;
+        for (auto& f : faces) {
+            if (glm::dot(f.first, normal) > 0.99f) { // this dot product check lets the normals be very slightly different (TODO: change threshold? do we even want threshold?)
+                foundFace = true;
+                // DebugLogInfo("Found second face with normal ", glm::to_string(normal));
+
+                bool containsVertex1 = false;
+                bool containsVertex2 = false;
+                bool containsVertex3 = false;
+                for (auto& v : f.second) {
+                    if (v == vertex1) {
+                        // DebugLogInfo("Face already has ", glm::to_string(v));
+                        containsVertex1 = true;
+                    }
+                    else if (v == vertex2) {
+                        // DebugLogInfo("Face already has ", glm::to_string(v));
+                        containsVertex2 = true;
+                    }
+                    else if (v == vertex3) {
+                        // DebugLogInfo("Face already has ", glm::to_string(v));
+                        containsVertex3 = true;
+                    }
+                }
+
+                // DebugLogInfo("Before: f2 size = ", f.second.size());
+                if (!containsVertex1) {
+                    f.second.push_back(vertex1);
+                }
+                if (!containsVertex2) {
+                    f.second.push_back(vertex2);
+                }
+                if (!containsVertex3) {
+                    f.second.push_back(vertex3);
+                }
+                // DebugLogInfo("After: f2 size = ", f.second.size());
+
+                break; // break exits the inner loop
+            }
+        }
+        // if this is the first face we've found with this normal, create a new face.
+        if (!foundFace) {
+            faces.push_back({ normal, {vertex1, vertex2, vertex3} });
+        }
+
+        // and of course add triangle to triangles vector
+        triangles.push_back({ vertex1, vertex2, vertex3 });
+    }
+
+    // Then, we need to sort each face's vertices so that they're in clockwise order, because SAT needs that too.
+    for (auto& face : faces) {
+
+        auto faceCenter = glm::vec3(0, 0, 0);
+        for (auto& v : face.second) {
+            faceCenter += v;
+        }
+        faceCenter /= face.second.size();
+
+        //const auto r = face.second.at(0) - faceCenter; // use an arbitrary vector as the twelve o’clock reference
+        //const auto p = cross(r, face.first); // TODO: was faceCenter, switched it because faceCenter could plausibly be a zero vector
+
+        //std::sort(face.second.begin(), face.second.end(), [&faceCenter, &p, &r](const glm::vec3 &v1, const glm::vec3&v2) {
+        //    
+        //    // stolen from https://stackoverflow.com/questions/47949485/sorting-a-list-of-3d-points-in-clockwise-order
+        //    // the sort function should return true if v1 is clockwise from v2 around the center of the face.
+
+        //    auto u1 = v1 - faceCenter;
+        //    auto u2 = v2 - faceCenter;
+        //    auto h1 = glm::dot(u1, p);
+        //    auto h2 = glm::dot(u2, p);
+
+        //    if (h2 <= 0 && h1 > 0) {
+        //        return false;
+        //    }
+        //    else if( h1 <= 0 && h2 > 0) {
+        //        return true;
+        //    }
+        //    else if (h1 == 0 && h2 == 0) {
+        //        return (glm::dot(u1, r) > 0 && glm::dot(u2, r) < 0);
+        //    }
+        //    else {
+        //        return (glm::dot(glm::cross(u1, u2), faceCenter) > 0);
+        //    }
+        //            
+        //});
+
+        std::sort(face.second.begin(), face.second.end(), [&](const glm::vec3& v1, const glm::vec3& v2) {
+            return glm::dot(face.first, glm::cross(v1 - faceCenter, v2 - faceCenter)) > 0;
+            });
+    }
+
+    // Likewise, triangle vertices need to be in clockwise order for raycasting.
+    for (auto& tri : triangles) {
+        auto faceCenter = glm::vec3(0, 0, 0);
+        for (auto& v : tri) faceCenter += v;
+        faceCenter /= 3.0f;
+
+        auto normal = glm::cross(tri[2] - tri[1], tri[2] - tri[0]);
+        // make sure normal always points outward
+        double distance = glm::dot(normal, tri[0]);
+        if (distance < 0) { // if dot product between center of model to vertex and the normal is < 0, normal is opposite direction of model to vertex and needs to be flipped
+            normal *= -1;
+            distance *= -1;
+        }
+
+        std::sort(tri.begin(), tri.end(), [&](const glm::vec3& v1, const glm::vec3& v2) {
+            return glm::dot(normal, glm::cross(v1 - faceCenter, v2 - faceCenter)) > 0;
+            });
+    }
+
+    // Then, we need to get edges of each face.
+    // We don't do this when iterating through triangles since we don't want (for example) the diagonal of a square face to be treated as an edge, plus we might (???) want edges in clockwise order too.
+    for (auto& f : faces) {
+        for (unsigned int i = 0; i < f.second.size(); i++) {
+            auto vertex1 = f.second[i];
+            auto vertex2 = f.second[(i + 1 == f.second.size() ? 0 : i + 1)]; // make sure we get the edge between the last vertex and the first vertex of the face
+            // check if this edge isn't already in the edges vector and if so add it
+            bool foundEdge = false;
+            for (auto& [a, b] : edges) {
+                // the order of a and b doesn't matter so we gotta check both combinations
+                if (a == vertex1 && b == vertex2) { foundEdge = true; }
+                if (a == vertex2 && b == vertex1) { foundEdge = true; }
+            }
+
+            if (!foundEdge) {
+                edges.emplace_back(vertex1, vertex2);
+            }
+        }
+
+    }
+
+    // std::cout << "Created physics mesh:\n";
+    // for (auto & f: faces) {
+    //     std::cout << "\tFace with normal " << glm::to_string(f.first) << " has vertices "; 
+    //     for (auto & v: f.second) {
+    //         std::cout << glm::to_string(v) << ", ";
+    //     }
+    //     std::cout << ".\n";
+    // }
+    // for (auto & e: edges) {
+    //     std::cout << "\tEdge " << glm::to_string(e.first) << " to " << glm::to_string(e.second) << ".\n";
+    // }
+    return {std::make_unique<ConvexTriangleMesh>(triangles, faces, edges, mesh->vertices),};
+}
+
+glm::vec3 ConvexTriangleMesh::FindFarthestPointOnObject(const glm::vec3& directionInModelSpace) {
+    float farthestDistance = -FLT_MAX;
+    glm::vec3 farthestVertex = { 0, 0, 0 };
+
+    for (const auto& vertex : vertices) {
+        auto dp = glm::dot(vertex, directionInModelSpace);
+        if (dp >= farthestDistance) {
+            farthestDistance = dp;
+            farthestVertex = vertex;
+        }
+    }
 }

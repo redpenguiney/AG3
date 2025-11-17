@@ -50,22 +50,25 @@ struct LongMessageReconstruction {
 
 
 struct TransformSyncInfo {
-    // if the owner is the local machine, then this is the last transform we sent out. if not, it's undefined.
-    TransformSync lastSentTransform;
-
-    // like lastSentTransform. Nullopt if no rigidbody.
-    std::optional<RigidbodySync> lastSentRigidbody;
-
     float priorityAccumulator;
-
-    // If an object is always in motion, then there's no point wasting bandwidth on acks since by the time it's resent that data will be irrelevant
-    bool ackTransformSnapshots = true;
 
     std::shared_ptr<GameObject> gameObject;
 
     // Network tick in here is on a different clock from the network engine, it's on the owner's clock.
     // std::nullopt if we haven't recieved yet or if the owner is the local machine.
     std::optional<NetworkTickId> recievedDataTick = std::nullopt;
+
+    // If an object is always in motion, then there's no point wasting bandwidth on acks since by the time it's resent that data will be irrelevant
+    bool ackTransformSnapshots = true;
+
+    // If true, network ownership of this object will be automatically transferred between clients based on distance.
+    bool autoOwner = true; 
+
+    // if the owner is the local machine, then this is the last transform we sent out. if not, it's undefined.
+    TransformSync lastSentTransform;
+
+    // like lastSentTransform. Nullopt if no rigidbody.
+    std::optional<RigidbodySync> lastSentRigidbody;
 };
 
 class ConnectionInfo {

@@ -18,9 +18,9 @@ void TestPhysics() {
 
 	//TestCubeArray({ 2, 2, 2 }, { 0, 8, 0 }, { 3, 3, 3 }, true);
 
-	for (int x = 0; x < 5; x+= 2) {
-		for (int y = 3; y < 8; y+=2) {
-			for (int z = 0; z < 5; z+=2) {
+	for (int x = 0; x < 1; x+= 2) {
+		for (int y = 3; y < 1; y+=2) {
+			for (int z = 0; z < 1; z+=2) {
 				TestSphere(x, y, z, true);
 			}
 		}

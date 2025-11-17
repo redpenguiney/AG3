@@ -46,6 +46,8 @@ public:
 	float RESEND_PACKET_TIME = 2.0f;
 	float TIMEOUT_TIME = 30.0f;
 
+	float CLIENT_AUTOOWN_DISTANCE = 10.0f;
+
 	const std::vector<std::shared_ptr<Client>>& GetClientList();
 
 	static NetworkingEngine& Get();
@@ -135,7 +137,11 @@ public:
 	// Sets the network owner of a given gameobject's transform to the given client (which could be the server).
 	// Gameobject must have a transform and a rigidbody.
 	// Server only.
+	// Disables automatic transfer of ownership based on client proximity. Set client to nullptr to re-enable.
 	void SetNetworkOwner(std::shared_ptr<GameObject> obj, std::shared_ptr<Client> client);
+
+	// Does nothing if object isn't being synced.
+	void StopSyncingObjectTransform(std::shared_ptr<GameObject> obj);
 
 	template <class ... Types>
 	std::shared_ptr<Event<std::shared_ptr<Client>, Types...>> GetFormattedUserdataRecievedEvent(UserdataFormatName name);
@@ -147,6 +153,8 @@ public:
 	void DestroyFormattedUserdataRecievedEvent(UserdataFormatName name);
 
 private:
+	std::unordered_map<GameObject*, SyncId> gameobjectsToSyncIds;
+
 	// We store lambdas/functions that store and fire the events to handle the different types. 
 	std::unordered_map<UserdataFormatName, std::function<void(std::shared_ptr<Client>, uint8_t*, unsigned int)>> formattedUserdataEvents;
 
@@ -174,9 +182,11 @@ private:
 	void ProcessLongMessageFragment(std::shared_ptr<Client>& client, AckId firstAckId, uint16_t idOffset, uint16_t nPackets, uint8_t* data, unsigned nBytes,  bool isUserdata);
 
 	void SyncGameobjects();
+	void DoAutoOwnerChanges();
 
-	void HandleTransformSyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots);
-	void HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots);
+	void HandleTransformSyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots, bool reliable);
+	void HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots, bool reliable);
+	void HandleOwnerChangePacket(std::shared_ptr<Client>& client, SyncId sync, bool doWeOwn);
 
 	std::vector<std::shared_ptr<Client>> clients;
 

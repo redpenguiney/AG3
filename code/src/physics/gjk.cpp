@@ -37,20 +37,8 @@ glm::dvec3 FindFarthestVertexOnObject(const glm::dvec3& directionInWorldSpace, c
     Assert(!std::isnan(directionInModelSpace.y)); 
     Assert(!std::isnan(directionInModelSpace.z)); 
 
-
-    float farthestDistance = -FLT_MAX;
-    glm::vec3 farthestVertex = {0, 0, 0};
-
     //TODO: concave support
-    for (auto & face: collider.physicsMesh->meshes.at(0).faces) {
-        for (auto & vertex: face.second) {
-            auto dp = glm::dot(vertex, (directionInModelSpace)); // TODO: do we normalize vertex before taking dot product? i don't think so???
-            if (dp >= farthestDistance) {
-                farthestDistance = dp;
-                farthestVertex = vertex;
-            }
-        } 
-    }
+    glm::vec3 farthestVertex = collider.physicsMesh->meshes.at(0)->FindFarthestPointOnObject(directionInModelSpace);
 
     
 

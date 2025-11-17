@@ -436,17 +436,71 @@ void NetworkingEngine::SyncObjectTransform(std::shared_ptr<GameObject> obj, Sync
 
     Assert(owner->ownedSyncedTransforms.contains(name) == false);
     owner->ownedSyncedTransforms[name] = TransformSyncInfo{
+        .priorityAccumulator = INFINITY,
+        .gameObject = obj,
+        .ackTransformSnapshots = ackSnapshots,
         .lastSentTransform = GetNetworkTransform(obj),
         .lastSentRigidbody = obj->MaybeRawGet<RigidbodyComponent>() ? std::optional(GetNetworkRigidbody(obj)) : std::nullopt,
-        .priorityAccumulator = INFINITY,
-        .ackTransformSnapshots = ackSnapshots,
-        .gameObject = obj
+        
     };
+
+    gameobjectsToSyncIds[obj.get()] = name;
 }
 
-void NetworkingEngine::SetNetworkOwner(std::shared_ptr<GameObject> obj, std::shared_ptr<Client> client) {
+void NetworkingEngine::SetNetworkOwner(std::shared_ptr<GameObject> obj, std::shared_ptr<Client> newOwner) {
+    Assert(status == NetworkStatus::Server && gameobjectsToSyncIds.contains(obj.get()));
+    if (newOwner) Assert(newOwner->connection);
+    size_t nBytes = SerializedSize<uint8_t>() + SerializedSize<SyncId>() + SerializedSize<bool>(true);
 
-    Assert(false); // TODO
+    auto syncId = gameobjectsToSyncIds[obj.get()];
+
+    // find current owner
+    std::shared_ptr<Client> currentOwner = nullptr;
+    for (auto& c : clients) {
+        if (c->ownedSyncedTransforms.contains(syncId)) {
+            currentOwner = c;
+            break;
+        }
+    }
+    Assert(currentOwner);
+
+    if (newOwner) {
+        newOwner->ownedSyncedTransforms[syncId] = currentOwner->ownedSyncedTransforms[syncId];
+        newOwner->ownedSyncedTransforms[syncId].autoOwner = false;
+        currentOwner->ownedSyncedTransforms.erase(syncId);
+
+        // tell old owner it's no longer in charge
+        auto p1 = malloc(nBytes);
+        auto current = p1;
+        Serialize(CHANGE_OWNER_PACKET_IDENTIFIER, current);
+        Serialize(syncId, current);
+        Serialize(false, current);
+        ImplSendDataReliable(p1, nBytes, currentOwner, false);
+        free(p1);
+        // tell new owner it IS in charge
+        auto p2 = malloc(nBytes);
+        current = p2;
+        Serialize(CHANGE_OWNER_PACKET_IDENTIFIER, current);
+        Serialize(syncId, current);
+        Serialize(true, current);
+        ImplSendDataReliable(p2, nBytes, newOwner, false);
+        free(p2);
+    }
+    else {
+        Assert(false); //TODO
+    }
+}
+
+void NetworkingEngine::StopSyncingObjectTransform(std::shared_ptr<GameObject> obj) {
+    if (!gameobjectsToSyncIds.contains(obj.get())) return;
+    auto syncId = gameobjectsToSyncIds[obj.get()];
+    for (auto& c : clients) {
+        if (c->ownedSyncedTransforms.contains(syncId)) {
+            c->ownedSyncedTransforms.erase(syncId);
+            break;
+        }
+    }
+    gameobjectsToSyncIds.erase(obj.get());
 }
 
 void NetworkingEngine::ImplSendDataReliable(void* data, size_t nBytes, std::shared_ptr<Client>& destination, bool isUserdata, UserdataFormatName format)
@@ -708,11 +762,17 @@ void NetworkingEngine::ProcessShortMessage(std::shared_ptr<Client>& client, uint
 
         if (type == TRANSFORM_SYNC_PACKET_IDENTIFIER) { // then it's transform syncs
 
-            HandleTransformSyncPacket(client, data+1, (nBytes - SerializedSize<PacketStructs::TransformSyncPacket>()) / SerializedSize<PacketStructs::TransformSyncSnapshot>());
+            HandleTransformSyncPacket(client, data+1, (nBytes - SerializedSize<PacketStructs::TransformSyncPacket>()) / SerializedSize<PacketStructs::TransformSyncSnapshot>(), isReliable);
 
         }
         else if (type == RIGIDBODY_SYNC_PACKET_IDENTIFIER) {
-            HandleRigidbodySyncPacket(client, data+1, (nBytes - SerializedSize<PacketStructs::RigidbodySyncPacket>()) / SerializedSize<PacketStructs::RigidbodySyncSnapshot>());
+            HandleRigidbodySyncPacket(client, data+1, (nBytes - SerializedSize<PacketStructs::RigidbodySyncPacket>()) / SerializedSize<PacketStructs::RigidbodySyncSnapshot>(), isReliable);
+        }
+        else if (type == CHANGE_OWNER_PACKET_IDENTIFIER) {
+            void* current = &data[1];
+            auto id = Deserialize<SyncId>(current);
+            auto owns = Deserialize<bool>(current);
+            HandleOwnerChangePacket(client, id, owns);
         }
     }
 }
@@ -807,6 +867,8 @@ void NetworkingEngine::ProcessLongMessageFragment(std::shared_ptr<Client>& clien
 }
 
 void NetworkingEngine::SyncGameobjects() {
+    DoAutoOwnerChanges();
+
     auto localMachine = GetLocalMachine();
     
     std::vector<std::shared_ptr<Client>> clientsToSyncWith;
@@ -996,13 +1058,40 @@ void NetworkingEngine::SyncGameobjects() {
     }
 }
 
+void NetworkingEngine::DoAutoOwnerChanges() {
+    if (!GetLocalMachine()->isServer) return;
+
+
+}
+
 bool TickIsNewer(NetworkTickId previous, NetworkTickId maybeLater) {
     return maybeLater - previous < UINT16_MAX / 4;
 }
 
-void NetworkingEngine::HandleTransformSyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots) {
+void NetworkingEngine::HandleTransformSyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots, bool reliable) {
     //DebugLogInfo("Transform sync recieved; ", nSnapshots);
     NetworkTickId tick = Deserialize<NetworkTickId>(data);
+
+    if (GetLocalMachine()->isServer) {
+        // then we must forward all this data to the other clients.
+        size_t nBytes = nSnapshots * SerializedSize<PacketStructs::TransformSyncSnapshot>() + SerializedSize<NetworkTickId>() + SerializedSize<uint8_t>();
+        void* dataToSend = malloc(nBytes);
+        void* current = data;
+        Serialize(TRANSFORM_SYNC_PACKET_IDENTIFIER, current);
+        Serialize(tick, current);
+        memcpy(current, data, nSnapshots * SerializedSize<PacketStructs::TransformSyncSnapshot>());
+
+        for (auto& c : clients) {
+            if (c != client && c != GetLocalMachine()) {
+                if (reliable) {
+                    ImplSendDataReliable(dataToSend, nBytes, c, false);
+                }
+                else {
+                    ImplSendData(dataToSend, nBytes, c, false);
+                }
+            }
+        }
+    }
 
     for (unsigned i = 0; i < nSnapshots; i++) {
         auto transform = Deserialize<TransformSync>(data);
@@ -1028,9 +1117,31 @@ void NetworkingEngine::HandleTransformSyncPacket(std::shared_ptr<Client>& client
     }
 }
 
-void NetworkingEngine::HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots) {
+void NetworkingEngine::HandleRigidbodySyncPacket(std::shared_ptr<Client>& client, void* data, unsigned nSnapshots, bool reliable) {
     //DebugLogInfo("Rigidbody sync packet recieved with ", nSnapshots, " snapshots");
     NetworkTickId tick = Deserialize<NetworkTickId>(data);
+
+    if (GetLocalMachine()->isServer) {
+        // then we must forward all this data to the other clients.
+        size_t nBytes = nSnapshots * SerializedSize<PacketStructs::RigidbodySyncSnapshot>() + SerializedSize<NetworkTickId>() + SerializedSize<uint8_t>();
+        void* dataToSend = malloc(nBytes);
+        void* current = data;
+        Serialize(RIGIDBODY_SYNC_PACKET_IDENTIFIER, current);
+        Serialize(tick, current);
+        memcpy(current, data, nSnapshots * SerializedSize<PacketStructs::RigidbodySyncSnapshot>());
+
+        for (auto& c : clients) {
+            if (c != client && c != GetLocalMachine()) {
+                if (reliable) {
+                    ImplSendDataReliable(dataToSend, nBytes, c, false);
+                }
+                else {
+                    ImplSendData(dataToSend, nBytes, c, false);
+                }
+
+            }
+        }
+    }
 
     for (unsigned i = 0; i < nSnapshots; i++) {
         auto transform = Deserialize<TransformSync>(data);
@@ -1066,6 +1177,19 @@ void NetworkingEngine::HandleRigidbodySyncPacket(std::shared_ptr<Client>& client
             DebugLogInfo("Unrecognized rigidbody sync name ", id);
         }
     }
+}
+
+void NetworkingEngine::HandleOwnerChangePacket(std::shared_ptr<Client>& client, SyncId sync, bool doWeOwnNow) {
+    if (status != NetworkStatus::Client && status != NetworkStatus::ClientConnecting) return;
+
+    std::shared_ptr<Client> currentOwner = doWeOwnNow ? client : GetLocalMachine();
+    std::shared_ptr<Client> newOwner = doWeOwnNow ? GetLocalMachine() : client;
+
+    if (!currentOwner->ownedSyncedTransforms.contains(sync)) { DebugLogInfo("Unable to transfer ownership because it didn't exist for syncId ", sync); return; }
+    auto syncInfo = currentOwner->ownedSyncedTransforms[sync];
+    currentOwner->ownedSyncedTransforms.erase(sync);
+    newOwner->ownedSyncedTransforms[sync] = syncInfo;
+
 }
 
 NetworkingEngine::NetworkingEngine():

@@ -25,6 +25,22 @@ std::tuple<ComponentPool*, int, int> GameObject::GetNewGameobjectComponentData(c
     return std::make_tuple(pool.get(), page, objectIndex);
 }
 
+std::string GameObject::Name() {
+    if (namedGameobjects.contains(this)) {
+        return namedGameobjects[this];
+    }
+    else {
+        std::stringstream ss;
+        ss << "Unnamed gameobject ";
+        ss << this;
+        return ss.str();
+    }
+}
+
+void GameObject::Rename(const std::string& s) {
+    namedGameobjects[this] = s;
+}
+
 std::shared_ptr<GameObject> GameObject::New(const GameobjectCreateParams& params) {
     
     
@@ -103,7 +119,6 @@ GameObject::GameObject(const GameobjectCreateParams& params):
 }
 
 GameObject::GameObject(std::tuple<ComponentPool*, int, int> data) : 
-    name("GameObject"),
     pool(std::get<0>(data)),
     objectIndex(std::get<2>(data)),
     page(std::get<1>(data))
@@ -140,6 +155,8 @@ GameObject::~GameObject() {
     }
 
     pool->ReturnObject(page, objectIndex);
+
+    if (namedGameobjects.contains(this)) namedGameobjects.erase(this);
 }
 
 void GameObject::Destroy() {

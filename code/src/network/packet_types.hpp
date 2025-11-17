@@ -33,6 +33,7 @@ using SyncId = uint32_t;
 
 constexpr uint8_t TRANSFORM_SYNC_PACKET_IDENTIFIER = 201;
 constexpr uint8_t RIGIDBODY_SYNC_PACKET_IDENTIFIER = 202;
+constexpr uint8_t CHANGE_OWNER_PACKET_IDENTIFIER = 202;
 
 struct TransformSync {
     glm::dvec3 position;
