@@ -264,7 +264,7 @@ SatFacesResult SatFaces(
     glm::vec3 farthestNormal(0, 0, 0); // in world space
     const std::vector<glm::vec3>* farthestFace = nullptr; // in model space
 
-    for (auto & face1: collider1.physicsMesh->meshes.at(0).faces) {
+    for (auto & face1: collider1.physicsMesh->meshes.at(0).GetPotentialSeperatingFaces()) {
 
         auto normalInWorldSpace = glm::normalize(transform1.GetNormalMatrix() * face1.first);
 

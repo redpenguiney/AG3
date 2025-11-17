@@ -16,6 +16,7 @@ public:
     virtual glm::vec3 FindFarthestPointOnObject(const glm::vec3& directionInModelSpace) = 0;
     virtual void AddLocalMomentOfInertiaContribution(glm::vec3& centerOfMass, float& Ia, float& Ib, float& Ic, float& Iap, float& Ibp, float& Icp, glm::vec3 objectScale, float density) = 0;
     virtual float GetVolume(glm::vec3 objectScale) = 0;
+    virtual std::vector<std::pair<glm::vec3, std::vector<glm::vec3>>> GetPotentialSeperatingFaces();
 };
 
 // Will probably crash out if you stretch out the sphere. Might not; who knows!
