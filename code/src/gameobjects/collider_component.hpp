@@ -1,22 +1,22 @@
 #pragma once
 #include "physics/aabb.hpp"
-#include "physics/spatial_acceleration_structure.hpp"
 #include <bitset>
 
 class PhysicsMesh;
 class GameObject;
+class SasNode;
 
 // Represents what kind of AABB to generate for a collider.
 // BoundingCube AABB will create a cube-shaped AABB that will contain the object no matter how it is rotated, which is fast to make/update but for a long skinny object will create a lot of false collisions for the expensive narrow phase to deal with.
 // BoundingBox AABB will tightly fit the object at all times regardless of rotation, which will be a bit slower but for a long skinny object might save performance.
 enum BroadPhaseAABBType {
     AABBBoundingCube = 0,
-    //BoundingBox = TODO
+    BoundingBox = 1
 };
 
 class ColliderComponent: public BaseComponent {
     public:
-    BroadPhaseAABBType aabbType;
+    const BroadPhaseAABBType aabbType;
 
 
     // how bouncy something is, should probably be between 0 and 1 but knock urself out
@@ -43,7 +43,8 @@ class ColliderComponent: public BaseComponent {
 
     // recalculate AABB of collider component from its transform
     void RecalculateAABB(const TransformComponent& colliderTransform);
-
+    
+    AABB GetTightfittingAABB(const TransformComponent& colliderTransform);
     //TransformComponent* transform;
 
     // returns gameobject this collider belongs to; TODO does this really need to be shared_ptr? They could always call shared_from_this on their own
@@ -55,7 +56,7 @@ class ColliderComponent: public BaseComponent {
     const AABB& GetAABB();
 
     // Returns true if the object is colliding with the given other object.
-    bool IsCollidingWith(const ColliderComponent& other) const;
+    bool IsCollidingWith(ColliderComponent& other);
 
     // Returns all colliders the collider is currently intersecting.
     std::vector<ColliderComponent*> GetColliding() const;
@@ -70,17 +71,18 @@ class ColliderComponent: public BaseComponent {
     private:
 
     CollisionLayer layer = 0;
+    //bool tightfittingAABB;
 
     AABB aabb;
 
     // pointer to node the component is stored in
-    SpatialAccelerationStructure::SasNode* node;
+    SasNode* node;
 
     
     
     // private constructor to enforce usage of object pool
     //friend class ComponentPool<ColliderComponent>;
     friend class SpatialAccelerationStructure;
-    
+    friend class SasNode;
 
 };

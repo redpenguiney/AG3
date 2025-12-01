@@ -1,3 +1,4 @@
+#pragma once
 #include <array>
 #include <memory>
 #include <atomic>
@@ -16,7 +17,7 @@ public:
     virtual glm::vec3 FindFarthestPointOnObject(const glm::vec3& directionInModelSpace) = 0;
     virtual void AddLocalMomentOfInertiaContribution(glm::vec3& centerOfMass, float& Ia, float& Ib, float& Ic, float& Iap, float& Ibp, float& Icp, glm::vec3 objectScale, float density) = 0;
     virtual float GetVolume(glm::vec3 objectScale) = 0;
-    virtual std::vector<std::pair<glm::vec3, std::vector<glm::vec3>>> GetPotentialSeperatingFaces();
+    //virtual std::vector<std::pair<glm::vec3, std::vector<glm::vec3>>> GetPotentialSeperatingFaces();
 };
 
 // Will probably crash out if you stretch out the sphere. Might not; who knows!
@@ -25,13 +26,15 @@ class SphereMesh : public ConvexMesh {
 public:
     SphereMesh() {};
 
-    glm::vec3 FindFarthestPointOnObject(const glm::vec3& directionInModelSpace) override { return directionInModelSpace * 0.5; }
+    glm::vec3 FindFarthestPointOnObject(const glm::vec3& directionInModelSpace) override { return directionInModelSpace * 0.5f; }
     void AddLocalMomentOfInertiaContribution(glm::vec3& centerOfMass, float& Ia, float& Ib, float& Ic, float& Iap, float& Ibp, float& Icp, glm::vec3 objectScale, float density) override {
-        Ia += density * 0.4f;
-        Ib += density * 0.4f;
-        Ic += density * 0.4f;
+        float mass = GetVolume(objectScale) * density;
+        float radiusSquared = 0.25f * objectScale.x * objectScale.x;
+        Ia += mass * radiusSquared * 0.4f;
+        Ib += mass * radiusSquared * 0.4f;
+        Ic += mass * radiusSquared * 0.4f;
     }
-    float GetVolume(glm::vec3 objectScale) override { return 4.0f / 3.0f * 3.1415926; }
+    float GetVolume(glm::vec3 objectScale) override { return 4.0f / 3.0f * 3.1415926f * objectScale.x * objectScale.x * objectScale.x; }
 };
 
 class ConvexTriangleMesh: public ConvexMesh {
@@ -43,7 +46,6 @@ public:
     float GetVolume(glm::vec3 objectScale) override;
     void AddLocalMomentOfInertiaContribution(glm::vec3& centerOfMass, float& Ia, float& Ib, float& Ic, float& Iap, float& Ibp, float& Icp, glm::vec3 objectScale, float density) override;
 
-private:
     ConvexTriangleMesh(
         const std::vector<std::array<glm::vec3, 3>> triangles,
         const std::vector<std::pair<glm::vec3, std::vector<glm::vec3>>> faces,
@@ -113,7 +115,8 @@ class PhysicsMesh {
     PhysicsMesh(std::shared_ptr<Mesh>& mesh);
 
     // Makes sphere mesh
-    PhysicsMesh();
+    // bool so no one accidnetally calls it
+    PhysicsMesh(bool);
 
     // nullptr if physicsMesh was not created from a Mesh object; used to refresh the mesh.
     std::shared_ptr<Mesh> origin = nullptr;

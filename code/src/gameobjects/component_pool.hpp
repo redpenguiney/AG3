@@ -14,7 +14,7 @@ public:
 		int componentId;
 	};
 
-	constexpr static inline unsigned int COMPONENTS_PER_PAGE = 4096;
+	constexpr static inline unsigned int COMPONENTS_PER_PAGE = 16;
 
 	// used to get individual components from the void* returned by GetObject(). Sorted by component id.
 	const std::vector<ComponentMemoryInfo> componentLayout;
@@ -50,5 +50,6 @@ private:
 	// creates a new page with room for COMPONENTS_PER_PAGE more objects.
 	void AddPage();
 
+	friend class ThreadedComponentIteration;
 	friend class GameObject;
 };

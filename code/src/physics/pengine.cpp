@@ -12,8 +12,11 @@
 #include <vector>
 #include "pengine.hpp"
 #include "gjk.hpp"
-#include "glm/gtx/string_cast.hpp"
-
+#include <algorithm>
+#include <gameobjects/lifetime.hpp>
+#include <execution>
+#include "utility/threading_utils.hpp"
+#include "vec6.hpp"
 
 PhysicsEngine::PhysicsEngine():
 prePhysicsEvent(Event<float>::New()) ,
@@ -57,17 +60,15 @@ PhysicsEngine& PhysicsEngine::Get() {
 }
 
 // Simulates physics of a single rigidbody.
-static void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::vector<std::pair<TransformComponent*, glm::dvec3>>& seperations) {    
-    if (rigidbody.InverseMass() == 0) {
-        return; // infinite mass = collisions/forces ain't doing nothing to this
-    }
+static void DoPhysics(const double dt, ColliderComponent& collider, TransformComponent& transform, RigidbodyComponent& rigidbody, std::array<std::vector<std::pair<TransformComponent*, glm::dvec3>>, MAX_WORKER_THREADS>& seperations) {
+    if (rigidbody.InverseMass() == 0) return; // infinite mass = collisions/forces ain't doing nothing to this
+    if (rigidbody.asleep) return;
     
-    // TODO: should REALLY use tight fitting AABB here
+    //DebugLogInfo("OK ", CurrentThreadId(), " ", WORKER_THREAD_ID);
+
     const auto& aabbToTest = collider.GetAABB();
     std::vector<ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest, PhysicsEngine::Get().GetCollisionLayerMatrix()[collider.GetCollisionLayer()]);
     // Assert(potentialColliding.size() == 0);
-
-    // TODO: potential perf gains by using tight fitting AABB/OBB here after broadphase SAS query?
     
     // we don't do anything to the other gameobjects we hit; if they have a rigidbody, they will independently take care of that in their call to DoPhysics()
     // TODO: this does mean redundant narrowphase collision checks, we should cache results of narrowphase checks to avoid that
@@ -83,12 +84,7 @@ static void DoPhysics(const double dt, ColliderComponent& collider, TransformCom
 
             Assert(collisionTestResult->contactPoints.size() > 0);
             // if (otherRigidbody && collisionTestResult->contactPoints.size() > 4) {
-            //     DebugLogInfo("Collision with ", collisionTestResult->contactPoints.size(), " points.");
-                // for (auto & p: collisionTestResult->contactPoints) {
-                //     averageContactPoint += p.first;
-                //     averagePenetration += p.second;
-                    // DebugPlacePointOnPosition({p.first}, {0.5, 0.0, 0.0, 1.0});
-                // }
+                 //DebugLogInfo("Collision with ", collisionTestResult->contactPoints.size(), " points.");
             // }
             // find center of contact region
             // glm::dvec3 averageContactPoint = {0, 0, 0}; // in object space
@@ -111,15 +107,23 @@ static void DoPhysics(const double dt, ColliderComponent& collider, TransformCom
             
 
             glm::vec3 normal = collisionTestResult->collisionNormal;
+            //DebugLogInfo("NORMAL ", normal);
+
+            double avgPenetration = 0;
 
             for (auto & p: collisionTestResult->contactPoints) {
+                //auto obj = DebugPlacePointOnPosition({p.first}, {0.5, 0.0, 0.0, 1.0});
+                //obj->Destroy();
+                //NewObjectLifetime(obj, 1);
 
                 // seperate colliding objects
                 const double LINEAR_SLOP = 0.0;
                 float seperation = std::max(0.0, p.second - LINEAR_SLOP); 
-                    // DebugPlacePointOnPosition({transform.Position() + seperationVector}, {1, 0.2, 0.2, 1.0});
+                //DebugPlacePointOnPosition({transform.Position() + glm::dvec3(normal * seperation)}, {1, 0.2, 0.2, 1.0});
                 if (otherRigidbody) { seperation /= 2;}
-                seperations.emplace_back(std::make_pair(&transform, normal * (seperation / collisionTestResult->contactPoints.size())));
+
+                avgPenetration += seperation;
+                //seperations.emplace_back(std::make_pair(&transform, normal * (seperation / collisionTestResult->contactPoints.size())));
 
                 glm::vec3 d1 = (transform.Position() - p.first); // contact to pos    
                 glm::vec3 d2 = (otherTransform->Position() - p.first); // contact to otherPos
@@ -130,6 +134,8 @@ static void DoPhysics(const double dt, ColliderComponent& collider, TransformCom
                 }
                 float relVelocityAlongNormal = glm::dot(normal, relVelocity);
 
+                //DebugLogInfo("Rel velocity against normal = ", relVelocityAlongNormal, " d1 ", d1);
+            
                 if (relVelocityAlongNormal > 0) {
                     continue;
                 }
@@ -193,7 +199,7 @@ static void DoPhysics(const double dt, ColliderComponent& collider, TransformCom
 
                     collisionResolutionImpulse = normal * impulse;
                     // rigidbody.accumulatedForce += collisionResolutionImpulse;
-                    // DebugLogInfo("Resolving collision with force ", glm::to_string(collisionResolutionImpulse), " applied at ", glm::to_string(-d1));
+                    //DebugLogInfo("Resolving collision with force ", collisionResolutionImpulse, " applied at ", -d1);
                     rigidbody.Impulse(-d1, collisionResolutionImpulse);
                     // DebugLogInfo("Torque axs is ", glm::to_string(torqueAxis1), " normal ", glm::to_string(normal), " d1 ", glm::to_string(d1), " crossing those gives ", glm::to_string(glm::cross(normal, d1)));
                     // rigidbody.accumulatedTorque += torqueAxis1 * impulse;
@@ -238,6 +244,11 @@ static void DoPhysics(const double dt, ColliderComponent& collider, TransformCom
                 }
             }
 
+            avgPenetration /= collisionTestResult->contactPoints.size();
+
+            //Assert(WORKER_THREAD_ID >= 0);
+            //DebugLogInfo("UNPENETRATING BY ", avgPenetration, " IN ", normal);
+            seperations[ThreadManager::CurrentWorkerThreadId()].push_back(std::make_pair(&transform, normal* avgPenetration));
             // DebugPlacePointOnPosition({averageContactPoint}, {0.2, 0.2, 1.0, 1.0});
     
             
@@ -305,80 +316,279 @@ static void DoPhysics(const double dt, ColliderComponent& collider, TransformCom
     
 }
 
+//void PhysicsEngine::Step(const double timestep) {
+//
+//    // 1. find colliding pairs (threadable)
+//    // 2. calculate changes in position and forces, wake sleeping rigidbodies in a colliding pair (potentially threadable, possibly unneccesary)
+//    // 3. step awake gameobjects forward, apply forces. sleep gameobejcts below minimum vel,rvel, and acceleration (threadable)
+//    // 4. apply changes in position (no point in threading)
+//
+//    //prePhysicsEvent->Fire(timestep);
+//    //BaseEvent::FlushEventQueue(); // we want prePhysicsEvent to be fired NOW, not later, so if they make objects or whatever it they simulate their physics this frame.
+//
+//    // iterate through all sets of rigidBodyComponent + transformComponent
+//    // first pass, apply gravity, convert applied force to velocity, apply drag, and move everything by its velocity
+//    //auto [begin1, end1] = GameObject::SystemGetComponents<TransformComponent, RigidbodyComponent>();
+//    //std::for_each(begin1, end1, [&](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
+//    auto f1 = [timestep](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
+//        TransformComponent& transform = *std::get<0>(tuple);
+//        RigidbodyComponent& rigidbody = *std::get<1>(tuple);
+//
+//        if (rigidbody.asleep) return;
+//
+//        // transform.SetRot(glm::normalize(transform.Rotation()));
+//        if (!rigidbody.kinematic) {
+//            rigidbody.velocity += PhysicsEngine::Get().GRAVITY * timestep;
+//        }
+//
+//
+//        // exponentiation is used to make the drag work consistently across all timesteps
+//        rigidbody.velocity *= pow(rigidbody.linearDrag, timestep);
+//        rigidbody.angularVelocity *= powf(rigidbody.angularDrag, float(timestep));
+//
+//        // f = ma, so a = f/m
+//        glm::vec3 acceleration = rigidbody.accumulatedForce * rigidbody.InverseMass();
+//        rigidbody.velocity += acceleration;
+//        rigidbody.accumulatedForce = { 0, 0, 0 };
+//
+//        
+//        // a = t/i
+//        // glm::mat3 globalInverseInertiaTensor = rigidbody.GetInverseGlobalMomentOfInertia(transform); 
+//        // rigidbody.angularVelocity += globalInverseInertiaTensor * rigidbody.accumulatedTorque;
+//        auto deltaAngularVelocity = glm::vec3(
+//            rigidbody.InverseMomentOfInertiaAroundAxis(transform, { 1, 0, 0 }),
+//            rigidbody.InverseMomentOfInertiaAroundAxis(transform, { 0, 1, 0 }),
+//            rigidbody.InverseMomentOfInertiaAroundAxis(transform, { 0, 0, 1 })
+//        ) * rigidbody.accumulatedTorque;
+//        rigidbody.angularVelocity += deltaAngularVelocity;
+//        rigidbody.accumulatedTorque = { 0, 0, 0 };
+//
+//
+//
+//        if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {
+//            transform.SetPos(transform.Position() + rigidbody.velocity * timestep);
+//        }
+//
+//        if (glm::length2(rigidbody.angularVelocity) != 0) {
+//            // to integrate angular velocity (rotate by angular velocity), you can't just rotate by x, then by y, then by z. 
+//            // Order of those 3 rotations would matter, and all of them would be wrong, because in reality all three rotations are happening simultaneously/continuously.
+//            glm::quat spin = glm::angleAxis(glm::length(rigidbody.angularVelocity) * float(timestep), glm::normalize(rigidbody.angularVelocity));
+//
+//            // glm::quat spin = glm::quat(0, rigidbody.angularVelocity.x, rigidbody.angularVelocity.y, rigidbody.angularVelocity.z) * 0.5f * float(timestep);
+//            //std::cout << "velocity " << glm::to_string(rigidbody.localMomentOfInertia) << " so we at " << glm::to_string(QuatAroundX) << " \n";
+//            Assert(!std::isnan(spin.x));
+//            transform.SetRot((spin * transform.Rotation()));
+//        }
+//
+//        //if (glm::length2(rigidbody.velocity) < 0.0001 && glm::length2(rigidbody.angularVelocity) < 0.0001) rigidbody.asleep = true;
+//    };
+//    ThreadedComponentIteration::ForEachComponent<decltype(f1), TransformComponent, RigidbodyComponent>(f1);
+//    
+//    SpatialAccelerationStructure::Get().Update();
+//    ClearCollisionCache();
+//
+//    // second pass, do collisions and constraints for non-kinematic objects
+//    // the second pass should under no circumstances change any property of the gameobjects, except for the accumulatedForce of the object being moved, so that the order of operations doesn't matter and so that physics can be parallelized.
+//    
+//    // for each pair, the transform component will be shifted over by the vector
+//    // DoPhysics() adds desired translations to this std::vector, and 3rd pass actually sets position 
+//        // (we can't set it directly within DoPhysics because not thread safe + we need old position for physics of other objects) 
+//    std::array<std::vector<std::pair<TransformComponent*, glm::dvec3>>, MAX_WORKER_THREADS> separations; 
+//    
+// /*   for (auto [it, end] = GameObject::SystemGetComponents<TransformComponent, ColliderComponent, RigidbodyComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody }); it != end; it++) {
+//        auto& tuple = *it;
+//        TransformComponent& transform = *std::get<0>(tuple);
+//        ColliderComponent& collider = *std::get<1>(tuple);
+//        RigidbodyComponent& rigidbody = *std::get<2>(tuple);
+//        if (!rigidbody.kinematic) {
+//            DoPhysics(timestep, collider, transform, rigidbody, separations);
+//        }
+//    }*/
+//
+//    auto f2 = [timestep, &separations](std::tuple<TransformComponent*, ColliderComponent*, RigidbodyComponent*>& tuple) {
+//        TransformComponent& transform = *std::get<0>(tuple);
+//        ColliderComponent& collider = *std::get<1>(tuple);
+//        RigidbodyComponent& rigidbody = *std::get<2>(tuple);
+//        if (!rigidbody.kinematic) {
+//            DoPhysics(timestep, collider, transform, rigidbody, separations);
+//        }
+//    };
+//    //auto [begin1, end1] = GameObject::SystemGetComponents<TransformComponent, ColliderComponent, RigidbodyComponent>();
+//    //std::for_each(begin1, end1, f2);
+//    ThreadedComponentIteration::ForEachComponent<decltype(f2), TransformComponent, ColliderComponent, RigidbodyComponent>(f2);
+//
+//    // third pass, seperate colliding objects since we couldn't change positions in 2nd pass
+//    for (auto& arr: separations)
+//    for (auto & [comp, offset]: arr) {
+//        comp->SetPos(comp->Position() + offset);
+//    }
+//
+//    SpatialAccelerationStructure::Get().Update();
+//    ClearCollisionCache();
+//    //postPhysicsEvent->Fire(timestep);
+//}
+
+struct Collision {
+    CollisionInfo info;
+    ColliderComponent* a;
+    ColliderComponent* b;
+};
+
+std::vector<Collision> WrangleCollisions() {
+    std::vector<Collision> ret;
+
+    auto [begin1, end1] = GameObject::SystemGetComponents<TransformComponent, ColliderComponent, RigidbodyComponent>();
+    std::for_each(begin1, end1, [&](std::tuple<TransformComponent*, ColliderComponent*, RigidbodyComponent*>& tuple) {
+        auto [transform, collider, rigidbody] = tuple;
+        const auto& aabbToTest = collider->GetAABB();
+        std::vector<ColliderComponent*> potentialColliding = SpatialAccelerationStructure::Get().Query(aabbToTest, PhysicsEngine::Get().GetCollisionLayerMatrix()[collider->GetCollisionLayer()]);
+
+        for (auto& otherColliderPtr : potentialColliding) {
+            if (otherColliderPtr == collider) { continue; } // collider shouldn't collide with itself lol
+
+            auto collisionTestResult = IsColliding(*otherColliderPtr->gameobject->RawGet<TransformComponent>(), *otherColliderPtr, *transform, *collider);
+            if (collisionTestResult) {
+                ret.emplace_back(*collisionTestResult, collider, otherColliderPtr);
+            }
+        }
+    });
+
+    return ret;
+}
+
 void PhysicsEngine::Step(const double timestep) {
 
-    //prePhysicsEvent->Fire(timestep);
-    //BaseEvent::FlushEventQueue(); // we want prePhysicsEvent to be fired NOW, not later, so if they make objects or whatever it they simulate their physics this frame.
+    
 
-    // iterate through all sets of rigidBodyComponent + transformComponent
-    // first pass, apply gravity, convert applied force to velocity, apply drag, and move everything by its velocity
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, RigidbodyComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Rigidbody}); it.Valid(); it++) {
-        auto& tuple = *it;
+    
+
+    struct Rigidbody {
+        Position currentPos;
+        Position newPos;
+        Position nextPos;
+        std::vector<Constraint*> forces;
+        mat6x6 massmatrix;
+    };
+
+    currentConstraints.clear();
+    std::vector<Collision> collisions = WrangleCollisions();
+    for (auto& c : collisions) {
+        auto currentPosA = Position{ .pos = c.a->gameobject->RawGet<TransformComponent>()->Position(), .rot = c.a->gameobject->RawGet<TransformComponent>()->Rotation() };
+        auto currentPosB = Position{ .pos = c.b->gameobject->RawGet<TransformComponent>()->Position(), .rot = c.b->gameobject->RawGet<TransformComponent>()->Rotation() };
+
+        for (unsigned i = 0; i < c.info.contactPoints.size(); i++) {
+            double currentError = c.info.contactPoints[i].second;
+            vec6 errorSlope(c.info.collisionNormal.x, c.info.collisionNormal.y, c.info.collisionNormal.z, 0, 0, 0);
+
+            currentConstraints.push_back(Constraint{
+                .lagrange = 0,
+                .stiffness = 1,
+
+                .targetStiffness = INFINITY,
+                .minLagrange = 0,
+                .maxLagrange = INFINITY,
+                .hard = true,
+                .error = [c, currentPos, currentError](const Position& a, const Position& b) -> double {
+                    return (1 - regularization)*currentError + errorSlope;
+                },
+                .errorSlope = [c](const Position& a, const Position& b) -> vec6 {
+                       return (1 - regularization) + ;
+                },
+                //.errorSlope2 = [c]() -> mat6x6 {}
+            });
+        }
+    }
+
+    std::vector<Rigidbody> rigidbodies;
+    auto [begin1, end1] = GameObject::SystemGetComponents<TransformComponent, RigidbodyComponent>();
+    std::for_each(begin1, end1, [&](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
         TransformComponent& transform = *std::get<0>(tuple);
         RigidbodyComponent& rigidbody = *std::get<1>(tuple);
 
-        // transform.SetRot(glm::normalize(transform.Rotation()));
-        if (!rigidbody.kinematic) {
-            rigidbody.velocity += PhysicsEngine::Get().GRAVITY * timestep;
+        rigidbodies.push_back(Rigidbody {
+            .currentPos = Position { .pos = transform.Position(), .rot = transform.Rotation()},
+            .nextPos = Position { 
+                .pos = transform.Position() + timestep * rigidbody.velocity + timestep * timestep * GRAVITY, 
+                .rot = glm::quat(0, rigidbody.angularVelocity.x, rigidbody.angularVelocity.y, rigidbody.angularVelocity.z) * 0.5f * float(timestep) * transform.Rotation()
+            },
+        });
+        mat6x6 m = mat6x6::Identity();
+        m.coeffRef(0, 0) = 1 / rigidbody.InverseMass();
+        m.coeffRef(1, 1) = 1 / rigidbody.InverseMass();
+        m.coeffRef(2, 2) = 1 / rigidbody.InverseMass();
+        m.coeffRef(3, 3) = 1 / rigidbody.InverseMass(); // TODO: PUT MOI HERE 
+        m.coeffRef(4, 4) = 1 / rigidbody.InverseMass();
+        m.coeffRef(5, 5) = 1 / rigidbody.InverseMass();
+        rigidbodies.back().massmatrix = m;
+    });
+
+    for (auto& c : currentConstraints) {
+        c.lagrange *= regularization * stiffnessScaling;
+        c.stiffness = std::max(c.stiffness * stiffnessScaling, 0.0);
+    }
+   
+
+    for (unsigned iIter = 0; iIter < 5; iIter++) {
+        std::vector<Position> newPositions;
+
+        for (auto& r: rigidbodies) {
+
+            mat6x6 hessian = r.massmatrix / timestep / timestep;
+            vec6 diff = r.nextPos - r.currentPos;
+            vec6 force = hessian * diff;
+
+            for (auto& f : r.forces) {
+                double error = f->error();
+                vec6 partialDerivativeOfConstraintError = f->errorSlope();
+                mat6x6 partialDerivative2OfConstraintError = f->errorSlope2();
+                double clampedForceMagnitude = f->hard ? std::clamp(f->stiffness * error + f->lagrange, f->minLagrange, f->maxLagrange) : f->stiffness * error;
+                
+                force = force - partialDerivativeOfConstraintError * clampedForceMagnitude;
+                
+                hessian = hessian + (partialDerivativeOfConstraintError * partialDerivativeOfConstraintError.transpose() * f->stiffness);
+
+                // add gprime
+                //for (unsigned i = 0; i < 6; i++) hessian.coeffRef(i, i) += partialDerivative2OfConstraintError.col(i).norm() * std::abs(clampedForceMagnitude);
+            }
+
+            vec6 deltaP = hessian.llt().solve(force);
+            //vec6 deltaP = hessian.inverse() * force;
+            r.newPos.pos = r.currentPos.pos + glm::dvec3(deltaP.x(), deltaP.y(), deltaP.z());
+            r.newPos.rot = glm::normalize(r.currentPos.rot + 0.5f * glm::quat(0.0f, deltaP[3], deltaP[4], deltaP[5]) * r.currentPos.rot);
         }
 
-        // exponentiation is used to make the drag work consistently across all timesteps
-        rigidbody.velocity *= pow(rigidbody.linearDrag, timestep);
-        rigidbody.angularVelocity *= powf(rigidbody.angularDrag, float(timestep));
-
-        // f = ma, so a = f/m
-            
-        rigidbody.velocity += rigidbody.accumulatedForce * rigidbody.InverseMass();
-        rigidbody.accumulatedForce = {0, 0, 0};
-
-        // a = t/i
-        // glm::mat3 globalInverseInertiaTensor = rigidbody.GetInverseGlobalMomentOfInertia(transform); 
-        // rigidbody.angularVelocity += globalInverseInertiaTensor * rigidbody.accumulatedTorque;
-        auto deltaAngularVelocity = glm::vec3(
-            rigidbody.InverseMomentOfInertiaAroundAxis(transform, { 1, 0, 0 }),
-            rigidbody.InverseMomentOfInertiaAroundAxis(transform, { 0, 1, 0 }),
-            rigidbody.InverseMomentOfInertiaAroundAxis(transform, { 0, 0, 1 })
-        ) * rigidbody.accumulatedTorque;
-        rigidbody.angularVelocity += deltaAngularVelocity;
-        rigidbody.accumulatedTorque = {0, 0, 0};
-
-        if (rigidbody.velocity != glm::dvec3(0, 0, 0)) {
-            transform.SetPos(transform.Position() + rigidbody.velocity * timestep);
+        for (auto& r : rigidbodies) {
+            r.currentPos = r.newPos;
         }
-           
-        if (glm::length2(rigidbody.angularVelocity) != 0) {
-            // to integrate angular velocity (rotate by angular velocity), you can't just rotate by x, then by y, then by z. 
-            // Order of those 3 rotations would matter, and all of them would be wrong, because in reality all three rotations are happening simultaneously/continuously.
-            glm::quat spin = glm::angleAxis(glm::length(rigidbody.angularVelocity) * float(timestep), glm::normalize(rigidbody.angularVelocity));
 
-            // glm::quat spin = glm::quat(0, rigidbody.angularVelocity.x, rigidbody.angularVelocity.y, rigidbody.angularVelocity.z) * 0.5f * float(timestep);
-            //std::cout << "velocity " << glm::to_string(rigidbody.localMomentOfInertia) << " so we at " << glm::to_string(QuatAroundX) << " \n";
-            Assert(!std::isnan(spin.x));
-            transform.SetRot((spin * transform.Rotation()));
+        for (auto& f : currentConstraints) {
+            if (f.hard) {
+                f.lagrange = std::clamp(f.stiffness * f.error() + f.lagrange, f.minLagrange, f.maxLagrange);
+                if (f.minLagrange < f.lagrange && f.lagrange < f.maxLagrange) {
+                    f.stiffness = f.stiffness + stiffnessRamping * std::abs(f.error());
+                }
+            }
+            else {
+                f.stiffness = std::min(f.targetStiffness, f.stiffness + stiffnessRamping * std::abs(f.error()));
+            }
         }
     }
-    
-    // second pass, do collisions and constraints for non-kinematic objects
-    // the second pass should under no circumstances change any property of the gameobjects, except for the accumulatedForce of the object being moved, so that the order of operations doesn't matter and so that physics can be parallelized.
-    
-    // for each pair, the transform component will be shifted over by the vector
-    // TODO: NOT THREAD SAFE MY BAD DO NOT FORGET TO FIX
-    std::vector<std::pair<TransformComponent*, glm::dvec3>> separations; // to separate colliding objects, since we can't change position in this pass, DoPhysics() adds desired translations to this std::vector, and 3rd pass actually sets position 
-    
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, ColliderComponent, RigidbodyComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Collider, ComponentBitIndex::Rigidbody });  it.Valid(); it++) {
-        auto& tuple = *it;
+
+    unsigned i = 0;
+
+    std::for_each(begin1, end1, [&](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
         TransformComponent& transform = *std::get<0>(tuple);
-        ColliderComponent& collider = *std::get<1>(tuple);
-        RigidbodyComponent& rigidbody = *std::get<2>(tuple);
-        if (!rigidbody.kinematic) {
-            DoPhysics(timestep, collider, transform, rigidbody, separations);
-        }
-    }
+        RigidbodyComponent& rigidbody = *std::get<1>(tuple);
 
-    // third pass, seperate colliding objects since we couldn't change positions in 2nd pass
-    for (auto & [comp, offset]: separations) {
-        comp->SetPos(comp->Position() + offset);
-    }
+        
+        rigidbody.velocity = (rigidbodies[i].currentPos.pos - transform.Position()) / timestep;
+        glm::quat dRot = (2.0f * rigidbodies[i].currentPos.rot * glm::inverse(transform.Rotation()));
+        rigidbody.angularVelocity = glm::vec3(dRot.x, dRot.y, dRot.z) / timestep;
+        transform.SetPos(rigidbodies[i].currentPos.pos);
+        transform.SetRot(rigidbodies[i].currentPos.rot);
+        i++;
+    });
 
-    //postPhysicsEvent->Fire(timestep);
+    SpatialAccelerationStructure::Get().Update();
+    ClearCollisionCache();
 }

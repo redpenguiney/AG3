@@ -1,5 +1,6 @@
 #include "gameobject.hpp"
 #include "component_field_initializer.hpp"
+#include "physics/physics_mesh.hpp"
 
 // Used to make shared_ptr for GameObject, which lacks a public constructor
 template <typename... Args>

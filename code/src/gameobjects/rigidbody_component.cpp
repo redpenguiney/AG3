@@ -48,7 +48,7 @@ void RigidbodyComponent::UpdateMomentOfInertia(const TransformComponent& transfo
     }
     else {
         // DebugLogInfo("calculating");
-        localMomentOfInertia = physicsMesh->CalculateLocalMomentOfInertia(transform.Scale(), 1.0f/inverseMass);
+         localMomentOfInertia = physicsMesh->CalculateLocalMomentOfInertia(transform.Scale(), 1.0f/inverseMass);
     }
     
 }
@@ -78,7 +78,7 @@ float RigidbodyComponent::InverseMomentOfInertiaAroundAxis(const TransformCompon
     }
 
     float dot = glm::dot(axisInLocalSpace, inertiaAxis);
-    float inverseMoment = 1.0 / dot;
+    float inverseMoment = 1.0f / dot;
 
     //DebugLogInfo("\tReturning dot ", dot, ", 1.0/that is ", inverseMoment, " from i-axis ", glm::to_string(inertiaAxis), " local ", glm::to_string(axisInLocalSpace), " localmomomiooii = ", glm::to_string(localMomentOfInertia));
 

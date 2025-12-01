@@ -32,18 +32,18 @@ struct AABB {
     }
 
     // Checks if this AABB fully envelopes the other AABB 
-    bool TestEnvelopes(const AABB& other) {
+    bool TestEnvelopes(const AABB& other) const {
         return (min.x <= other.min.x && min.y <= other.min.y && min.z <= other.min.z && max.x >= other.max.x && max.y >= other.max.y && max.z >= other.max.z);
     }
 
     // returns true if they touching
-    bool TestIntersection(const AABB& other) {
+    bool TestIntersection(const AABB& other) const {
         return (min.x <= other.max.x && max.x >= other.min.x) && (min.y <= other.max.y && max.y >= other.min.y) && (min.z <= other.max.z && max.z >= other.min.z);
     }
 
     // returns true if they touching
     // uses https://tavianator.com/2011/ray_box.html 
-    bool TestIntersection(const glm::dvec3& origin, const glm::dvec3& direction_inverse) {
+    bool TestIntersection(const glm::dvec3& origin, const glm::dvec3& direction_inverse) const {
         //std::printf("Testing AABB going from %f %f %f to %f %f %f\n.", min.x, min.y, min.z, max.x, max.y, max.z);
 
         double t1 = (min[0] - origin[0]) * direction_inverse[0];

@@ -198,18 +198,18 @@ int main(int numArgs, const char *argPtrs[]) {
             SpatialAccelerationStructure::Get().Update();
 
             if (!physicsPaused) {
-                // physicsPaused = true;
+                //physicsPaused = true;
                 // printf("Stepping PE.\n");
                 
                 PE.prePhysicsEvent->Fire(SIMULATION_TIMESTEP);
                 BaseEvent::FlushEventQueue(); // if we don't do this, if firing the event is meant to (for example) change velocities, it won't apply until next frame.
 
                 for (unsigned int i = 0; i < N_PHYSICS_ITERATIONS; i++) {
-                    PE.Step(SIMULATION_TIMESTEP/2.0/N_PHYSICS_ITERATIONS);
-                    PE.Step(SIMULATION_TIMESTEP/4.0/N_PHYSICS_ITERATIONS);
-                    PE.Step(SIMULATION_TIMESTEP/8.0/N_PHYSICS_ITERATIONS);
-                    PE.Step(SIMULATION_TIMESTEP/8.0/N_PHYSICS_ITERATIONS);
-                    // PE.Step(SIMULATION_TIMESTEP);
+                    //PE.Step(SIMULATION_TIMESTEP/2.0/N_PHYSICS_ITERATIONS);
+                    //PE.Step(SIMULATION_TIMESTEP/4.0/N_PHYSICS_ITERATIONS);
+                    //PE.Step(SIMULATION_TIMESTEP/8.0/N_PHYSICS_ITERATIONS);
+                    //PE.Step(SIMULATION_TIMESTEP/8.0/N_PHYSICS_ITERATIONS);
+                    PE.Step(SIMULATION_TIMESTEP);
                 }
 
                 PE.postPhysicsEvent->Fire(SIMULATION_TIMESTEP);
@@ -228,8 +228,8 @@ int main(int numArgs, const char *argPtrs[]) {
         BaseEvent::FlushEventQueue();
         LUA.PreRenderCallbacks();
 
-        GE.RenderScene(physicsPaused ? 0.0f : (float)elapsedTime);
-
+        //GE.RenderScene(physicsPaused ? 0.0f : (float)elapsedTime);
+        GE.RenderScene((float)elapsedTime);
         // TODO: unsure about placement of flip buffers? 
         // i think this yields until GPU done drawing and image on screen
         // could/should we do something to try and do physics or something while GPU working? or are we already? 

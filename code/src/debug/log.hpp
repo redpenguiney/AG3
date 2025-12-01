@@ -1,8 +1,11 @@
 #pragma once
 #include <iostream>
+#include <mutex>
 
 #if defined(_MSC_VER)
 #include <sstream>
+
+inline std::mutex LOGGING_MUTEX;
 
 // visual studio is dumb and doesn't let you see the result of std::cout unless you use OutputDebugStringA().
 class dbg_stream_for_cout: public std::stringbuf {
@@ -21,6 +24,7 @@ void TestPrint();
 
 template<typename ... Args>
 void _DebugLogInfo_(const char* file, int lineNumber, Args... args) {
+    LOGGING_MUTEX.lock();
     #if defined(_MSC_VER)
     std::cout.rdbuf(&dbg_printstream);
     #endif
@@ -34,10 +38,14 @@ void _DebugLogInfo_(const char* file, int lineNumber, Args... args) {
     std::cout << "\n";
 
     std::cout.flush();
+
+    LOGGING_MUTEX.unlock();
 }
 
 template<typename ... Args>
 void _DebugLogError_(const char* file, int lineNumber, Args... args) {
+    LOGGING_MUTEX.lock();
+
     #if defined(_MSC_VER)
     std::cout.rdbuf(&dbg_printstream);
     #endif
@@ -51,6 +59,8 @@ void _DebugLogError_(const char* file, int lineNumber, Args... args) {
     std::cout << "\n";
 
     std::cout.flush();
+
+    LOGGING_MUTEX.unlock();
 }
 
 #define DebugLogError(...) {_DebugLogError_(__FILE__, __LINE__, __VA_ARGS__);}

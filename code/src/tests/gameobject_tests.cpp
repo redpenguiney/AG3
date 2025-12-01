@@ -1,11 +1,39 @@
-#include "gameobject_tests.hpp"
 #include <audio/sound.hpp>
 #include <gameobjects/gameobject.hpp>
 #include <physics/pengine.hpp>
+#include "physics/physics_mesh.hpp"
 #include <conglomerates/gui.hpp>
 #include <conglomerates/skybox_factory.cpp>
 #include "network/network.hpp"
-#include "noise/noise.h"
+#include <cmath>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <conglomerates/basic_renderer.hpp>
+#include <debug/assert.hpp>
+#include <debug/log.hpp>
+#include <gameobjects/animation_component.hpp>
+#include <gameobjects/audio_player_component.hpp>
+#include <gameobjects/collider_component.hpp>
+#include <gameobjects/component_id.hpp>
+#include <gameobjects/pointlight_component.hpp>
+#include <gameobjects/render_component.hpp>
+#include <gameobjects/rigidbody_component.hpp>
+#include <gameobjects/spotlight_component.hpp>
+#include <gameobjects/transform_component.hpp>
+#include <graphics/gengine.hpp>
+#include <graphics/material.hpp>
+#include <graphics/mesh.hpp>
+#include <graphics/mesh_provider.hpp>
+#include <graphics/shader_input_provider.hpp>
+#include <graphics/shader_program.hpp>
+#include <graphics/texture.hpp>
+#include <graphics/texture_collection.hpp>
+#include <network/packet_types.hpp>
+#include <utility/utility.hpp>
+#include <glm/ext.hpp>
+#include <noise/module/perlin.h>
 
 void TestSkybox() {
     auto params = MaterialCreateParams{
@@ -196,14 +224,15 @@ void TestCubeArray(glm::uvec3 stride, glm::uvec3 start, glm::uvec3 dim, bool phy
     }
 }
 
-void TestSphere(int x, int y, int z, bool physics)
+void TestSphere(double x, double y, double z, bool physics)
 {
     GameobjectCreateParams params = physics ? GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider , ComponentBitIndex::Rigidbody }) : GameobjectCreateParams({ ComponentBitIndex::Transform, ComponentBitIndex::Render, ComponentBitIndex::Collider });
     params.meshId = SphereMesh()->meshId;
+    params.physMesh = PhysicsMesh::Sphere();
     //params.materialId = brickMaterial->id;
     auto g = GameObject::New(params);
     g->Get<TransformComponent>()->SetPos({ x, y, z });
-    g->Get<ColliderComponent>()->elasticity = 0.3f;
+    g->Get<ColliderComponent>()->elasticity = 0.7f;
     g->Get<ColliderComponent>()->friction = 1.0f;
     // g->rigidbodyComponent->angularDrag = 1.0;
     // g->rigidbodyComponent->linearDrag = 1.0;
@@ -285,9 +314,9 @@ std::shared_ptr<GameObject> TestGrassFloor()
 
     auto floor = GameObject::New(params);
     floor->RawGet<ColliderComponent>()->SetCollisionLayer(1);
-    floor->RawGet<TransformComponent>()->SetPos({ 0, 0, 0 });
+    floor->RawGet<TransformComponent>()->SetPos({ 0, -0.5, 0 });
     floor->RawGet<TransformComponent>()->SetRot(glm::vec3{ 0.0, glm::radians(0.0), glm::radians(0.0) });
-    floor->RawGet<ColliderComponent>()->elasticity = 1.0;
+    floor->RawGet<ColliderComponent>()->elasticity = 0.5;
     floor->RawGet<TransformComponent>()->SetScl({ 10, 1, 10 });
     floor->RawGet<RenderComponent>()->SetColor({ 0.5, 1, 0.5, 1.0 });
     floor->RawGet<RenderComponent>()->SetTextureZ(grassTextureZ);
@@ -433,13 +462,13 @@ void TestStationaryPointlight()
     auto coolLight = GameObject::New(params);
     coolLight->RawGet<RenderComponent>()->SetTextureZ(-1);
     coolLight->RawGet<RenderComponent>()->SetColor({ 0.5, 1.0, 1.0, 1.0 });
-    coolLight->RawGet<TransformComponent>()->SetPos({ 40, 5, 40 });
+    coolLight->RawGet<TransformComponent>()->SetPos({ 40, 9, 40 });
     coolLight->RawGet<PointLightComponent>()->SetRange(1000);
     coolLight->RawGet<PointLightComponent>()->SetColor({ 0.8, 1.0, 0.8 });
 
     
     auto coolerLight = GameObject::New(params);
-    coolerLight->RawGet<TransformComponent>()->SetPos({ 0, 0, 0 });
+    coolerLight->RawGet<TransformComponent>()->SetPos({ 0, 0, -4 });
     coolerLight->RawGet<RenderComponent>()->SetColor({ 1, 0.5, 0, 1.0 });
     coolerLight->RawGet<PointLightComponent>()->SetRange(20);
     coolerLight->RawGet<PointLightComponent>()->SetColor({ 1, 0.3, 0.7 });
@@ -449,7 +478,7 @@ void TestStationaryPointlight()
     coolestLight->RawGet<RenderComponent>()->SetTextureZ(-1);
     coolestLight->RawGet<RenderComponent>()->SetColor({ 0.5, 1.0, 1.0, 1.0 });
     coolestLight->RawGet<TransformComponent>()->SetPos({ 0, 500, 0 });
-    coolestLight->RawGet<PointLightComponent>()->SetRange(1000000);
+    coolestLight->RawGet<PointLightComponent>()->SetRange(300000);
     coolestLight->RawGet<PointLightComponent>()->SetColor({ 0.8, 1.0, 0.6 });
 }
 
@@ -514,7 +543,7 @@ void TestUi()
 
 void TestBillboardUi(glm::dvec3 pos, std::string text)
 {
-   static  auto [arialLayer, arialFont] = ArialFont();
+   static auto [arialLayer, arialFont] = ArialFont(16);
 
     //auto go = GameObject::New(GameobjectCreateParams({ ComponentBitIndex::Transform }));
     //go->RawGet<TransformComponent>()->SetPos(pos);
@@ -527,7 +556,7 @@ void TestBillboardUi(glm::dvec3 pos, std::string text)
         .guiMaterial = nullptr,
         .billboardInfo = Gui::BillboardGuiInfo {.scaleWithDistance = true, .rotation = std::nullopt, .worldPosition = pos } 
         });
-    ui->rgba = { 1, 0.5, 0, 0.5 };
+    ui->rgba = { 1, 0.5, 0, 0 };
     ui->scaleSize = { 0, 0 };
     ui->offsetSize = { 128, 32 };
     ui->anchorPoint = {0.0, 0.0};

@@ -12,7 +12,7 @@
 #include "../utility/let_me_hash_a_tuple.cpp"
 #include "glm/gtx/string_cast.hpp"
 #include "glm/gtx/norm.hpp"
-
+#include "glm/gtx/hash.hpp"
 
 
 PhysicsMesh::~PhysicsMesh()
@@ -47,20 +47,32 @@ std::shared_ptr<PhysicsMesh> PhysicsMesh::New(std::shared_ptr<Mesh> &mesh, unsig
     } 
 }
 
+std::shared_ptr<PhysicsMesh> PhysicsMesh::Sphere()
+{
+    static std::shared_ptr<PhysicsMesh> sphereMesh(new PhysicsMesh(true));
+    return sphereMesh;
+}
+
 void PhysicsMesh::RefreshMesh()
 {
-    if (origin == nullptr) return;
+    Assert(origin != nullptr);
     meshes.clear();
-    auto newMeshes = ConvexTriangleMesh::FromMesh(origin, 0, false);
+    auto newMeshes = ConvexTriangleMesh::FromMesh(origin, 1.0f, false);
     std::swap(newMeshes, meshes); // TODO
 }
 
 PhysicsMesh::PhysicsMesh(std::shared_ptr<Mesh>& mesh): 
     origin(mesh->dynamic ? mesh : nullptr), 
+    meshes(ConvexTriangleMesh::FromMesh(mesh, 1.0f, false))
+{
+}
+
+PhysicsMesh::PhysicsMesh(bool) :
+    origin(nullptr),
     meshes()
 {
-    
-    //RefreshMesh();
+    auto f = std::unique_ptr<ConvexMesh>((ConvexMesh*)(new SphereMesh()));
+    meshes.push_back(std::move(f));
 }
 
 // std::shared_ptr<PhysicsMesh>& PhysicsMesh::Get(unsigned int id) {
@@ -220,6 +232,7 @@ std::vector<std::unique_ptr<ConvexMesh>> ConvexTriangleMesh::FromMesh(const std:
 
     // Graphics meshes contain extraneous data (UVs, colors, etc.) that isn't relevant to physics, so this function needs to get rid of that.
     // This function also needs to take triangles with same normal and put them in same polygon to fill faces, and get edges.
+    std::unordered_set<glm::vec3> vertices;
     std::vector<std::pair<glm::vec3, std::vector<glm::vec3>>> faces;
     std::vector<std::array<glm::vec3, 3>> triangles;
     std::vector<std::pair<glm::vec3, glm::vec3>> edges;
@@ -237,6 +250,10 @@ std::vector<std::unique_ptr<ConvexMesh>> ConvexTriangleMesh::FromMesh(const std:
         glm::vec3 vertex1 = { mesh->vertices[vertexIndex1 + offset], mesh->vertices[vertexIndex1 + 1 + offset], mesh->vertices[vertexIndex1 + 2 + offset] };
         glm::vec3 vertex2 = { mesh->vertices[vertexIndex2 + offset], mesh->vertices[vertexIndex2 + 1 + offset], mesh->vertices[vertexIndex2 + 2 + offset] };
         glm::vec3 vertex3 = { mesh->vertices.at(vertexIndex3 + offset), mesh->vertices.at(vertexIndex3 + 1 + offset), mesh->vertices.at(vertexIndex3 + 2 + offset) };
+
+        vertices.insert(vertex1); 
+        vertices.insert(vertex2);
+        vertices.insert(vertex3);
 
         // DebugLogInfo("Vertices ", glm::to_string(vertex1), ",", glm::to_string(vertex2), ",", glm::to_string(vertex3));
 
@@ -391,7 +408,10 @@ std::vector<std::unique_ptr<ConvexMesh>> ConvexTriangleMesh::FromMesh(const std:
     // for (auto & e: edges) {
     //     std::cout << "\tEdge " << glm::to_string(e.first) << " to " << glm::to_string(e.second) << ".\n";
     // }
-    return {std::make_unique<ConvexTriangleMesh>(triangles, faces, edges, mesh->vertices),};
+    auto ptr = std::unique_ptr<ConvexMesh>(new ConvexTriangleMesh(triangles, faces, edges, std::vector(vertices.begin(), vertices.end())));
+    std::vector<std::unique_ptr<ConvexMesh>> vec;
+    vec.push_back(std::move(ptr));
+    return std::move(vec);
 }
 
 glm::vec3 ConvexTriangleMesh::FindFarthestPointOnObject(const glm::vec3& directionInModelSpace) {
@@ -405,4 +425,6 @@ glm::vec3 ConvexTriangleMesh::FindFarthestPointOnObject(const glm::vec3& directi
             farthestVertex = vertex;
         }
     }
+
+    return farthestVertex;
 }

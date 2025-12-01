@@ -34,19 +34,19 @@ std::pair<unsigned int, std::vector<ComponentPool::ComponentMemoryInfo>> GetArch
 	}
 	if (components[ComponentBitIndex::Render]) {
 		layout.push_back(ComponentPool::ComponentMemoryInfo{ .size = sizeof(RenderComponent), .offset = currentOffset, .componentId = ComponentBitIndex::Render });
-		currentOffset += sizeof(TransformComponent);
+		currentOffset += sizeof(RenderComponent);
 	}
 	if (components[ComponentBitIndex::Collider]) {
 		layout.push_back(ComponentPool::ComponentMemoryInfo{ .size = sizeof(ColliderComponent), .offset = currentOffset, .componentId = ComponentBitIndex::Collider });
-		currentOffset += sizeof(TransformComponent);
+		currentOffset += sizeof(ColliderComponent);
 	}
 	if (components[ComponentBitIndex::Rigidbody]) {
 		layout.push_back(ComponentPool::ComponentMemoryInfo{ .size = sizeof(RigidbodyComponent), .offset = currentOffset, .componentId = ComponentBitIndex::Rigidbody });
-		currentOffset += sizeof(TransformComponent);
+		currentOffset += sizeof(RigidbodyComponent);
 	}
 	if (components[ComponentBitIndex::Pointlight]) {
 		layout.push_back(ComponentPool::ComponentMemoryInfo{ .size = sizeof(PointLightComponent), .offset = currentOffset, .componentId = ComponentBitIndex::Pointlight });
-		currentOffset += sizeof(TransformComponent);
+		currentOffset += sizeof(PointLightComponent);
 	}
 	if (components[ComponentBitIndex::RenderNoFO]) {
 		layout.push_back(ComponentPool::ComponentMemoryInfo{ .size = sizeof(RenderComponentNoFO), .offset = currentOffset, .componentId = ComponentBitIndex::RenderNoFO });

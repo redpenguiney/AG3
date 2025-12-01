@@ -1,12 +1,9 @@
 #pragma once
-#include "debug/assert.hpp"
-#include <cstddef>
-#include <cstdio>
-#include <memory>
 #include <vector>
 #include <array>
 #include <glm/vec3.hpp>
 #include "gameobjects/transform_component.hpp"
+#include "utility/threading_utils.hpp"
 
 #include "physics_mesh.hpp"
 #include "physics/aabb.hpp"
@@ -15,6 +12,31 @@ class ColliderComponent;
 
 // Once there are more objects in a node than this threshold, the node splits
 static const inline unsigned int NODE_SPLIT_THRESHOLD = 50;
+
+// Node in the SAS's dynamic AABB tree
+struct SasNode {
+    glm::dvec3 splitPoint; // point that splits the aabb to determine aabbs of children, initialized to (nan, nan, nan) 
+    CollisionLayerSet layers; // layers this node contains are 1
+
+    bool split; // when this node is queried and it has more objects than NODE_SPLIT_THRESHOLD and this bool is false, the node will be split.
+    // however, if the node can't be split (because all objects are in same position or something) then we'll just set this bool to true and then set it to false when a new collider is added that might make the node splittable
+    std::array<SasNode*, 27>* children;
+    // children are stored in an icoseptree. index with [x * 9 + y * 3 + z], assuming 0 = lower coord 1 = middle 2 = higher coord
+
+    std::vector<ColliderComponent*> objects;
+    SasNode* parent;
+    AABB aabb; // aabb that contains all objects/children of the node
+
+    SasNode();
+
+    // recalculate AABB of node from its contents
+    void RecalculateAABB();
+
+    // sets splitPoint, calculated by mean position of objects inside, creates children nodes, and moves objects into children nodes
+    void Split();
+
+
+};
 
 // A dynamic AABB tree structure that allows for fast queries of objects by position, which is needed for collision detection that isn't O(n^2).
 // Specifically used for broad phase collision detection.
@@ -37,7 +59,6 @@ class SpatialAccelerationStructure { // (SAS)
     
     private:
     friend class ColliderComponent;
-    struct SasNode;
     public:
 
     
@@ -47,11 +68,13 @@ class SpatialAccelerationStructure { // (SAS)
 
     // Returns the set of colliders whose AABBs intersect the given AABB (assuming the colliders are in the SAS, which they should be).
     // Will only return colliders with one of the given layers.
+    // Thread safe.
     std::vector<ColliderComponent*> Query(const AABB& collider, CollisionLayerSet layers = ALL_COLLISION_LAYERS);
 
     // Returns the set of colliders whose AABBs intersect the given ray (assuming the colliders are in the SAS, which they should be).
     // Will only return colliders with one of the given layers.
-    std::vector<ColliderComponent*> Query(const glm::dvec3& origin, const glm::dvec3& direction, CollisionLayerSet layers);
+    // Thread safe.
+    std::vector<ColliderComponent*> Query(const glm::dvec3& origin, const glm::dvec3& direction, CollisionLayerSet layers = ALL_COLLISION_LAYERS);
 
     // Adds a collider to the SAS.
     void AddCollider(ColliderComponent* collider, const TransformComponent& transform);
@@ -65,6 +88,7 @@ class SpatialAccelerationStructure { // (SAS)
     void DebugVisualizeAddVertexAttributes(SasNode const& node, std::vector<float>& instancedVertexAttributes, unsigned int& numInstances, const Mesh& mesh, unsigned int depth=0);
 
     // recursive helper functions for Query(), ignore (member func because SasNode is private)
+    // thread safe
     void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider, CollisionLayerSet layers);
     void AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const glm::dvec3& origin, const glm::dvec3& inverse_direction, CollisionLayerSet layers);
 
@@ -77,33 +101,16 @@ class SpatialAccelerationStructure { // (SAS)
     SpatialAccelerationStructure();
     ~SpatialAccelerationStructure();
 
-    // Node in the SAS's dynamic AABB tree
-    struct SasNode {
-        glm::dvec3 splitPoint; // point that splits the aabb to determine aabbs of children, initialized to (nan, nan, nan) 
-        CollisionLayerSet layers; // layers this node contains are 1
-
-        bool split; // when this node is queried and it has more objects than NODE_SPLIT_THRESHOLD and this bool is false, the node will be split.
-            // however, if the node can't be split (because all objects are in same position or something) then we'll just set this bool to true and then set it to false when a new collider is added that might make the node splittable
-        std::array<SasNode*, 27>* children;
-        // children are stored in an icoseptree. index with [x * 9 + y * 3 + z], assuming 0 = lower coord 1 = middle 2 = higher coord
-
-        std::vector<ColliderComponent*> objects;
-        SasNode* parent;
-        AABB aabb; // aabb that contains all objects/children of the node
-
-        SasNode();
-
-        // recalculate AABB of node from its contents
-        void RecalculateAABB();
-
-        // sets splitPoint, calculated by mean position of objects inside, creates children nodes, and moves objects into children nodes
-        void Split();
-
-    };
+    // Nodes identified by Query() as needing to be split. Not split in Query() because that wouldn't be thread-safe.
+    static inline std::array<std::vector<SasNode*>, MAX_WORKER_THREADS> nodesToSplit;
 
     // Returns best child node to insert object into, given the parent node and object's AABB.
     // Returns nullptr if no child node.    
     static SasNode* SasInsertHeuristic(SasNode& node, const AABB& aabb, CollisionLayer layer);
 
     SasNode root;
+
+    friend struct SasNode;
+
 };
+

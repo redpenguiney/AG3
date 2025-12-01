@@ -1,11 +1,1 @@
-﻿  TG3.cpp
-C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\TG3\TG3.cpp(34,73): warning C4099: 'glm::vec<3,double,glm::packed_highp>': type name first seen using 'struct' now seen using 'class'
-  (compiling source file '/TG3.cpp')
-      C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\vcpkg_installed\x64-windows\x64-windows\include\glm\detail\type_vec3.hpp(17,9):
-      see declaration of 'glm::vec<3,double,glm::packed_highp>'
-  
-LINK : warning LNK4300: ignoring '/INCREMENTAL' because input module contains ASAN metadata
-     Creating library C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\AG3\x64\Debug\TG3.lib and object C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\AG3\x64\Debug\TG3.exp
-  TG3.vcxproj -> C:\Users\ilike\Desktop\C++ Stuff\AG3-VS2c\AG3\AG3\x64\Debug\TG3.dll
-  'pwsh.exe' is not recognized as an internal or external command,
-  operable program or batch file.
+﻿

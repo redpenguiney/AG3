@@ -6,11 +6,11 @@
 
 ColliderComponent::ColliderComponent(GameObject* gameobj, std::shared_ptr<PhysicsMesh>& physMesh):
     gameobject(gameobj),
-    physicsMesh(physMesh)
+    physicsMesh(physMesh),
+    aabbType(BoundingBox)
 {
     Assert(gameobject);
 
-    aabbType = AABBBoundingCube;
     node = nullptr;
     
     elasticity = 1.0f;
@@ -49,8 +49,7 @@ std::shared_ptr<GameObject> ColliderComponent::GetGameObject() {
 void ColliderComponent::RecalculateAABB(const TransformComponent& colliderTransform) {
     // std::cout << "Reacalculating AABB of " << this << "\n";
     if (aabbType == AABBBoundingCube) {
-        glm::dvec3 min = {-std::sqrt(0.75), -std::sqrt(0.75), -std::sqrt(0.75)};
-        glm::dvec3 max = {std::sqrt(0.75), std::sqrt(0.75), std::sqrt(0.75)};
+        glm::dvec3 min(-std::sqrt(0.75)), max(std::sqrt(0.75));
         
         // TODO: maybe fat factor should be added instead of multiplied?
         min *= AABB_FAT_FACTOR;
@@ -63,13 +62,65 @@ void ColliderComponent::RecalculateAABB(const TransformComponent& colliderTransf
         aabb = AABB(min, max);
     }
     else {
-        DebugLogError("PROBLEM");
-        abort();
+
+        glm::vec3 min(-0.5f, -0.5f, -0.5f);
+        for (float x : { -0.5f, 0.5f }) {
+            for (float y : { -0.5f, 0.5f }) {
+                for (float z : { -0.5f, 0.5f }) {
+                    glm::vec3 transformed = colliderTransform.Rotation() * glm::vec3(x, y, z);
+                    min.x = std::min(min.x, transformed.x);
+                    min.y = std::min(min.y, transformed.y);
+                    min.z = std::min(min.z, transformed.z);
+                }
+            }
+        }
+
+        min *= colliderTransform.Scale();
+        glm::vec3 max = -min;
+
+        min *= AABB_FAT_FACTOR;
+        max *= AABB_FAT_FACTOR;
+        min += colliderTransform.Position();
+        max += colliderTransform.Position();
+        aabb = AABB(min, max);
+
+        //DebugPlacePointOnPosition(min, {1, 0, 0, 1});
+        //DebugPlacePointOnPosition(max, {1, 0, 1, 1});
+    }
+}
+
+AABB ColliderComponent::GetTightfittingAABB(const TransformComponent& colliderTransform) {
+    if (aabbType == BoundingBox) {
+        return aabb;
+    }
+    else {
+        glm::vec3 min(-0.5);
+
+        min *= colliderTransform.Scale();
+        min = colliderTransform.Rotation() * min;
+        glm::vec3 max = -min;
+
+        min *= AABB_FAT_FACTOR;
+        max *= AABB_FAT_FACTOR;
+        min += colliderTransform.Position();
+        max += colliderTransform.Position();
+
+        return AABB(min, max);
     }
 }
 
 const AABB& ColliderComponent::GetAABB() {
     return aabb;
+}
+
+bool ColliderComponent::IsCollidingWith(ColliderComponent& other) {
+    RecalculateAABB(*gameobject->RawGet<TransformComponent>());
+    other.RecalculateAABB(*other.gameobject->RawGet<TransformComponent>());
+
+    if (aabb.TestIntersection(other.aabb)) {
+        return IsColliding(*gameobject->RawGet<TransformComponent>(), *this, *other.gameobject->RawGet<TransformComponent>(), other).has_value();
+    }
+    return false;
 }
 
 CollisionLayer ColliderComponent::GetCollisionLayer()

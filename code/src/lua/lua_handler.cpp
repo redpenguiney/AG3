@@ -18,7 +18,7 @@
 #include <optional>
 
 #include "lua_constructor_wrappers.hpp"
-
+#include "physics/physics_mesh.hpp"
 #include "physics/raycast.hpp"
 
 // TODO: ASYNCHRONOUS ASSET LOADING

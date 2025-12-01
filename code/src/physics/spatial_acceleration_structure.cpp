@@ -1,14 +1,36 @@
 #include "spatial_acceleration_structure.hpp"
 #include "gameobjects/gameobject.hpp"
-#include "glm/gtx/string_cast.hpp"
-#include "graphics/gengine.hpp"
 #include "gameobjects/collider_component.hpp"
+#include <array>
+#include <cmath>
+#include <string.h>
+#include <tuple>
+#include <vector>
+#include <debug/assert.hpp>
+#include <debug/log.hpp>
+#include <gameobjects/transform_component.hpp>
+#include <graphics/mesh.hpp>
+#include <graphics/mesh_provider.hpp>
+#include <graphics/shader_program.hpp>
+#include "aabb.hpp"
+#include <utility/threading_utils.hpp>
+#include <glm/ext.hpp>
+#include <GL/glew.h>
 
 void SpatialAccelerationStructure::Update() {
+
+    // Split any nodes that apparently require splitting
+    for (auto& threadVec : nodesToSplit) {
+        for (auto& n : threadVec) {
+            if (n->objects.size() >= NODE_SPLIT_THRESHOLD)
+                n->Split();
+        }
+        threadVec.clear();
+    }
+
     //auto start = Time();
     // Get components of all gameobjects that have a transform and collider component
-
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, ColliderComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Collider });  it.Valid(); it++) {
+    for (auto [it, end] = GameObject::SystemGetComponents<TransformComponent, ColliderComponent>(); it != end; it++) {
         auto & tuple = *it;
         auto& colliderComp = *std::get<1>(tuple);
         auto& transformComp = *std::get<0>(tuple);
@@ -23,7 +45,7 @@ void SpatialAccelerationStructure::Update() {
     //LogElapsed(start, "\nSAS update elapsed ");
 }
 
-void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const AABB& collider, CollisionLayerSet layers) {
+void SpatialAccelerationStructure::AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const AABB& collider, CollisionLayerSet layers) {
     if ((node->layers & layers).any() && node->aabb.TestIntersection(collider)) { // if this node touched the given collider, then its children may as well.
         if (node->children != nullptr) {
             for (auto& child : *node->children) {
@@ -37,7 +59,7 @@ void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationS
     }
 }
 
-void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationStructure::SasNode* node, std::vector<SpatialAccelerationStructure::SasNode*>& collidingNodes, const glm::dvec3& origin, const glm::dvec3& inverse_direction, CollisionLayerSet layers) {
+void SpatialAccelerationStructure::AddIntersectingLeafNodes(SasNode* node, std::vector<SasNode*>& collidingNodes, const glm::dvec3& origin, const glm::dvec3& inverse_direction, CollisionLayerSet layers) {
     if ((node->layers & layers).any() && node->aabb.TestIntersection(origin, inverse_direction)) { // if this node touched the given collider, then its children may as well.
         if (node->children != nullptr) {
             //std::cout << "hay " << node->children->size() << "\n";
@@ -54,7 +76,7 @@ void SpatialAccelerationStructure::AddIntersectingLeafNodes(SpatialAccelerationS
 
 std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& collider, CollisionLayerSet layers) {
     // find leaf nodes whose AABBs intersect the collider
-    std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
+    std::vector<SasNode*> collidingNodes;
     AddIntersectingLeafNodes(&root, collidingNodes, collider, layers);
     
     // test the aabbs of the objects inside each node and if so add them to the vector
@@ -66,7 +88,13 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const AABB& 
             }
         }
         if (node->objects.size() > NODE_SPLIT_THRESHOLD) {
-            node->Split();
+            if (ThreadManager::CurrentWorkerThreadId() == -1) {
+                node->Split();
+            }
+            else {
+                nodesToSplit[CurrentThreadId()].push_back(node);
+            }
+            
         }
     }
 
@@ -78,7 +106,7 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::d
     glm::dvec3 inverse_direction = glm::dvec3(1.0/direction.x, 1.0/direction.y, 1.0/direction.z); 
 
     // find leaf nodes whose AABBs intersect the ray
-    std::vector<SpatialAccelerationStructure::SasNode*> collidingNodes;
+    std::vector<SasNode*> collidingNodes;
     AddIntersectingLeafNodes(&root, collidingNodes, origin, inverse_direction, layers);
 
     // test the aabbs of the objects inside each node and if so add them to the vector
@@ -90,7 +118,8 @@ std::vector<ColliderComponent*> SpatialAccelerationStructure::Query(const glm::d
             }
         }
         if (node->objects.size() > NODE_SPLIT_THRESHOLD) {
-            node->Split();
+            nodesToSplit[CurrentThreadId()].push_back(node);
+            //node->Split();
         }
     }
 
@@ -235,7 +264,7 @@ void SpatialAccelerationStructure::DebugVisualize() {
 }
 
 // URGENT TODO: make sure not all objects put in same child node recursively
-void SpatialAccelerationStructure::SasNode::Split() {
+void SasNode::Split() {
     DebugLogInfo("splitting."); // keep this here so i know what happened when the above TODO i'll never do causes problems
 
     Assert(objects.size() >= NODE_SPLIT_THRESHOLD);
@@ -270,7 +299,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
     std::vector<unsigned int> indicesToRemove; // we cant remove the objects while we're iterating cuz that would mess up the iterator
     unsigned int i = 0;
     for (auto & obj: objects) { 
-        auto node = SasInsertHeuristic(*this, obj->aabb, obj->layer);
+        auto node = SpatialAccelerationStructure::SasInsertHeuristic(*this, obj->aabb, obj->layer);
         if (node != nullptr && node != this) {
             //std::cout << "aoisjfoijesa " << children << " index " << index << "\n";
             node->objects.push_back(obj);   
@@ -304,7 +333,7 @@ void SpatialAccelerationStructure::SasNode::Split() {
     // Assert(countbefore == countafter);
 }
 
-void SpatialAccelerationStructure::SasNode::RecalculateAABB() {
+void SasNode::RecalculateAABB() {
     // first find a single object or child node that has an aabb, and use that as a starting point
     if (objects.size() > 0) {
         aabb = objects[0]->aabb;
@@ -341,7 +370,7 @@ void SpatialAccelerationStructure::SasNode::RecalculateAABB() {
     
 }
 
-SpatialAccelerationStructure::SasNode::SasNode() {
+SasNode::SasNode() {
     split = false;
     splitPoint = {NAN, NAN, NAN};
     parent = nullptr;
@@ -349,7 +378,7 @@ SpatialAccelerationStructure::SasNode::SasNode() {
 }
 
 
-SpatialAccelerationStructure::SasNode* SpatialAccelerationStructure::SasInsertHeuristic(SasNode& node, const AABB& aabb, CollisionLayer layer) {
+SasNode* SpatialAccelerationStructure::SasInsertHeuristic(SasNode& node, const AABB& aabb, CollisionLayer layer) {
     if (node.children == nullptr) {return nullptr;}
     if (node.aabb.Volume() < aabb.Volume() * 8) {return &node;}
     auto splitPoint = node.splitPoint;

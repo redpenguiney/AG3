@@ -7,10 +7,11 @@ int dbg_stream_for_cout::sync()
 
     auto temp = std::cout.rdbuf();
     std::cout.rdbuf(original_cout_buf);
-    std::cout << str();
+    auto s = str();
+    std::cout << s;
     std::cout.rdbuf(temp);
 
-    OutputDebugStringA(str().c_str());
+    OutputDebugStringA(s.c_str());
 
 
     str(std::string()); // Clear the string buffer

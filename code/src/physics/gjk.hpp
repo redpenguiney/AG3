@@ -14,8 +14,11 @@ struct CollisionInfo {
     // Pairs are <position, penetrationDepth>
     std::vector<std::pair<glm::dvec3, double>> contactPoints;
 
-
+    // contact points from the perspective of the other collider. only stored here because it helps with caching
+    std::vector<std::pair<glm::dvec3, double>> otherContactPoints;
 };
+
+void ClearCollisionCache();
 
 // GJK+SAT collision algorithms. Determines whether the given thingies are colliding, and if they are, the return value will contain the collision info.
 std::optional<CollisionInfo> IsColliding(

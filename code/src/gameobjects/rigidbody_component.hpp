@@ -15,6 +15,7 @@ class RigidbodyComponent: public BaseComponent {
     ~RigidbodyComponent();
 
     bool kinematic; // if true, the physics engine will do nothing to this component except change its position/rotation by its velocity
+    bool asleep = false;
 
     glm::dvec3 velocity;
     glm::vec3 accumulatedForce; // every physics timestep, accumulated forces are turned into change in velocity (f=ma) and then set to zero
@@ -62,8 +63,6 @@ class RigidbodyComponent: public BaseComponent {
 
     // returns inverse mmoi of the rigidbody around the given axis. Axis is in world space.
     float InverseMomentOfInertiaAroundAxis(const TransformComponent& transform, glm::vec3 axis) const;
-
-    
 
     private:
     //private constructor to enforce usage of object pool

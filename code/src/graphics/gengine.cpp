@@ -11,6 +11,7 @@
 #include "gameobjects/animation_component.hpp"
 #include "graphics/gengine.hpp"
 #include "graphics/mesh.hpp"
+#include "physics/spatial_acceleration_structure.hpp"
 
 #ifdef IS_MODULE
 GraphicsEngine* _GRAPHICS_ENGINE_ = nullptr;
@@ -260,6 +261,8 @@ void GraphicsEngine::DebugAxis() {
     glDeleteVertexArrays(1, &vao);
 }
 
+
+
 void GraphicsEngine::RenderScene(float dt) {
     frameId++;
 
@@ -365,6 +368,7 @@ void GraphicsEngine::RenderScene(float dt) {
     glDisable(GL_SCISSOR_TEST);
     // (will be reenabled by materials next frame)
     //SpatialAccelerationStructure::Get().DebugVisualize();
+    if (debugShowSAS) SpatialAccelerationStructure::Get().DebugVisualize();
     DebugAxis();
 
     glFlush(); // Tell OpenGL we're done drawing.
@@ -398,7 +402,7 @@ void GraphicsEngine::UpdateLights() {
     unsigned int i = 0;
 
     // Get components of all gameobjects that have a transform and point light component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, PointLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Pointlight });  it.Valid(); it++) {
+    for (auto [it, end] = GameObject::SystemGetComponents<TransformComponent, PointLightComponent>(); it != end; it++) {
         auto& tuple = *it;
         TransformComponent& transform = *std::get<0>(tuple);
         PointLightComponent& pointLight = *std::get<1>(tuple);
@@ -426,7 +430,7 @@ void GraphicsEngine::UpdateLights() {
     i = 0;
 
     // Get components of all gameobjects that have a transform and point light component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, SpotLightComponent>({ ComponentBitIndex::Transform, ComponentBitIndex::Spotlight });  it.Valid(); it++) {
+    for (auto [it, end] = GameObject::SystemGetComponents<TransformComponent, SpotLightComponent>(); it != end; it++) {
         auto& tuple = *it;
         TransformComponent& transform = *std::get<0>(tuple);
         SpotLightComponent& spotLight = *std::get<1>(tuple);
@@ -617,8 +621,8 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     //DebugLogInfo("GOING IN:");
 
     // Get components of all gameobjects that have a transform and render component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponent>({ComponentBitIndex::Transform, ComponentBitIndex::Render});  it.Valid(); it++) {
-    //std::for_each(std::execution::par, components.begin(), components.end(), [this, &cameraPos](std::tuple<RenderComponent*, TransformComponent*>& tuple) {
+    for (auto [it, end] = GameObject::SystemGetComponents<TransformComponent, RenderComponent>(); it != end; it++) {
+        //std::for_each(std::execution::par, components.begin(), components.end(), [this, &cameraPos](std::tuple<RenderComponent*, TransformComponent*>& tuple) {
         auto& tuple = *it;
         auto & transformComp = *std::get<0>(tuple);
         auto & renderComp = *std::get<1>(tuple);
@@ -646,7 +650,7 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     unsigned int nRNFO = 0;
 
     // Get components of all gameobjects that have a transform and no floating origin render component
-    for (auto it = GameObject::SystemGetComponents<TransformComponent, RenderComponentNoFO>({ ComponentBitIndex::Transform, ComponentBitIndex::RenderNoFO });  it.Valid(); it++) {
+    for (auto [it, end] = GameObject::SystemGetComponents<TransformComponent, RenderComponentNoFO>(); it != end; it++) {
         auto& tuple = *it;
         auto& transformComp = *std::get<0>(tuple);
         auto& renderCompNoFO = *std::get<1>(tuple);
@@ -694,7 +698,7 @@ void GraphicsEngine::UpdateRenderComponents(float dt) {
     //});
 
     // animations
-    for (auto it = GameObject::SystemGetComponents<AnimationComponent>({ ComponentBitIndex::Animation });  it.Valid(); it++) {
+    for (auto [it, end] = GameObject::SystemGetComponents<AnimationComponent>(); it != end; it++) {
 
         auto& tuple = *it;
         auto& animComp = std::get<0>(tuple);

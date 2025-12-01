@@ -76,6 +76,8 @@ public:
     double debugFreecamPitch = 0; // in degrees, don't get tripped up when you do lookvector which wants radians
     double debugFreecamYaw = 0;
     
+    bool debugShowSAS = false;
+
     //void SetDefaultShaderProgram(std::shared_ptr<ShaderProgram>) override;
     void SetDefaultGuiMaterial(std::shared_ptr<Material>) override;
     void SetDefaultBillboardGuiMaterial(std::shared_ptr<Material>) override;

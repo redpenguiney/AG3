@@ -2,6 +2,26 @@
 #include <glm/vec3.hpp>
 #include <vector>
 #include "aabb.hpp"
+#include <functional>
+#include <memory>
+#include "vec6.hpp"
+
+struct Position {
+    glm::dvec3 pos;
+    glm::quat rot;
+
+    vec6 operator-(const Position& other) {
+        vec6 result;
+        result[0] = pos.x - other.pos.x;
+        result[1] = pos.y - other.pos.y;
+        result[2] = pos.z - other.pos.z;
+        glm::quat quatDif = 2.0f * rot * glm::inverse(other.rot);
+        result[3] = quatDif.x;
+        result[4] = quatDif.y;
+        result[5] = quatDif.z;
+        return result;
+    }
+};
 
 // it's a physics engine, obviously.
 class PhysicsEngine {
@@ -36,6 +56,28 @@ public:
     void Step(const double timestep);
 
 private:
+
+    struct Constraint {
+        double lagrange;    
+        double stiffness;
+
+        const double targetStiffness;
+        const double minLagrange;
+        const double maxLagrange;
+        const bool hard;
+
+        std::function<double(const Position& a, const Position& b)> error;
+        std::function<vec6(const Position& a, const Position& b)> errorSlope;
+        //std::function<mat6x6(Position a, Position b > errorSlope2;
+    };
+
+
+
+    std::vector<Constraint> currentConstraints;
+
+    constexpr static double regularization = 0.95;
+    constexpr static double stiffnessScaling = 0.99;
+    constexpr static double stiffnessRamping = 10.0;
 
     // describes which collision layers interact with each other (true if they collide).
     // defaults to all true.

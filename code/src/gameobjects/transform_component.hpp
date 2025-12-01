@@ -70,26 +70,29 @@ private:
     // trivial constructor
     // TransformComponent();
 
-    // rotation and scale part of matrix will not neccesarily change every frame like position will due to floating origin
-    // therefore we store it here to avoid matrix multiplcation/math
-    glm::mat4x4 rotScaleMatrix;
-
     // true if rot/scale (or that of its parent) has changed and needs to be recalculated
     // bool dirtyRotScale;
 
     // void MakeChildrenDirty();
     // void MakeChildrenMoved();
 
-    // normals shouldn't be scaled or rotated so they need their own matrix; TODO potential optimizations?
-    glm::mat3 normalMatrix;
+    
 
     // SAS needs to access the variable "moved"
     friend class SpatialAccelerationStructure; 
 
-    // used for physics/sas optimizations, set to true when it's been moved and then set to false after it recalculates AABBs
-    bool moved;
     // position, rotation, and scale are all global/in world space.
     glm::dvec3 position;
     glm::quat rotation;
     glm::vec3 scale; 
+
+    // normals shouldn't be scaled or rotated so they need their own matrix; TODO potential optimizations?
+    glm::mat3 normalMatrix;
+
+    // rotation and scale part of matrix will not neccesarily change every frame like position will due to floating origin
+    // therefore we store it here to avoid matrix multiplcation/math
+    glm::mat4x4 rotScaleMatrix;
+
+    // used for physics/sas optimizations, set to true when it's been moved and then set to false after it recalculates AABBs
+    bool moved;
 };

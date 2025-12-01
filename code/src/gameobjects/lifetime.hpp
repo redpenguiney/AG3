@@ -5,15 +5,23 @@
 
 // holds onto to the given shared_ptr until secondsToLive runs out (in real time), meaning it will destroyed after the given time interval if no other references to the object exist
 template <typename T>
-void NewObjectLifetime(std::shared_ptr<T>& object, double secondsToLive) {
+void NewObjectLifetime(std::shared_ptr<T>& object, double secondsToLive, bool realTime = true) {
 	struct Lifetime {
 		double timeLeft;
+		double lastTime;
 		std::unique_ptr<Event<float>::Connection> connection;
 		std::shared_ptr<T> object;
 	};
-	std::shared_ptr<Lifetime> lifetime = std::make_shared<Lifetime>(secondsToLive, nullptr, object);
-	auto c = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([lifetime](float dt) {
-		lifetime->timeLeft -= dt;
+	std::shared_ptr<Lifetime> lifetime = std::make_shared<Lifetime>(secondsToLive, Time(), nullptr, object);
+	auto c = GraphicsEngine::Get().preRenderEvent->ConnectTemporary([lifetime, realTime](float dt) {
+		
+		if (realTime) { 
+			auto t = Time();
+			lifetime->timeLeft -= (t - lifetime->lastTime); 
+			lifetime->lastTime = t;
+		}
+
+		else lifetime->timeLeft -= dt;
 		if (lifetime->timeLeft <= 0) {
 			lifetime->object = nullptr;
 			lifetime->connection = nullptr;

@@ -7,6 +7,7 @@
 #include <vector>
 #include "utility/triangle_intersection.hpp"
 #include "glm/gtx/string_cast.hpp"
+#include "physics_mesh.hpp"
 
 glm::dvec3 GetTriangleNormal(glm::dvec3 triVertex0, glm::dvec3 triVertex1, glm::dvec3 triVertex2) {
     return glm::normalize(glm::cross((triVertex1 - triVertex0), (triVertex2 - triVertex0)));
@@ -39,38 +40,59 @@ RaycastResult Raycast(glm::dvec3 origin, glm::dvec3 direction, CollisionLayerSet
         // std::cout << "Could be colliding with " << obj->name << ".\n";
         auto modelMatrix = obj->Get<TransformComponent>()->GetPhysicsModelMatrix();
 
-        for (auto & convexMesh: mesh->meshes) {
-            for (auto & triangle: convexMesh.triangles) {
+        for (auto& convexMesh : mesh->meshes) {
+            const ConvexTriangleMesh* triMesh = dynamic_cast<const ConvexTriangleMesh*>(convexMesh.get());
+            if (triMesh) {
+                for (auto& triangle : triMesh->triangles) {
 
-                // need to put vertices in world space to raycast against
-                glm::dvec3 trianglePoints[3];
-                for (unsigned int j = 0; j < 3; j++) {
-                    trianglePoints[j] = (modelMatrix * glm::dvec4(triangle[j], 1)).xyz();
-                }
+                    // need to put vertices in world space to raycast against
+                    glm::dvec3 trianglePoints[3];
+                    for (unsigned int j = 0; j < 3; j++) {
+                        trianglePoints[j] = (modelMatrix * glm::dvec4(triangle[j], 1)).xyz();
+                    }
 
-                auto normal = GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
-                
-                
-                // backface culling so that we hit the right triangle; relies on clockwise vertex winding
-                if (glm::dot(normal, direction) < 0) { // works according to https://en.wikipedia.org/wiki/Back-face_culling
-                    //std::cout << "Passed backface culling.\n";
-                    // std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f, the normal is %f %f %f\n.", trianglePoints[0][0], trianglePoints[0][1], trianglePoints[0][2], trianglePoints[1][0], trianglePoints[1][1], trianglePoints[1][2], trianglePoints[2][0], trianglePoints[2][1], trianglePoints[2][2], normal.x, normal.y, normal.z);
-                    glm::dvec3 intersectionPoint;
+                    auto normal = GetTriangleNormal(trianglePoints[0], trianglePoints[1], trianglePoints[2]);
 
-                    // TODO: IsTriangleColliding() might (?) independently calculate the normal which is waste of resources? compiler could probably optimize out that but idk        
-                    if (IsTriangleColliding(origin, direction, trianglePoints[0], trianglePoints[1], trianglePoints[2], intersectionPoint)) {
-                        //std::cout << "Ray intersects object at " << obj << " named " << obj->name << "\n";
-                        hitTriangles.push_back({.hitPoint = intersectionPoint, .hitNormal = normal, .hitObject = obj});
-                        // because the mesh is convex, the ray will only pass through two points on the mesh, and one of those will be removed by backface culling.
-                        goto foundTriangle; 
+
+                    // backface culling so that we hit the right triangle; relies on clockwise vertex winding
+                    if (glm::dot(normal, direction) < 0) { // works according to https://en.wikipedia.org/wiki/Back-face_culling
+                        //std::cout << "Passed backface culling.\n";
+                        // std::printf("Triangle has points %f %f %f, %f %f %f, and %f %f %f, the normal is %f %f %f\n.", trianglePoints[0][0], trianglePoints[0][1], trianglePoints[0][2], trianglePoints[1][0], trianglePoints[1][1], trianglePoints[1][2], trianglePoints[2][0], trianglePoints[2][1], trianglePoints[2][2], normal.x, normal.y, normal.z);
+                        glm::dvec3 intersectionPoint;
+
+                        // TODO: IsTriangleColliding() might (?) independently calculate the normal which is waste of resources? compiler could probably optimize out that but idk        
+                        if (IsTriangleColliding(origin, direction, trianglePoints[0], trianglePoints[1], trianglePoints[2], intersectionPoint)) {
+                            //std::cout << "Ray intersects object at " << obj << " named " << obj->name << "\n";
+                            hitTriangles.push_back({ .hitPoint = intersectionPoint, .hitNormal = normal, .hitObject = obj });
+                            // because the mesh is convex, the ray will only pass through two points on the mesh, and one of those will be removed by backface culling.
+                            goto foundTriangle;
+                        }
                     }
                 }
-                
             }
+            else {
+                Assert(dynamic_cast<SphereMesh*>(convexMesh.get()) != nullptr);
 
-            foundTriangle:;
+                // Find shortest distance between raycast line and the sphere center
+                // https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
+                glm::dvec3 center = obj->RawGet<TransformComponent>()->Position();
+                glm::dvec3 relCenter = center - origin;
+                double radiusSquared = obj->RawGet<TransformComponent>()->Scale().x;
+                radiusSquared *= radiusSquared;
+                double proj = glm::dot(relCenter, direction);
+                double delta = proj * proj - glm::length2(relCenter) + radiusSquared;
+                if (delta >= 0) {
+                    double distance = -proj - sqrt(delta);
+                    glm::dvec3 hitPoint = origin + direction * distance;
+                    glm::dvec3 normal = glm::normalize(hitPoint - center);
+                    hitTriangles.push_back(RaycastResult{ .hitPoint = hitPoint, .hitNormal = normal, .hitObject = obj });
+                }
+            }
+            
+
+        foundTriangle:;
         }
-
+        
         
     }
 

@@ -5,6 +5,20 @@
 #include <type_traits>
 #include <bitset>
 #include <memory>
+#include <concepts>
+#include <cstdint>
+#include <iterator>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+#include <audio/sound.hpp>
+#include <debug/assert.hpp>
+#include "base_component.hpp"
+#include "render_component.hpp"
+#include <graphics/mesh.hpp>
 
 // TODO: weak_ptr version?
 // An object that stores a component and a shared_ptr to the gameobject that component came from. 
@@ -88,6 +102,7 @@ struct GameobjectCreateParams {
 
 private:
 	friend class GameObject;
+	friend class ThreadedComponentIteration;
 	std::bitset<N_COMPONENT_TYPES> requestedComponents;
 };
 
@@ -189,6 +204,8 @@ private:
 	template <std::derived_from<BaseComponent> ... Components>
 	class SystemForwardIterator {
 	public:
+		friend class ThreadedComponentIteration;
+
 		using iterator_category = std::forward_iterator_tag;
 
 		// meaningless since you can't subtract this iterator
@@ -209,6 +226,34 @@ private:
 			if (pools.size() > 0) { // if we have nothing to iterate through we can't write the tuple
 				WriteCurrentTuple();
 			}
+		};
+		
+		/*SystemForwardIterator(const SystemForwardOperator& x):
+			pools(x.pools),
+			poolIndex(x.poolIndex),
+			pageIndex(x.pageIndex),
+			objectIndex(x.objectIndex),
+			currentLiveChecker(x.currentLiveChecker) 
+		{
+
+		}*/
+
+		SystemForwardIterator<Components...> operator=(const SystemForwardIterator<Components...>& x) { return x; }
+
+		static SystemForwardIterator EndIterator(const SystemForwardIterator& begin) {
+			auto it = begin;
+			it.poolIndex = it.pools.size();
+			return it;
+		}
+
+		SystemForwardIterator():
+			pools({}),
+			poolIndex(0),
+			pageIndex(0),
+			objectIndex(0),
+			currentLiveChecker(nullptr)
+		{
+
 		}
 
 		template <typename T>
@@ -226,6 +271,10 @@ private:
 			else {
 				return true;
 			}
+		}
+
+		void operator++() {
+			operator++(1);
 		}
 
 		// int argument is there to specify that we're overloading postfix, not prefix; doesn't do anything
@@ -265,6 +314,14 @@ private:
 			}
 		}
 
+		bool operator==(const SystemForwardIterator& b) const {
+			return poolIndex == b.poolIndex; // only thing that matters
+		}
+
+		bool operator!=(const SystemForwardIterator& b) const {
+			return !(*this == b);
+		}
+
 		value_type& operator*() {
 			//DebugLogInfo("Deref, return ", objectIndex);
 			return currentTuple;
@@ -297,6 +354,7 @@ private:
 				constexpr int id(ComponentIdFromType < typename std::remove_pointer<ComponentPtr>::type>());
 				if (id == memoryInfo.componentId) {
 					offset = memoryInfo.offset;
+					break;
 				}
 
 			}
@@ -337,10 +395,21 @@ private:
 
 public:
 
+	friend class ThreadedComponentIteration;
+
+
 	// Returns an iterator so you can iterate through all gameobjects that have the requested components (except you don't actually get the gameobject, just a tuple of components).
-	// Components not specified as required may be nullptr. Check.
 	template <std::derived_from<BaseComponent> ... Components>
-	static SystemForwardIterator<Components...> SystemGetComponents(std::vector<ComponentBitIndex::ComponentBitIndex> requiredComponents) {
+	static std::pair<SystemForwardIterator<Components...>, SystemForwardIterator<Components...>> SystemGetComponents() {
+		std::vector<ComponentBitIndex::ComponentBitIndex> requiredComponents;
+		(requiredComponents.push_back(ComponentIdFromType<Components>()), ...);
+
+		return SystemGetComponents<Components...>(requiredComponents);
+	}
+
+	// Like SystemGetComponents, but components not specified as required may be nullptr (but you'll get more gameobjects). Check.
+	template <std::derived_from<BaseComponent> ... Components>
+	static std::pair<SystemForwardIterator<Components...>, SystemForwardIterator<Components...>> SystemGetComponents(std::vector<ComponentBitIndex::ComponentBitIndex> requiredComponents) {
 		std::bitset<N_COMPONENT_TYPES> requestedArchetype = GameobjectCreateParams(requiredComponents).requestedComponents;
 		std::vector<ComponentPool*> matchingPools;
 		for (auto& [archetype, pool] : COMPONENT_POOLS) {
@@ -348,7 +417,8 @@ public:
 				matchingPools.push_back(pool.get());
 			}
 		}
-		return SystemForwardIterator<Components...>(matchingPools);
+		auto begin = SystemForwardIterator<Components...>(matchingPools);
+		return std::make_pair(begin, SystemForwardIterator<Components...>::EndIterator(begin));
 	}
 
 protected:
@@ -369,5 +439,9 @@ private:
 	// unique_ptr so it doesn't memory leak
 	static inline std::unordered_map<std::bitset<N_COMPONENT_TYPES>, std::unique_ptr<ComponentPool>> COMPONENT_POOLS;
 
+
 	static std::tuple<ComponentPool*, int, int> GetNewGameobjectComponentData(const GameobjectCreateParams& params);
 };
+
+//template <std::derived_from<BaseComponent> ... Components>
+//GameObject::SystemForwardIterator<Components...>& operator=(GameObject::SystemForwardIterator<Components...>& x) { return *x; }
