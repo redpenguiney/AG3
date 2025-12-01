@@ -585,3 +585,16 @@ void PhysicsEngine::Step(double timestep) {
     SpatialAccelerationStructure::Get().Update();
     ClearCollisionCache();
 }
+
+Contact::Contact(const Collision& info): Constraint(100000) {
+    //r1 = info.info.contactPoints.
+}
+
+std::tuple<double, glm::dvec3, glm::quat> Contact::Error(const RigidbodyComponent& a, const RigidbodyComponent& b)
+{
+    return std::tuple<double, glm::dvec3, glm::quat>();
+}
+
+Constraint::Constraint(double maxStiffness): maxStiffness(maxStiffness) {
+    stiffness = maxStiffness / 1000;
+}

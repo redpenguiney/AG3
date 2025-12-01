@@ -88,10 +88,10 @@ float RigidbodyComponent::InverseMomentOfInertiaAroundAxis(const TransformCompon
 
 // fyi position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)
 // don't expect velocity to change until physics engine steps
-void RigidbodyComponent::Impulse(glm::vec3 position, glm::vec3 force) {
+//void RigidbodyComponent::Impulse(glm::vec3 position, glm::vec3 force) {
     
-    Assert(!std::isnan(glm::length2(position)));
-    Assert(!std::isnan(glm::length2(force)));
+    //Assert(!std::isnan(glm::length2(position)));
+    //Assert(!std::isnan(glm::length2(force)));
     
 
     // thanks to madeleine for her assistance with physics
@@ -103,11 +103,11 @@ void RigidbodyComponent::Impulse(glm::vec3 position, glm::vec3 force) {
     // float positionToYAxis = glm::length(glm::vec2(position.x, position.z));
     // float positionToZAxis = glm::length(glm::vec2(position.x, position.y));
     // std::cout << "Axis distances are " << glm::to_string(glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis))) << ".\n";
-    accumulatedTorque += glm::cross(position, force);  //glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis)) * force;
+    //accumulatedTorque += glm::cross(position, force);  //glm::abs(glm::vec3(positionToXAxis, positionToYAxis, positionToZAxis)) * force;
     // std::cout << "Torque is " << glm::to_string(accumulatedTorque) << ".\n";
-    accumulatedForce += force;
+    //accumulatedForce += force;
 
-}
+//}
 
 // fyi position is in world space minus the position of the rigidbody (so not model space since it does rotation/scaling)
 // almost certainly correctly implemented at this point

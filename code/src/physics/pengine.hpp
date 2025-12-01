@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include "vec6.hpp"
+#include "gjk.hpp"
 
 struct Position {
     glm::dvec3 pos;
@@ -41,6 +42,9 @@ public:
 
     // Returns how badly the constraint is unsatsified 
     virtual std::tuple<double, glm::dvec3, glm::quat> Error(const RigidbodyComponent& a, const RigidbodyComponent& b) = 0;
+
+protected:
+    Constraint(double maxStiffness);
 };
 
 class Contact : public Constraint {
