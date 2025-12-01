@@ -23,6 +23,36 @@ struct Position {
     }
 };
 
+struct Collision {
+    CollisionInfo info;
+    ColliderComponent* a;
+    ColliderComponent* b;
+};
+
+class Constraint {
+public:
+    //    double lagrange;    
+    double stiffness;
+
+    //    const double targetStiffness;
+    //    const double minLagrange;
+    const double maxStiffness;
+    //    const bool hard;
+
+    // Returns how badly the constraint is unsatsified 
+    virtual std::tuple<double, glm::dvec3, glm::quat> Error(const RigidbodyComponent& a, const RigidbodyComponent& b) = 0;
+};
+
+class Contact : public Constraint {
+public:
+    glm::dvec3 r1;
+    glm::dvec3 r2;
+
+    Contact(const Collision&);
+
+    std::tuple<double, glm::dvec3, glm::quat> Error(const RigidbodyComponent& a, const RigidbodyComponent& b) override;
+};
+
 // it's a physics engine, obviously.
 class PhysicsEngine {
 public:
@@ -57,26 +87,10 @@ public:
 
 private:
 
-    struct Constraint {
-        double lagrange;    
-        double stiffness;
+    //std::vector<Constraint> currentConstraints;
 
-        const double targetStiffness;
-        const double minLagrange;
-        const double maxLagrange;
-        const bool hard;
-
-        std::function<double(const Position& a, const Position& b)> error;
-        std::function<vec6(const Position& a, const Position& b)> errorSlope;
-        //std::function<mat6x6(Position a, Position b > errorSlope2;
-    };
-
-
-
-    std::vector<Constraint> currentConstraints;
-
-    constexpr static double regularization = 0.95;
-    constexpr static double stiffnessScaling = 0.99;
+    //constexpr static double regularization = 0.95;
+    //constexpr static double stiffnessScaling = 0.99;
     constexpr static double stiffnessRamping = 10.0;
 
     // describes which collision layers interact with each other (true if they collide).

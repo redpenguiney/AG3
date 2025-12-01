@@ -174,20 +174,6 @@ static void DoPhysics(const double dt, ColliderComponent& collider, TransformCom
                         reducedMass += otherRigidbody->InverseMass() + glm::length2(torqueAxis2) * inverseMomentOfInertiaAroundAxis2;
         
                     }
-                    
-                    reducedMass = 1.0f/reducedMass;
-
-                    // float reducedMass = rigidbody.InverseMass() + glm::dot(nxd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * nxd1);
-                    // if (otherRigidbody) {
-                    //     reducedMass += otherRigidbody->InverseMass() + glm::dot(nxd2, rigidbody.GetInverseGlobalMomentOfInertia(*otherTransform) * nxd2);
-                    // }
-                    // reducedMass = 1.0 / reducedMass;
-                    // if (reducedMass > rigidbody.InverseMass()) {
-                        // DebugLogError("Calculated reduced contact mass of ", reducedMass, " (1/", 1.0/reducedMass , "). n = ", glm::to_string(normal), " d1 = ", glm::to_string(d1), " nxd1 = ", glm::to_string(torqueAxis1));
-                    // }
-
-                    // Assert(reducedMass <= rigidbody.InverseMass());
-
                 
                     float elasticity = otherColliderPtr->elasticity * collider.elasticity;
                     float elasticityTerm = -(1 + elasticity);
@@ -250,62 +236,6 @@ static void DoPhysics(const double dt, ColliderComponent& collider, TransformCom
             //DebugLogInfo("UNPENETRATING BY ", avgPenetration, " IN ", normal);
             seperations[ThreadManager::CurrentWorkerThreadId()].push_back(std::make_pair(&transform, normal* avgPenetration));
             // DebugPlacePointOnPosition({averageContactPoint}, {0.2, 0.2, 1.0, 1.0});
-    
-            
-
-            // friction impulse
-            // {
-            //     float friction = otherColliderPtr->friction * collider.friction;
-            //     glm::vec3 relVelocityAlongPlane = glm::vec3(glm::vec3(rigidbody.velocity) + glm::cross(d1, rigidbody.angularVelocity)) - (normal * relVelocityAlongNormal);
-            //     if (glm::length(relVelocityAlongPlane) != 0) {
-            //         glm::vec3 tangent = glm::normalize(relVelocityAlongPlane);
-
-            //         glm::vec3 txd1 = glm::cross(tangent, d1);
-            //         // glm::vec3 txd2 = glm::cross(tangent, d2);
-        
-            //         // float reducedMass = 1.0 / (rigidbody.InverseMass() + glm::dot(txd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1));
-            //         // if (reducedMass > rigidbody.InverseMass()) {
-            //         //     DebugLogError("Calculated reduced friction mass of ", reducedMass, " (1/", 1.0/reducedMass , "). t = ", glm::to_string(tangent), " d1 = ", glm::to_string(d1), " txd1 = ", glm::to_string(txd1), " mmoi*txd1 = ", glm::to_string(rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1), " dotting that yields ", glm::dot(txd1, rigidbody.GetInverseGlobalMomentOfInertia(transform) * txd1));
-            //         // }
-                    
-            //         float frictionImpulse = friction * reducedMass;
-
-            //         // check if friction is strong enough to reverse the object's speed and if so, set speed to 0 instead so we don't start going backwards due to friction
-            //         if (glm::length(relVelocityAlongPlane) < frictionImpulse * rigidbody.InverseMass()) {
-            //             DebugLogInfo("Friction totally stopped the object.");
-            //             rigidbody.accumulatedForce += -relVelocityAlongPlane / rigidbody.InverseMass();
-            //         }
-            //         else {
-            //             DebugLogInfo("Applying force with tangent ", glm::to_string(tangent), " and friction impulse ", frictionImpulse, ". Rel. tangent velocity was ", glm::to_string(relVelocityAlongPlane), " torque axis ", glm::to_string(glm::cross(d1, tangent)));
-            //             rigidbody.accumulatedForce -= tangent * frictionImpulse;
-            //             rigidbody.accumulatedTorque -= glm::cross(normal, tangent) * frictionImpulse;
-            //         }
-
-                    
-            //     }
-                
-                
-            // // }
-            // // std::cout << "Accumulated force is now " << glm::to_string(rigidbody.accumulatedForce) << ". Impulse is " << impulse << ". Reduced mass is " << reducedMass << ".\n";
-            // }
-
-            // FRICTION
-            // glm::vec3 relVelocityAlongPlane =  relVelocity + (normal * relVelocityAlongContactNormal);
-            // if (glm::length(relVelocityAlongPlane) > 0) {
-            //     auto tangentDirection = glm::normalize(relVelocityAlongPlane);
-
-            //     glm::vec3 planarCrossThing1 = glm::cross((glm::vec3)tangentDirection, contactToRigidbody);
-            //     glm::vec3 planarCrossThing2 = glm::cross((glm::vec3)tangentDirection, contactToOtherRigidbody);
-            //     // std::cout << "Along plane, rel velocity is " << glm::to_string(relVelocityAlongPlane) << " as calculated from total rel vel " << glm::to_string(relVelocity) << " and vel along normal " << relVelocityAlongContactNormal << ".\n";
-                
-            //     
-            //     // double reducedInverseMassAlongPlane = 1/(rigidbody.InverseMass() + (otherRigidbody ? otherRigidbody->InverseMass() : 0) + glm::dot(planarCrossThing1, (globalInverseInertiaTensor1 * planarCrossThing1)) + glm::dot(planarCrossThing2, otherRigidbody ? (globalInverseInertiaTensor2 * planarCrossThing2): glm::vec3(0, 0, 0)));
-            //     // float frictionImpulse = friction * reducedInverseMassAlongPlane * glm::length(relVelocityAlongPlane);
-
-            //     // if (glm::length(relVelocityAlongPlane) > friction * )
-            //     // rigidbody.accumulatedForce += frictionImpulse * tangentDirection;   
-            //     // rigidbody.accumulatedTorque -= glm::cross(-posRelToContact, -tangentDirection) * frictionImpulse;
-            // }
 
         }
         else {
@@ -428,11 +358,7 @@ static void DoPhysics(const double dt, ColliderComponent& collider, TransformCom
 //    //postPhysicsEvent->Fire(timestep);
 //}
 
-struct Collision {
-    CollisionInfo info;
-    ColliderComponent* a;
-    ColliderComponent* b;
-};
+
 
 std::vector<Collision> WrangleCollisions() {
     std::vector<Collision> ret;
@@ -456,138 +382,205 @@ std::vector<Collision> WrangleCollisions() {
     return ret;
 }
 
-void PhysicsEngine::Step(const double timestep) {
+//void PhysicsEngine::Step(const double timestep) {
+//
+//    
+//
+//    
+//
+//    struct Rigidbody {
+//        Position currentPos;
+//        Position newPos;
+//        Position nextPos;
+//        std::vector<Constraint*> forces;
+//        mat6x6 massmatrix;
+//    };
+//
+//    currentConstraints.clear();
+//    std::vector<Collision> collisions = WrangleCollisions();
+//    for (auto& c : collisions) {
+//        auto currentPosA = Position{ .pos = c.a->gameobject->RawGet<TransformComponent>()->Position(), .rot = c.a->gameobject->RawGet<TransformComponent>()->Rotation() };
+//        auto currentPosB = Position{ .pos = c.b->gameobject->RawGet<TransformComponent>()->Position(), .rot = c.b->gameobject->RawGet<TransformComponent>()->Rotation() };
+//
+//        for (unsigned i = 0; i < c.info.contactPoints.size(); i++) {
+//            double currentError = c.info.contactPoints[i].second;
+//            vec6 errorSlope(c.info.collisionNormal.x, c.info.collisionNormal.y, c.info.collisionNormal.z, 0, 0, 0);
+//
+//            currentConstraints.push_back(Constraint{
+//                .lagrange = 0,
+//                .stiffness = 1,
+//
+//                .targetStiffness = INFINITY,
+//                .minLagrange = 0,
+//                .maxLagrange = INFINITY,
+//                .hard = true,
+//                .error = [c, currentPos, currentError](const Position& a, const Position& b) -> double {
+//                    return (1 - regularization)*currentError + errorSlope;
+//                },
+//                .errorSlope = [c](const Position& a, const Position& b) -> vec6 {
+//                       return (1 - regularization) + ;
+//                },
+//                //.errorSlope2 = [c]() -> mat6x6 {}
+//            });
+//        }
+//    }
+//
+//    std::vector<Rigidbody> rigidbodies;
+//    auto [begin1, end1] = GameObject::SystemGetComponents<TransformComponent, RigidbodyComponent>();
+//    std::for_each(begin1, end1, [&](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
+//        TransformComponent& transform = *std::get<0>(tuple);
+//        RigidbodyComponent& rigidbody = *std::get<1>(tuple);
+//
+//        rigidbodies.push_back(Rigidbody {
+//            .currentPos = Position { .pos = transform.Position(), .rot = transform.Rotation()},
+//            .nextPos = Position { 
+//                .pos = transform.Position() + timestep * rigidbody.velocity + timestep * timestep * GRAVITY, 
+//                .rot = glm::quat(0, rigidbody.angularVelocity.x, rigidbody.angularVelocity.y, rigidbody.angularVelocity.z) * 0.5f * float(timestep) * transform.Rotation()
+//            },
+//        });
+//        mat6x6 m = mat6x6::Identity();
+//        m.coeffRef(0, 0) = 1 / rigidbody.InverseMass();
+//        m.coeffRef(1, 1) = 1 / rigidbody.InverseMass();
+//        m.coeffRef(2, 2) = 1 / rigidbody.InverseMass();
+//        m.coeffRef(3, 3) = 1 / rigidbody.InverseMass(); // TODO: PUT MOI HERE 
+//        m.coeffRef(4, 4) = 1 / rigidbody.InverseMass();
+//        m.coeffRef(5, 5) = 1 / rigidbody.InverseMass();
+//        rigidbodies.back().massmatrix = m;
+//    });
+//
+//    for (auto& c : currentConstraints) {
+//        c.lagrange *= regularization * stiffnessScaling;
+//        c.stiffness = std::max(c.stiffness * stiffnessScaling, 0.0);
+//    }
+//   
+//
+//    for (unsigned iIter = 0; iIter < 5; iIter++) {
+//        std::vector<Position> newPositions;
+//
+//        for (auto& r: rigidbodies) {
+//
+//            mat6x6 hessian = r.massmatrix / timestep / timestep;
+//            vec6 diff = r.nextPos - r.currentPos;
+//            vec6 force = hessian * diff;
+//
+//            for (auto& f : r.forces) {
+//                double error = f->error();
+//                vec6 partialDerivativeOfConstraintError = f->errorSlope();
+//                mat6x6 partialDerivative2OfConstraintError = f->errorSlope2();
+//                double clampedForceMagnitude = f->hard ? std::clamp(f->stiffness * error + f->lagrange, f->minLagrange, f->maxLagrange) : f->stiffness * error;
+//                
+//                force = force - partialDerivativeOfConstraintError * clampedForceMagnitude;
+//                
+//                hessian = hessian + (partialDerivativeOfConstraintError * partialDerivativeOfConstraintError.transpose() * f->stiffness);
+//
+//                // add gprime
+//                //for (unsigned i = 0; i < 6; i++) hessian.coeffRef(i, i) += partialDerivative2OfConstraintError.col(i).norm() * std::abs(clampedForceMagnitude);
+//            }
+//
+//            vec6 deltaP = hessian.llt().solve(force);
+//            //vec6 deltaP = hessian.inverse() * force;
+//            r.newPos.pos = r.currentPos.pos + glm::dvec3(deltaP.x(), deltaP.y(), deltaP.z());
+//            r.newPos.rot = glm::normalize(r.currentPos.rot + 0.5f * glm::quat(0.0f, deltaP[3], deltaP[4], deltaP[5]) * r.currentPos.rot);
+//        }
+//
+//        for (auto& r : rigidbodies) {
+//            r.currentPos = r.newPos;
+//        }
+//
+//        for (auto& f : currentConstraints) {
+//            if (f.hard) {
+//                f.lagrange = std::clamp(f.stiffness * f.error() + f.lagrange, f.minLagrange, f.maxLagrange);
+//                if (f.minLagrange < f.lagrange && f.lagrange < f.maxLagrange) {
+//                    f.stiffness = f.stiffness + stiffnessRamping * std::abs(f.error());
+//                }
+//            }
+//            else {
+//                f.stiffness = std::min(f.targetStiffness, f.stiffness + stiffnessRamping * std::abs(f.error()));
+//            }
+//        }
+//    }
+//
+//    unsigned i = 0;
+//
+//    std::for_each(begin1, end1, [&](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
+//        TransformComponent& transform = *std::get<0>(tuple);
+//        RigidbodyComponent& rigidbody = *std::get<1>(tuple);
+//
+//        
+//        rigidbody.velocity = (rigidbodies[i].currentPos.pos - transform.Position()) / timestep;
+//        glm::quat dRot = (2.0f * rigidbodies[i].currentPos.rot * glm::inverse(transform.Rotation()));
+//        rigidbody.angularVelocity = glm::vec3(dRot.x, dRot.y, dRot.z) / timestep;
+//        transform.SetPos(rigidbodies[i].currentPos.pos);
+//        transform.SetRot(rigidbodies[i].currentPos.rot);
+//        i++;
+//    });
+//
+//    SpatialAccelerationStructure::Get().Update();
+//    ClearCollisionCache();
+//}
 
-    
+void PhysicsEngine::Step(double timestep) {
 
-    
+    std::vector<std::unique_ptr<Constraint>> constraints;
 
-    struct Rigidbody {
-        Position currentPos;
-        Position newPos;
-        Position nextPos;
-        std::vector<Constraint*> forces;
-        mat6x6 massmatrix;
-    };
+    auto collidingPairs = WrangleCollisions();
 
-    currentConstraints.clear();
-    std::vector<Collision> collisions = WrangleCollisions();
-    for (auto& c : collisions) {
-        auto currentPosA = Position{ .pos = c.a->gameobject->RawGet<TransformComponent>()->Position(), .rot = c.a->gameobject->RawGet<TransformComponent>()->Rotation() };
-        auto currentPosB = Position{ .pos = c.b->gameobject->RawGet<TransformComponent>()->Position(), .rot = c.b->gameobject->RawGet<TransformComponent>()->Rotation() };
+    auto [begin, end] = GameObject::SystemGetComponents<TransformComponent, RigidbodyComponent>();
 
-        for (unsigned i = 0; i < c.info.contactPoints.size(); i++) {
-            double currentError = c.info.contactPoints[i].second;
-            vec6 errorSlope(c.info.collisionNormal.x, c.info.collisionNormal.y, c.info.collisionNormal.z, 0, 0, 0);
 
-            currentConstraints.push_back(Constraint{
-                .lagrange = 0,
-                .stiffness = 1,
 
-                .targetStiffness = INFINITY,
-                .minLagrange = 0,
-                .maxLagrange = INFINITY,
-                .hard = true,
-                .error = [c, currentPos, currentError](const Position& a, const Position& b) -> double {
-                    return (1 - regularization)*currentError + errorSlope;
-                },
-                .errorSlope = [c](const Position& a, const Position& b) -> vec6 {
-                       return (1 - regularization) + ;
-                },
-                //.errorSlope2 = [c]() -> mat6x6 {}
-            });
-        }
-    }
-
-    std::vector<Rigidbody> rigidbodies;
-    auto [begin1, end1] = GameObject::SystemGetComponents<TransformComponent, RigidbodyComponent>();
-    std::for_each(begin1, end1, [&](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
+    std::for_each(begin, end, [&](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
         TransformComponent& transform = *std::get<0>(tuple);
         RigidbodyComponent& rigidbody = *std::get<1>(tuple);
-
-        rigidbodies.push_back(Rigidbody {
-            .currentPos = Position { .pos = transform.Position(), .rot = transform.Rotation()},
-            .nextPos = Position { 
-                .pos = transform.Position() + timestep * rigidbody.velocity + timestep * timestep * GRAVITY, 
-                .rot = glm::quat(0, rigidbody.angularVelocity.x, rigidbody.angularVelocity.y, rigidbody.angularVelocity.z) * 0.5f * float(timestep) * transform.Rotation()
-            },
-        });
-        mat6x6 m = mat6x6::Identity();
-        m.coeffRef(0, 0) = 1 / rigidbody.InverseMass();
-        m.coeffRef(1, 1) = 1 / rigidbody.InverseMass();
-        m.coeffRef(2, 2) = 1 / rigidbody.InverseMass();
-        m.coeffRef(3, 3) = 1 / rigidbody.InverseMass(); // TODO: PUT MOI HERE 
-        m.coeffRef(4, 4) = 1 / rigidbody.InverseMass();
-        m.coeffRef(5, 5) = 1 / rigidbody.InverseMass();
-        rigidbodies.back().massmatrix = m;
-    });
-
-    for (auto& c : currentConstraints) {
-        c.lagrange *= regularization * stiffnessScaling;
-        c.stiffness = std::max(c.stiffness * stiffnessScaling, 0.0);
-    }
-   
-
-    for (unsigned iIter = 0; iIter < 5; iIter++) {
-        std::vector<Position> newPositions;
-
-        for (auto& r: rigidbodies) {
-
-            mat6x6 hessian = r.massmatrix / timestep / timestep;
-            vec6 diff = r.nextPos - r.currentPos;
-            vec6 force = hessian * diff;
-
-            for (auto& f : r.forces) {
-                double error = f->error();
-                vec6 partialDerivativeOfConstraintError = f->errorSlope();
-                mat6x6 partialDerivative2OfConstraintError = f->errorSlope2();
-                double clampedForceMagnitude = f->hard ? std::clamp(f->stiffness * error + f->lagrange, f->minLagrange, f->maxLagrange) : f->stiffness * error;
-                
-                force = force - partialDerivativeOfConstraintError * clampedForceMagnitude;
-                
-                hessian = hessian + (partialDerivativeOfConstraintError * partialDerivativeOfConstraintError.transpose() * f->stiffness);
-
-                // add gprime
-                //for (unsigned i = 0; i < 6; i++) hessian.coeffRef(i, i) += partialDerivative2OfConstraintError.col(i).norm() * std::abs(clampedForceMagnitude);
-            }
-
-            vec6 deltaP = hessian.llt().solve(force);
-            //vec6 deltaP = hessian.inverse() * force;
-            r.newPos.pos = r.currentPos.pos + glm::dvec3(deltaP.x(), deltaP.y(), deltaP.z());
-            r.newPos.rot = glm::normalize(r.currentPos.rot + 0.5f * glm::quat(0.0f, deltaP[3], deltaP[4], deltaP[5]) * r.currentPos.rot);
-        }
-
-        for (auto& r : rigidbodies) {
-            r.currentPos = r.newPos;
-        }
-
-        for (auto& f : currentConstraints) {
-            if (f.hard) {
-                f.lagrange = std::clamp(f.stiffness * f.error() + f.lagrange, f.minLagrange, f.maxLagrange);
-                if (f.minLagrange < f.lagrange && f.lagrange < f.maxLagrange) {
-                    f.stiffness = f.stiffness + stiffnessRamping * std::abs(f.error());
-                }
-            }
-            else {
-                f.stiffness = std::min(f.targetStiffness, f.stiffness + stiffnessRamping * std::abs(f.error()));
-            }
-        }
-    }
-
-    unsigned i = 0;
-
-    std::for_each(begin1, end1, [&](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
-        TransformComponent& transform = *std::get<0>(tuple);
-        RigidbodyComponent& rigidbody = *std::get<1>(tuple);
-
         
-        rigidbody.velocity = (rigidbodies[i].currentPos.pos - transform.Position()) / timestep;
-        glm::quat dRot = (2.0f * rigidbodies[i].currentPos.rot * glm::inverse(transform.Rotation()));
-        rigidbody.angularVelocity = glm::vec3(dRot.x, dRot.y, dRot.z) / timestep;
-        transform.SetPos(rigidbodies[i].currentPos.pos);
-        transform.SetRot(rigidbodies[i].currentPos.rot);
-        i++;
+        rigidbody.velocity += GRAVITY * timestep;
+        rigidbody.currentPosition = transform.Position() + rigidbody.velocity * timestep;
+
+        rigidbody.currentRotation = glm::normalize(transform.Rotation() + (float)timestep * 0.5f * glm::quat(0.0f, rigidbody.angularVelocity) * transform.Rotation());
     });
+
+    for (auto& p : collidingPairs) {
+        p.a->gameobject->RawGet<RigidbodyComponent>()->constraints.emplace_back(new Contact(p));
+    }
+
+    for (unsigned iteration = 0; iteration < 5; iteration++) {
+        std::for_each(begin, end, [&](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
+            TransformComponent& transform = *std::get<0>(tuple);
+            RigidbodyComponent& rigidbody = *std::get<1>(tuple);
+            rigidbody.nextPosition = rigidbody.currentPosition;
+            rigidbody.nextRotation = rigidbody.currentRotation;
+
+            for (auto& c : rigidbody.constraints) {
+                
+                
+            }
+        });
+
+        for (auto& c : constraints) {
+            c->stiffness = std::max(c->stiffness * stiffnessRamping, c->maxStiffness);
+        }
+    }
+
+    
+
+    // Retroactively find new velocities based on change in position
+    std::for_each(begin, end, [&](std::tuple<TransformComponent*, RigidbodyComponent*>& tuple) {
+        TransformComponent& transform = *std::get<0>(tuple);
+        RigidbodyComponent& rigidbody = *std::get<1>(tuple);
+
+        rigidbody.velocity = (rigidbody.currentPosition - transform.Position()) / timestep;
+        transform.SetPos(rigidbody.currentPosition);
+
+        auto deltaRot = rigidbody.currentRotation * glm::inverse(transform.Rotation());
+        rigidbody.angularVelocity = 2.0f / (float)timestep * glm::vec3(deltaRot.x, deltaRot.y, deltaRot.z);
+        if (deltaRot.w < 0) rigidbody.angularVelocity *= -1;
+        transform.SetRot(rigidbody.currentRotation);
+    });
+
+    // Handle friction and collision bounciness
+    for (auto& c : collidingPairs) {
+
+    }
 
     SpatialAccelerationStructure::Get().Update();
     ClearCollisionCache();

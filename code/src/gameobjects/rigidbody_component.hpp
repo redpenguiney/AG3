@@ -7,6 +7,8 @@
 
 class PhysicsMesh;
 
+class Constraint;
+
 // Created rigidbodies are immobile (infinite mass & moi) until you call SetMass() on them.
 class RigidbodyComponent: public BaseComponent {
     public:
@@ -18,12 +20,12 @@ class RigidbodyComponent: public BaseComponent {
     bool asleep = false;
 
     glm::dvec3 velocity;
-    glm::vec3 accumulatedForce; // every physics timestep, accumulated forces are turned into change in velocity (f=ma) and then set to zero
+    //glm::vec3 accumulatedForce; // every physics timestep, accumulated forces are turned into change in velocity (f=ma) and then set to zero
 
     glm::vec3 angularVelocity; // not a quaternion since those wouldn't be able to represent a rotation >360 degrees every frame
                                // around x, y, and z axis, in radians/second
                                // axis are in world space?
-    glm::vec3 accumulatedTorque; // like accumulateForce, but for torque (rotational force), converted to change in angular velocity via torque/globalMomentOfInertia
+    //glm::vec3 accumulatedTorque; // like accumulateForce, but for torque (rotational force), converted to change in angular velocity via torque/globalMomentOfInertia
     
     // sorta like mass but for rotation; how hard it is to rotate something around each axis basically; must be converted from object to global space before being used for physics via InverseMomentOfInertiaAroundAxis().
     // You can change this as you please (to achieve effects like making the player's rigidbody not rotate, but note that SetMass() will reset this.
@@ -63,6 +65,13 @@ class RigidbodyComponent: public BaseComponent {
 
     // returns inverse mmoi of the rigidbody around the given axis. Axis is in world space.
     float InverseMomentOfInertiaAroundAxis(const TransformComponent& transform, glm::vec3 axis) const;
+
+    // internally used by physics engine. TODO move to seperate component?
+    glm::dvec3 currentPosition;
+    glm::quat currentRotation;
+    glm::dvec3 nextPosition;
+    glm::quat nextRotation;
+    std::vector<Constraint*> constraints;
 
     private:
     //private constructor to enforce usage of object pool

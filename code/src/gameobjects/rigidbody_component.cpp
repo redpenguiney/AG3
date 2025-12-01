@@ -14,9 +14,9 @@ RigidbodyComponent::RigidbodyComponent(const std::shared_ptr<PhysicsMesh>& physM
 
     kinematic = false;
     velocity = {0, 0, 0};
-    accumulatedForce = {0, 0, 0};
+    //accumulatedForce = {0, 0, 0};
     angularVelocity = {0, 0, 0}; 
-    accumulatedTorque = {0, 0, 0};
+    //accumulatedTorque = {0, 0, 0};
     linearDrag = 0.99;
     angularDrag = 0.999;
     
