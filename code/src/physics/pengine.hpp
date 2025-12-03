@@ -40,21 +40,44 @@ public:
     const double maxStiffness;
     //    const bool hard;
 
-    // Returns how badly the constraint is unsatsified 
-    virtual std::tuple<double, glm::dvec3, glm::quat> Error(const RigidbodyComponent& a, const RigidbodyComponent& b) = 0;
+    // Returns how badly the constraint is unsatsified and the direction to move it in to fix it
+    virtual std::tuple<double, glm::dvec3> Error(const RigidbodyComponent& a) = 0;
 
 protected:
+    
     Constraint(double maxStiffness);
 };
 
-class Contact : public Constraint {
+class Contact: public Constraint {
+protected:
+    glm::vec3 r1;
+    glm::vec3 r2;
+    glm::dvec3 normal;
+
+    Contact(double maxStiffness);
+};
+
+// contact with another rigidbody
+class DynamicContact : public Contact {
 public:
-    glm::dvec3 r1;
-    glm::dvec3 r2;
+    const RigidbodyComponent& otherRigidbody;
+    const TransformComponent& otherTransform;
 
-    Contact(const Collision&);
+    DynamicContact(const Collision&, unsigned contactPoint);
 
-    std::tuple<double, glm::dvec3, glm::quat> Error(const RigidbodyComponent& a, const RigidbodyComponent& b) override;
+    std::tuple<double, glm::dvec3> Error(const RigidbodyComponent& a) override;
+};
+
+// contact with something without a rigidbody
+class StaticContact : public Contact {
+public:
+    const glm::dvec3 otherPosition;
+    const glm::quat otherRotation;
+    
+
+    StaticContact(const Collision&, unsigned contactPoint);
+
+    std::tuple<double, glm::dvec3> Error(const RigidbodyComponent& a) override;
 };
 
 // it's a physics engine, obviously.

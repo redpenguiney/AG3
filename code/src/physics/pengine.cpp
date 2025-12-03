@@ -539,8 +539,18 @@ void PhysicsEngine::Step(double timestep) {
         rigidbody.currentRotation = glm::normalize(transform.Rotation() + (float)timestep * 0.5f * glm::quat(0.0f, rigidbody.angularVelocity) * transform.Rotation());
     });
 
-    for (auto& p : collidingPairs) {
-        p.a->gameobject->RawGet<RigidbodyComponent>()->constraints.emplace_back(new Contact(p));
+    for (auto& pair : collidingPairs) {
+        for (unsigned i = 0; i < pair.info.contactPoints.size(); i++) {
+            if (pair.b->gameobject->MaybeRawGet<RigidbodyComponent>())
+                pair.a->gameobject->RawGet<RigidbodyComponent>()->constraints.emplace_back(new DynamicContact(pair, i));
+            else 
+                pair.a->gameobject->RawGet<RigidbodyComponent>()->constraints.emplace_back(new StaticContact(pair, i));
+            // don't do B, there will be a reverse pair for that in collidingPairs
+        }
+    }
+
+    for (auto& c : constraints) {
+        c->compliance = 0;
     }
 
     for (unsigned iteration = 0; iteration < 5; iteration++) {
@@ -551,8 +561,8 @@ void PhysicsEngine::Step(double timestep) {
             rigidbody.nextRotation = rigidbody.currentRotation;
 
             for (auto& c : rigidbody.constraints) {
-                
-                
+                auto [magnitude, direction] = c->Error(rigidbody);
+                float reducedMass = rigidbody.InverseMass() + glm::length2(torqueAxis1) * inverseMomentOfInertiaAroundAxis1;
             }
         });
 
@@ -586,15 +596,35 @@ void PhysicsEngine::Step(double timestep) {
     ClearCollisionCache();
 }
 
-Contact::Contact(const Collision& info): Constraint(100000) {
-    //r1 = info.info.contactPoints.
+StaticContact::StaticContact(const Collision& info, unsigned index): Contact(100000), otherPosition(otherPosition), otherRotation(otherRotation) {
+    normal = info.info.collisionNormal;
+    r1 = info.info.contactPoints[index].first - info.a->gameobject->RawGet<TransformComponent>()->Position();
+    r2 = info.info.otherContactPoints[index].first - info.b->gameobject->RawGet<TransformComponent>()->Position();
 }
 
-std::tuple<double, glm::dvec3, glm::quat> Contact::Error(const RigidbodyComponent& a, const RigidbodyComponent& b)
+std::tuple<double, glm::dvec3> StaticContact::Error(const RigidbodyComponent& a)
 {
-    return std::tuple<double, glm::dvec3, glm::quat>();
+    glm::dvec3 p1 = glm::dvec3(a.currentRotation * r1) + a.currentPosition;
+    glm::dvec3 p2 = glm::dvec3(otherRotation * r2) + otherPosition;
+    double currentPenetration = glm::dot(p1 - p2, normal);
+    return std::make_tuple(currentPenetration, normal);
 }
 
 Constraint::Constraint(double maxStiffness): maxStiffness(maxStiffness) {
     stiffness = maxStiffness / 1000;
+}
+
+Contact::Contact(double maxStiffness) : Constraint(maxStiffness) {
+
+}
+
+DynamicContact::DynamicContact(const Collision& info, unsigned contactPoint): Contact(10000), otherRigidbody(*info.b->gameobject->RawGet<RigidbodyComponent>()), otherTransform(*info.b->gameobject->RawGet<TransformComponent>()) {
+}
+
+std::tuple<double, glm::dvec3> DynamicContact::Error(const RigidbodyComponent& a)
+{
+    glm::dvec3 p1 = glm::dvec3(a.currentRotation * r1) + a.currentPosition;
+    glm::dvec3 p2 = glm::dvec3(otherTransform.Rotation() * r2) + otherTransform.Position();
+    double currentPenetration = glm::dot(p1 - p2, normal);
+    return std::make_tuple(currentPenetration, normal);
 }
