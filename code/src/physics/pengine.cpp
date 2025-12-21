@@ -562,6 +562,7 @@ void PhysicsEngine::Step(double timestep) {
 
             for (auto& c : rigidbody.constraints) {
                 auto [magnitude, direction] = c->Error(rigidbody);
+                glm::vec3 torqueAxis = glm::cross(direction, c->r1)
                 float reducedMass = rigidbody.InverseMass() + glm::length2(torqueAxis1) * inverseMomentOfInertiaAroundAxis1;
             }
         });
